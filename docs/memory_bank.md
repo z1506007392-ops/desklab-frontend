@@ -56,14 +56,20 @@ D:\desklab\backend
 
 GitHub repositories (public):
 ```text
-Frontend: https://github.com/hollowell1225/desklab-frontend
-Backend:  https://github.com/hollowell1225/desklab-backend
+Frontend: https://github.com/z1506007392-ops/desklab-frontend
+Backend:  https://github.com/z1506007392-ops/desklab-backend
 ```
 
 Canonical tracked memory-bank copy:
 ```text
 D:\desklab\frontend\docs\memory_bank.md
 ```
+
+Moved on 2026-10-28 from the hollowell1225 account to z1506007392-ops (new
+repositories with full history). The old repositories remain as the
+`hollowell1225` git remote. Both local repos use the GitHub CLI as their
+credential helper (repo-local config), so pushes use the active `gh` account,
+and commit author is `z1506007392-ops <285454369+z1506007392-ops@users.noreply.github.com>`.
 
 Keep this external handoff copy and the tracked copy synchronized whenever the
 memory bank is updated. The tracked copy is committed and pushed with the
