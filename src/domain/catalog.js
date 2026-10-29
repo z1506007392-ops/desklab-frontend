@@ -186,6 +186,35 @@ export function withPortAnchors(ports, modelId) {
   }));
 }
 
+// Saves from before the open-lid laptop GLB stored a closed-lid height
+// (about 0.058 or 0.105 m). Scaling the new mesh to that squashes it into a
+// flat tray, so heights below this share of the default are restored.
+const LEGACY_LAPTOP_HEIGHT_RATIO = 0.6;
+
+function migrateLegacyLaptopHeight(object, template) {
+  if (template?.modelId !== 'laptop-15' || !object.scale || !object.position) return object;
+  const targetZ = template.defaultScale.z;
+  const storedZ = Number(object.scale.z);
+  if (!Number.isFinite(storedZ) || storedZ >= targetZ * LEGACY_LAPTOP_HEIGHT_RATIO) return object;
+  // Keep the bottom where it was so the laptop still rests on the desk.
+  const bottom = Number(object.position.z) - storedZ / 2;
+  return {
+    ...object,
+    scale: { ...object.scale, z: targetZ },
+    position: { ...object.position, z: bottom + targetZ / 2 },
+  };
+}
+
+// Anchors saved for an older mesh no longer sit on the current GLB's
+// connectors, so catalog ports take the authored anchor; anything else keeps
+// its stored anchor.
+function withCurrentPortAnchors(ports, modelId) {
+  const authored = PORT_ANCHOR_BY_MODEL[modelId];
+  return withPortAnchors(ports, modelId).map(port => (
+    authored?.[port.id] ? { ...port, anchor: { ...authored[port.id] } } : port
+  ));
+}
+
 export function hydrateProjectObjects(objects) {
   return objects.map(object => {
     const template = findModelTemplate(object);
@@ -193,9 +222,9 @@ export function hydrateProjectObjects(objects) {
       ? JSON.parse(JSON.stringify(template.ports))
       : (object.ports || []);
     return {
-      ...object,
+      ...migrateLegacyLaptopHeight(object, template),
       assetUrl: template ? template.assetUrl : object.assetUrl,
-      ports: withPortAnchors(ports, object.modelId || template?.modelId),
+      ports: withCurrentPortAnchors(ports, object.modelId || template?.modelId),
     };
   });
 }
