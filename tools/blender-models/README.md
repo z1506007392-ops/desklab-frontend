@@ -38,5 +38,7 @@ GV_DIR=/path/with/node_modules node tools/blender-models/validate.mjs $OUT/*.glb
 ## Notes
 - office-desk and wall-outlet use realistic colours (oak top, white face plate) instead of the
   catalog UI swatch colours; all other bodies use the catalog `color`.
-- Emissive accents (LEDs, PC fan ring) are overwritten by `GLBModel`'s highlight logic, which sets
-  every material's emissive to black when not selected/hovered.
+- Emissive accents (LEDs, PC fan ring) stay on while a device is idle. Selection,
+  related, and hover highlights still replace emissive.
+- The wall-outlet face plate is modelled on +Z. The renderer yaws that mesh 180°
+  so the plate meets the room-facing port anchors (local −Y / three.js −Z).

@@ -1,15 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 
 import {
   DEVICE_CATALOG,
+  catalogModelUrl,
   describeCatalogModel,
   findModelTemplate,
   getModelDefaultScale,
   hydrateProjectObjects,
   withPortAnchors,
 } from '../src/domain/catalog.js';
-import { isPortDirectionConsistent } from '../src/domain/connections.js';
+import { isPortDirectionConsistent, getPortWorldPosition } from '../src/domain/connections.js';
+import { snapWallOutletToNearestWall } from '../src/domain/layout-analysis.js';
 
 const VALID_PORT_DIRECTIONS = new Set(['input', 'output', 'bidirectional']);
 const isNonBlankString = (value) => typeof value === 'string' && value.trim().length > 0;
@@ -169,8 +172,90 @@ test('project hydration adds current ports and anchors without overwriting custo
     },
   ]);
 
-  assert.equal(hydrated[0].assetUrl, null);
+  assert.equal(hydrated[0].assetUrl, catalogModelUrl('laptop-15'));
+  assert.equal(hydrated[0].assetUrl.endsWith('/models/laptop-15.glb'), true);
   assert.ok(hydrated[0].ports.length > 0);
   assert.ok(hydrated[0].ports.every(port => port.anchor));
   assert.deepEqual(hydrated[1].ports[0].anchor, customAnchor);
+});
+
+test('every catalog model points at its own GLB under the public models directory', () => {
+  for (const category of DEVICE_CATALOG) {
+    for (const model of category.models) {
+      const url = catalogModelUrl(model.modelId);
+      assert.equal(model.assetUrl, url);
+      assert.match(url, new RegExp(`/models/${model.modelId}\\.glb$`));
+      assert.equal(
+        existsSync(new URL(`../public/models/${model.modelId}.glb`, import.meta.url)),
+        true,
+        `${model.modelId} GLB should be in public/models`
+      );
+    }
+  }
+});
+
+test('default port anchors meet the connector on each GLB', () => {
+  const anchorsFor = modelId => {
+    const model = findModelTemplate({ modelId });
+    return Object.fromEntries(
+      withPortAnchors(model.ports, modelId).map(port => [port.id, port.anchor])
+    );
+  };
+
+  // Rear panel of the tower, not the front fan.
+  for (const anchor of Object.values(anchorsFor('desktop-pc'))) {
+    assert.equal(anchor.y, -0.5);
+  }
+  // Sides of the base, below the lid.
+  for (const anchor of Object.values(anchorsFor('laptop-15'))) {
+    assert.equal(Math.abs(anchor.x), 0.5);
+    assert.ok(anchor.z < -0.4);
+  }
+  // Back of the panel. The ultrawide's centre bows further back than the flat panels.
+  for (const modelId of ['monitor-24', 'monitor-27']) {
+    for (const anchor of Object.values(anchorsFor(modelId))) {
+      assert.ok(anchor.y < 0 && anchor.y > -0.3, modelId);
+    }
+  }
+  for (const anchor of Object.values(anchorsFor('ultrawide-monitor'))) {
+    assert.ok(anchor.y < -0.3);
+  }
+  // Front jacks, below the antenna midline.
+  for (const anchor of Object.values(anchorsFor('router'))) {
+    assert.equal(anchor.y, 0.5);
+    assert.ok(anchor.z < 0);
+  }
+  const strip = anchorsFor('power-strip');
+  assert.deepEqual(strip['ac-in'], { x: -0.5, y: 0, z: -0.1 });
+  for (const [id, anchor] of Object.entries(strip)) {
+    if (id === 'ac-in') continue;
+    assert.equal(anchor.y, 0);
+    assert.equal(anchor.z, 0.5);
+  }
+  const adapter = anchorsFor('power-adapter');
+  assert.deepEqual(adapter['ac-in'], { x: 0, y: 0.5, z: 0 });
+  assert.deepEqual(adapter['dc-out'], { x: 0, y: -0.5, z: 0 });
+
+  // Wall snap aims local -y into the room. The plate is yawed onto that side,
+  // so both sockets stay on -y and must not share a height.
+  const outlet = anchorsFor('wall-outlet');
+  assert.equal(outlet['ac-out-1'].y, -0.5);
+  assert.equal(outlet['ac-out-2'].y, -0.5);
+  assert.ok(outlet['ac-out-1'].z < outlet['ac-out-2'].z);
+  const room = { length: 5, width: 4, height: 3 };
+  const template = findModelTemplate({ modelId: 'wall-outlet' });
+  const snapped = snapWallOutletToNearestWall(room, {
+    type: 'outlet',
+    modelId: 'wall-outlet',
+    scale: { ...template.defaultScale },
+    position: { x: 0.3, y: 1.8, z: 1 },
+    rotation: { x: 0, y: 0, z: 0 },
+    ports: withPortAnchors(template.ports, 'wall-outlet'),
+  });
+  for (const port of snapped.ports) {
+    assert.ok(
+      getPortWorldPosition(snapped, port.id).y < snapped.position.y,
+      `${port.id} should face into the room, not into the wall`
+    );
+  }
 });

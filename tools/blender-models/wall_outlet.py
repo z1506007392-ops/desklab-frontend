@@ -1,5 +1,6 @@
 """Wall outlet (CN 5-hole: 2-pin above 3-pin). Usage: blender -b --python wall_outlet.py
-Face points to three.js +Z (Blender -Y)."""
+Face points to three.js +Z (Blender -Y). SceneObjects yaws the loaded mesh 180°
+so this plate faces the room, matching wall-snap anchors on local -Y."""
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import *

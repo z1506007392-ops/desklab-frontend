@@ -3,12 +3,21 @@ import { useThree } from '@react-three/fiber';
 import { Billboard, Edges, Line, Text, useGLTF } from '@react-three/drei';
 
 import { createCameraPoseSynchronizer } from '../domain/camera-snapshot.js';
-import { getModelDefaultScale } from '../domain/catalog.js';
+import { DEVICE_CATALOG, getModelDefaultScale } from '../domain/catalog.js';
 import { evaluateConnectionLength, getConnectionEndpoints } from '../domain/connections.js';
 import { buildPowerGraph, computeDevicePowerLoad, classifyPowerLoad, getEffectiveMaxLoad } from '../domain/analysis.js';
 import { toThreePosition, toThreeZRotation } from '../domain/coordinates.js';
+import { applyGlbHighlight } from '../domain/glb-highlight.js';
 import { getGenericModelAsset } from '../domain/model-assets.js';
 import { getGenericModelLayout } from '../domain/generic-model-layouts.js';
+
+// The outlet plate is authored on three.js +Z, but wall snap aims local -Y
+// (three.js -Z) into the room. Yaw the mesh so the plate meets the anchors.
+const WALL_OUTLET_MESH_YAW = Math.PI;
+
+for (const model of DEVICE_CATALOG.flatMap(category => category.models)) {
+  if (model.assetUrl) useGLTF.preload(model.assetUrl);
+}
 
 const CABLE_COLORS = {
   power: '#e53935',
@@ -186,32 +195,31 @@ function PortMarkers({ obj }) {
   );
 }
 
-function GLBModel({ url, scaleRatio, isSelected, isRelated, isHovered }) {
-  const { scene } = useGLTF(url);
-  const clonedScene = React.useMemo(() => {
-    const clone = scene.clone();
-    clone.traverse(child => {
-      if (!child.isMesh || !child.material) return;
-      child.material = child.material.clone();
-      if (!child.material.emissive) return;
-      if (isSelected) {
-        child.material.emissive.setHex(0xffffff);
-        child.material.emissiveIntensity = 0.3;
-      } else if (isRelated) {
-        child.material.emissive.setHex(0xffeb3b);
-        child.material.emissiveIntensity = 0.4;
-      } else if (isHovered) {
-        child.material.emissive.setHex(0x81c784);
-        child.material.emissiveIntensity = 0.2;
-      } else {
-        child.material.emissive.setHex(0x000000);
-        child.material.emissiveIntensity = 0;
-      }
-    });
-    return clone;
-  }, [scene, isSelected, isRelated, isHovered]);
+function cloneSceneWithHighlight(scene, highlight) {
+  const clone = scene.clone();
+  clone.traverse(child => {
+    if (!child.isMesh || !child.material) return;
+    const source = Array.isArray(child.material) ? child.material : [child.material];
+    const cloned = source.map(material => applyGlbHighlight(material.clone(), highlight));
+    child.material = Array.isArray(child.material) ? cloned : cloned[0];
+  });
+  return clone;
+}
 
-  return <primitive object={clonedScene} scale={[scaleRatio.x, scaleRatio.z, scaleRatio.y]} />;
+function GLBModel({ url, scaleRatio, meshYaw = 0, isSelected, isRelated, isHovered }) {
+  const { scene } = useGLTF(url);
+  const clonedScene = React.useMemo(
+    () => cloneSceneWithHighlight(scene, { isSelected, isRelated, isHovered }),
+    [scene, isSelected, isRelated, isHovered]
+  );
+
+  return (
+    <primitive
+      object={clonedScene}
+      scale={[scaleRatio.x, scaleRatio.z, scaleRatio.y]}
+      rotation={[0, meshYaw, 0]}
+    />
+  );
 }
 
 function getHighlightMaterialProps({ isSelected, isRelated, isHovered }) {
@@ -477,7 +485,7 @@ function GenericWallOutletModel({ obj, materialProps }) {
   const [fastener] = layout.fasteners;
 
   return (
-    <group>
+    <group rotation={[0, WALL_OUTLET_MESH_YAW, 0]}>
       <mesh position={[width * body.x, 0, depth * body.z]}>
         <boxGeometry args={[width * body.width, height, depth * body.depth]} />
         <meshStandardMaterial
@@ -638,9 +646,10 @@ export function DeviceMesh({
     z: obj.scale.z / defaultScale.z,
   } : { x: 1, y: 1, z: 1 };
   const materialProps = getHighlightMaterialProps({ isSelected, isRelated, isHovered });
-  const genericAsset = obj.assetUrl ? null : getGenericModelAsset(obj.modelId);
-
-  const renderBox = () => <FallbackBox obj={obj} materialProps={materialProps} />;
+  const genericAsset = getGenericModelAsset(obj.modelId);
+  const renderFallback = () => (genericAsset
+    ? <GenericModel asset={genericAsset} obj={obj} materialProps={materialProps} />
+    : <FallbackBox obj={obj} materialProps={materialProps} />);
 
   return (
     <group
@@ -652,20 +661,19 @@ export function DeviceMesh({
       onPointerOut={onPointerOut}
     >
       {obj.assetUrl ? (
-        <GLTFErrorBoundary fallback={renderBox()}>
-          <Suspense fallback={renderBox()}>
+        <GLTFErrorBoundary fallback={renderFallback()}>
+          <Suspense fallback={renderFallback()}>
             <GLBModel
               url={obj.assetUrl}
               scaleRatio={scaleRatio}
+              meshYaw={obj.modelId === 'wall-outlet' ? WALL_OUTLET_MESH_YAW : 0}
               isSelected={isSelected}
               isRelated={isRelated}
               isHovered={isHovered}
             />
           </Suspense>
         </GLTFErrorBoundary>
-      ) : genericAsset ? (
-        <GenericModel asset={genericAsset} obj={obj} materialProps={materialProps} />
-      ) : renderBox()}
+      ) : renderFallback()}
       {isSelected ? <PortMarkers obj={obj} /> : null}
     </group>
   );

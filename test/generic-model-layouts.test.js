@@ -38,12 +38,10 @@ test('generic laptop layout remains inside its catalog footprint', () => {
   assert.equal(isGenericModelLayoutWithinBounds('laptop-15'), true);
 });
 
-test('every catalog generic model has an in-bounds shared layout', () => {
-  const genericModelIds = DEVICE_CATALOG.flatMap(category => category.models)
-    .filter(model => model.assetUrl === null)
-    .map(model => model.modelId);
+test('every catalog model keeps an in-bounds generic layout as its load fallback', () => {
+  const modelIds = DEVICE_CATALOG.flatMap(category => category.models).map(model => model.modelId);
 
-  for (const modelId of genericModelIds) {
+  for (const modelId of modelIds) {
     assert.equal(isGenericModelLayoutWithinBounds(modelId), true, `${modelId} should have an in-bounds layout`);
   }
 });
