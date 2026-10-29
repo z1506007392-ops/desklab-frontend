@@ -2,6 +2,74 @@
 
 Last updated: 2026-10-29, Asia/Singapore
 
+## 协作规则
+
+两位贡献者会交替推进这个仓库：**Desklab**（Grok Bot，经 Cursor cloud agents）和 **Claude**。动工前先读完本文件。任何代码或文档改动，必须在同一个 PR 里追加下面的「进度记录」一条：日期（UTC+8）、贡献者、分支或 PR 链接、做了什么、还剩什么。没有这条记录的 PR 不算完成。
+
+## 进度记录 / Progress Log
+
+最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。
+
+### 2026-10-29 · Desklab · [PR #2](https://github.com/z1506007392-ops/desklab-frontend/pull/2)
+
+分支 `docs/glb-models`。补了 GLB 交接说明（`docs/memory_bank.md`、`README.md`、`public/models/ATTRIBUTION.md`），并写上本进度记录和协作规则（`AGENTS.md`、`CLAUDE.md`）。还剩：屏幕是暗的、近景里功耗标签和线缆过大、主机背面没有接口造型、已保存项目仍保留旧锚点。
+
+### 2026-10-29 · Desklab · [PR #1](https://github.com/z1506007392-ops/desklab-frontend/pull/1)
+
+合并提交 [`1f10bfc`](https://github.com/z1506007392-ops/desklab-frontend/commit/1f10bfc)，接线提交 [`4ee93b6`](https://github.com/z1506007392-ops/desklab-frontend/commit/4ee93b6)。目录设备改画 `public/models/<modelId>.glb`：`BASE_URL`、预加载、空闲时保留自发光、锚点改到接口上、墙壁插座网格偏航 180°、加载失败时 GLB → 通用形状 → 方块。还剩：上面的视觉缺口，以及交接文档（本 PR 在补）。
+
+### 2026-10-29 · Desklab · [`3f556ec`](https://github.com/z1506007392-ops/desklab-frontend/commit/3f556ec)
+
+分支 `feat/glb-models`。为 10 个目录设备提交 GLB，以及 Blender 4.2 无界面生成脚本 `tools/blender-models/`。网格按 `defaultScale` 制作、包围盒居中、+Y 朝上、正面朝 +Z。还剩：场景仍在画通用形状，尚未把 `assetUrl` 指到这些文件。
+
+### 2026-10-28 · 未记录 · [`11cfcc3`](https://github.com/z1506007392-ops/desklab-frontend/commit/11cfcc3)
+
+`ea2dbc4..11cfcc3`，`master`。功率和坐标轴标签改为始终朝向相机；直流设备优先接到已有适配器；每对电脑和显示器只建议一根视频线；桌面模板、按设备清单生成、购物清单、属性面板改成白话、资产库显示规格；新设备落到桌边空位；没画的电源、视频、网线视为模型未完成，由系统补上，而不是当成故障。仓库说明改指向新的 GitHub 账号。还剩：目录设备仍是通用形状，没有 GLB。
+
+### 2026-10-25 · 未记录 · [`a8d5489`](https://github.com/z1506007392-ops/desklab-frontend/commit/a8d5489)
+
+`c71c8c0..a8d5489`。按家庭用户收窄目录：去掉 UPS、交换机、NAS、猫、迷你主机、一体机和多余桌子，只留一张可调书桌；路由建议改为普通网口；JSON 工具和坐标轴收进「更多」。依赖审计清到 0。还剩：建模仍然靠逐件摆放，模板和购物清单尚未做。
+
+### 2026-09-09 · 未记录 · [`bfa0549`](https://github.com/z1506007392-ops/desklab-frontend/commit/bfa0549)
+
+`ba0acd3..bfa0549`。改进建议的结果改成用户能看懂的说法，并加上 Playwright 用户流程。还剩：目录仍含家庭用户用不到的设备。
+
+### 2026-08-01 · 未记录 · [`2dfb441`](https://github.com/z1506007392-ops/desklab-frontend/commit/2dfb441)
+
+`38459dd..2dfb441`。应用「加长线缆」时重新校验长度，避免过期补丁。还剩：建议面板的措辞和端到端流程。
+
+### 2026-07-17 · 未记录 · [`440a79b`](https://github.com/z1506007392-ops/desklab-frontend/commit/440a79b)
+
+`8a82217..440a79b`。拒绝对象、布局、端口、线缆上已经过期的自动补丁；跳过含糊的线缆建议；自动连接使用不重复的 id；应用时重算自动线长。还剩：手动改长度的补丁还没做同样的重算。
+
+### 2026-07-16 · 未记录 · [`84c5a68`](https://github.com/z1506007392-ops/desklab-frontend/commit/84c5a68)
+
+`c35262e..84c5a68`。建议引擎忽略非法或重复的对象 id、端口 id、型号 id，非法功率和最大负载退回目录值，不透明 id 原样保留。还剩：过期补丁仍可能被应用。
+
+### 2026-07-15 · 未记录 · [`ee48d87`](https://github.com/z1506007392-ops/desklab-frontend/commit/ee48d87)
+
+`dc0a188..ee48d87`。分析器拒绝空的连接和端口字段、未知线缆类型、不支持的端口方向、重复 id；报告非法锚点和非法端口集合；畸形的实时数据不再把分析打崩。还剩：建议引擎对同一类脏数据的防护。
+
+### 2026-07-14 · 未记录 · [`a588e1e`](https://github.com/z1506007392-ops/desklab-frontend/commit/a588e1e)
+
+`257d1df..a588e1e`。通用模型收进目录包围盒并加上覆盖测试；剪贴板导入、历史分组、功率元数据、网络和交换机建议、购买后的接线引导、自动连接的幂等和过期目标都收紧了一轮。还剩：分析器对空字段和畸形实时数据仍然不严。
+
+### 2026-07-13 · 未记录 · [`4660198`](https://github.com/z1506007392-ops/desklab-frontend/commit/4660198)
+
+`18ce68a..4660198`。补上升降桌和 L 型桌的通用模型，并让已有通用模型的零件落在目录尺寸内。还剩：交换机、UPS、插排的包围盒，以及建议引擎的脏数据防护。
+
+### 2026-07-05 · 未记录 · [`e707b9c`](https://github.com/z1506007392-ops/desklab-frontend/commit/e707b9c)
+
+`3e3b2d7..e707b9c`。为台式主机、迷你主机、电源适配器、墙壁插座、笔记本、NAS、猫、一体机、书桌、电竞桌加上通用低模，并同步记忆库。还剩：升降桌、L 型桌，以及这些模型是否越出目录包围盒。
+
+### 2026-06-26 · 未记录 · [`c9fff49`](https://github.com/z1506007392-ops/desklab-frontend/commit/c9fff49)
+
+`8521765..c9fff49`。为显示器、插排、路由器、交换机、UPS 加上代码生成的通用低模。还剩：电脑、插座、家具等其余目录项。
+
+### 2026-06-25 · 未记录 · [`114ed1b`](https://github.com/z1506007392-ops/desklab-frontend/commit/114ed1b)
+
+`eef96fe..114ed1b`。前端仓库在 D 盘迁移后重新建库。功率读写收拢到同一套分类；建议引擎避开缺坐标的设备；端口锚点不重叠；修掉 React 19 的 `inert` 警告。还剩：目录设备没有通用外形，分析仍是方块。
+
 ## Mission
 
 DeskLab is a connected 3D room desktop layout and cabling tool. The long-term product direction is:
@@ -2813,4 +2881,4 @@ The user is the product owner. Keep updates brief: what was found, what was chan
 5. Make the smallest fix.
 6. Run full verification.
 7. Commit only relevant files.
-8. Update this memory bank only at handoff, quota low, or model switch.
+8. In the same PR, append one 进度记录 entry (see 协作规则 at the top). Do not wait for a separate docs pass.

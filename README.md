@@ -39,7 +39,8 @@ and runtime errors. Test output stays in ignored `test-results/`.
 For one scenario, use `npm run test:ui -- --project=desktop --grep "no automatic"`.
 
 Current handoff documentation lives at `docs/memory_bank.md` in this
-repository. External copies, when present, are:
+repository. Read it before starting, and append a 进度记录 entry in the same
+PR (see 协作规则 at the top of that file). External copies, when present, are:
 
 ```text
 D:\desklab\memory-bank\DeskLab-Claude-memory.md
