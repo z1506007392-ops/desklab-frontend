@@ -78,13 +78,13 @@ test('office desk resolves to the generic in-house furniture asset', () => {
   assert.equal(asset.category, 'furniture');
 });
 
-test('every catalog model without an external asset has a matching generic asset', () => {
+test('every catalog model keeps a generic fallback asset alongside its GLB', () => {
   const models = DEVICE_CATALOG.flatMap(category => category.models.map(model => ({
     ...model,
     category: category.category,
-  })))
-    .filter(model => model.assetUrl === null);
+  })));
 
+  assert.ok(models.every(model => model.assetUrl));
   for (const model of models) {
     const asset = getGenericModelAsset(model.modelId);
 
