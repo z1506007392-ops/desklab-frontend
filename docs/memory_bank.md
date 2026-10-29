@@ -1,6 +1,6 @@
 # DeskLab Memory Bank for Claude
 
-Last updated: 2026-10-28, Asia/Singapore
+Last updated: 2026-10-29, Asia/Singapore
 
 ## Mission
 
@@ -118,12 +118,12 @@ npm start
 
 - Never claim browser/visual QA unless actually performed. If browser runtime fails, record the failure instead of pretending.
 
-## Current Git State (2026-10-28 handoff)
+## Current Git State (2026-10-29 handoff)
 
 ### Frontend `D:\desklab\frontend`
-- Feature HEAD: `4a991fc fix: complete video and network lines instead of suggesting them`
-- Commits after `a8d5489` (2026-10-28) are local only until the product owner
-  approves a push.
+- Feature HEAD: `1f10bfc Merge pull request #1 from z1506007392-ops/feat/glb-models`
+- Catalog devices render from `public/models/<modelId>.glb`. See
+  "Catalog GLB models (2026-10-29)" below.
 - Untracked: none expected.
 
 Historical commits captured at the 2026-07-14 baseline (most recent first,
@@ -236,31 +236,16 @@ eef96fe chore: rebaseline frontend after D drive move
 Power-load reads are fully centralized: an audit of `src/` for raw
 `maxLoad ??` / `wattage ??` reads or inlined `> maxLoad * 0.9` thresholds is clean.
 
-Code-native generic model assets now exist for:
-- `monitor-24`, `monitor-27`, `ultrawide-monitor`
-- `power-strip`
-- `router`
-- `switch`
-- `ups`
-- `desktop-pc`
-- `mini-pc`
-- `power-adapter`
-- `wall-outlet`
-- `laptop-15`
-- `nas-2bay`
-- `modem`
-- `all-in-one`
-- `office-desk`
-- `gaming-desk`
-- `standing-desk`
-- `l-desk`
+Catalog devices render from in-house GLB meshes in `public/models/` (merged
+2026-10-29 as `1f10bfc`). The code-native generic shapes are the load fallback,
+not the primary mesh. Details are in "Catalog GLB models (2026-10-29)".
 
-The generic model-asset backlog for catalog models with `assetUrl: null` is now
-covered. All generic furniture, monitors, computers, power adapters, wall
-Every catalog generic model is now constrained through the shared normalized
-layout module and a catalog-driven regression test prevents future coverage
-gaps. The next safe target is a small hardening opportunity found from current
-code evidence.
+Historical note: code-native generic assets were added for the catalog as it
+stood in July 2026, including models later removed from the home catalog
+(switch, UPS, NAS, modem, mini PC, all-in-one, and the extra desks). Those
+removed models are no longer offered. A saved object of a removed model still
+loads and draws as the plain box. The generic layouts that remain are still
+checked by the catalog-driven bounds test.
 
 ### Runtime QA performed (2026-06-25, real, not faked)
 - Booted both servers: backend `node server.js` (3001) + frontend `vite` (5173),
@@ -2528,6 +2513,77 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   normalizes line endings. Some source files are CRLF in the working tree;
   scripted edits must match the file's line endings.
 
+### Catalog GLB models (2026-10-29)
+
+The ten home-catalog devices now render from GLB files instead of the
+hand-built `Generic*Model` shapes. Merged to `master` as `1f10bfc`
+(PR #1; commits `3f556ec` models + generator, `4ee93b6` scene wiring).
+
+Files:
+- `public/models/<modelId>.glb` for `office-desk`, `desktop-pc`, `laptop-15`,
+  `monitor-24`, `monitor-27`, `ultrawide-monitor`, `router`, `power-strip`,
+  `wall-outlet`, `power-adapter`.
+- Generator: `tools/blender-models/` (Blender 4.2 headless). See that
+  directory's README to regenerate. `common.finalize_and_export()` fits each
+  mesh to the catalog dimensions and writes the GLB.
+- Wiring: `src/domain/catalog.js` (`catalogModelUrl`), `src/components/SceneObjects.jsx`
+  (`GLBModel`, preload, wall-outlet yaw), `src/domain/glb-highlight.js`.
+
+Conventions (must match `SceneObjects.jsx` / `coordinates.js`):
+- Metres. Each GLB is built at exactly the catalog `defaultScale`. `GLBModel`
+  scales by `obj.scale / defaultScale`, which is 1 until the user resizes.
+- Origin is the centre of the bounding box, same as `FallbackBox`.
+- Exported glTF +Y up. In three.js: X = width, Y = height, Z = depth, front
+  faces +Z (the same side as the screens and front panels on the generic
+  shapes). While modelling in Blender the front faces Blender −Y.
+
+Rendering:
+- Each catalog `assetUrl` is `models/<modelId>.glb`, prefixed with Vite's
+  `import.meta.env.BASE_URL` (root `/` under `node --test`).
+- `hydrateProjectObjects` copies `template.assetUrl` over a stored URL, so a
+  saved project picks up the current mesh on load even if it stored `null` or
+  a stale path.
+- `useGLTF.preload` runs for every catalog URL when `SceneObjects.jsx` loads.
+- Fallback chain: GLB, then `Generic*Model` when `getGenericModelAsset` has an
+  entry, then the plain box. Suspense and the GLTF error boundary both use
+  that fallback. Do not delete the generic shapes; they are the failure path.
+- Idle materials keep the emissive colour and strength authored in the file
+  (`applyGlbHighlight`). Selection, related, and hover still replace emissive,
+  so the highlight works and LEDs / the PC fan ring stay lit when nothing is
+  selected.
+
+Anchors (`getDefaultPortAnchor` / `PORT_ANCHOR_BY_MODEL`, normalized x width,
+y depth, z height; +y is the authored front / three.js +Z):
+- Measured from the mesh so new cables meet the connector. Monitors and the
+  tower use the rear face (the tower has no molded rear ports, so AC / HDMI /
+  DP / Ethernet meet the back panel). Laptop ports sit on the sides of the
+  base. Router jacks are on the front, below the antenna midline; the four
+  jacks look the same, so DC uses the leftmost. Power-strip sockets are on the
+  top; the input is the cable stub at −X. The adapter AC inlet is the front
+  centre; DC leaves the back.
+- Wall outlet: catalog anchors stay on local −Y. Wall snap aims that side into
+  the room. The face plate is authored on +Z, so both the GLB and the generic
+  outlet are yawed 180° (`WALL_OUTLET_MESH_YAW`) and the plate lands on the
+  room-facing side. Do not flip the anchors to +Y; that would send the cable
+  into the wall.
+- `withPortAnchors` keeps an anchor that is already stored. Saved projects
+  therefore keep their old anchors. Only missing anchors are filled from the
+  new defaults.
+
+Known gaps (seen while checking the 电竞桌 template in Chrome; not fixed):
+- Monitor and laptop screens are dark unlit panels, so they read as black.
+- Power-load labels (`PowerStatusOverlay`) and cable strokes stay large in
+  world/pixel size, so they dominate a close-up.
+- The tower has no molded rear I/O; cables end on the rear panel.
+- The desk top is oak and the outlet plate is white, not the catalog swatches
+  (`#1e88e5`, `#ffeb3b`). Other bodies use the catalog colour.
+- The desk cable tray sits on the near edge (catalog −Y) because the desk is
+  placed at rotation 0.
+
+Verification on the wiring commit: `npm test` 306/306, `npm run test:ui`
+26/26, lint, build (known large-chunk warning). All ten GLBs returned HTTP 200
+from the dev server, including ones the template did not place (preload).
+
 ### External Chrome DOM runtime check (2026-07-14)
 
 - Performed a real local runtime check with external Chrome headless against
@@ -2600,7 +2656,8 @@ Core modules:
 - `analysis.js` — wiring analysis: port validation, power cycle detection, overload/warning, shared `buildPowerGraph()` for load aggregation
 - `layout-analysis.js` — layout analysis: overlap, out-of-bounds, floating, outlet-off-wall
 - `connections.js` — port compatibility, cable type inference, distance/length evaluation
-- `catalog.js` — device catalog (9 home-user models across 5 categories), hydration, port anchors, `describeCatalogModel()` spec lines
+- `catalog.js` — device catalog (9 home-user models across 5 categories), `catalogModelUrl()` (Vite `BASE_URL`), hydration, port anchors, `describeCatalogModel()` spec lines
+- `glb-highlight.js` — idle GLB materials keep their authored emissive; selection, related, and hover replace it
 - `placement.js` — new-object placement; with existing objects it searches free spots on/around the desk
 - `scene-builder.js` — `buildDeskScene()`: device list → placed, wired, camera-framed scene with notes
 - `desk-templates.js` — built-in home-user templates on top of the scene builder
@@ -2617,6 +2674,16 @@ Core modules:
 - `camera-snapshot.js` / `coordinates.js` / `project-export.js`
 
 Test files under `test/` mirror the domain modules.
+
+### 3D scene (`src/components/SceneObjects.jsx`)
+
+Catalog objects draw `public/models/<modelId>.glb` first. Those files are
+generated by `tools/blender-models/` (Blender 4.2 headless) at the catalog
+`defaultScale`, bbox-centred, glTF +Y up, front toward three.js +Z. If the GLB
+is missing or fails to load, the generic shape for that `modelId` is used, then
+the plain box. `useGLTF.preload` fetches every catalog model when the module
+loads. The wall-outlet mesh is yawed 180° so its face plate meets the
+room-facing anchors. See "Catalog GLB models (2026-10-29)".
 
 ### Recommendations Module (`recommendations.js`)
 
@@ -2687,7 +2754,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 301 domain tests
+npm test          # 306 domain tests
 npm run test:ui   # 26 Chrome UI cases; isolated fixtures, no real backend writes
 npm run lint      # eslint .
 npm run build     # vite build (known large chunk warning is OK)
