@@ -1032,3 +1032,32 @@
   overflow-y: auto;
   padding-right: 8px;
 }
+
+.selection-hint {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 16px;
+  min-height: 40px;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #ddd;
+  background: #f8f9fa;
+  color: #666;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.selection-hint-active {
+  background: #e0ffe0;
+  color: #333;
+}
+
+.selection-hint-active .selection-hint-title {
+  font-weight: 600;
+}
+
+.selection-hint-tip {
+  color: #555;
+}

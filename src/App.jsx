@@ -37,6 +37,7 @@ import {
   getCanvasObjectClickAction,
 } from './domain/project-access.js';
 import { createProjectExport } from './domain/project-export.js';
+import { describeSelectionHint } from './domain/selection-hint.js';
 import {
   readBackupReminderState,
   recordBackupExport,
@@ -1005,6 +1006,10 @@ export default function App() {
   };
 
   const selectedObj = objects.find(o => o.id === selectedObjectId);
+  const selectionHint = describeSelectionHint({
+    selectedName: selectedObj ? selectedObj.name : null,
+    isMobile,
+  });
   const wiringIssues = useMemo(
     () => analyzeProjectWiring(objects, connections),
     [objects, connections]
@@ -1354,20 +1359,9 @@ export default function App() {
           </div>
         )}
 
-        {/* 固定的信息提示栏（精简版） */}
-        <div style={{ 
-          height: '40px', background: selectedObj ? '#e0ffe0' : '#f8f9fa', padding: '0 16px', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', borderBottom: '1px solid #ddd', flexShrink: 0
-        }}>
-          {selectedObj ? (
-            <div style={{ display: 'flex', gap: '15px', alignItems: 'center', overflow: 'hidden' }}>
-              <span style={{ fontSize: '13px' }}><strong>已选中:</strong> {selectedObj.name} ({selectedObj.type})</span>
-              <span style={{ fontSize: '13px', color: '#555', marginLeft: '10px', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                💡 提示: 右侧面板可精确编辑。快捷键: 拖拽/方向平移, 滚轮缩放, Q/E旋转, Space/Shift+Space升降
-              </span>
-            </div>
-          ) : (
-            <span style={{ fontSize: '13px', color: '#666' }}>未选中设备。点击 3D 视图中的设备进行交互，并在右侧属性面板编辑。</span>
-          )}
+        <div className={`selection-hint${selectedObj ? ' selection-hint-active' : ''}`}>
+          <span className="selection-hint-title">{selectionHint.title}</span>
+          {selectionHint.tip && <span className="selection-hint-tip">{selectionHint.tip}</span>}
         </div>
       </div>
 
