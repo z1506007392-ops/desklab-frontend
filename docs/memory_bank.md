@@ -2654,6 +2654,19 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   inline styles, and the P2 items became roadmap tasks E8–E12. Found for A7:
   the connections list shows raw cable types (`hdmi`, `usb_c`). Verification:
   `npm test` 302, `npm run test:ui` 58, lint, build.
+- `b45316e` A7 Copy review. Scope: every string literal with Chinese in src/
+  scanned for English words, rendered `.type` / `.cableType` / `.modelId` /
+  `.direction`, `error.message` passthrough, and jargon (画布, 坐标, 锚点).
+  Changes: connections.js gained `PORT_TYPE_NAMES`, `PORT_DIRECTION_NAMES`,
+  `describePortType/Direction`, `describeCableType`; analysis.js wiring
+  messages use them; the connections list shows `describeCableType`;
+  `labelObjectsForPicker()` (object-labels.js) names devices in the
+  connection editor by user name, numbering duplicates; port options show
+  only the port name; the out-of-room message reads 左右/前后/高度; clipboard
+  copy and paste failures have plain messages; 画布 → 画面 / 桌面. Left as
+  is: Ctrl+Z / Ctrl+Y in tooltips, units (m, W, MB), brand-style names
+  (HDMI, DP, USB-C). Verification: `npm test` 305, `npm run test:ui` 60,
+  lint, build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2830,8 +2843,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 302 domain tests
-npm run test:ui   # 58 Chrome UI cases; storage seeded per test, no backend
+npm test          # 305 domain tests
+npm run test:ui   # 60 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
