@@ -60,6 +60,7 @@ import ConnectionsEditor from './components/ConnectionsEditor.jsx';
 import AboutDialog from './components/AboutDialog.jsx';
 import TemplateDialog from './components/TemplateDialog.jsx';
 import LayoutReportDialog from './components/LayoutReportDialog.jsx';
+import WiringReportDialog from './components/WiringReportDialog.jsx';
 import ErrorNotice from './components/ErrorNotice.jsx';
 import LazyScene3D from './components/LazyScene3D.jsx';
 
@@ -1819,140 +1820,29 @@ export default function App() {
       )}
 
       {showWiringReport && (
-        <div
-          className="modal-overlay"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setShowWiringReport(false);
+        <WiringReportDialog
+          summary={wiringSummary}
+          issues={wiringIssues}
+          invalidConnectionCount={invalidConnectionCount}
+          cableAutoFixableCount={cableAutoFixableCount}
+          editable={projectEditable}
+          onClose={() => setShowWiringReport(false)}
+          onCleanupInvalid={handleCleanupInvalidConnections}
+          onExtendShortCables={() => handleApplyAutoFixes(['extend_cable'])}
+          onExtendCable={handleExtendCableToRecommended}
+          onAddPowerStrip={() => { handleAddRecommendedPowerStrip(); setShowWiringReport(false); }}
+          onLocate={(issue) => {
+            setSelectedObjectId(issue.objectIds[0]);
+            setActiveTab(issue.connectionIds.length > 0 ? 'connections' : 'properties');
+            setIsPanelOpen(true);
+            if (isMobile) setIsLeftPanelOpen(false);
+            setShowWiringReport(false);
           }}
-        >
-          <div
-            className="modal-container wiring-report"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="wiring-report-title"
-          >
-            <div className="modal-header">
-              <h3 id="wiring-report-title" className="modal-title">布线检查</h3>
-              <button
-                type="button"
-                onClick={() => setShowWiringReport(false)}
-                className="side-panel-close"
-                aria-label="关闭布线检查"
-                title="关闭"
-              >
-                <CloseIcon />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="wiring-summary">
-                <span className="wiring-summary-error">严重 {wiringSummary.error}</span>
-                <span className="wiring-summary-warning">警告 {wiringSummary.warning}</span>
-                <span className="wiring-summary-info">提示 {wiringSummary.info}</span>
-                {invalidConnectionCount > 0 && (
-                  <button
-                    type="button"
-                    className="ui-button ui-button-danger wiring-cleanup-button"
-                    onClick={handleCleanupInvalidConnections}
-                  >
-                    清理无效连接 ({invalidConnectionCount})
-                  </button>
-                )}
-                {cableAutoFixableCount > 0 && (
-                  <button
-                    type="button"
-                    className="ui-button ui-button-primary wiring-cleanup-button"
-                    onClick={() => handleApplyAutoFixes(['extend_cable'])}
-                    disabled={!projectEditable}
-                  >
-                    一键延长过短线材 ({cableAutoFixableCount})
-                  </button>
-                )}
-              </div>
-
-              {wiringIssues.length === 0 ? (
-                <div className="empty-state" style={{ marginTop: '24px' }}>
-                  当前未发现可识别的布线问题。
-                </div>
-              ) : (
-                <div className="wiring-issue-list">
-                  {wiringIssues.map(issue => (
-                    <div key={issue.id} className={`wiring-issue wiring-issue-${issue.severity}`}>
-                      <div className="wiring-issue-content">
-                        <div className="wiring-issue-title">
-                          <span className="wiring-issue-severity">
-                            {issue.severity === 'error' ? '严重' : issue.severity === 'warning' ? '警告' : '提示'}
-                          </span>
-                          {issue.title}
-                        </div>
-                        <div className="wiring-issue-description">{issue.description}</div>
-                      </div>
-                      {(issue.code === 'short_cable' || issue.code === 'low_cable_slack') && (
-                        <button
-                          type="button"
-                          className="ui-button ui-button-primary"
-                          onClick={() => handleExtendCableToRecommended(issue.connectionIds[0])}
-                        >
-                          延长到推荐长度
-                        </button>
-                      )}
-                      {issue.code === 'power_strip_chain' && (
-                        <button
-                          type="button"
-                          className="ui-button"
-                          onClick={() => { handleAddRecommendedPowerStrip(); setShowWiringReport(false); }}
-                          title="向场景中加入一个孔位更多的插排，替代串联的插排"
-                        >
-                          换孔位更多的插排
-                        </button>
-                      )}
-                      {(issue.code === 'power_overload' || issue.code === 'power_warning') && (
-                        <button
-                          type="button"
-                          className="ui-button"
-                          onClick={() => { handleAddRecommendedPowerStrip(); setShowWiringReport(false); }}
-                          title="加购插排以将部分用电器分流到其他电源"
-                        >
-                          加购插排分流
-                        </button>
-                      )}
-                      {issue.objectIds.length > 0 && (
-                        <button
-                          type="button"
-                          className="ui-button"
-                          onClick={() => {
-                            setSelectedObjectId(issue.objectIds[0]);
-                            setActiveTab(issue.connectionIds.length > 0 ? 'connections' : 'properties');
-                            setIsPanelOpen(true);
-                            if (isMobile) setIsLeftPanelOpen(false);
-                            setShowWiringReport(false);
-                          }}
-                        >
-                          定位
-                        </button>
-                      )}
-                      {issue.objectIds.length === 0 && issue.connectionIds.length > 0 && (
-                        <button
-                          type="button"
-                          className="ui-button"
-                          onClick={() => {
-                            setShowWiringReport(false);
-                            setShowGlobalConnections(true);
-                          }}
-                        >
-                          查看连接
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <p className="wiring-disclaimer">
-                本检查仅基于当前设备、端口和桌面外部连接数据，不涉及墙内线路，也不能替代专业电工评估。
-              </p>
-            </div>
-          </div>
-        </div>
+          onShowConnections={() => {
+            setShowWiringReport(false);
+            setShowGlobalConnections(true);
+          }}
+        />
       )}
 
       {showGlobalConnections && (
