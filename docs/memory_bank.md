@@ -2667,6 +2667,16 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   is: Ctrl+Z / Ctrl+Y in tooltips, units (m, W, MB), brand-style names
   (HDMI, DP, USB-C). Verification: `npm test` 306, `npm run test:ui` 60,
   lint, build.
+- `4e5aa30` A9 Missing GLBs: R3F's `createRoot` passes `reportError` as
+  onCaughtError, so a GLB load failure caught by `GLTFErrorBoundary` still
+  became a window error event (an uncaught page error). `DeviceMesh` now
+  renders the GLB only after `modelAvailability.check(url)`
+  (model-availability.js: one HEAD per URL, cached; non-2xx, network error,
+  or a text/html answer = missing) says it exists; until then and when
+  missing it draws the generic shape. Verification: `npm test` 309,
+  `npm run test:ui` 60 (the missing-model test now fails on any uncaught
+  error), lint, build; production preview: 8 HEAD + 10 GET for the gaming
+  template, all 200, no console errors.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2843,7 +2853,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 306 domain tests
+npm test          # 309 domain tests
 npm run test:ui   # 60 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
