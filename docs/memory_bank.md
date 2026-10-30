@@ -32,6 +32,9 @@ Product decisions from the product owner (2026-10-25):
   a warning or recommend buying something because of it; complete the model
   for the user instead. Only flag what is a real-world concern (too few
   outlets, overload, daisy-chained strips, cables too short).
+- Accounts (2026-10-30): start anonymous. Each visitor's project is saved in
+  their own browser, not on the server (see "Browser-local saves" below).
+  Accounts or cloud sync may come later.
 
 The current work mode is autonomous engineering:
 
@@ -86,7 +89,8 @@ frontend repository so it is protected by the GitHub backup.
 Expected dev URLs:
 ```
 Frontend: http://localhost:5173/
-Backend:  http://localhost:3001/api/projects/default
+Backend:  http://localhost:3001/api/projects/default (no longer used by the
+          frontend since 2026-10-30; projects are saved in the browser)
 ```
 
 Services may or may not be running. Check and restart them when needed.
@@ -122,6 +126,8 @@ npm start
   ```
 
 - Do NOT overwrite or delete: `D:\desklab\backend\data\default-project.json`
+  (the owner's pre-2026-10-30 project; the frontend no longer reads it. To
+  move it into the browser: in the app, 更多 → 导入 the file, then 保存项目.)
   Backend tests that touch runtime data should back it up and restore it, or use isolated test storage.
 
 - Never claim browser/visual QA unless actually performed. If browser runtime fails, record the failure instead of pretending.
@@ -129,7 +135,7 @@ npm start
 ## Current Git State (2026-10-28 handoff)
 
 ### Frontend `D:\desklab\frontend`
-- Feature HEAD: `c21c28e fix: migrate old saves to the new GLB laptop height and port anchors`
+- Feature HEAD: `8447785 feat: save each visitor's project in their own browser`
 - Since 2026-10-29 the product owner wants each verified slice pushed straight
   to `origin/master` (pull --rebase and re-verify first if the remote moved).
 - Untracked: none expected.
@@ -2555,6 +2561,31 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   so it has not been checked against these changes.
 - 未保存 note: the camera view is saved with the project, so orbiting or
   zooming marks the project unsaved (`cameraDirty`); loading alone does not.
+- Browser-local saves (2026-10-30, `5919d80`, `8447785`): the backend kept
+  one shared project file, so a public launch would let visitors overwrite
+  each other. `src/domain/local-project-store.js`
+  (`createLocalProjectClient(getStorage)`) replaced the HTTP
+  `project-client.js` with the same interface (load / save(project, version)
+  / validate / recoverBackup). Keys: `desklab.project.v1` (save),
+  `desklab.project-backup.v1` (previous save); the unsaved-changes draft keeps
+  `desklab.project-draft.v1`. First visit: empty 5 x 4 x 3 m room, version
+  `"unsaved"`. Version = length + FNV-1a hash of the stored text; a mismatch
+  is the old 412 conflict (`project_conflict`, same Chinese message), which
+  stops a second tab overwriting a newer save. A damaged save throws
+  `project_unreadable`, locks saving, and the banner restores the backup.
+  `normalizeProject()` = `isProjectEnvelope` + the backend validator's field
+  whitelist. Blocked storage → `storage_unavailable`; full →
+  `storage_write_failed`; both have plain Chinese messages. After the first
+  save the app calls `navigator.storage.persist()` (best effort). Known
+  limit: browsers can still drop site data (user clears it; Safari may evict
+  storage of sites unused for 7 days), so 导出 stays the user's backup.
+  The UI fixture seeds `localStorage` once per tab via `addInitScript` and
+  fails on any `/api` request; `e2e/local-save.spec.mjs` covers save+reload,
+  the two-tab conflict, and backup recovery.
+- `5919d80` StrictMode bug: the unmount cleanup disposed the only status
+  notifier, so in dev (and the UI suite) every status message was dropped
+  after the StrictMode remount. Each mount now creates its own notifier.
+  Production builds were not affected.
 - Cloud sessions without Google Chrome: `npm run test:ui` needs a temporary
   Playwright config outside the repo that imports `playwright.config.mjs`,
   drops `use.channel`, sets `launchOptions.executablePath` to the installed
@@ -2641,8 +2672,8 @@ Core modules:
 - `desk-templates.js` — built-in home-user templates on top of the scene builder
 - `shopping-list.js` — merges purchase suggestions into a copyable shopping list
 - `geometry.js` — 3D bounds, overlap detection, footprint rotation
-- `project-validation.js` — `isProjectEnvelope()` shared by draft.js and project-client.js
-- `project-client.js` — versioned load/save/validate/recovery HTTP client
+- `project-validation.js` — `isProjectEnvelope()` shared by draft.js and local-project-store.js
+- `local-project-store.js` — versioned load/save/validate/recovery in the visitor's browser (replaced the HTTP `project-client.js`)
 - `project-history.js` — undo/redo with grouping and camera awareness
 - `project-access.js` — editability gates for canvas interactions
 - `draft.js` / `draft-storage.js` — local draft persistence and recovery
@@ -2685,7 +2716,7 @@ All suggestion types are round-trip tested: applying the suggested patch clears 
 
 ### Key architectural patterns:
 - Nested `Map<string, Map<string, *>>` for port occupancy tracking (NOT string-key concatenation)
-- `isProjectEnvelope()` shared by draft.js and project-client.js for validation parity
+- `isProjectEnvelope()` shared by draft.js and local-project-store.js for validation parity
 - UI delegates to domain logic; no duplicated math in components
 - Cable types inferred via `inferCableType()`, not hardcoded
 
@@ -2722,8 +2753,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 309 domain tests
-npm run test:ui   # 28 Chrome UI cases; isolated fixtures, no real backend writes
+npm test          # 285 domain tests
+npm run test:ui   # 34 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (known large chunk warning is OK)
 ```
