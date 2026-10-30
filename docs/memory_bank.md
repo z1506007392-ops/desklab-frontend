@@ -2710,6 +2710,12 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   `test/ai-dev-server.test.js` starts the real server in both modes. Live
   site check after B1–B3: POST /api/ai/layout → 503 ai_unavailable (H1 not
   done yet). Verification: `npm test` 333, lint, build.
+- `f38b3cf` B5 Browser AI client: `requestLayoutSuggestions({ summary, goal,
+  signal, fetchImpl, timeoutMs = 45000 })` (src/domain/ai-client.js) →
+  `{ suggestions, model }` or an Error with `code` (server code,
+  `network_error`, `ai_timeout`, `cancelled`) and a Chinese message.
+  `AI_ERROR_MESSAGES` now lives in ai-protocol.js for both sides.
+  Verification: `npm test` 337, lint, build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2886,7 +2892,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 333 domain tests
+npm test          # 337 domain tests
 npm run test:ui   # 60 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
