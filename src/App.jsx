@@ -57,6 +57,7 @@ import PropertiesEditor from './components/PropertiesEditor.jsx';
 import ConnectionsEditor from './components/ConnectionsEditor.jsx';
 import DeskBuilderForm from './components/DeskBuilderForm.jsx';
 import AboutDialog from './components/AboutDialog.jsx';
+import ErrorNotice from './components/ErrorNotice.jsx';
 import LazyScene3D from './components/LazyScene3D.jsx';
 
 
@@ -1401,6 +1402,8 @@ export default function App() {
             </div>
           </div>
         )}
+
+        <ErrorNotice />
 
         {aiPreview && (
           <div className="draft-recovery-banner" role="region" aria-label="AI 预览">

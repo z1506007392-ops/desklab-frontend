@@ -1230,3 +1230,13 @@
   margin: 0 0 12px;
   padding-left: 20px;
 }
+
+.error-notice {
+  border-bottom-color: #f5a3a3;
+  background: #fff1f1;
+  color: #8a1c1c;
+}
+
+.error-notice span {
+  color: #8a1c1c;
+}
