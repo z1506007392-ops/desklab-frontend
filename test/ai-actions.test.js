@@ -230,3 +230,19 @@ test('summary, mock model, and validation fit together end to end', async () => 
   assert.equal(accepted.length, 1);
   assert.deepEqual(scoreLayout(accepted[0].nextProject).codes.hints, []);
 });
+
+test('changed devices are listed for highlighting', async () => {
+  const { changedObjectIds } = await import('../src/domain/ai-actions.js');
+  const project = gaming();
+  const monitor = find(project, 'ultrawide-monitor');
+  const video = project.connections.find(c => c.cableType === 'displayport');
+  const { project: moved } = applyAiActions(project, [{ type: 'rotate', objectId: monitor.id, rotationZ: 170 }]);
+  assert.deepEqual(changedObjectIds(project, moved), [monitor.id]);
+  const { project: shorter } = applyAiActions(
+    { ...project, connections: project.connections.map(c => (c.id === video.id ? { ...c, length: 10 } : c)) },
+    [{ type: 'set_cable_length', connectionId: video.id, length: video.length }],
+  );
+  assert.deepEqual(changedObjectIds({ ...project, connections: project.connections.map(c => (c.id === video.id ? { ...c, length: 10 } : c)) }, shorter).sort(),
+    [video.fromObjectId, video.toObjectId].sort());
+  assert.deepEqual(changedObjectIds(project, project), []);
+});

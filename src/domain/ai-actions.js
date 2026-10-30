@@ -252,3 +252,26 @@ export function applySuggestionsInOrder(project, suggestions) {
   }
   return { project: current, applied, skipped };
 }
+
+/** Ids of devices whose place, rotation, or cables differ between two projects. */
+export function changedObjectIds(before, after) {
+  const previous = new Map(getRecordItems(before.objects).map(object => [object.id, object]));
+  const changed = new Set();
+  for (const object of getRecordItems(after.objects)) {
+    const old = previous.get(object.id);
+    if (!old
+      || ['x', 'y', 'z'].some(axis => Math.abs(old.position[axis] - object.position[axis]) > GEOMETRY_EPSILON)
+      || Math.abs((old.rotation?.z ?? 0) - (object.rotation?.z ?? 0)) > GEOMETRY_EPSILON) {
+      changed.add(object.id);
+    }
+  }
+  const key = connection => JSON.stringify([connection.fromObjectId, connection.fromPortId, connection.toObjectId, connection.toPortId, connection.length]);
+  const beforeKeys = new Set(getRecordItems(before.connections).map(key));
+  const afterKeys = new Set(getRecordItems(after.connections).map(key));
+  for (const connection of [...getRecordItems(before.connections), ...getRecordItems(after.connections)]) {
+    if (beforeKeys.has(key(connection)) && afterKeys.has(key(connection))) continue;
+    changed.add(connection.fromObjectId);
+    changed.add(connection.toObjectId);
+  }
+  return [...changed];
+}

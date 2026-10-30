@@ -60,6 +60,8 @@ import LazyScene3D from './components/LazyScene3D.jsx';
 
 
 import { SceneErrorBoundary, SceneUnavailable } from './components/SceneFallback.jsx';
+import { AiSuggestionsPanel } from './components/AiSuggestions.jsx';
+import { useAiLayoutAssistant } from './components/useAiLayoutAssistant.js';
 import { canUseWebGL } from './domain/webgl-support.js';
 
 const PROJECT_DRAFT_STORAGE_KEY = 'desklab.project-draft.v1';
@@ -116,11 +118,15 @@ export default function App() {
   const [saveBusy, setSaveBusy] = useState(false);
   const [recoveryDraft, setRecoveryDraft] = useState(null);
   const [showBackupReminder, setShowBackupReminder] = useState(false);
-  const projectEditable = canEditProject({
+  // While an AI suggestion is previewed in 3D, editing waits until the user
+  // applies or cancels it.
+  const [aiPreview, setAiPreview] = useState(null);
+  const projectBaseEditable = canEditProject({
     projectLoaded,
     projectLoadFailed,
     recoveryPending: Boolean(recoveryDraft),
   });
+  const projectEditable = projectBaseEditable && !aiPreview;
   
   const cameraRef = useRef(null);
   const controlsRef = useRef(null);
@@ -181,6 +187,9 @@ export default function App() {
   const deskBuilderHeadingRef = useRef(null);
   const [purchaseGuidance, setPurchaseGuidance] = useState(null);
   const [hoveredDeviceId, setHoveredDeviceId] = useState(null);
+
+  const aiAssistant = useAiLayoutAssistant();
+  const currentProject = useMemo(() => ({ room, objects, connections }), [room, objects, connections]);
 
   const closeRecommendations = useCallback(() => {
     setPurchaseGuidance(null);
@@ -1029,6 +1038,21 @@ export default function App() {
   };
 
   const selectedObj = objects.find(o => o.id === selectedObjectId);
+  const handleApplyAiProject = (nextProject, label) => {
+    if (!projectBaseEditable) return;
+    recordHistory();
+    setObjects(nextProject.objects);
+    setConnections(nextProject.connections);
+    setAiPreview(null);
+    showStatus({ text: `已应用 AI 建议：${label}`, type: 'success' }, 3000);
+  };
+
+  const handlePreviewAiSuggestion = (preview) => {
+    closeRecommendations();
+    setSelectedObjectId(null);
+    setAiPreview(preview);
+  };
+
   // Devices linked to the selection, highlighted while the connections tab is open.
   const sceneRelatedIds = new Set();
   if (isPanelOpen && activeTab === 'connections' && selectedObjectId) {
@@ -1371,6 +1395,19 @@ export default function App() {
           </div>
         )}
 
+        {aiPreview && (
+          <div className="draft-recovery-banner" role="region" aria-label="AI 预览">
+            <div>
+              <strong>预览 AI 建议：{aiPreview.title}</strong>
+              <span>高亮的设备会被调整，确认后才会改动你的桌面。</span>
+            </div>
+            <div className="draft-recovery-actions">
+              <button type="button" className="ui-button ui-button-primary" onClick={() => handleApplyAiProject(aiPreview.nextProject, aiPreview.title)}>应用</button>
+              <button type="button" className="ui-button" onClick={() => setAiPreview(null)}>取消</button>
+            </div>
+          </div>
+        )}
+
         {projectLoadFailed && (
           <div className="draft-recovery-banner" role="alert">
             <div>
@@ -1517,10 +1554,10 @@ export default function App() {
             }}
             onDragEnd={() => { setDragInfo(null); finishHistoryGroup(); }}
             showAxes={showAxes}
-            objects={objects}
-            connections={connections}
+            objects={aiPreview ? aiPreview.nextProject.objects : objects}
+            connections={aiPreview ? aiPreview.nextProject.connections : connections}
             selectedObjectId={selectedObjectId}
-            relatedIds={sceneRelatedIds}
+            relatedIds={aiPreview ? new Set(aiPreview.changedIds) : sceneRelatedIds}
             hoveredObjectId={connectionMode ? hoveredDeviceId : null}
             onBackgroundClick={() => {
               if (!connectionMode) setSelectedObjectId(null);
@@ -2076,6 +2113,16 @@ export default function App() {
               <p className="wiring-issue-description">
                 根据当前设备、位置和连接规则生成建议；实际摆放、走线和设备规格仍需确认。
               </p>
+              <AiSuggestionsPanel
+                ai={aiAssistant}
+                project={currentProject}
+                editable={projectEditable}
+                onApply={(nextProject, label) => {
+                  handleApplyAiProject(nextProject, label);
+                  closeRecommendations();
+                }}
+                onPreview={handlePreviewAiSuggestion}
+              />
               <div className="wiring-summary">
                 <span className="wiring-summary-info">免费改进 {recommendations.freeImprovements.length}</span>
                 <span className="wiring-summary-warning">加购建议 {recommendations.purchases.length}</span>

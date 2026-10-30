@@ -16,15 +16,16 @@ export function box(id, x = 0) {
  * Open the app with `objects` and `connections` stored as the saved project.
  * Options:
  * - saved: false opens it as a first-time visitor with nothing stored.
+ * - room: the stored room size (default 10 x 10 x 3 m).
  * - ai: (requestBody) => responseJson | { status, json } answers
  *   POST /api/ai/layout; each request body is collected in
  *   evidence.aiRequests. Without it, an AI request fails the test like any
  *   other /api call.
  */
-export async function openProject(page, objects, connections = [], { saved = true, ai = null } = {}) {
+export async function openProject(page, objects, connections = [], { saved = true, ai = null, room = { length: 10, width: 10, height: 3 } } = {}) {
   const project = {
     id: 'default', updatedAt: '2026-09-09T00:00:00.000Z',
-    room: { length: 10, width: 10, height: 3 }, objects, connections,
+    room, objects, connections,
   };
   expect(isProjectEnvelope(project, { requireStoredFields: true })).toBe(true);
   const errors = [];
