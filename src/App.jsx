@@ -50,15 +50,15 @@ import {
   getProjectImportByteLength,
 } from './domain/project-import-limits.js';
 import { getPurchaseGuidance } from './domain/purchase-guidance.js';
-import { DESK_TEMPLATES, buildTemplateScene } from './domain/desk-templates.js';
+import { buildTemplateScene } from './domain/desk-templates.js';
 import { buildShoppingList } from './domain/shopping-list.js';
 import { applyAllAvailableImprovements, applyAllImprovements, applyImprovement, buildConnectionCompletion, buildFreeImprovements, buildRecommendations } from './domain/recommendations.js';
 import { createProjectHistory } from './domain/project-history.js';
 import { createStatusNotifier } from './domain/status-notifier.js';
 import PropertiesEditor from './components/PropertiesEditor.jsx';
 import ConnectionsEditor from './components/ConnectionsEditor.jsx';
-import DeskBuilderForm from './components/DeskBuilderForm.jsx';
 import AboutDialog from './components/AboutDialog.jsx';
+import TemplateDialog from './components/TemplateDialog.jsx';
 import ErrorNotice from './components/ErrorNotice.jsx';
 import LazyScene3D from './components/LazyScene3D.jsx';
 
@@ -196,8 +196,7 @@ export default function App() {
   // the user picks a way to start or something appears in the room.
   const [hasSavedProject, setHasSavedProject] = useState(true);
   const [startGuideDismissed, setStartGuideDismissed] = useState(false);
-  const scrollTemplatesToBuilderRef = useRef(false);
-  const deskBuilderHeadingRef = useRef(null);
+  const [scrollTemplatesToBuilder, setScrollTemplatesToBuilder] = useState(false);
   const [purchaseGuidance, setPurchaseGuidance] = useState(null);
   const [hoveredDeviceId, setHoveredDeviceId] = useState(null);
 
@@ -484,6 +483,7 @@ export default function App() {
           setShowAbout(false);
         }
         if (showTemplates) {
+          setScrollTemplatesToBuilder(false);
           setShowTemplates(false);
         }
       }
@@ -901,19 +901,13 @@ export default function App() {
     }
   };
 
-  useEffect(() => {
-    if (!showTemplates || !scrollTemplatesToBuilderRef.current) return;
-    scrollTemplatesToBuilderRef.current = false;
-    deskBuilderHeadingRef.current?.scrollIntoView({ block: 'start' });
-  }, [showTemplates]);
-
   const showStartGuide = projectLoaded && projectEditable && !hasSavedProject
     && !startGuideDismissed && objects.length === 0;
 
   const handleStartGuideChoice = (choice) => {
     setStartGuideDismissed(true);
     if (choice === 'template' || choice === 'builder') {
-      scrollTemplatesToBuilderRef.current = choice === 'builder';
+      setScrollTemplatesToBuilder(choice === 'builder');
       setShowTemplates(true);
     } else {
       setIsLeftPanelOpen(true);
@@ -945,6 +939,7 @@ export default function App() {
     setConnectionMode(false);
     setConnectionDraft({});
     setHoveredDeviceId(null);
+    setScrollTemplatesToBuilder(false);
     setShowTemplates(false);
     showStatus({ text: `${label}，可按实际情况调整，尚未保存`, type: 'success' }, 4000);
   };
@@ -1297,7 +1292,7 @@ export default function App() {
     </div>
   );
   const titleLabel = <span className="toolbar-label">DeskLab</span>;
-  const templatesButton = <button className="ui-button" onClick={() => setShowTemplates(true)} disabled={!projectEditable}>桌面模板</button>;
+  const templatesButton = <button className="ui-button" onClick={() => { setScrollTemplatesToBuilder(false); setShowTemplates(true); }} disabled={!projectEditable}>桌面模板</button>;
   const undoButton = <button className="ui-button" onClick={handleUndo} disabled={!projectEditable || !historyStatus.canUndo} title="撤销 (Ctrl+Z)">撤销</button>;
   const redoButton = <button className="ui-button" onClick={handleRedo} disabled={!projectEditable || !historyStatus.canRedo} title="重做 (Ctrl+Y)">重做</button>;
   const resetViewButton = <button className="ui-button" onClick={handleResetView} disabled={!projectEditable}>重置视角</button>;
@@ -1788,68 +1783,17 @@ export default function App() {
       {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
 
       {showTemplates && (
-        <div
-          className="modal-overlay"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setShowTemplates(false);
+        <TemplateDialog
+          hasObjects={objects.length > 0}
+          editable={projectEditable}
+          scrollToBuilder={scrollTemplatesToBuilder}
+          onClose={() => {
+            setScrollTemplatesToBuilder(false);
+            setShowTemplates(false);
           }}
-        >
-          <div
-            className="modal-container wiring-report"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="templates-title"
-          >
-            <div className="modal-header">
-              <h3 id="templates-title" className="modal-title">桌面模板</h3>
-              <button
-                type="button"
-                onClick={() => setShowTemplates(false)}
-                className="side-panel-close"
-                aria-label="关闭桌面模板"
-                title="关闭"
-              >
-                <CloseIcon />
-              </button>
-            </div>
-            <div className="modal-body">
-              <p className="template-intro">
-                选一个最接近你现状的模板，系统会摆好设备并接好电源、显示和网线，之后可以按实际情况调整。
-                {objects.length > 0 && ' 套用后会替换当前场景，可以用“撤销”恢复。'}
-              </p>
-              <div className="template-list">
-                {DESK_TEMPLATES.map(template => (
-                  <div key={template.id} className="template-card">
-                    <div className="template-card-content">
-                      <div className="template-card-title">{template.name}</div>
-                      <div className="template-card-description">{template.description}</div>
-                      <div className="template-card-devices">
-                        {`书桌 ${template.desk.length}m × ${template.desk.depth}m · `}
-                        {template.devices
-                          .map(device => `${findModelTemplate({ modelId: device.modelId })?.displayName ?? device.modelId} ×${device.count}`)
-                          .join(' · ')}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="ui-button ui-button-primary"
-                      onClick={() => handleApplyTemplate(template)}
-                      disabled={!projectEditable}
-                      aria-label={`使用模板：${template.name}`}
-                    >
-                      使用这个模板
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <h4 className="template-section-title" ref={deskBuilderHeadingRef}>按我的设备生成</h4>
-              <DeskBuilderForm
-                disabled={!projectEditable}
-                onGenerate={scene => applyGeneratedScene(scene, '已按你的设备生成桌面')}
-              />
-            </div>
-          </div>
-        </div>
+          onApplyTemplate={handleApplyTemplate}
+          onGenerate={scene => applyGeneratedScene(scene, '已按你的设备生成桌面')}
+        />
       )}
 
       {showLayoutReport && (
@@ -2308,6 +2252,7 @@ export default function App() {
                       <div className="empty-state-actions">
                         <button type="button" className="ui-button ui-button-primary" disabled={!projectEditable} onClick={() => {
                           closeRecommendations();
+                          setScrollTemplatesToBuilder(false);
                           setShowTemplates(true);
                         }}>
                           使用桌面模板

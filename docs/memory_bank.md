@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+E2 第 1 步：把「桌面模板」对话框抽到 `src/components/TemplateDialog.jsx`。套用模板、按设备生成、从开始引导滚到生成表单、Esc 关闭都还走原来的处理函数。还剩：继续拆布局检查、布线检查、连接清单。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 领取 E2（把 `App.jsx` 里的对话框和横幅逐块抽到 `src/components/`，行为不变）。还剩：E2 本身。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
