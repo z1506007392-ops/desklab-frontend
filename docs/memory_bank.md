@@ -4,7 +4,24 @@ Last updated: 2026-10-30, Asia/Singapore
 
 > Start here: `docs/AUTONOMOUS_ROADMAP.md` is the step-by-step plan, task
 > board, and LLM (DeepSeek) design that every agent follows. This memory bank
-> records what was done and why.
+> records what was done and why. Vendored agent skills are listed in
+> `docs/skills.md`.
+
+## 进度记录 / Progress Log
+
+最新在上。master 上原来没有这一节。未合并的
+[PR #2](https://github.com/z1506007392-ops/desklab-frontend/pull/2)
+（分支 `docs/glb-models`）里有一份更完整的进度记录和协作规则；两边都改了本文件开头，合并时要手工合一下。下面只记这次。
+
+### 2026-10-30 · Desklab (Grok Bot) · PR 链接待补
+
+把可以再分发的第三方 agent skills 放进 `.claude/skills/`。Cursor 的文档写明也会读这个目录，所以没有再复制到 `.cursor/skills/`，也没有用符号链接。清单、上游 commit 和更新方法在 `docs/skills.md`。
+
+纳入：impeccable（`df3a4ab`，Apache-2.0）、frontend-design（`ca45fc4`，Apache-2.0）、three.js 技能 13 个（`0e18186`，MIT）、emilkowalski 的动画/动效技能 9 个（`a81dbca`，MIT）。
+
+未纳入：Vercel 的 web-design-guidelines（`1a2c79d`，仓库没有许可证）；Blender Developer Tools（`1fcdfad`，技能是 CC-BY-NC-ND-4.0，不把技能包再发进本仓库）。`AGENTS.md` / `CLAUDE.md` 还不在 master 上（由 PR #2 新增），这里没有新建。
+
+还剩：Leo 审阅该 PR，不合并。
 
 ## Mission
 

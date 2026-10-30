@@ -1,0 +1,7 @@
+# Windows cmd.exe parses this launcher by byte offset. Keep CRLF.
+.claude/skills/impeccable/scripts/*.cmd text eol=crlf
+
+# Upstream bundles and the font catalog. Collapse them in GitHub's diff.
+.claude/skills/impeccable/scripts/live-browser.js linguist-generated
+.claude/skills/impeccable/scripts/modern-screenshot.umd.js linguist-generated
+.claude/skills/impeccable/scripts/data/font-index.json linguist-generated

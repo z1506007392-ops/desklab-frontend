@@ -4,7 +4,8 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default [
-  { ignores: ['dist'] },
+  // Vendored skill scripts under .claude/ are third-party. Lint the app only.
+{ ignores: ['dist', '.claude/**'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
