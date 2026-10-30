@@ -281,7 +281,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 计数存储：如果绑定了 KV 命名空间 `AI_LIMITS`（需要人，第 7 节 H2）就用 KV；没绑定就用 isolate 内存计数（弱限制，但不报错），并在响应头 `X-AI-Limit-Mode: memory|kv` 标明。
 - 测试：两种模式都覆盖；超限返回 429 `ai_rate_limited`，中文提示"今天的 AI 次数用完了，明天再试"。
 
-**B4 [ ] 必做 — 本地开发服务器**
+**B4 [~] 进行中（claude，2026-10-30） 必做 — 本地开发服务器**
 - 新建 `tools/dev-api-server.mjs`：Node 原生 `http` 监听 3001，把 `POST /api/ai/layout` 转给 `createLayoutHandler`，`env` 取 `process.env`（`DEEPSEEK_API_KEY` 等）。这样 `npm run dev` 的 `/api` 代理就能用。
 - `package.json` 加脚本 `"dev:api": "node tools/dev-api-server.mjs"`。README 写清楚：本地要用真模型时 `DEEPSEEK_API_KEY=... npm run dev:api`，另开终端 `npm run dev`。
 - 加一个**模拟模式**：`AI_MOCK=1` 时不调 DeepSeek，返回 `test/fixtures/ai/` 里录好的响应，方便离线开发和演示。
