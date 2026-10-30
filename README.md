@@ -36,6 +36,9 @@ and runtime errors. Test output stays in ignored `test-results/`.
 
 For one scenario, use `npm run test:ui -- --project=desktop --grep "no automatic"`.
 
+Agents: start with `docs/AUTONOMOUS_ROADMAP.md` (plan, task board, LLM
+design), then `docs/memory_bank.md` (history and decisions).
+
 Current handoff documentation lives at:
 
 ```text

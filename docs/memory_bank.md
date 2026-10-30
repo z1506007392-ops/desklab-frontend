@@ -2,6 +2,10 @@
 
 Last updated: 2026-10-30, Asia/Singapore
 
+> Start here: `docs/AUTONOMOUS_ROADMAP.md` is the step-by-step plan, task
+> board, and LLM (DeepSeek) design that every agent follows. This memory bank
+> records what was done and why.
+
 ## Mission
 
 DeskLab is a connected 3D room desktop layout and cabling tool. The long-term product direction is:
