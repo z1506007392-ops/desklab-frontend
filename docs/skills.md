@@ -18,12 +18,8 @@ the skill folder it discovered.
 Agents that only read `.agents/skills/` (Codex and some others) will not see
 these copies. Add a second tree only if that agent is actually in use.
 
-`AGENTS.md` and `CLAUDE.md` are not on `master`. They are introduced by the
-still-open docs PR
-[#2](https://github.com/z1506007392-ops/desklab-frontend/pull/2)
-(`docs/glb-models`). This change does not add them, so it does not collide
-with that PR. After #2 merges, add one line there pointing at this file and
-keep the two copies identical.
+`AGENTS.md` and `CLAUDE.md` are the same file. Both point here and at
+`.claude/skills/`. Keep them identical when you edit either one.
 
 ## Installed
 
