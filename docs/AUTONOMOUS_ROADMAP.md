@@ -298,7 +298,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 
 > 设计详见第 6 节。顺序：先做确定性的规则（C1–C3），它们不依赖模型就有价值，也给模型提供结构化输入；再做模型对接（C4–C8）。
 
-**C1 [ ] 必做 — 人体工学/整洁度启发式规则（不靠 AI）**
+**C1 [~] 进行中（claude，2026-10-30） 必做 — 人体工学/整洁度启发式规则（不靠 AI）**
 - 新建 `src/domain/layout-heuristics.js`：`analyzeLayoutHeuristics(room, objects, connections)` 返回 `[{ code, severity: 'hint', objectIds, message }]`。规则按 6.6.1 的表格实现，参数集中定义成常量。
 - 测试：每条规则正反例各至少一个；三个内置模板（`buildTemplateScene('home-office' | 'desktop-dual' | 'gaming')`）应当**零提示**（模板就是"好布局"的标准；若某条规则在模板上报提示，先检查规则阈值，再考虑改模板）。
 
