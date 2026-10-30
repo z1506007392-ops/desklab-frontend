@@ -119,12 +119,15 @@ const JARGON = /\b(?!HDMI\b|USB\b|DP\b|DC\b|AC\b|DeepSeek\b|Wi-Fi\b)[A-Za-z]{3,}
 /**
  * Run every scene and goal through `post(body) -> { status, json }` and
  * collect per-request results. `post` is the HTTP call for a real run and an
- * in-process handler in tests.
+ * in-process handler in tests. `skip(sceneId, goal)` leaves out pairs done
+ * in an earlier run; `onResult` returning 'stop' ends the run early (for
+ * example on a rate limit) and the results so far are returned.
  */
-export async function runEval({ post, scenes = buildEvalScenes(), onResult = () => {} }) {
+export async function runEval({ post, scenes = buildEvalScenes(), onResult = () => {}, skip = () => false }) {
   const results = [];
   for (const scene of scenes) {
     for (const goal of scene.goals) {
+      if (skip(scene.id, goal)) continue;
       const started = Date.now();
       let status = 0;
       let json = null;
@@ -151,7 +154,7 @@ export async function runEval({ post, scenes = buildEvalScenes(), onResult = () 
         response: json,
       };
       results.push(result);
-      onResult(result);
+      if (onResult(result) === 'stop') return results;
     }
   }
   return results;

@@ -41,3 +41,16 @@ test('a run through the mock model produces sound metrics', async () => {
   // The mock only knows two tricks, so it is not expected to reach 80%.
   assert.ok(metrics.messyHelpedRate > 0 && metrics.messyHelpedRate < 1);
 });
+
+test('a run can skip finished pairs and stop early', async () => {
+  const calls = [];
+  const post = async body => { calls.push(body.goal); return { status: calls.length > 2 ? 429 : 200, json: { suggestions: [] } }; };
+  const results = await runEval({
+    post,
+    skip: scene => scene === 'home-office',
+    onResult: result => (result.status === 429 ? 'stop' : undefined),
+  });
+  assert.equal(results.length, 3, 'two answers and the refused one');
+  assert.equal(results.at(-1).status, 429);
+  assert.ok(!results.some(result => result.scene === 'home-office'));
+});
