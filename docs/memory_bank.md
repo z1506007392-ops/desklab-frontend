@@ -2824,6 +2824,10 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   (criterion 5 waits for H1); 关于与隐私 present; no console errors, no
   failed requests. Found: adding a second power strip leaves 布线检查 (1) /
   改进建议 (1) (task A10).
+- `2297f1f` A10 `findNearestFreePowerSource` (recommendations.js) skips strip
+  sources when the device is itself a strip (`isPowerStrip` now exported
+  from analysis.js). Found by the D2 live run. Verification: `npm test` 378,
+  `npm run test:ui` 86, lint, build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -3000,8 +3004,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 377 domain tests
-npm run test:ui   # 84 Chrome UI cases; storage seeded per test, no backend
+npm test          # 378 domain tests
+npm run test:ui   # 86 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
