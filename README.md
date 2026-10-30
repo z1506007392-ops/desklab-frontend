@@ -12,6 +12,13 @@ There are no accounts. Each visitor's project is saved in their own browser
 previous save as a backup, so the backend is not needed to load or save. The
 dev server still proxies `/api` to port 3001 for future server features.
 
+## Deployment
+
+Cloudflare Pages builds `master` on every push (`npm run build`, output
+`dist`, Node version from `.node-version`) and serves
+https://desklab-frontend.pages.dev. GitHub Actions (`.github/workflows/ci.yml`)
+runs the checks below on pushes and pull requests.
+
 ## Verification
 
 - `npm test`: domain behavior tests.

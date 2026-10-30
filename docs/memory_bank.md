@@ -2586,6 +2586,15 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   notifier, so in dev (and the UI suite) every status message was dropped
   after the StrictMode remount. Each mount now creates its own notifier.
   Production builds were not affected.
+- Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
+  and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
+  framework preset None, `npm run build`, output `dist`, Node from
+  `.node-version`). The repository is private, so GitHub Pages is not used;
+  `.github/workflows/ci.yml` only runs unit, lint, build, and Chrome UI checks.
+  Verified live in Chromium: all 10 GLBs return 200, a saved template
+  survives a reload, no console errors. Not done yet: own domain (not
+  ICP-filed; mainland hosting on the owner's Aliyun Guangzhou VPS needs a
+  filing first), and a backend on the owner's Japan EC2 for future LLM calls.
 - Cloud sessions without Google Chrome: `npm run test:ui` needs a temporary
   Playwright config outside the repo that imports `playwright.config.mjs`,
   drops `use.channel`, sets `launchOptions.executablePath` to the installed
