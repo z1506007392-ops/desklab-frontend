@@ -2586,6 +2586,14 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   notifier, so in dev (and the UI suite) every status message was dropped
   after the StrictMode remount. Each mount now creates its own notifier.
   Production builds were not affected.
+- Backup reminder (2026-10-30): `src/domain/backup-reminder.js`
+  (`shouldRemindBackup`, state in `desklab.backup-reminder.v1`). After a save
+  with at least one object, a yellow bar (region "备份提醒") offers 导出备份 /
+  以后再说 when there is no export yet or the last one is 7+ days old;
+  以后再说 snoozes 7 days; any 导出 JSON or 导出备份 records the export and
+  clears the snooze. Hidden while a draft-recovery or load-failure banner is
+  up. `e2e/backup-reminder.spec.mjs` covers snooze across a reload and
+  export → re-import. Verification: `npm test` 291, `npm run test:ui` 38.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2762,8 +2770,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 285 domain tests
-npm run test:ui   # 34 Chrome UI cases; storage seeded per test, no backend
+npm test          # 291 domain tests
+npm run test:ui   # 38 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (known large chunk warning is OK)
 ```
