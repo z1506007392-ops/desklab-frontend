@@ -66,7 +66,7 @@ export function classifyPowerLoad(currentLoad, maxLoad) {
 
 const getPortItems = object => Array.isArray(object?.ports) ? object.ports : [];
 const getPort = (object, portId) => getPortRecords(object).find(port => port.id === portId);
-const isPowerStrip = (object) =>
+export const isPowerStrip = (object) =>
   object?.modelId === 'power-strip' || object?.type === 'power_strip';
 
 function getDuplicateIds(items) {

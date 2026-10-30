@@ -65,3 +65,16 @@ test('a newly added computer is cabled to the monitor and router already on the 
   await expect(page.getByRole('button', { name: '改进建议', exact: true })).toBeVisible();
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
+
+test('adding a second power strip to a template creates no wiring problem', async ({ page }) => {
+  const evidence = await openProject(page, []);
+  await page.getByRole('button', { name: '桌面模板', exact: true }).click();
+  await page.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  const openLibrary = page.getByRole('button', { name: '展开资产库', exact: true });
+  if (await openLibrary.isVisible()) await openLibrary.click();
+  await page.getByPlaceholder('搜索设备名称、类型、型号...').fill('插排');
+  await page.getByRole('button', { name: /^插排/ }).click();
+  await expect(page.getByRole('button', { name: '布线检查', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '改进建议', exact: true })).toBeVisible();
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
