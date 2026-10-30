@@ -2800,6 +2800,17 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   globally), AbortError. Copy falls back to `window.prompt` when the
   clipboard is blocked. Nothing is sent. Verification: `npm test` 377,
   `npm run test:ui` 82, lint, build.
+- `0209fa0` D4 Browser support. Build target = Vite `baseline-widely-available`
+  = Chrome/Edge 111, Firefox 114, Safari/iOS 16.4. Newer APIs in src
+  (structuredClone, Object.hasOwn, ??=, crypto.randomUUID guarded,
+  navigator.storage optional) are all within that target. index.html now
+  has a classic-script feature check that shows "你的浏览器版本太旧" and sets
+  `window.__DESKLAB_UNSUPPORTED__` so main.jsx does not start the app
+  (`e2e/old-browser.spec.mjs`). NOT verified: Safari, Firefox, iOS, WeChat's
+  in-app browser. Only Chromium exists in the cloud container and the
+  environment forbids installing other Playwright browsers; check on real
+  devices when possible. Verification: `npm test` 377, `npm run test:ui` 84,
+  lint, build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2977,7 +2988,7 @@ Frontend:
 ```bash
 cd D:\desklab\frontend
 npm test          # 377 domain tests
-npm run test:ui   # 82 Chrome UI cases; storage seeded per test, no backend
+npm run test:ui   # 84 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
