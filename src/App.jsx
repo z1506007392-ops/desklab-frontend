@@ -67,6 +67,7 @@ import BackupReminderBanner from './components/BackupReminderBanner.jsx';
 import AiPreviewBanner from './components/AiPreviewBanner.jsx';
 import CorruptSaveBanner from './components/CorruptSaveBanner.jsx';
 import ConnectionModeBanner from './components/ConnectionModeBanner.jsx';
+import SelectionHint from './components/SelectionHint.jsx';
 import LazyScene3D from './components/LazyScene3D.jsx';
 
 
@@ -1508,10 +1509,12 @@ export default function App() {
           <CorruptSaveBanner busy={backupRecoveryBusy} onRecover={handleRecoverBackup} />
         )}
 
-        <div className={`selection-hint${selectedObj ? ' selection-hint-active' : ''}`}>
-          <span className="selection-hint-title" key={selectedObj?.id ?? 'none'}>{selectionHint.title}</span>
-          {selectionHint.tip && <span className="selection-hint-tip">{selectionHint.tip}</span>}
-        </div>
+        <SelectionHint
+          active={Boolean(selectedObj)}
+          titleKey={selectedObj?.id ?? 'none'}
+          title={selectionHint.title}
+          tip={selectionHint.tip}
+        />
       </div>
 
         {/* 主体布局：左侧 3D Canvas + 右侧属性面板 */}
