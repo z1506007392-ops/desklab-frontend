@@ -2716,6 +2716,13 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   `network_error`, `ai_timeout`, `cancelled`) and a Chinese message.
   `AI_ERROR_MESSAGES` now lives in ai-protocol.js for both sides.
   Verification: `npm test` 337, lint, build.
+- `3287f5d` B6 `openProject(page, objects, connections, { ai })`: `ai(body)`
+  returns the JSON (or `{ status, json }`) for POST /api/ai/layout and
+  bodies land in `evidence.aiRequests` (only present when `ai` is given, so
+  existing `toEqual({ errors: [], writes: [] })` checks still hold).
+  Without `ai`, an AI request is a recorded write and fails tests. Phase B
+  is complete. Verification: `npm test` 337, `npm run test:ui` 64, lint,
+  build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2893,7 +2900,7 @@ Frontend:
 ```bash
 cd D:\desklab\frontend
 npm test          # 337 domain tests
-npm run test:ui   # 60 Chrome UI cases; storage seeded per test, no backend
+npm run test:ui   # 64 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

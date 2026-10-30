@@ -260,7 +260,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 **A8 [ ] 可选 — 让 Cloudflare 只部署通过测试的版本**
 - 需要人（第 7 节 H3）。人没做之前跳过；人做完后：把 Cloudflare 的 Git 自动部署关掉，改为 CI 全绿后用 `wrangler pages deploy dist --project-name desklab-frontend` 部署（GitHub secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）。
 
-### 阶段 B：LLM 基础设施（DeepSeek 接入的管道）
+### 阶段 B：LLM 基础设施（DeepSeek 接入的管道）（已完成 2026-10-30；线上等待 H1 密钥）
 
 > 设计详见第 6 节。阶段 B 不需要真实密钥就能全部完成（用模拟模型）。
 
@@ -290,7 +290,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 新建 `src/domain/ai-client.js`：`requestLayoutSuggestions({ summary, goal, signal })` → `POST /api/ai/layout`，45 秒超时（`AbortController`），把服务端错误码映射成中文提示（6.3.3 表）。
 - 测试：用假 `fetch` 覆盖所有错误码、超时、取消。
 
-**B6 [~] 进行中（claude，2026-10-30） 必做 — e2e 夹具支持模拟 AI**
+**B6 [x] 完成（claude，2026-10-30，3287f5d） 必做 — e2e 夹具支持模拟 AI**
 - `e2e/project-fixture.mjs` 的 `openProject` 增加可选参数 `{ ai: (requestBody) => responseJson | { status, json } }`：提供时，对 `/api/ai/layout` 用 `page.route` 返回该结果，**不计入 writes**；其他 `/api` 请求仍然计为失败。
 - 验收：现有全部 UI 测试不改行为仍通过。
 
