@@ -4,7 +4,8 @@ Last updated: 2026-10-30, Asia/Singapore
 
 > Start here: `docs/AUTONOMOUS_ROADMAP.md` is the step-by-step plan, task
 > board, and LLM (DeepSeek) design that every agent follows. This memory bank
-> records what was done and why.
+> records what was done and why. Vendored agent skills are listed in
+> `docs/skills.md` (files under `.claude/skills/`).
 
 ## 协作规则
 
@@ -13,6 +14,14 @@ Last updated: 2026-10-30, Asia/Singapore
 ## 进度记录 / Progress Log
 
 最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。Claude 在 master 上的记录原先写在正文里，这里按提交作者收成同一份日志。
+
+### 2026-10-30 · Desklab (Grok Bot) · [PR #3](https://github.com/z1506007392-ops/desklab-frontend/pull/3)
+
+分支 `cursor/vendor-agent-skills-2dc1`。补上先前没放进仓库的两块：`web-design-guidelines` 改用 vercel-labs/web-interface-guidelines 的 `command.md`（`434b7f91`，MIT），审查读本地副本；`fixing-accessibility` 来自 ibelick/ui-skills（`59193a75`，MIT）；`blender-gltf-export` 按 `tools/blender-models/` 自己写，不收录 CC-BY-NC-ND 的 Blender Developer Tools。已把含 PR #2 的 master 合并进本分支。还剩：等合并进 master，本代理不自行合并。
+
+### 2026-10-30 · Desklab (Grok Bot) · [PR #3](https://github.com/z1506007392-ops/desklab-frontend/pull/3)
+
+分支 `cursor/vendor-agent-skills-2dc1`。把可再分发的第三方技能放进 `.claude/skills/`（Cursor 也会读这个目录，没有再复制一份）。纳入 impeccable（`df3a4ab`，Apache-2.0）、frontend-design（`ca45fc4`，Apache-2.0）、three.js 技能 13 个（`0e18186`，MIT）、emilkowalski 动画/动效 9 个（`a81dbca`，MIT）。清单在 `docs/skills.md`。当时 Vercel agent-skills 的 web-design-guidelines 没有许可证，Blender Developer Tools 是 CC-BY-NC-ND，都没有收录。还剩：替代技能，见上一条。
 
 ### 2026-10-30 · Desklab · [PR #2](https://github.com/z1506007392-ops/desklab-frontend/pull/2)
 
