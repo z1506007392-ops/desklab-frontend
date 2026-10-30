@@ -64,6 +64,7 @@ import ConnectionsListDialog from './components/ConnectionsListDialog.jsx';
 import ErrorNotice from './components/ErrorNotice.jsx';
 import DraftRecoveryBanner from './components/DraftRecoveryBanner.jsx';
 import BackupReminderBanner from './components/BackupReminderBanner.jsx';
+import AiPreviewBanner from './components/AiPreviewBanner.jsx';
 import LazyScene3D from './components/LazyScene3D.jsx';
 
 
@@ -1494,16 +1495,11 @@ export default function App() {
         <ErrorNotice />
 
         {aiPreview && (
-          <div className="draft-recovery-banner" role="region" aria-label="AI 预览">
-            <div>
-              <strong>预览 AI 建议：{aiPreview.title}</strong>
-              <span>高亮的设备会被调整，确认后才会改动你的桌面。</span>
-            </div>
-            <div className="draft-recovery-actions">
-              <button type="button" className="ui-button ui-button-primary" onClick={() => handleApplyAiProject(aiPreview.nextProject, aiPreview.title)}>应用</button>
-              <button type="button" className="ui-button" onClick={() => setAiPreview(null)}>取消</button>
-            </div>
-          </div>
+          <AiPreviewBanner
+            title={aiPreview.title}
+            onApply={() => handleApplyAiProject(aiPreview.nextProject, aiPreview.title)}
+            onCancel={() => setAiPreview(null)}
+          />
         )}
 
         {projectLoadFailed && (
