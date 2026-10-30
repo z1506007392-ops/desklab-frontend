@@ -25,7 +25,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
     return (
       <section className="ai-suggestions" aria-labelledby="ai-suggestions-title">
         <h4 id="ai-suggestions-title" className="template-section-title">AI 建议</h4>
-        <p className="ai-suggestions-note">AI 功能暂未开放，上面的自动检查和下面的建议照常可用。</p>
+        <p className="ai-suggestions-note">AI 功能暂未开放，下面的自动检查和改进建议照常可用。</p>
       </section>
     );
   }
