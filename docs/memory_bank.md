@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+CI 上 `b92a850` 的桌面 Playwright 有一次失败：点「让 AI 看看」时输入框里已经是「适合打游戏」，请求里的目标却是空的。原因是 Playwright 填字和点击挨得太近，React 状态还没写上。按钮改为读取输入框里当时的文字。手机那次是过的，说明不是横幅拆分改坏的。还剩：选中提示、状态消息、工具栏，然后 E5。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 E18 第 5 步：连线模式提示抽到 `src/components/ConnectionModeBanner.jsx`。文案不变。还剩：选中提示、状态消息和工具栏，然后 E5。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master

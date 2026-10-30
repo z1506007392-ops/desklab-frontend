@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { applySuggestionsInOrder, changedObjectIds, evaluateSuggestions } from '../domain/ai-actions.js';
 
@@ -15,6 +15,12 @@ function deviceNames(project, ids) {
 export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }) {
   const [goal, setGoal] = useState('');
   const [feedback, setFeedback] = useState('');
+  // Click can land in the same turn as the input event, before React stores
+  // the new text. Read the box itself so the request matches what is visible.
+  const goalRef = useRef(null);
+  const feedbackRef = useRef(null);
+  const typedGoal = () => (goalRef.current?.value ?? goal).trim();
+  const typedFeedback = () => (feedbackRef.current?.value ?? feedback).trim();
   const accepted = useMemo(() => evaluateSuggestions(project, ai.suggestions).map(result => ({
     ...result,
     changedIds: changedObjectIds(project, result.nextProject),
@@ -38,6 +44,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
         <label htmlFor="ai-goal">想怎么改？（可选）</label>
         <input
           id="ai-goal"
+          ref={goalRef}
           className="ui-input"
           maxLength={200}
           placeholder="例如：更整洁 / 适合打游戏 / 双屏办公"
@@ -48,7 +55,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
         <button
           type="button"
           className="ui-button ui-button-primary"
-          onClick={() => ai.request(project, goal.trim())}
+          onClick={() => ai.request(project, typedGoal())}
           disabled={!editable || loading || empty}
         >
           让 AI 看看
@@ -66,7 +73,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
       {ai.status === 'error' && (
         <div className="ai-suggestions-status ai-suggestions-error" role="alert">
           <span>{ai.error}</span>
-          <button type="button" className="ui-button" onClick={() => ai.request(project, goal.trim())} disabled={!editable}>
+          <button type="button" className="ui-button" onClick={() => ai.request(project, typedGoal())} disabled={!editable}>
             再试一次
           </button>
         </div>
@@ -124,6 +131,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
           <label htmlFor="ai-feedback">不满意？告诉 AI 怎么改</label>
           <input
             id="ai-feedback"
+            ref={feedbackRef}
             className="ui-input"
             maxLength={200}
             placeholder="例如：不要动主机 / 再整洁一点"
@@ -134,7 +142,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
             type="button"
             className="ui-button"
             onClick={() => {
-              ai.request(project, goal.trim(), feedback.trim());
+              ai.request(project, typedGoal(), typedFeedback());
               setFeedback('');
             }}
             disabled={!editable || !feedback.trim()}
