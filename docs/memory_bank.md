@@ -1,6 +1,6 @@
 # DeskLab Memory Bank for Claude
 
-Last updated: 2026-10-28, Asia/Singapore
+Last updated: 2026-10-30, Asia/Singapore
 
 ## Mission
 
@@ -68,8 +68,16 @@ D:\desklab\frontend\docs\memory_bank.md
 Moved on 2026-10-28 from the hollowell1225 account to z1506007392-ops (new
 repositories with full history). The old repositories remain as the
 `hollowell1225` git remote. Both local repos use the GitHub CLI as their
-credential helper (repo-local config), so pushes use the active `gh` account,
-and commit author is `z1506007392-ops <285454369+z1506007392-ops@users.noreply.github.com>`.
+credential helper (repo-local config), so pushes use the active `gh` account.
+
+Commit author (product owner rule, 2026-10-30): two agents work on these repos,
+and each marks its own commits by author name, with the same email
+`285454369+z1506007392-ops@users.noreply.github.com`:
+- Claude: `claude`
+- Grok: `grok`
+Set `user.name` / `user.email` repo-locally only. No AI sign-off lines in
+commit messages. Before starting, pull both repos and read the other agent's
+recent commits.
 
 Keep this external handoff copy and the tracked copy synchronized whenever the
 memory bank is updated. The tracked copy is committed and pushed with the
@@ -121,9 +129,9 @@ npm start
 ## Current Git State (2026-10-28 handoff)
 
 ### Frontend `D:\desklab\frontend`
-- Feature HEAD: `4a991fc fix: complete video and network lines instead of suggesting them`
-- Commits after `a8d5489` (2026-10-28) are local only until the product owner
-  approves a push.
+- Feature HEAD: `c21c28e fix: migrate old saves to the new GLB laptop height and port anchors`
+- Since 2026-10-29 the product owner wants each verified slice pushed straight
+  to `origin/master` (pull --rebase and re-verify first if the remote moved).
 - Untracked: none expected.
 
 Historical commits captured at the 2026-07-14 baseline (most recent first,
@@ -2524,6 +2532,33 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   be drawn. Engine robustness tests use a local `engineRecommendations`
   helper. Verification: `npm test` 301/301, `npm run test:ui` 26/26, lint,
   build.
+- `3f556ec` / `4ee93b6` (merged as `1f10bfc`, 2026-10-29): every catalog model
+  now has a low-poly GLB at `public/models/<modelId>.glb`, built at the
+  catalog `defaultScale` by the Blender scripts in `tools/blender-models/`.
+  `catalogModelUrl()` includes Vite's base URL; the renderer scales a GLB by
+  `obj.scale / defaultScale`. Port anchors are authored per model in
+  `PORT_ANCHOR_BY_MODEL` (catalog.js) to sit on the mesh connectors. The
+  laptop GLB is open-lid (`defaultScale.z = 0.22`).
+- `c21c28e` Old saves vs the GLB models, in `hydrateProjectObjects()` (runs on
+  load, import, and draft restore): a laptop-15 whose height is below 60% of
+  the default (old closed-lid saves store about 0.058 or 0.105 m, which
+  squashed the open-lid mesh into a flat tray) is restored to the default
+  height, keeping its footprint and its bottom, so it still rests on the desk.
+  Catalog ports take the `PORT_ANCHOR_BY_MODEL` anchor by `port.id` instead of
+  the saved one; ports and models outside the catalog keep stored anchors.
+  Saves with removed models (mini-pc, all-in-one) load unchanged and render
+  as plain boxes. `e2e/legacy-save.spec.mjs` opens such a save and checks for
+  no runtime errors and no 未保存 flag. Visual QA (real Chromium screenshots,
+  before/after, against a copy of the backend with a constructed old save):
+  the laptop lid stands up and the HDMI cable leaves the laptop's side port.
+  The owner's real `default-project.json` was not available (cloud session),
+  so it has not been checked against these changes.
+- 未保存 note: the camera view is saved with the project, so orbiting or
+  zooming marks the project unsaved (`cameraDirty`); loading alone does not.
+- Cloud sessions without Google Chrome: `npm run test:ui` needs a temporary
+  Playwright config outside the repo that imports `playwright.config.mjs`,
+  drops `use.channel`, sets `launchOptions.executablePath` to the installed
+  Chromium, and sets `webServer.cwd` to the frontend. Do not commit it.
 - Test notes: the Windows clipboard returns CRLF, so the shopping-list UI test
   normalizes line endings. Some source files are CRLF in the working tree;
   scripted edits must match the file's line endings.
@@ -2687,8 +2722,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 301 domain tests
-npm run test:ui   # 26 Chrome UI cases; isolated fixtures, no real backend writes
+npm test          # 309 domain tests
+npm run test:ui   # 28 Chrome UI cases; isolated fixtures, no real backend writes
 npm run lint      # eslint .
 npm run build     # vite build (known large chunk warning is OK)
 ```
