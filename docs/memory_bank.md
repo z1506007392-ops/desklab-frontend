@@ -2695,6 +2695,14 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   site was blocked in the cloud session; model names and JSON mode were
   confirmed only from third-party pages. Verification: `npm test` 326, lint,
   build.
+- `202c2c8` B3 Rate limits: `server/ai/rate-limit.js` `createRateLimiter()`;
+  per-address hourly (`AI_PER_IP_HOURLY`, 20) and site-wide daily
+  (`AI_DAILY_TOTAL`, 2000, day boundary = Beijing midnight). KV binding
+  `AI_LIMITS` if present (approximate, eventually consistent), otherwise
+  per-instance memory; mode in `X-AI-Limit-Mode`. 429 message differs for
+  the hour and day limits. The route creates the limiter at module scope.
+  Checked in `wrangler pages dev` with a fake key: third call at limit 2 →
+  429. Verification: `npm test` 331, lint, build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2871,7 +2879,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 326 domain tests
+npm test          # 331 domain tests
 npm run test:ui   # 60 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
