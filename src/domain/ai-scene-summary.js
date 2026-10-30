@@ -86,6 +86,7 @@ export function buildSceneSummary(project = {}) {
     code: item.code,
     objects: item.objectIds,
     message: item.message,
+    ...(item.fix ? { fix: item.fix } : {}),
   }));
 
   return {

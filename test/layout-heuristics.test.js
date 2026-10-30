@@ -118,3 +118,38 @@ test('the seat is in front of the desk, following its rotation', async () => {
   // Local -y turned by 90 degrees points along +x.
   assert.ok(Math.abs(turned.x - 0.7) < 1e-9 && Math.abs(turned.y - 1) < 1e-9);
 });
+
+test('every hint carries a fix that the AI checks would accept', async () => {
+  const { evaluateSuggestion } = await import('../src/domain/ai-actions.js');
+  const cases = [];
+  const add = (name, project) => cases.push([name, project]);
+  const withObjects = (id, objects) => ({ ...scene(id), objects });
+  const base = id => scene(id);
+
+  add('monitor off centre', withObjects('home-office', moved(base('home-office').objects, 'monitor-27', m => { m.position.x += 0.3; return m; })));
+  add('monitor turned away', withObjects('gaming', moved(base('gaming').objects, 'ultrawide-monitor', m => { m.rotation.z = 90; return m; })));
+  const homeDesk = byModel(base('home-office').objects, 'office-desk');
+  add('laptop at back', withObjects('home-office', moved(base('home-office').objects, 'laptop-15', l => { l.position.y = homeDesk.position.y + 0.15; l.position.x = 0.4; return l; })));
+  const dual = base('desktop-dual');
+  const dualDesk = byModel(dual.objects, 'office-desk');
+  const dualTop = dualDesk.position.z + dualDesk.scale.z / 2;
+  add('tower in legroom', withObjects('desktop-dual', moved(dual.objects, 'desktop-pc', pc => { pc.position.x = 0; pc.position.y = dualDesk.position.y; return pc; })));
+  add('tower on desk', withObjects('desktop-dual', moved(dual.objects, 'desktop-pc', pc => { pc.position = { x: 0.05, y: dualDesk.position.y - 0.1, z: dualTop + pc.scale.z / 2 }; return pc; })));
+  const gaming = base('gaming');
+  const gamingDesk = byModel(gaming.objects, 'office-desk');
+  const gamingTop = gamingDesk.position.z + gamingDesk.scale.z / 2;
+  add('strip on desk', withObjects('gaming', moved(gaming.objects, 'power-strip', st => { st.position = { x: 0, y: gamingDesk.position.y - 0.25, z: gamingTop + st.scale.z / 2 }; return st; })));
+  add('router buried', withObjects('gaming', moved(gaming.objects, 'router', r => { r.position.x = 0.2; r.position.y = gamingDesk.position.y; return r; })));
+  const hdmi = gaming.connections.find(c => c.cableType !== 'power');
+  add('cable too long', { ...gaming, connections: gaming.connections.map(c => (c.id === hdmi.id ? { ...c, length: 10 } : c)) });
+
+  for (const [name, project] of cases) {
+    const hints = analyzeLayoutHeuristics(project.room, project.objects, project.connections);
+    assert.ok(hints.length > 0, `${name} has a hint`);
+    for (const item of hints) {
+      assert.ok(Array.isArray(item.fix) && item.fix.length > 0, `${name}: ${item.code} has a fix`);
+      const result = evaluateSuggestion(project, { id: 'fix', title: '调整', reason: '这样更好。', actions: item.fix });
+      assert.equal(result.accepted, true, `${name}: ${item.code} fix rejected (${result.reasons.join('；')})`);
+    }
+  }
+});

@@ -50,6 +50,8 @@ test('problems and hints are included, but undrawn lines are not', () => {
     : object.modelId === 'router' ? { ...object, position: { ...object.position, z: 1.2 } } : object));
   const summary = buildSceneSummary({ ...project, objects, connections: project.connections.filter(c => c.cableType !== 'power') });
   assert.deepEqual(summary.hints.map(hint => hint.code), ['monitor_off_center']);
+  const monitor = summary.objects.find(object => object.kind === 'ultrawide-monitor');
+  assert.deepEqual(summary.hints[0].fix, [{ type: 'move', objectId: monitor.id, x: 0, y: monitor.center[1] }]);
   assert.ok(summary.findings.some(finding => finding.code === 'floating_object' && finding.severity === 'warning'));
   assert.ok(!summary.findings.some(finding => finding.code === 'unpowered_input'));
   const router = summary.objects.find(object => object.kind === 'router');

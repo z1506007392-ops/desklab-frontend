@@ -1,4 +1,5 @@
-import { evaluateConnectionLength } from './connections.js';
+import { evaluateConnectionLength, standardCableLength } from './connections.js';
+import { getRotatedFootprint } from './geometry.js';
 import { findSupportingObject } from './layout-analysis.js';
 import { getRecordItems } from './record-collections.js';
 
@@ -6,6 +7,10 @@ import { getRecordItems } from './record-collections.js';
 // tidier. These are hints, never errors, and the three built-in templates
 // must produce none (they are the reference for a good desk). The AI gets
 // them as input, and they score layouts (layout-score.js).
+//
+// Each hint carries `fix`: one concrete way to resolve it, written as AI
+// actions (move / rotate / set_cable_length). It is a starting point for the
+// model, not a promise: suggestions are still checked before being shown.
 //
 // Desk frame: a device's front faces its local +y. Templates turn monitors
 // and laptops to rotation 180 so they face -y, and the person sits on the
@@ -41,11 +46,16 @@ function deskFrame(desk) {
     const dy = point.y - desk.position.y;
     return { x: dx * axisX.x + dy * axisX.y, y: dx * axisY.x + dy * axisY.y };
   };
+  const toWorld = local => ({
+    x: desk.position.x + axisX.x * local.x + axisY.x * local.y,
+    y: desk.position.y + axisX.y * local.x + axisY.y * local.y,
+  });
   return {
     desk,
     halfLength,
     halfDepth,
     toLocal,
+    toWorld,
     seatLocal: { x: 0, y: -(halfDepth + HEURISTIC_LIMITS.seatDistance) },
     // The direction a screen should face: from the desk towards the seat.
     towardSeat: { x: -axisY.x, y: -axisY.y },
@@ -72,6 +82,29 @@ export function getDeskSeat(desk) {
 }
 
 const hint = (code, objectIds, message, extra = {}) => ({ code, severity: 'hint', objectIds, message, ...extra });
+const round = value => Math.round(value * 100) / 100;
+const move = (object, point, z) => ({ type: 'move', objectId: object.id, x: round(point.x), y: round(point.y), ...(z === undefined ? {} : { z: round(z) }) });
+
+// A floor spot beside the desk's left (-1) or right (+1) end for an object,
+// as close as the templates put a tower (5 cm gap), so its cables still reach.
+function besideDesk(frame, object, side) {
+  const along = getRotatedFootprint(object.scale, (object.rotation?.z ?? 0) - (frame.desk.rotation?.z ?? 0)).sizeX;
+  return frame.toWorld({ x: side * (frame.halfLength + along / 2 + 0.05), y: 0 });
+}
+
+function insideRoom(room, object, point) {
+  const half = Math.max(object.scale.x, object.scale.y) / 2;
+  return Math.abs(point.x) + half <= room.length / 2 && Math.abs(point.y) + half <= room.width / 2;
+}
+
+// Prefer the end nearest the object, fall back to the other one.
+function floorSpotBesideDesk(room, frame, object, preferredSide) {
+  for (const side of [preferredSide, -preferredSide]) {
+    const point = besideDesk(frame, object, side);
+    if (insideRoom(room, object, point)) return point;
+  }
+  return null;
+}
 
 export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
   const objects = getRecordItems(rawObjects).filter(object => object?.position && object?.scale);
@@ -90,17 +123,27 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
   for (const monitor of objects.filter(isMonitor)) {
     const frame = deskUnder(monitor);
     if (!frame) {
-      if (frames.size > 0) hints.push(hint('monitor_not_on_desk', [monitor.id], `${monitor.name}没有放在桌面上`));
+      if (frames.size > 0) {
+        const [frame] = frames.values();
+        hints.push(hint('monitor_not_on_desk', [monitor.id], `${monitor.name}没有放在桌面上`, {
+          fix: [move(monitor, frame.toWorld({ x: 0, y: frame.halfDepth / 2 }))],
+        }));
+      }
       continue;
     }
     if (!monitorsByDesk.has(frame)) monitorsByDesk.set(frame, []);
     monitorsByDesk.get(frame).push(monitor);
     const local = frame.toLocal(monitor.position);
     if (local.y - frame.seatLocal.y < HEURISTIC_LIMITS.minViewingDistance) {
-      hints.push(hint('monitor_too_close', [monitor.id], `${monitor.name}离人太近，看久了眼睛累`));
+      const targetY = Math.min(frame.seatLocal.y + HEURISTIC_LIMITS.minViewingDistance + 0.15, frame.halfDepth - monitor.scale.y / 2);
+      hints.push(hint('monitor_too_close', [monitor.id], `${monitor.name}离人太近，看久了眼睛累`, {
+        fix: [move(monitor, frame.toWorld({ x: local.x, y: targetY }))],
+      }));
     }
     if (facingAngleDegrees(monitor, frame.towardSeat) > HEURISTIC_LIMITS.maxFacingAngle) {
-      hints.push(hint('monitor_facing_away', [monitor.id], `${monitor.name}没有朝向座位`));
+      hints.push(hint('monitor_facing_away', [monitor.id], `${monitor.name}没有朝向座位`, {
+        fix: [{ type: 'rotate', objectId: monitor.id, rotationZ: round(((frame.desk.rotation?.z ?? 0) + 180) % 360) }],
+      }));
     }
   }
   for (const [frame, monitors] of monitorsByDesk) {
@@ -108,27 +151,39 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
     const limit = monitors.length === 1 ? HEURISTIC_LIMITS.singleMonitorOffset : HEURISTIC_LIMITS.monitorGroupOffset;
     if (Math.abs(centre) > limit) {
       const subject = monitors.length === 1 ? monitors[0].name : '显示器';
-      hints.push(hint('monitor_off_center', monitors.map(monitor => monitor.id), `${subject}偏离了座位正前方`));
+      hints.push(hint('monitor_off_center', monitors.map(monitor => monitor.id), `${subject}偏离了座位正前方`, {
+        fix: monitors.map(monitor => {
+          const local = frame.toLocal(monitor.position);
+          return move(monitor, frame.toWorld({ x: local.x - centre, y: local.y }));
+        }),
+      }));
     }
   }
 
   for (const laptop of objects.filter(isLaptop)) {
     const frame = deskUnder(laptop);
-    if (frame && frame.toLocal(laptop.position).y > 0) {
-      hints.push(hint('laptop_at_back', [laptop.id], `${laptop.name}放在桌子后面，打字够不着`));
+    const local = frame?.toLocal(laptop.position);
+    if (frame && local.y > 0) {
+      hints.push(hint('laptop_at_back', [laptop.id], `${laptop.name}放在桌子后面，打字够不着`, {
+        fix: [move(laptop, frame.toWorld({ x: local.x, y: -frame.halfDepth + laptop.scale.y / 2 + 0.05 }))],
+      }));
     }
   }
 
   for (const tower of objects.filter(isTower)) {
     const frame = deskUnder(tower);
+    const towerFix = towerFrame => {
+      const spot = floorSpotBesideDesk(room, towerFrame, tower, towerFrame.toLocal(tower.position).x < 0 ? -1 : 1);
+      return spot ? { fix: [move(tower, spot, tower.scale.z / 2)] } : {};
+    };
     if (frame && frame.inMiddle(frame.toLocal(tower.position))) {
-      hints.push(hint('tower_on_desk_center', [tower.id], `${tower.name}占着桌面中间`));
+      hints.push(hint('tower_on_desk_center', [tower.id], `${tower.name}占着桌面中间`, towerFix(frame)));
     }
     if (onFloor(tower)) {
       for (const floorFrame of frames.values()) {
         const local = floorFrame.toLocal(tower.position);
         if (floorFrame.inMiddle(local) && floorFrame.underDesk(local)) {
-          hints.push(hint('tower_blocks_legroom', [tower.id], `${tower.name}挡住了桌下放腿的地方`));
+          hints.push(hint('tower_blocks_legroom', [tower.id], `${tower.name}挡住了桌下放腿的地方`, towerFix(floorFrame)));
           break;
         }
       }
@@ -136,14 +191,26 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
   }
 
   for (const strip of objects.filter(isStrip)) {
-    if (deskUnder(strip)) hints.push(hint('strip_on_desk', [strip.id], `${strip.name}放在桌面上，显得乱也容易碰到`));
+    const frame = deskUnder(strip);
+    if (frame) {
+      // On the floor under the back edge, out of the way of feet.
+      const spot = frame.toWorld({ x: 0, y: frame.halfDepth - strip.scale.y / 2 - 0.02 });
+      hints.push(hint('strip_on_desk', [strip.id], `${strip.name}放在桌面上，显得乱也容易碰到`, {
+        fix: [move(strip, spot, strip.scale.z / 2)],
+      }));
+    }
   }
 
   for (const router of objects.filter(isRouter)) {
     if (!onFloor(router)) continue;
     for (const frame of frames.values()) {
       if (frame.underDesk(frame.toLocal(router.position))) {
-        hints.push(hint('router_buried', [router.id], `${router.name}被桌子挡住，信号可能变差`));
+        // The end away from a tower, so the two do not end up in one spot.
+        const tower = objects.find(object => isTower(object) && onFloor(object));
+        const side = tower && frame.toLocal(tower.position).x > 0 ? -1 : 1;
+        const spot = floorSpotBesideDesk(room, frame, router, side);
+        hints.push(hint('router_buried', [router.id], `${router.name}被桌子挡住，信号可能变差`,
+          spot ? { fix: [move(router, spot, router.scale.z / 2)] } : {}));
         break;
       }
     }
@@ -156,7 +223,10 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
     if (length.cableLength > length.recommendedLength * HEURISTIC_LIMITS.cableSlackFactor
       && extra > HEURISTIC_LIMITS.cableSlackMetres) {
       hints.push(hint('cable_too_long', [connection.fromObjectId, connection.toObjectId],
-        `${connection.name}比需要的长很多，容易缠在一起`, { connectionIds: [connection.id] }));
+        `${connection.name}比需要的长很多，容易缠在一起`, {
+          connectionIds: [connection.id],
+          fix: [{ type: 'set_cable_length', connectionId: connection.id, length: standardCableLength(length.recommendedLength) }],
+        }));
     }
   }
 
