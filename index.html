@@ -8,6 +8,23 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Browsers older than the build target (Chrome/Edge 111, Firefox 114,
+      // Safari/iOS 16.4) may not run the app at all and would show a blank
+      // page. Check a few features the app needs and explain instead.
+      (function () {
+        var supported = typeof structuredClone === 'function'
+          && typeof Object.hasOwn === 'function'
+          && typeof Array.prototype.at === 'function'
+          && typeof window.localStorage !== 'undefined';
+        if (supported) return;
+        window.__DESKLAB_UNSUPPORTED__ = true;
+        document.getElementById('root').innerHTML = '<div role="alert" style="max-width:420px;margin:15vh auto;padding:24px;'
+          + 'font:14px/1.7 system-ui,sans-serif;color:#334e68;text-align:center">'
+          + '<strong style="display:block;margin-bottom:8px;font-size:17px;color:#1f2933">你的浏览器版本太旧，DeskLab 打不开</strong>'
+          + '请升级到最新版的 Chrome、Edge 或 Safari（iPhone 需 iOS 16.4 及以上），或换用其他浏览器打开这个网址。</div>';
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
