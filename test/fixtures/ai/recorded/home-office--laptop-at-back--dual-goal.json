@@ -1,0 +1,68 @@
+{
+  "scene": "home-office/laptop-at-back",
+  "goal": "双屏办公",
+  "recorded": "2026-10-30",
+  "model": "deepseek-flash",
+  "acceptedCount": 0,
+  "response": {
+    "version": 1,
+    "model": "deepseek-flash",
+    "suggestions": [
+      {
+        "id": "s1",
+        "title": "笔记本挪到显示器左侧",
+        "reason": "把笔记本从显示器后面移到左边，两台屏幕并排，打字和看屏幕都顺手，也不会互相挡住。",
+        "category": "ergonomics",
+        "actions": [
+          {
+            "type": "move",
+            "objectId": "laptop",
+            "x": -0.42,
+            "y": 1.45
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "title": "笔记本屏幕转向座位",
+        "reason": "笔记本屏幕朝向自己，双屏并排时视线更自然，不用扭头看。",
+        "category": "ergonomics",
+        "actions": [
+          {
+            "type": "rotate",
+            "objectId": "laptop",
+            "rotationZ": 180
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "title": "插排挪到桌下靠墙",
+        "reason": "插排收进桌下靠墙的位置，脚下更整洁，也不容易被踢到。",
+        "category": "safety",
+        "actions": [
+          {
+            "type": "move",
+            "objectId": "power-strip",
+            "x": 0,
+            "y": 1.72
+          }
+        ]
+      },
+      {
+        "id": "s4",
+        "title": "电源适配器收到桌下",
+        "reason": "把笔记本电源收在桌下靠墙处，桌面和地面都更清爽，走路不易绊到。",
+        "category": "safety",
+        "actions": [
+          {
+            "type": "move",
+            "objectId": "power-adapter-laptop",
+            "x": 0.45,
+            "y": 1.72
+          }
+        ]
+      }
+    ]
+  }
+}
