@@ -127,7 +127,7 @@ npm start
 
 - Do NOT overwrite or delete: `D:\desklab\backend\data\default-project.json`
   (the owner's pre-2026-10-30 project; the frontend no longer reads it. To
-  move it into the browser: in the app, 更多 → 导入 the file, then 保存项目.)
+  move it into the browser: in the app, 更多 → 导入 JSON, pick the file, then 保存项目.)
   Backend tests that touch runtime data should back it up and restore it, or use isolated test storage.
 
 - Never claim browser/visual QA unless actually performed. If browser runtime fails, record the failure instead of pretending.
