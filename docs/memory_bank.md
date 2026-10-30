@@ -35,6 +35,217 @@ Last updated: 2026-10-30, Asia/Singapore
 
 还剩：Leo 审阅该 PR，不合并。
 
+## 协作规则
+
+两位贡献者会交替推进这个仓库：**Desklab**（Grok Bot，经 Cursor cloud agents，提交作者名 `grok`）和 **Claude**（提交作者名 `claude`）。动工前先读 `docs/AUTONOMOUS_ROADMAP.md`，再读完本文件。任何代码或文档改动，必须在同一个 PR 或同一次推送里追加下面的「进度记录」一条：日期（UTC+8）、贡献者、分支或 PR 链接、做了什么、还剩什么。没有这条记录的改动不算完成。
+
+## 进度记录 / Progress Log
+
+最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。Claude 在 master 上的记录原先写在正文里，这里按提交作者收成同一份日志。
+
+### 2026-10-30 · Desklab · [PR #2](https://github.com/z1506007392-ops/desklab-frontend/pull/2)
+
+把当时的 `master`（`28c0216`）合并进 `docs/glb-models`。保留 Claude 的代码和文档，也保留本 PR 的协作规则、进度记录、`AGENTS.md`、`CLAUDE.md`、README 指针和 `ATTRIBUTION.md`。冲突只在 `README.md` 和 `docs/memory_bank.md`。还剩：E13 评测余下 6 个请求、E10 等负责人先放入技能、H2 的 KV 限流绑定，以及屏幕发黑、近景功耗标签和线缆过大。
+
+### 2026-10-30 · Claude · [`28c0216`](https://github.com/z1506007392-ops/desklab-frontend/commit/28c0216)
+
+`d7094e0`。E13：每条布局提示带上可直接用的 `fix`，提示词 v2 在同一批 19 个请求上把采纳率从 25% 提到 53%。后 6 个请求撞上每小时限额，没有重跑。E10 未改代码就放开，等负责人先把技能放进仓库。
+
+### 2026-10-30 · Claude · [`eecabdb`](https://github.com/z1506007392-ops/desklab-frontend/commit/eecabdb)
+
+`66231cb`。C8：用户可以针对上一次 AI 回答再说一句，服务端把上一轮建议和这句话送回去。阶段 C 结束。还剩阶段 E。
+
+### 2026-10-30 · Claude · [`6525476`](https://github.com/z1506007392-ops/desklab-frontend/commit/6525476)
+
+负责人暂缓 H2（Cloudflare KV 上的共享限流）。限流仍是单实例内存。
+
+### 2026-10-30 · Claude · [`886b332`](https://github.com/z1506007392-ops/desklab-frontend/commit/886b332)
+
+`ca62f5c`、`c1ee1ab`。C7：对线上 DeepSeek 跑完第一轮评测，各项门槛都过，提示词不用改。评测可以在限额处停下再续跑。记下两个没帮上忙的场景，交给 E13。
+
+### 2026-10-30 · Claude · [`e2533ce`](https://github.com/z1506007392-ops/desklab-frontend/commit/e2533ce)
+
+负责人已在 Cloudflare 配好 `DEEPSEEK_API_KEY` 并重新部署。线上 `/api/ai/layout` 返回 200，模型名为 `deepseek-flash`。C7 可以开始。
+
+### 2026-10-30 · Claude · [`e4018ea`](https://github.com/z1506007392-ops/desklab-frontend/commit/e4018ea)
+
+`2297f1f`。A10：新插排不再自动插到另一只插排上。线上验收时加第二只插排会报布线问题，这里修掉。
+
+### 2026-10-30 · Claude · [`9c12f59`](https://github.com/z1506007392-ops/desklab-frontend/commit/9c12f59)
+
+D2：在 https://desklab-frontend.pages.dev 上做了桌面和手机验收（模板、保存、导出、关于页）。AI 当时仍显示未开放。发现第二只插排的串联问题（A10）。
+
+### 2026-10-30 · Claude · [`7827dda`](https://github.com/z1506007392-ops/desklab-frontend/commit/7827dda)
+
+`deaf439`。D5：补上搜索和链接预览用的描述与 `og:image`。自定义域名还没有。
+
+### 2026-10-30 · Claude · [`285ff35`](https://github.com/z1506007392-ops/desklab-frontend/commit/285ff35)
+
+`0209fa0`。D4：过旧的浏览器看到「版本太旧」，应用不再启动。Safari、Firefox、微信内置浏览器还没在真机上验过。
+
+### 2026-10-30 · Claude · [`bc2fd15`](https://github.com/z1506007392-ops/desklab-frontend/commit/bc2fd15)
+
+`f3811c7`。D3：页面出错时给出可复制的提示，不把内容发出去。GLB 回退和 ResizeObserver 的噪音不算。
+
+### 2026-10-30 · Claude · [`6ffef0a`](https://github.com/z1506007392-ops/desklab-frontend/commit/6ffef0a)
+
+`835eb4c`。D1：更多菜单里的「关于与隐私」。项目只存在本机；点「让 AI 看看」才会把布局和设备名称发给 DeepSeek。还没有联系方式。
+
+### 2026-10-30 · Claude · [`c022798`](https://github.com/z1506007392-ops/desklab-frontend/commit/c022798)
+
+`ae578ed`。C6：`npm run eval:ai` 离线评测。真模型结果等 H1。本地开发服务器默认不再限流。
+
+### 2026-10-30 · Claude · [`c3246cc`](https://github.com/z1506007392-ops/desklab-frontend/commit/c3246cc)
+
+`5407119`、`1fc4ff1`。C5：改进建议对话框里的 AI 建议，可预览、应用、撤销。A5 的懒加载在开发环境把画面留白，`LazyScene3D` 改为挂载一次；测试会把空白截图判失败。
+
+### 2026-10-30 · Claude · [`d7bda2a`](https://github.com/z1506007392-ops/desklab-frontend/commit/d7bda2a)
+
+`9a740b0`。C4：AI 动作先过规则引擎。越界、搬桌子、拆电源线、线太短等直接拒绝，并给出中文原因。
+
+### 2026-10-30 · Claude · [`4bc1f6c`](https://github.com/z1506007392-ops/desklab-frontend/commit/4bc1f6c)
+
+`4e327b5`。C3：把当前桌面收成给 AI 的摘要（座位、谁放在谁上面、线长、检查结果）。
+
+### 2026-10-30 · Claude · [`3cc8bd2`](https://github.com/z1506007392-ops/desklab-frontend/commit/3cc8bd2)
+
+`7df818b`。C2：给布局打分，用来判断 AI 的改动有没有变好。未建模的缺线不计入。
+
+### 2026-10-30 · Claude · [`881f471`](https://github.com/z1506007392-ops/desklab-frontend/commit/881f471)
+
+`1a0a2ae`。C1：舒适和整齐方面的布局提示（路线图 6.6.1 的 10 条）。模板和场景生成组合都应是 0 条提示。
+
+### 2026-10-30 · Claude · [`b15678f`](https://github.com/z1506007392-ops/desklab-frontend/commit/b15678f)
+
+`3287f5d`。B6：界面测试可以代答 AI 接口。阶段 B 结束。还剩阶段 C 的建议校验和界面。
+
+### 2026-10-30 · Claude · [`221762d`](https://github.com/z1506007392-ops/desklab-frontend/commit/221762d)
+
+`f38b3cf`。B5：浏览器端请求 AI 布局建议的客户端，错误有中文说明。
+
+### 2026-10-30 · Claude · [`2739d5c`](https://github.com/z1506007392-ops/desklab-frontend/commit/2739d5c)
+
+`ea51b15`。B4：`npm run dev:api` 在本机跑同一个 AI 处理函数；`AI_MOCK=1` 不需要密钥。
+
+### 2026-10-30 · Claude · [`c831074`](https://github.com/z1506007392-ops/desklab-frontend/commit/c831074)
+
+`202c2c8`。B3：按地址的每小时上限和全站每日上限（北京时间零点）。有 KV 就用 KV，否则用本机内存。
+
+### 2026-10-30 · Claude · [`756a206`](https://github.com/z1506007392-ops/desklab-frontend/commit/756a206)
+
+`64faa10`、`60a8eca`。B1 和 B2：约定 AI 建议的格式和 DeepSeek 提示词，并加上 Cloudflare Pages 的 `/api/ai/layout`。没配密钥时返回 503。
+
+### 2026-10-30 · Claude · [`b756467`](https://github.com/z1506007392-ops/desklab-frontend/commit/b756467)
+
+`4e5aa30`。A9：GLB 缺失时先 HEAD 检查，缺了就画通用形状，不再变成未捕获的页面错误。阶段 A 的必做部分到此结束。
+
+### 2026-10-30 · Claude · [`f80e841`](https://github.com/z1506007392-ops/desklab-frontend/commit/f80e841)
+
+`b45316e`。A7：界面上漏出的内部名称改成白话（线缆类型、端口、越界提示、导入错误）。HDMI、DP、USB-C 和单位保留。
+
+### 2026-10-30 · Claude · [`9e916cf`](https://github.com/z1506007392-ops/desklab-frontend/commit/9e916cf)
+
+`ffefe20`。A6：灰色辅助文字对比度提到可读；审计里已修好的条目标在文档上，剩下的变成 E8–E12。
+
+### 2026-10-30 · Claude · [`cf993c8`](https://github.com/z1506007392-ops/desklab-frontend/commit/cf993c8)
+
+`126c945`。A5：3D 画面延后加载，three.js 单独成块。下载失败和崩溃的提示分开。
+
+### 2026-10-30 · Claude · [`a6905c7`](https://github.com/z1506007392-ops/desklab-frontend/commit/a6905c7)
+
+`97a4658`。A4：没有 WebGL 或画面崩溃时，其余界面仍可用，并可以重新加载 3D。顺手记下 A9（模型加载的未捕获错误）。
+
+### 2026-10-30 · Claude · [`7306d9f`](https://github.com/z1506007392-ops/desklab-frontend/commit/7306d9f)
+
+`6efa9da`。A3：第一次打开、还没保存时，画面上有「开始搭建」（模板、按我的设备生成、自己摆）。
+
+### 2026-10-30 · Claude · [`0bd266b`](https://github.com/z1506007392-ops/desklab-frontend/commit/0bd266b)
+
+`20a8fc8`。A2：工具栏下的提示在手机上改短，并换行，不再被裁掉。选中设备显示用户起的名字。
+
+### 2026-10-30 · Claude · [`d73844f`](https://github.com/z1506007392-ops/desklab-frontend/commit/d73844f)
+
+`940e696`。A1：「更多」里的导入导出改成「导入备份 / 导出备份」等白话，坏文件有明确的中文错误。
+
+### 2026-10-30 · Claude · [`51b7f7b`](https://github.com/z1506007392-ops/desklab-frontend/commit/51b7f7b)
+
+写下 `docs/AUTONOMOUS_ROADMAP.md`：阶段 A–E 的任务板和 DeepSeek 设计，给后续代理当入口。
+
+### 2026-10-30 · Claude · [`b3c3daa`](https://github.com/z1506007392-ops/desklab-frontend/commit/b3c3daa)
+
+`62ca3a3`、`d7dc408`。仓库是私有的，不用 GitHub Pages。改由 Cloudflare Pages 构建 `master`，站点 https://desklab-frontend.pages.dev 。GitHub Actions 只跑检查。`e4018ea` 是后来的 A10 文档，不是这次部署本身。
+
+### 2026-10-30 · Claude · [`d52561b`](https://github.com/z1506007392-ops/desklab-frontend/commit/d52561b)
+
+`f68761f`。保存后若 7 天没导出，黄条提醒导出备份。导出或「以后再说」会消掉。
+
+### 2026-10-30 · Claude · [`f3f2cd1`](https://github.com/z1506007392-ops/desklab-frontend/commit/f3f2cd1)
+
+`8447785`、`5919d80`。每个访客的项目改存在自己的浏览器里（含上一份备份），不再读写后端那份共享文件。修了 StrictMode 卸掉状态通知器之后开发环境不显示状态的问题。
+
+### 2026-10-29 · Claude · [`8bb93ea`](https://github.com/z1506007392-ops/desklab-frontend/commit/8bb93ea)
+
+`c21c28e`。旧存档打开时：目录端口改用现在的 GLB 锚点；过扁的 15 寸笔记本恢复成打开的高度，底面不动。提交作者约定为 Claude `claude`、Grok `grok`。转动视角会使项目变成未保存。
+
+### 2026-10-29 · Desklab · [PR #2](https://github.com/z1506007392-ops/desklab-frontend/pull/2)
+
+分支 `docs/glb-models`。补了 GLB 交接说明（`docs/memory_bank.md`、`README.md`、`public/models/ATTRIBUTION.md`），并写上本进度记录和协作规则（`AGENTS.md`、`CLAUDE.md`）。还剩：屏幕是暗的、近景里功耗标签和线缆过大、主机背面没有接口造型、已保存项目仍保留旧锚点。
+
+### 2026-10-29 · Desklab · [PR #1](https://github.com/z1506007392-ops/desklab-frontend/pull/1)
+
+合并提交 [`1f10bfc`](https://github.com/z1506007392-ops/desklab-frontend/commit/1f10bfc)，接线提交 [`4ee93b6`](https://github.com/z1506007392-ops/desklab-frontend/commit/4ee93b6)。目录设备改画 `public/models/<modelId>.glb`：`BASE_URL`、预加载、空闲时保留自发光、锚点改到接口上、墙壁插座网格偏航 180°、加载失败时 GLB → 通用形状 → 方块。还剩：上面的视觉缺口，以及交接文档（本 PR 在补）。
+
+### 2026-10-29 · Desklab · [`3f556ec`](https://github.com/z1506007392-ops/desklab-frontend/commit/3f556ec)
+
+分支 `feat/glb-models`。为 10 个目录设备提交 GLB，以及 Blender 4.2 无界面生成脚本 `tools/blender-models/`。网格按 `defaultScale` 制作、包围盒居中、+Y 朝上、正面朝 +Z。还剩：场景仍在画通用形状，尚未把 `assetUrl` 指到这些文件。
+
+### 2026-10-28 · 未记录 · [`11cfcc3`](https://github.com/z1506007392-ops/desklab-frontend/commit/11cfcc3)
+
+`ea2dbc4..11cfcc3`，`master`。功率和坐标轴标签改为始终朝向相机；直流设备优先接到已有适配器；每对电脑和显示器只建议一根视频线；桌面模板、按设备清单生成、购物清单、属性面板改成白话、资产库显示规格；新设备落到桌边空位；没画的电源、视频、网线视为模型未完成，由系统补上，而不是当成故障。仓库说明改指向新的 GitHub 账号。还剩：目录设备仍是通用形状，没有 GLB。
+
+### 2026-10-25 · 未记录 · [`a8d5489`](https://github.com/z1506007392-ops/desklab-frontend/commit/a8d5489)
+
+`c71c8c0..a8d5489`。按家庭用户收窄目录：去掉 UPS、交换机、NAS、猫、迷你主机、一体机和多余桌子，只留一张可调书桌；路由建议改为普通网口；JSON 工具和坐标轴收进「更多」。依赖审计清到 0。还剩：建模仍然靠逐件摆放，模板和购物清单尚未做。
+
+### 2026-09-09 · 未记录 · [`bfa0549`](https://github.com/z1506007392-ops/desklab-frontend/commit/bfa0549)
+
+`ba0acd3..bfa0549`。改进建议的结果改成用户能看懂的说法，并加上 Playwright 用户流程。还剩：目录仍含家庭用户用不到的设备。
+
+### 2026-08-01 · 未记录 · [`2dfb441`](https://github.com/z1506007392-ops/desklab-frontend/commit/2dfb441)
+
+`38459dd..2dfb441`。应用「加长线缆」时重新校验长度，避免过期补丁。还剩：建议面板的措辞和端到端流程。
+
+### 2026-07-17 · 未记录 · [`440a79b`](https://github.com/z1506007392-ops/desklab-frontend/commit/440a79b)
+
+`8a82217..440a79b`。拒绝对象、布局、端口、线缆上已经过期的自动补丁；跳过含糊的线缆建议；自动连接使用不重复的 id；应用时重算自动线长。还剩：手动改长度的补丁还没做同样的重算。
+
+### 2026-07-16 · 未记录 · [`84c5a68`](https://github.com/z1506007392-ops/desklab-frontend/commit/84c5a68)
+
+`c35262e..84c5a68`。建议引擎忽略非法或重复的对象 id、端口 id、型号 id，非法功率和最大负载退回目录值，不透明 id 原样保留。还剩：过期补丁仍可能被应用。
+
+### 2026-07-15 · 未记录 · [`ee48d87`](https://github.com/z1506007392-ops/desklab-frontend/commit/ee48d87)
+
+`dc0a188..ee48d87`。分析器拒绝空的连接和端口字段、未知线缆类型、不支持的端口方向、重复 id；报告非法锚点和非法端口集合；畸形的实时数据不再把分析打崩。还剩：建议引擎对同一类脏数据的防护。
+
+### 2026-07-14 · 未记录 · [`a588e1e`](https://github.com/z1506007392-ops/desklab-frontend/commit/a588e1e)
+
+`257d1df..a588e1e`。通用模型收进目录包围盒并加上覆盖测试；剪贴板导入、历史分组、功率元数据、网络和交换机建议、购买后的接线引导、自动连接的幂等和过期目标都收紧了一轮。还剩：分析器对空字段和畸形实时数据仍然不严。
+
+### 2026-07-13 · 未记录 · [`4660198`](https://github.com/z1506007392-ops/desklab-frontend/commit/4660198)
+
+`18ce68a..4660198`。补上升降桌和 L 型桌的通用模型，并让已有通用模型的零件落在目录尺寸内。还剩：交换机、UPS、插排的包围盒，以及建议引擎的脏数据防护。
+
+### 2026-07-05 · 未记录 · [`e707b9c`](https://github.com/z1506007392-ops/desklab-frontend/commit/e707b9c)
+
+`3e3b2d7..e707b9c`。为台式主机、迷你主机、电源适配器、墙壁插座、笔记本、NAS、猫、一体机、书桌、电竞桌加上通用低模，并同步记忆库。还剩：升降桌、L 型桌，以及这些模型是否越出目录包围盒。
+
+### 2026-06-26 · 未记录 · [`c9fff49`](https://github.com/z1506007392-ops/desklab-frontend/commit/c9fff49)
+
+`8521765..c9fff49`。为显示器、插排、路由器、交换机、UPS 加上代码生成的通用低模。还剩：电脑、插座、家具等其余目录项。
+
+### 2026-06-25 · 未记录 · [`114ed1b`](https://github.com/z1506007392-ops/desklab-frontend/commit/114ed1b)
+
+`eef96fe..114ed1b`。前端仓库在 D 盘迁移后重新建库。功率读写收拢到同一套分类；建议引擎避开缺坐标的设备；端口锚点不重叠；修掉 React 19 的 `inert` 警告。还剩：目录设备没有通用外形，分析仍是方块。
 ## Mission
 
 DeskLab is a connected 3D room desktop layout and cabling tool. The long-term product direction is:
@@ -165,12 +376,14 @@ npm start
 
 - Never claim browser/visual QA unless actually performed. If browser runtime fails, record the failure instead of pretending.
 
-## Current Git State (2026-10-28 handoff)
+## Current Git State (2026-10-30 handoff)
 
 ### Frontend `D:\desklab\frontend`
-- Feature HEAD: `8447785 feat: save each visitor's project in their own browser`
+- Feature HEAD on `master` at this merge: `28c0216 docs: record E13 results and pause E10`
 - Since 2026-10-29 the product owner wants each verified slice pushed straight
   to `origin/master` (pull --rebase and re-verify first if the remote moved).
+- Catalog devices render from `public/models/<modelId>.glb`. See
+  "Catalog GLB models (2026-10-29)" below.
 - Untracked: none expected.
 
 Historical commits captured at the 2026-07-14 baseline (most recent first,
@@ -283,31 +496,16 @@ eef96fe chore: rebaseline frontend after D drive move
 Power-load reads are fully centralized: an audit of `src/` for raw
 `maxLoad ??` / `wattage ??` reads or inlined `> maxLoad * 0.9` thresholds is clean.
 
-Code-native generic model assets now exist for:
-- `monitor-24`, `monitor-27`, `ultrawide-monitor`
-- `power-strip`
-- `router`
-- `switch`
-- `ups`
-- `desktop-pc`
-- `mini-pc`
-- `power-adapter`
-- `wall-outlet`
-- `laptop-15`
-- `nas-2bay`
-- `modem`
-- `all-in-one`
-- `office-desk`
-- `gaming-desk`
-- `standing-desk`
-- `l-desk`
+Catalog devices render from in-house GLB meshes in `public/models/` (merged
+2026-10-29 as `1f10bfc`). The code-native generic shapes are the load fallback,
+not the primary mesh. Details are in "Catalog GLB models (2026-10-29)".
 
-The generic model-asset backlog for catalog models with `assetUrl: null` is now
-covered. All generic furniture, monitors, computers, power adapters, wall
-Every catalog generic model is now constrained through the shared normalized
-layout module and a catalog-driven regression test prevents future coverage
-gaps. The next safe target is a small hardening opportunity found from current
-code evidence.
+Historical note: code-native generic assets were added for the catalog as it
+stood in July 2026, including models later removed from the home catalog
+(switch, UPS, NAS, modem, mini PC, all-in-one, and the extra desks). Those
+removed models are no longer offered. A saved object of a removed model still
+loads and draws as the plain box. The generic layouts that remain are still
+checked by the catalog-driven bounds test.
 
 ### Runtime QA performed (2026-06-25, real, not faked)
 - Booted both servers: backend `node server.js` (3001) + frontend `vite` (5173),
@@ -2921,6 +3119,79 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   normalizes line endings. Some source files are CRLF in the working tree;
   scripted edits must match the file's line endings.
 
+### Catalog GLB models (2026-10-29)
+
+The ten home-catalog devices now render from GLB files instead of the
+hand-built `Generic*Model` shapes. Merged to `master` as `1f10bfc`
+(PR #1; commits `3f556ec` models + generator, `4ee93b6` scene wiring).
+
+Files:
+- `public/models/<modelId>.glb` for `office-desk`, `desktop-pc`, `laptop-15`,
+  `monitor-24`, `monitor-27`, `ultrawide-monitor`, `router`, `power-strip`,
+  `wall-outlet`, `power-adapter`.
+- Generator: `tools/blender-models/` (Blender 4.2 headless). See that
+  directory's README to regenerate. `common.finalize_and_export()` fits each
+  mesh to the catalog dimensions and writes the GLB.
+- Wiring: `src/domain/catalog.js` (`catalogModelUrl`), `src/components/SceneObjects.jsx`
+  (`GLBModel`, preload, wall-outlet yaw), `src/domain/glb-highlight.js`.
+
+Conventions (must match `SceneObjects.jsx` / `coordinates.js`):
+- Metres. Each GLB is built at exactly the catalog `defaultScale`. `GLBModel`
+  scales by `obj.scale / defaultScale`, which is 1 until the user resizes.
+- Origin is the centre of the bounding box, same as `FallbackBox`.
+- Exported glTF +Y up. In three.js: X = width, Y = height, Z = depth, front
+  faces +Z (the same side as the screens and front panels on the generic
+  shapes). While modelling in Blender the front faces Blender −Y.
+
+Rendering:
+- Each catalog `assetUrl` is `models/<modelId>.glb`, prefixed with Vite's
+  `import.meta.env.BASE_URL` (root `/` under `node --test`).
+- `hydrateProjectObjects` copies `template.assetUrl` over a stored URL, so a
+  saved project picks up the current mesh on load even if it stored `null` or
+  a stale path.
+- `useGLTF.preload` runs for every catalog URL when `SceneObjects.jsx` loads.
+- Fallback chain: GLB, then `Generic*Model` when `getGenericModelAsset` has an
+  entry, then the plain box. Suspense and the GLTF error boundary both use
+  that fallback. Do not delete the generic shapes; they are the failure path.
+- Idle materials keep the emissive colour and strength authored in the file
+  (`applyGlbHighlight`). Selection, related, and hover still replace emissive,
+  so the highlight works and LEDs / the PC fan ring stay lit when nothing is
+  selected.
+
+Anchors (`getDefaultPortAnchor` / `PORT_ANCHOR_BY_MODEL`, normalized x width,
+y depth, z height; +y is the authored front / three.js +Z):
+- Measured from the mesh so new cables meet the connector. Monitors and the
+  tower use the rear face (the tower has no molded rear ports, so AC / HDMI /
+  DP / Ethernet meet the back panel). Laptop ports sit on the sides of the
+  base. Router jacks are on the front, below the antenna midline; the four
+  jacks look the same, so DC uses the leftmost. Power-strip sockets are on the
+  top; the input is the cable stub at −X. The adapter AC inlet is the front
+  centre; DC leaves the back.
+- Wall outlet: catalog anchors stay on local −Y. Wall snap aims that side into
+  the room. The face plate is authored on +Z, so both the GLB and the generic
+  outlet are yawed 180° (`WALL_OUTLET_MESH_YAW`) and the plate lands on the
+  room-facing side. Do not flip the anchors to +Y; that would send the cable
+  into the wall.
+- At the time of PR #1, `withPortAnchors` kept a stored anchor. Claude's
+  `c21c28e` later changed hydrate: catalog ports take `PORT_ANCHOR_BY_MODEL`
+  again, and a laptop-15 whose height is under 60% of the default is restored
+  to the open-lid height (bottom unchanged). Ports and models outside the
+  catalog still keep their stored anchors.
+
+Known gaps (seen while checking the 电竞桌 template in Chrome; not fixed):
+- Monitor and laptop screens are dark unlit panels, so they read as black.
+- Power-load labels (`PowerStatusOverlay`) and cable strokes stay large in
+  world/pixel size, so they dominate a close-up.
+- The tower has no molded rear I/O; cables end on the rear panel.
+- The desk top is oak and the outlet plate is white, not the catalog swatches
+  (`#1e88e5`, `#ffeb3b`). Other bodies use the catalog colour.
+- The desk cable tray sits on the near edge (catalog −Y) because the desk is
+  placed at rotation 0.
+
+Verification on the wiring commit: `npm test` 306/306, `npm run test:ui`
+26/26, lint, build (known large-chunk warning). All ten GLBs returned HTTP 200
+from the dev server, including ones the template did not place (preload).
+
 ### External Chrome DOM runtime check (2026-07-14)
 
 - Performed a real local runtime check with external Chrome headless against
@@ -2993,7 +3264,8 @@ Core modules:
 - `analysis.js` — wiring analysis: port validation, power cycle detection, overload/warning, shared `buildPowerGraph()` for load aggregation
 - `layout-analysis.js` — layout analysis: overlap, out-of-bounds, floating, outlet-off-wall
 - `connections.js` — port compatibility, cable type inference, distance/length evaluation
-- `catalog.js` — device catalog (9 home-user models across 5 categories), hydration, port anchors, `describeCatalogModel()` spec lines
+- `catalog.js` — device catalog (9 home-user models across 5 categories), `catalogModelUrl()` (Vite `BASE_URL`), hydration, port anchors, `describeCatalogModel()` spec lines
+- `glb-highlight.js` — idle GLB materials keep their authored emissive; selection, related, and hover replace it
 - `placement.js` — new-object placement; with existing objects it searches free spots on/around the desk
 - `scene-builder.js` — `buildDeskScene()`: device list → placed, wired, camera-framed scene with notes
 - `desk-templates.js` — built-in home-user templates on top of the scene builder
@@ -3010,6 +3282,16 @@ Core modules:
 - `camera-snapshot.js` / `coordinates.js` / `project-export.js`
 
 Test files under `test/` mirror the domain modules.
+
+### 3D scene (`src/components/SceneObjects.jsx`)
+
+Catalog objects draw `public/models/<modelId>.glb` first. Those files are
+generated by `tools/blender-models/` (Blender 4.2 headless) at the catalog
+`defaultScale`, bbox-centred, glTF +Y up, front toward three.js +Z. If the GLB
+is missing or fails to load, the generic shape for that `modelId` is used, then
+the plain box. `useGLTF.preload` fetches every catalog model when the module
+loads. The wall-outlet mesh is yawed 180° so its face plate meets the
+room-facing anchors. See "Catalog GLB models (2026-10-29)".
 
 ### Recommendations Module (`recommendations.js`)
 
@@ -3139,4 +3421,4 @@ The user is the product owner. Keep updates brief: what was found, what was chan
 5. Make the smallest fix.
 6. Run full verification.
 7. Commit only relevant files.
-8. Update this memory bank only at handoff, quota low, or model switch.
+8. In the same PR, append one 进度记录 entry (see 协作规则 at the top). Do not wait for a separate docs pass.
