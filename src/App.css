@@ -1346,6 +1346,10 @@
   box-shadow: var(--shadow-dialog);
 }
 
+.modal-container:focus {
+  outline: none;
+}
+
 .modal-header {
   padding: 16px 16px 8px 24px;
   display: flex;

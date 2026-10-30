@@ -1,5 +1,6 @@
 import { AiSuggestionsPanel } from './AiSuggestions.jsx';
 import { CloseIcon } from './Icons.jsx';
+import { useDialogFocus } from './useDialogFocus.js';
 
 // The "自动检查与改进建议" dialog. Applying a suggestion stays in App so it
 // shares the undo history with the rest of the editor.
@@ -32,6 +33,7 @@ export default function RecommendationsDialog({
   onCopyShoppingList,
   onLocate,
 }) {
+  const dialogRef = useDialogFocus();
   const openIssueCount = layoutIssueCount + wiringIssueCount;
 
   return (
@@ -42,6 +44,8 @@ export default function RecommendationsDialog({
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="modal-container wiring-report"
         role="dialog"
         aria-modal="true"

@@ -1455,6 +1455,21 @@ export default function App() {
     </div>
   );
 
+  const movePanelTab = (event, current) => {
+    const order = ['properties', 'connections'];
+    const index = order.indexOf(current);
+    let next;
+    if (event.key === 'ArrowRight') next = order[(index + 1) % order.length];
+    else if (event.key === 'ArrowLeft') next = order[(index - 1 + order.length) % order.length];
+    else if (event.key === 'Home') next = order[0];
+    else if (event.key === 'End') next = order[order.length - 1];
+    else return;
+    event.preventDefault();
+    event.stopPropagation();
+    setActiveTab(next);
+    document.getElementById(next === 'properties' ? 'panel-tab-properties' : 'panel-tab-connections')?.focus();
+  };
+
   return (
     <div className="app-shell">
       {/* 顶部控制栏 */}
@@ -1707,29 +1722,42 @@ export default function App() {
         {/* 右侧：面板 */}
         {isPanelOpen && (
           <div className="side-panel">
-            <div className="side-panel-tabs" role="tablist">
-              <button 
+            <div className="side-panel-tabs" role="tablist" aria-label="属性面板">
+              <button
                 type="button"
                 role="tab"
+                id="panel-tab-properties"
+                aria-controls="panel-tabpanel"
                 aria-selected={activeTab === 'properties'}
+                tabIndex={activeTab === 'properties' ? 0 : -1}
                 className={`side-panel-tab ${activeTab === 'properties' ? 'side-panel-tab-active' : ''}`}
                 onClick={() => setActiveTab('properties')}
+                onKeyDown={event => movePanelTab(event, 'properties')}
               >
                 属性
               </button>
-              <button 
+              <button
                 type="button"
                 role="tab"
+                id="panel-tab-connections"
+                aria-controls="panel-tabpanel"
                 aria-selected={activeTab === 'connections'}
+                tabIndex={activeTab === 'connections' ? 0 : -1}
                 className={`side-panel-tab ${activeTab === 'connections' ? 'side-panel-tab-active' : ''}`}
                 onClick={() => setActiveTab('connections')}
+                onKeyDown={event => movePanelTab(event, 'connections')}
               >
                 连接
               </button>
               <button onClick={() => setIsPanelOpen(false)} className="side-panel-close" aria-label="关闭面板" title="关闭面板"><CloseIcon /></button>
             </div>
 
-            <div className="side-panel-content">
+            <div
+              className="side-panel-content"
+              role="tabpanel"
+              id="panel-tabpanel"
+              aria-labelledby={activeTab === 'properties' ? 'panel-tab-properties' : 'panel-tab-connections'}
+            >
               {activeTab === 'properties' && (
                 selectedObj ? (
                   <PropertiesEditor

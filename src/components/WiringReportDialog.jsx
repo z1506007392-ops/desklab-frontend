@@ -1,4 +1,5 @@
 import { CloseIcon } from './Icons.jsx';
+import { useDialogFocus } from './useDialogFocus.js';
 
 function severityLabel(severity) {
   if (severity === 'error') return '严重';
@@ -21,6 +22,7 @@ export default function WiringReportDialog({
   onLocate,
   onShowConnections,
 }) {
+  const dialogRef = useDialogFocus();
   return (
     <div
       className="modal-overlay"
@@ -29,6 +31,8 @@ export default function WiringReportDialog({
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="modal-container wiring-report"
         role="dialog"
         aria-modal="true"

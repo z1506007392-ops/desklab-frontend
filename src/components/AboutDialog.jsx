@@ -1,9 +1,11 @@
 import { CloseIcon } from './Icons.jsx';
+import { useDialogFocus } from './useDialogFocus.js';
 
 // "关于与隐私": what DeskLab keeps, where, and what the AI feature sends.
 // Keep it true to the code: saves are only in localStorage, the AI request
 // is the scene summary plus the user's goal, and there is no analytics.
 export default function AboutDialog({ onClose }) {
+  const dialogRef = useDialogFocus();
   return (
     <div
       className="modal-overlay"
@@ -11,7 +13,7 @@ export default function AboutDialog({ onClose }) {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="modal-container wiring-report" role="dialog" aria-modal="true" aria-labelledby="about-title">
+      <div ref={dialogRef} tabIndex={-1} className="modal-container wiring-report" role="dialog" aria-modal="true" aria-labelledby="about-title">
         <div className="modal-header">
           <h3 id="about-title" className="modal-title">关于与隐私</h3>
           <button type="button" onClick={onClose} className="side-panel-close" aria-label="关闭关于与隐私" title="关闭"><CloseIcon /></button>

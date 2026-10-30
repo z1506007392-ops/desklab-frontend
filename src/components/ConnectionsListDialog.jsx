@@ -1,8 +1,10 @@
 import { describeCableType, evaluateConnectionLength } from '../domain/connections.js';
 import { CloseIcon } from './Icons.jsx';
+import { useDialogFocus } from './useDialogFocus.js';
 
 // The "全部连接清单" dialog. Deleting a cable stays in App so it can be undone.
 export default function ConnectionsListDialog({ connections, objects, onClose, onDelete }) {
+  const dialogRef = useDialogFocus();
   return (
     <div
       className="modal-overlay"
@@ -11,6 +13,8 @@ export default function ConnectionsListDialog({ connections, objects, onClose, o
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="modal-container"
         role="dialog"
         aria-modal="true"
@@ -75,6 +79,7 @@ export default function ConnectionsListDialog({ connections, objects, onClose, o
                           type="button"
                           onClick={() => onDelete(connection.id)}
                           className="ui-button ui-button-danger"
+                          aria-label={`删除 ${fromObj?.name || '未知'} 到 ${toObj?.name || '未知'} 的连接`}
                         >
                           删除
                         </button>

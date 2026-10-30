@@ -4,6 +4,7 @@ import { findModelTemplate } from '../domain/catalog.js';
 import { DESK_TEMPLATES } from '../domain/desk-templates.js';
 import DeskBuilderForm from './DeskBuilderForm.jsx';
 import { CloseIcon } from './Icons.jsx';
+import { useDialogFocus } from './useDialogFocus.js';
 
 // The "桌面模板" dialog: pick a built-in desk or generate one from a device list.
 // Scrolls to the generator only when opened from "按我的设备生成".
@@ -15,6 +16,7 @@ export default function TemplateDialog({
   onApplyTemplate,
   onGenerate,
 }) {
+  const dialogRef = useDialogFocus();
   const builderHeadingRef = useRef(null);
 
   useEffect(() => {
@@ -30,6 +32,8 @@ export default function TemplateDialog({
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="modal-container wiring-report"
         role="dialog"
         aria-modal="true"

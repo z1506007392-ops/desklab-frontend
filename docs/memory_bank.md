@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+E6：六个对话框打开时把焦点放进弹窗，Tab / Shift+Tab 在弹窗内循环，关闭后焦点回到打开它的按钮。属性面板的「属性 / 连接」可以用左右方向键切换，并加上标签页语义。连接清单里的删除按钮会读出两端设备的名字。弹窗本身不额外画焦点框，避免改外观。对比度没有改，仍由 `test/text-contrast.test.js` 守着。还剩：无（本轮要做的 E7、E2、E3、E6 都做完了；E4、E9 和要人做的 H2/H3 按要求跳过）。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 领取 E6（对话框焦点圈定、读屏能知道焦点在弹窗里，键盘可以在弹窗内循环）。还剩：E6 本身。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
@@ -3438,8 +3442,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 393 domain tests
-npm run test:ui   # 104 Chrome UI cases (103 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
+npm test          # 394 domain tests
+npm run test:ui   # 108 Chrome UI cases (107 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
