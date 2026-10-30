@@ -2786,6 +2786,13 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   0, jargon 0. Real-model run and `test/fixtures/ai/recorded/` wait for H1.
   Live check after C5: AI section shows "AI 功能暂未开放" on click, canvas
   draws. Verification: `npm test` 375, lint.
+- `835eb4c` D1 About & privacy: `components/AboutDialog.jsx`, opened from
+  更多 → 关于与隐私 (Esc closes). Must stay true to the code: saves only in
+  localStorage; AI sends room, devices, cables, user-given device names, and
+  the goal to DeepSeek only on 让 AI 看看; no analytics. No contact details:
+  the owner has not provided any (add them when given). The AI section's
+  notice was corrected (it claimed no personal info was sent). Verification:
+  `npm test` 375, `npm run test:ui` 78, lint, build; phone screenshot.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2963,7 +2970,7 @@ Frontend:
 ```bash
 cd D:\desklab\frontend
 npm test          # 375 domain tests
-npm run test:ui   # 76 Chrome UI cases; storage seeded per test, no backend
+npm run test:ui   # 78 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
