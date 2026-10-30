@@ -2793,6 +2793,13 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   the owner has not provided any (add them when given). The AI section's
   notice was corrected (it claimed no personal info was sent). Verification:
   `npm test` 375, `npm run test:ui` 78, lint, build; phone screenshot.
+- `f3811c7` D3 Error notice: `components/ErrorNotice.jsx` (region alert "出错提示")
+  listens to window error and unhandledrejection; `shouldReportError()` /
+  `formatErrorReport()` in domain/error-report.js. Ignored: ResizeObserver
+  loop, "Could not load ..." (GLB fallback; R3F reports caught errors
+  globally), AbortError. Copy falls back to `window.prompt` when the
+  clipboard is blocked. Nothing is sent. Verification: `npm test` 377,
+  `npm run test:ui` 82, lint, build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2969,8 +2976,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 375 domain tests
-npm run test:ui   # 78 Chrome UI cases; storage seeded per test, no backend
+npm test          # 377 domain tests
+npm run test:ui   # 82 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
