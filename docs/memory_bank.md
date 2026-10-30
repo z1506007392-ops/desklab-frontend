@@ -2665,7 +2665,7 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   only the port name; the out-of-room message reads 左右/前后/高度; clipboard
   copy and paste failures have plain messages; 画布 → 画面 / 桌面. Left as
   is: Ctrl+Z / Ctrl+Y in tooltips, units (m, W, MB), brand-style names
-  (HDMI, DP, USB-C). Verification: `npm test` 305, `npm run test:ui` 60,
+  (HDMI, DP, USB-C). Verification: `npm test` 306, `npm run test:ui` 60,
   lint, build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
@@ -2843,7 +2843,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 305 domain tests
+npm test          # 306 domain tests
 npm run test:ui   # 60 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)

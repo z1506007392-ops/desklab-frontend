@@ -252,7 +252,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 做法：`grep` 出所有中文字符串和 `title=`、`aria-label=`、状态提示，逐条检查：有没有内部 id、英文、"后端"、"JSON"、"payload"之类术语；语气是否像对普通人说话；有没有"错误/失败"却没告诉用户怎么办的。改完补测试中对应文本。
 - 验收：在 memory bank 记录检查范围与改动清单。
 
-**A9 [ ] 必做 — 模型文件下载失败时不留未处理的错误**
+**A9 [~] 进行中（claude，2026-10-30） 必做 — 模型文件下载失败时不留未处理的错误**
 - 现象（A4 中发现）：`/models/*.glb` 下载失败时，每个设备会正确退回简单形状，但浏览器控制台出现未捕获的 `Could not load /models/...glb` 错误（来自 `SceneObjects.jsx` 顶部的 `useGLTF.preload` 和加载器的 Promise 拒绝）。D3 加了全局错误提示后，这会被误报成"出了点问题"。
 - 做法：找到未处理的拒绝来源（预加载、`useGLTF` 内部），在不改变"退回简单形状"行为的前提下捕获并只记一条 `console.warn`。
 - 验收：`e2e/no-webgl.spec.mjs` 里"missing model files"那条测试改为断言 `evidence.errors` 为空且仍能看到 3D 画面。
