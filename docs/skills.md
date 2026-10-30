@@ -56,17 +56,23 @@ Each folder includes that upstream's license (and Impeccable's `NOTICE.md`).
 | `remove-animations` | Remove motion the UI does not need. | same | same |
 | `animation-performance` | Animations that drop frames. | same | same |
 | `animation-vocabulary` | Name a motion effect so the next prompt is precise. | same | same |
+| `web-design-guidelines` | Review UI against a local copy of the Vercel Web Interface Guidelines. Our `SKILL.md` reads `references/command.md` and does not fetch it. `command.md` is unmodified. | https://github.com/vercel-labs/web-interface-guidelines | [`434b7f91364665f2f733b310ec54809bf8f37937`](https://github.com/vercel-labs/web-interface-guidelines/commit/434b7f91364665f2f733b310ec54809bf8f37937) (2026-10-05). MIT, Copyright (c) 2025 Vercel Labs. Replaces the unlicensed skill in vercel-labs/agent-skills. |
+| `fixing-accessibility` | Audit and fix HTML accessibility (names, keyboard, focus, contrast, forms). Skill text is unmodified. | https://github.com/ibelick/ui-skills (`skills/fixing-accessibility`) | [`59193a75432e5f41c6980f53b9e6a7bd56919947`](https://github.com/ibelick/ui-skills/commit/59193a75432e5f41c6980f53b9e6a7bd56919947) (2026-10-25). MIT, Copyright (c) 2026 Julien Thibeaut. |
+| `blender-gltf-export` | DeskLab's own glTF export notes for `tools/blender-models/`: metres, Y-up, apply transforms, Principled BSDF, anchors, no Draco/meshopt, `validate.mjs`. Original text. Cites Khronos glTF-Blender-IO (Apache-2.0) and the Blender 4.2 manual by link only. | written in this repo | none (not vendored) |
 
 Paths are `.claude/skills/<skill>/`. Three.js and Emil skills are one folder
 each, not nested, so Claude Code picks them up (it loads
 `.claude/skills/<name>/SKILL.md`, not a category folder in between).
 
-## Not installed
+## Replaced (not vendored)
+
+These two were checked on 2026-10-30 and left out. The rows above are what
+this repo uses instead.
 
 | Source | Pin checked | Why it is not in the repo |
 | --- | --- | --- |
-| [web-design-guidelines](https://github.com/vercel-labs/agent-skills/tree/1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62/skills/web-design-guidelines) in [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills) | [`1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62`](https://github.com/vercel-labs/agent-skills/commit/1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62) (2026-10-27) | No license file, and the GitHub license field is empty. That is all rights reserved. Do not copy it in. The skill itself only tells the agent to fetch https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md at review time. |
-| [Blender-Developer-Tools](https://github.com/TMHSDigital/Blender-Developer-Tools) | [`1fcdfad50d1a1e7d9164787c9136214c0a508623`](https://github.com/TMHSDigital/Blender-Developer-Tools/commit/1fcdfad50d1a1e7d9164787c9136214c0a508623) (2026-10-27, version 0.158.0) | Skills, rules, examples, and docs are [CC-BY-NC-ND-4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/). The author's README says that license restricts redistributing the pack (modified copies, or selling / commercially republishing it). `snippets/` and `templates/` are MIT; the bpy and glTF guidance we wanted is not in those directories. DeskLab is heading for a public launch with paid recommendations, so this repo does not republish the pack. Install it locally if you accept the license: Claude Code `/plugin marketplace add TMHSDigital/Blender-Developer-Tools@plugin-dist` then `/plugin install blender-developer-tools@blender-developer-tools`. Cursor: clone the `plugin-dist` branch into `~/.cursor/plugins/local/blender-developer-tools` and reload. glTF pitfalls live in the upstream skill `engine-export-presets` and the rules `use-correct-axis-rna-per-exporter`, `no-unapplied-modifiers-on-export`, and `validate-imported-mesh-scale`. |
+| [web-design-guidelines](https://github.com/vercel-labs/agent-skills/tree/1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62/skills/web-design-guidelines) in [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills) | [`1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62`](https://github.com/vercel-labs/agent-skills/commit/1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62) (2026-10-27) | No license file, and the GitHub license field is empty. Replaced by `web-design-guidelines` from the MIT `web-interface-guidelines` repo. |
+| [Blender-Developer-Tools](https://github.com/TMHSDigital/Blender-Developer-Tools) | [`1fcdfad50d1a1e7d9164787c9136214c0a508623`](https://github.com/TMHSDigital/Blender-Developer-Tools/commit/1fcdfad50d1a1e7d9164787c9136214c0a508623) (2026-10-27, version 0.158.0) | Skills and rules are [CC-BY-NC-ND-4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/), which restricts redistributing the pack. Replaced by the original `blender-gltf-export` skill. |
 
 From emilkowalski/skills, these are MIT but outside the animation/motion set,
 so they were left upstream: `apple-design`, `ask-sonner`, `break-ui`,

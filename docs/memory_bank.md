@@ -15,13 +15,23 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-30 · Desklab (Grok Bot) · [PR #3](https://github.com/z1506007392-ops/desklab-frontend/pull/3)
 
+分支 `cursor/vendor-agent-skills-2dc1`。补上先前两条没放进来的技能。
+
+- `web-design-guidelines`：改用 [vercel-labs/web-interface-guidelines](https://github.com/vercel-labs/web-interface-guidelines) 的 `command.md`（`434b7f91`，MIT，Copyright (c) 2025 Vercel Labs），放在 `references/`，审查读本地副本，运行时不拉取。
+- `fixing-accessibility`：来自 [ibelick/ui-skills](https://github.com/ibelick/ui-skills)（`59193a75`，MIT，Copyright (c) 2026 Julien Thibeaut）。
+- `blender-gltf-export`：按 `tools/blender-models/` 自己写的 glTF 导出说明，不收录 CC-BY-NC-ND 的 Blender Developer Tools。
+
+还剩：Leo 审阅该 PR，不合并。
+
+### 2026-10-30 · Desklab (Grok Bot) · [PR #3](https://github.com/z1506007392-ops/desklab-frontend/pull/3)
+
 分支 `cursor/vendor-agent-skills-2dc1`。
 
 把可以再分发的第三方 agent skills 放进 `.claude/skills/`。Cursor 的文档写明也会读这个目录，所以没有再复制到 `.cursor/skills/`，也没有用符号链接。清单、上游 commit 和更新方法在 `docs/skills.md`。
 
 纳入：impeccable（`df3a4ab`，Apache-2.0）、frontend-design（`ca45fc4`，Apache-2.0）、three.js 技能 13 个（`0e18186`，MIT）、emilkowalski 的动画/动效技能 9 个（`a81dbca`，MIT）。
 
-未纳入：Vercel 的 web-design-guidelines（`1a2c79d`，仓库没有许可证）；Blender Developer Tools（`1fcdfad`，技能是 CC-BY-NC-ND-4.0，不把技能包再发进本仓库）。`AGENTS.md` / `CLAUDE.md` 还不在 master 上（由 PR #2 新增），这里没有新建。
+当时未纳入：Vercel 的 web-design-guidelines（`1a2c79d`，仓库没有许可证）；Blender Developer Tools（`1fcdfad`，技能是 CC-BY-NC-ND-4.0）。替代见上面同一天的记录。`AGENTS.md` / `CLAUDE.md` 还不在 master 上（由 PR #2 新增），这里没有新建。
 
 还剩：Leo 审阅该 PR，不合并。
 
