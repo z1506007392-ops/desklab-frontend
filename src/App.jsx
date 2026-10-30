@@ -66,6 +66,7 @@ import DraftRecoveryBanner from './components/DraftRecoveryBanner.jsx';
 import BackupReminderBanner from './components/BackupReminderBanner.jsx';
 import AiPreviewBanner from './components/AiPreviewBanner.jsx';
 import CorruptSaveBanner from './components/CorruptSaveBanner.jsx';
+import ConnectionModeBanner from './components/ConnectionModeBanner.jsx';
 import LazyScene3D from './components/LazyScene3D.jsx';
 
 
@@ -1528,11 +1529,7 @@ export default function App() {
         }}
       >
         
-        {connectionMode && (
-          <div className="connection-mode-banner" role="status">
-            请在 3D 画面里点选要连接的设备（按 Esc 取消）
-          </div>
-        )}
+        {connectionMode && <ConnectionModeBanner />}
 
         {isLeftPanelOpen && (
           <div className="left-panel">
