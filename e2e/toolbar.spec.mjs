@@ -31,7 +31,7 @@ test('project data tools and axes live behind the more menu', async ({ page }) =
   await expect(more).toBeFocused();
 
   await more.click();
-  await page.getByText('DeskLab MVP', { exact: true }).click();
+  await page.getByText('DeskLab', { exact: true }).click();
   await expect(menu).toHaveCount(0);
 
   await more.click();

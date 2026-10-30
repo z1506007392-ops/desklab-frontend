@@ -87,6 +87,75 @@
 
 .toolbar-group.global-actions {
   margin-left: auto;
+  column-gap: 20px;
+}
+
+/* 一组相关的按钮（编辑 / 检查 / 面板 / 保存），组内挨得近，组间留空（E8）。 */
+.toolbar-cluster {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 手机：两行。第一行名字和撤销、重做、保存；第二行是一条可以横向滑动的按钮条。 */
+.toolbar-compact {
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 8px 0 4px;
+}
+
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 12px;
+}
+
+.toolbar-row .toolbar-label {
+  margin-right: 0;
+}
+
+.toolbar-row-end {
+  flex-wrap: nowrap;
+  margin-left: auto;
+}
+
+.toolbar-strip {
+  display: flex;
+  gap: 8px;
+  padding: 6px 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 28px), transparent);
+}
+
+.toolbar-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.toolbar-strip > * {
+  flex-shrink: 0;
+}
+
+.toolbar-compact .toolbar-room {
+  flex-wrap: wrap;
+  padding: 4px 12px 6px;
+}
+
+.toolbar-compact .toolbar-status {
+  padding: 0 12px 4px;
+}
+
+@media (max-width: 359px) {
+  .toolbar-compact .toolbar-label {
+    display: none;
+  }
 }
 
 .toolbar-label {
@@ -1682,4 +1751,33 @@
 
 .error-notice span {
   color: var(--bad);
+}
+
+/* 触屏上，按钮看起来大小不变，但可点的范围至少 44×44px（E12）。 */
+@media (pointer: coarse) {
+  .ui-button,
+  .asset-category-btn,
+  .side-panel-close,
+  .side-panel-tab,
+  .link-button {
+    position: relative;
+  }
+
+  .ui-button::after,
+  .asset-category-btn::after,
+  .side-panel-close::after,
+  .side-panel-tab::after,
+  .link-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+
+  .toolbar-menu-item {
+    height: 44px;
+  }
 }

@@ -158,6 +158,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState(DEVICE_CATALOG[0].category);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
+  const [isRoomEditorOpen, setIsRoomEditorOpen] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(window.innerWidth >= 900);
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(window.innerWidth >= 900);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1229,7 +1230,7 @@ export default function App() {
       return;
     }
     const rect = moreButtonRef.current.getBoundingClientRect();
-    const menuWidth = 160;
+    const menuWidth = 168;
     setMoreMenuPosition({
       top: rect.bottom + 4,
       left: Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8)),
@@ -1273,114 +1274,182 @@ export default function App() {
     showStatus({ text: '墙壁插座已吸附到最近墙面', type: 'success' });
   };
 
+  // 工具栏里的每个控件只定义一次，桌面和手机各自排布（E10、E8）。
+  const roomFields = (
+    <div className="toolbar-cluster toolbar-room" id="toolbar-room">
+      <label htmlFor="room-length" className="toolbar-field-label">长:</label>
+      <input id="room-length" type="number" min="0.1" step="0.1" className="ui-input toolbar-room-input" value={inputRoom.length} onChange={e => setInputRoom({ ...inputRoom, length: Number(e.target.value) })} disabled={!projectEditable} />
+      <label htmlFor="room-width" className="toolbar-field-label">宽:</label>
+      <input id="room-width" type="number" min="0.1" step="0.1" className="ui-input toolbar-room-input" value={inputRoom.width} onChange={e => setInputRoom({ ...inputRoom, width: Number(e.target.value) })} disabled={!projectEditable} />
+      <label htmlFor="room-height" className="toolbar-field-label">高:</label>
+      <input id="room-height" type="number" min="0.1" step="0.1" className="ui-input toolbar-room-input" value={inputRoom.height} onChange={e => setInputRoom({ ...inputRoom, height: Number(e.target.value) })} disabled={!projectEditable} />
+      <button className="ui-button" onClick={handleUpdateRoom} disabled={!projectEditable}>更新房间</button>
+    </div>
+  );
+  const titleLabel = <span className="toolbar-label">DeskLab</span>;
+  const templatesButton = <button className="ui-button" onClick={() => setShowTemplates(true)} disabled={!projectEditable}>桌面模板</button>;
+  const undoButton = <button className="ui-button" onClick={handleUndo} disabled={!projectEditable || !historyStatus.canUndo} title="撤销 (Ctrl+Z)">撤销</button>;
+  const redoButton = <button className="ui-button" onClick={handleRedo} disabled={!projectEditable || !historyStatus.canRedo} title="重做 (Ctrl+Y)">重做</button>;
+  const resetViewButton = <button className="ui-button" onClick={handleResetView} disabled={!projectEditable}>重置视角</button>;
+  const connectionsButton = <button className="ui-button" onClick={() => setShowGlobalConnections(true)}>所有连接</button>;
+  const layoutButton = (
+    <button className="ui-button" onClick={() => setShowLayoutReport(true)} aria-label={countLabel('布局检查', actionableLayoutIssueCount)}>
+      布局检查<CountBadge count={actionableLayoutIssueCount} />
+    </button>
+  );
+  const wiringButton = (
+    <button className="ui-button" onClick={() => setShowWiringReport(true)} aria-label={countLabel('布线检查', actionableWiringIssueCount)}>
+      布线检查<CountBadge count={actionableWiringIssueCount} />
+    </button>
+  );
+  const recommendButton = (
+    <button className="ui-button ui-button-recommend" onClick={() => setShowRecommendations(true)} aria-label={countLabel('改进建议', recommendations.total)}>
+      改进建议<CountBadge count={recommendations.total} />
+    </button>
+  );
+  const moreButton = (
+    <button
+      ref={moreButtonRef}
+      type="button"
+      className="ui-button"
+      onClick={handleToggleMoreMenu}
+      aria-haspopup="menu"
+      aria-expanded={moreMenuPosition !== null}
+    >
+      更多
+    </button>
+  );
+  const moreMenu = moreMenuPosition && (
+    <div
+      ref={moreMenuRef}
+      className="toolbar-menu"
+      role="menu"
+      aria-label="更多"
+      style={{ top: moreMenuPosition.top, left: moreMenuPosition.left }}
+    >
+      <button
+        type="button"
+        className="toolbar-menu-item"
+        role="menuitemcheckbox"
+        aria-checked={showAxes}
+        onClick={() => setShowAxes(current => !current)}
+      >
+        <span className={`toolbar-menu-check${showAxes ? ' is-checked' : ''}`} aria-hidden="true" />
+        显示坐标轴
+      </button>
+      <div className="toolbar-menu-separator" role="separator" />
+      <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => importInputRef.current?.click())} disabled={!projectEditable}>导入备份</button>
+      <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleExportProject)} disabled={!projectEditable}>导出备份</button>
+      <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handlePasteProjectFromClipboard)} disabled={!projectEditable} title="粘贴别人分享或从另一台设备复制的项目">粘贴项目</button>
+      <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleCopyProjectToClipboard)} disabled={!projectEditable} title="复制项目，可以粘贴给别人或另一台设备">复制项目</button>
+      <div className="toolbar-menu-separator" role="separator" />
+      <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowAbout(true))}>关于与隐私</button>
+    </div>
+  );
+  const importInput = (
+    <input
+      ref={importInputRef}
+      type="file"
+      accept="application/json,.json"
+      onChange={handleImportProject}
+      style={{ display: 'none' }}
+      aria-label="导入 DeskLab 备份文件"
+    />
+  );
+  const leftPanelButton = (
+    <button className="ui-button" onClick={handleToggleLeftPanel}>
+      {isLeftPanelOpen ? '收起资产库' : '展开资产库'}
+    </button>
+  );
+  const rightPanelButton = (
+    <button className="ui-button" onClick={handleToggleRightPanel}>
+      {isPanelOpen ? '收起属性面板' : '展开属性面板'}
+    </button>
+  );
+  const unsavedIndicator = isDirty && <span className="unsaved-indicator" role="status">未保存</span>;
+  const saveButton = (
+    <button
+      className="ui-button ui-button-primary"
+      onClick={handleSave}
+      disabled={!projectEditable || saveBusy}
+      title={!projectLoaded
+        ? '项目仍在加载，保存暂不可用'
+        : projectLoadFailed
+          ? '本机保存的项目无法读取，为防止覆盖原数据，保存已锁定'
+          : recoveryDraft
+            ? '请先恢复或放弃本地草稿'
+          : saveBusy
+            ? '项目正在保存'
+            : '保存项目'}
+    >
+      {!projectLoaded ? '加载中…' : saveBusy ? '保存中…' : '保存项目'}
+    </button>
+  );
+  const statusText = statusMsg.text && (
+    <span className={`toolbar-status${statusMsg.type === 'error' ? ' is-error' : ''}`}>
+      {statusMsg.text}
+    </span>
+  );
+
+  const desktopToolbar = (
+    <div className="toolbar">
+      <div className="toolbar-group">
+        {titleLabel}
+        {roomFields}
+        {templatesButton}
+      </div>
+      <div className="toolbar-group global-actions">
+        <div className="toolbar-cluster">{undoButton}{redoButton}{resetViewButton}</div>
+        <div className="toolbar-cluster">{connectionsButton}{layoutButton}{wiringButton}{recommendButton}</div>
+        <div className="toolbar-cluster">{moreButton}{leftPanelButton}{rightPanelButton}</div>
+        <div className="toolbar-cluster">{unsavedIndicator}{saveButton}{statusText}</div>
+      </div>
+      {moreMenu}
+      {importInput}
+    </div>
+  );
+
+  // 手机：第一行是名字、撤销、重做、保存；其余按钮放进一行可以横向滑动的条里；
+  // 房间尺寸收在"房间尺寸"按钮后面。
+  const compactToolbar = (
+    <div className="toolbar toolbar-compact">
+      <div className="toolbar-row">
+        {titleLabel}
+        {unsavedIndicator}
+        <div className="toolbar-cluster toolbar-row-end">{undoButton}{redoButton}{saveButton}</div>
+      </div>
+      <div className="toolbar-strip" role="group" aria-label="工具">
+        {leftPanelButton}
+        {recommendButton}
+        {layoutButton}
+        {wiringButton}
+        {templatesButton}
+        <button
+          type="button"
+          className="ui-button"
+          aria-expanded={isRoomEditorOpen}
+          aria-controls="toolbar-room"
+          onClick={() => setIsRoomEditorOpen(open => !open)}
+        >
+          房间尺寸
+        </button>
+        {connectionsButton}
+        {resetViewButton}
+        {rightPanelButton}
+        {moreButton}
+      </div>
+      {isRoomEditorOpen && roomFields}
+      {statusText}
+      {moreMenu}
+      {importInput}
+    </div>
+  );
+
   return (
     <div className="app-shell">
       {/* 顶部控制栏 */}
       <div className="app-top">
-        <div className="toolbar">
-          {/* 1. 项目与房间 */}
-          <div className="toolbar-group">
-            <span className="toolbar-label">DeskLab MVP</span>
-            <label htmlFor="room-length" className="toolbar-field-label">长:</label>
-            <input id="room-length" type="number" min="0.1" step="0.1" className="ui-input toolbar-room-input" value={inputRoom.length} onChange={e => setInputRoom({ ...inputRoom, length: Number(e.target.value) })} disabled={!projectEditable} />
-            <label htmlFor="room-width" className="toolbar-field-label">宽:</label>
-            <input id="room-width" type="number" min="0.1" step="0.1" className="ui-input toolbar-room-input" value={inputRoom.width} onChange={e => setInputRoom({ ...inputRoom, width: Number(e.target.value) })} disabled={!projectEditable} />
-            <label htmlFor="room-height" className="toolbar-field-label">高:</label>
-            <input id="room-height" type="number" min="0.1" step="0.1" className="ui-input toolbar-room-input" value={inputRoom.height} onChange={e => setInputRoom({ ...inputRoom, height: Number(e.target.value) })} disabled={!projectEditable} />
-            <button className="ui-button" onClick={handleUpdateRoom} disabled={!projectEditable}>更新房间</button>
-            <button className="ui-button" onClick={() => setShowTemplates(true)} disabled={!projectEditable}>桌面模板</button>
-          </div>
-
-          {/* 3. 全局操作 */}
-          <div className="toolbar-group global-actions">
-            <button className="ui-button" onClick={handleUndo} disabled={!projectEditable || !historyStatus.canUndo} title="撤销 (Ctrl+Z)">撤销</button>
-            <button className="ui-button" onClick={handleRedo} disabled={!projectEditable || !historyStatus.canRedo} title="重做 (Ctrl+Y)">重做</button>
-            <button className="ui-button" onClick={handleResetView} disabled={!projectEditable}>重置视角</button>
-            <button className="ui-button" onClick={() => setShowGlobalConnections(true)}>所有连接</button>
-            <button className="ui-button" onClick={() => setShowLayoutReport(true)} aria-label={countLabel('布局检查', actionableLayoutIssueCount)}>
-              布局检查<CountBadge count={actionableLayoutIssueCount} />
-            </button>
-            <button className="ui-button" onClick={() => setShowWiringReport(true)} aria-label={countLabel('布线检查', actionableWiringIssueCount)}>
-              布线检查<CountBadge count={actionableWiringIssueCount} />
-            </button>
-            <button className="ui-button ui-button-recommend" onClick={() => setShowRecommendations(true)} aria-label={countLabel('改进建议', recommendations.total)}>
-              改进建议<CountBadge count={recommendations.total} />
-            </button>
-            <button
-              ref={moreButtonRef}
-              type="button"
-              className="ui-button"
-              onClick={handleToggleMoreMenu}
-              aria-haspopup="menu"
-              aria-expanded={moreMenuPosition !== null}
-            >
-              更多
-            </button>
-            {moreMenuPosition && (
-              <div
-                ref={moreMenuRef}
-                className="toolbar-menu"
-                role="menu"
-                aria-label="更多"
-                style={{ top: moreMenuPosition.top, left: moreMenuPosition.left }}
-              >
-                <button
-                  type="button"
-                  className="toolbar-menu-item"
-                  role="menuitemcheckbox"
-                  aria-checked={showAxes}
-                  onClick={() => setShowAxes(current => !current)}
-                >
-                  <span className={`toolbar-menu-check${showAxes ? ' is-checked' : ''}`} aria-hidden="true" />
-                  显示坐标轴
-                </button>
-                <div className="toolbar-menu-separator" role="separator" />
-                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => importInputRef.current?.click())} disabled={!projectEditable}>导入备份</button>
-                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleExportProject)} disabled={!projectEditable}>导出备份</button>
-                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handlePasteProjectFromClipboard)} disabled={!projectEditable} title="粘贴别人分享或从另一台设备复制的项目">粘贴项目</button>
-                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleCopyProjectToClipboard)} disabled={!projectEditable} title="复制项目，可以粘贴给别人或另一台设备">复制项目</button>
-                <div className="toolbar-menu-separator" role="separator" />
-                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowAbout(true))}>关于与隐私</button>
-              </div>
-            )}
-            <input
-              ref={importInputRef}
-              type="file"
-              accept="application/json,.json"
-              onChange={handleImportProject}
-              style={{ display: 'none' }}
-              aria-label="导入 DeskLab 备份文件"
-            />
-            <button className="ui-button" onClick={handleToggleLeftPanel}>
-              {isLeftPanelOpen ? '收起资产库' : '展开资产库'}
-            </button>
-            <button className="ui-button" onClick={handleToggleRightPanel}>
-              {isPanelOpen ? '收起属性面板' : '展开属性面板'}
-            </button>
-            {isDirty && <span className="unsaved-indicator" role="status">未保存</span>}
-            <button
-              className="ui-button ui-button-primary"
-              onClick={handleSave}
-              disabled={!projectEditable || saveBusy}
-              title={!projectLoaded
-                ? '项目仍在加载，保存暂不可用'
-                : projectLoadFailed
-                  ? '本机保存的项目无法读取，为防止覆盖原数据，保存已锁定'
-                  : recoveryDraft
-                    ? '请先恢复或放弃本地草稿'
-                  : saveBusy
-                    ? '项目正在保存'
-                    : '保存项目'}
-            >
-              {!projectLoaded ? '加载中…' : saveBusy ? '保存中…' : '保存项目'}
-            </button>
-            {statusMsg.text && (
-              <span className={`toolbar-status${statusMsg.type === 'error' ? ' is-error' : ''}`}>
-                {statusMsg.text}
-              </span>
-            )}
-          </div>
-        </div>
+        {isMobile ? compactToolbar : desktopToolbar}
 
         {recoveryDraft && (
           <div className="draft-recovery-banner" role="alert">

@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-30 · Claude · master
 
+E15 第 3 步（E8、E10、E12）：工具栏控件在 `App.jsx` 里各定义一次，桌面和手机（`isMobile`，<900px）分别排布。桌面：按"编辑 / 检查 / 面板 / 保存"分四组，组间 20px。手机：第一行 DeskLab、未保存、撤销、重做、保存；第二行一条可横向滑动的按钮条（两端渐隐），房间尺寸收进新的"房间尺寸"按钮（`aria-expanded`）；390px 宽时工具栏约 95px（原来约 200px）。标题去掉"MVP"（负责人同意过）。触屏（`pointer: coarse`）上按钮、分类、关闭、标签页的可点范围扩到至少 44px，外观不变。新增 `e2e/compact-toolbar.spec.mjs`：手机两行、每个按钮都能滑到、房间尺寸开合；触屏上按钮边缘外 5px 仍能点中（去掉这段 CSS 时测试会失败，已验证）。验证：`npm test` 386、`test:ui` 91 通过 + 1 跳过（手机布局测试在桌面跳过）、lint、build。还剩：动效、impeccable 检查、终审和 `DESIGN.md`。
+
+### 2026-10-30 · Claude · master
+
 E15 第 2 步：去掉界面上的 emoji（✅ ⚠️ ● 📤 📥），换成 CSS 圆点：保存/出错状态、"未保存"、用电负载提示都用圆点；"布局检查""布线检查""改进建议"的数量改成深粉色小圆标（`CountBadge`），按钮的无障碍名称用 `aria-label` 保持"布局检查 (1)"不变。浅灰卡片里的次要按钮改白底。属性面板的输入框用 `useId` 关联标签（以前读屏读不出"左右 X"）。测试里的 `✅ 已保存`、`⚠️ 导入失败` 改成不带 emoji 的文字。3D 场景里的 ⚡ 功耗标签没动（3D 不改）。验证：`npm test` 386、`test:ui` 88、lint，截图已看。还剩：手机工具栏（E10/E12）、动效、终审和 `DESIGN.md`。
 
 ### 2026-10-30 · Claude · master
@@ -3355,7 +3359,7 @@ Frontend:
 ```bash
 cd D:\desklab\frontend
 npm test          # 386 domain tests
-npm run test:ui   # 88 Chrome UI cases; storage seeded per test, no backend
+npm run test:ui   # 92 Chrome UI cases (91 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
