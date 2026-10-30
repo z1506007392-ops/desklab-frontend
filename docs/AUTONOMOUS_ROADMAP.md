@@ -392,7 +392,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - E10 窄屏工具栏折行过多（new-skill-ui-audit #4）：手机上把次要按钮收进"更多"，让 3D 区域更大。
 - E11 连线模式提示条的内联颜色移到 App.css（new-skill-ui-audit #5）。
 - E12 手机上按钮触控区域至少 44×44px（new-skill-ui-audit #6），视觉大小可不变。
-- E13 提高 AI 建议的通过率（C7 首轮：106 条原始建议只通过 25 条）：给场景摘要里的每条 hint 加上可执行的目标（例如 laptop_at_back 给出"移到 y < 桌子中心"的范围、monitor_facing_away 给出目标 rotationZ），并在提示词里说明；改完重跑 `npm run eval:ai`，要求各项门槛仍达标、通过率上升，记录到 memory bank 的 Prompt iterations。
+- E13 [~] 进行中（claude，2026-10-30） 提高 AI 建议的通过率（C7 首轮：106 条原始建议只通过 25 条）：给场景摘要里的每条 hint 加上可执行的目标（例如 laptop_at_back 给出"移到 y < 桌子中心"的范围、monitor_facing_away 给出目标 rotationZ），并在提示词里说明；改完重跑 `npm run eval:ai`，要求各项门槛仍达标、通过率上升，记录到 memory bank 的 Prompt iterations。
 - E14 线上限流目前只在单个 Cloudflare 实例内存里计数（首轮评测 29 次请求一次都没被拦），想要真正生效需要人做 H2（绑定 KV `AI_LIMITS`）；做完后用 30 次连续请求验证会出现 429。
 
 ---
