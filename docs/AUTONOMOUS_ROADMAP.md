@@ -241,12 +241,14 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 做法：用 `React.lazy` + `Suspense` 懒加载 3D 场景组件（`SceneObjects.jsx` 及 Canvas 部分），加载时显示"正在加载 3D 场景…"；或用 Vite `build.rolldownOptions.output` 把 three 相关拆成独立 chunk。不要改 `chunkSizeWarningLimit` 来掩盖。
 - 验收：build 后最大 JS chunk 明显变小（记录前后大小）；所有测试绿；线上验证首屏正常。
 
-**A6 [~] 进行中（claude，2026-10-30） 必做 — 核对两份 UI 审计报告**
+**A6 [x] 完成（claude，2026-10-30） 必做 — 核对两份 UI 审计报告**
 - 文件：`docs/ui-audit.md`、`docs/new-skill-ui-audit.md`。
 - 做法：逐条对照当前代码判断是否已修复；未修复且属于 P1 的，各自拆成独立小任务追加到本阶段（编号 A6.1、A6.2 …）并逐个完成；P2 追加到阶段 E。
 - 验收：两份报告每条后面标注"已修复（提交号）/ 已拆为任务 Ax / 不再适用（原因）"。
+- **A6.1 [x] 完成（claude，2026-10-30，ffefe20）** 灰色说明文字对比度不足（#888 → #5f6b7a），并加了 `test/text-contrast.test.js`。其余 P1 核对时已修复，P2 转为 E8–E12。
 
 **A7 [ ] 必做 — 用户可见文案全面检查**
+- 已知要改（A6 核对时发现）：`全部连接清单` 的"线材/长度"列直接显示内部线型（`hdmi`、`usb_c`、`power`），应改用 `CABLE_TYPE_NAMES` 的中文名。
 - 做法：`grep` 出所有中文字符串和 `title=`、`aria-label=`、状态提示，逐条检查：有没有内部 id、英文、"后端"、"JSON"、"payload"之类术语；语气是否像对普通人说话；有没有"错误/失败"却没告诉用户怎么办的。改完补测试中对应文本。
 - 验收：在 memory bank 记录检查范围与改动清单。
 
@@ -377,6 +379,11 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - E5 AI 建议质量：扩充评测集、加入更多目标句子、跟踪指标。
 - E6 无障碍：键盘操作、对比度、读屏标签。
 - E7 测试稳定性：找出偶发失败并根治。
+- E8 工具栏视觉分组细化（来自 docs/ui-audit.md #2）：在桌面宽度下给"房间设置 / 编辑 / 检查 / 面板与保存"加弱分隔，不改功能。
+- E9 选中设备时的可视化移动/旋转控制柄（drei `TransformControls`，来自 ui-audit #5）；手机上要能用。
+- E10 窄屏工具栏折行过多（new-skill-ui-audit #4）：手机上把次要按钮收进"更多"，让 3D 区域更大。
+- E11 连线模式提示条的内联颜色移到 App.css（new-skill-ui-audit #5）。
+- E12 手机上按钮触控区域至少 44×44px（new-skill-ui-audit #6），视觉大小可不变。
 
 ---
 

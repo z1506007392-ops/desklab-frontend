@@ -2647,6 +2647,13 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   Verification: `npm test` 300, `npm run test:ui` 58 (suite time 3.7 → 1.7
   min), lint, build; production `vite preview` checked in Chromium (load
   order, save + reload, no console errors).
+- `ffefe20` A6 UI audit check: of the 12 findings in docs/ui-audit.md and
+  docs/new-skill-ui-audit.md, 8 were already fixed (annotated in place), the
+  open P1 (grey text #888 at 3.5:1) is fixed (#5f6b7a; disabled states keep
+  #888, which WCAG exempts) with `test/text-contrast.test.js` scanning CSS and
+  inline styles, and the P2 items became roadmap tasks E8–E12. Found for A7:
+  the connections list shows raw cable types (`hdmi`, `usb_c`). Verification:
+  `npm test` 302, `npm run test:ui` 58, lint, build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2823,7 +2830,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 300 domain tests
+npm test          # 302 domain tests
 npm run test:ui   # 58 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
