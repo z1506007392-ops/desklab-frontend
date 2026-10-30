@@ -2677,6 +2677,24 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   `npm run test:ui` 60 (the missing-model test now fails on any uncaught
   error), lint, build; production preview: 8 HEAD + 10 GET for the gaming
   template, all 200, no console errors.
+- `64faa10` B2 + `60a8eca` B1 AI endpoint. `src/domain/ai-protocol.js` (shared by
+  server and browser): `ACTION_FIELDS` for move / rotate / swap / connect /
+  disconnect / set_cable_length, `SUGGESTION_CATEGORIES`, `AI_LIMITS`, and
+  `sanitizeSuggestions()` (drops a whole suggestion if any action is unknown
+  or malformed). `server/ai/prompt.js`: roadmap §6.5 system prompt, scene and
+  goal JSON-quoted inside the user message, goal capped at 200 chars.
+  `server/ai/layout-handler.js`: `createLayoutHandler({ fetchImpl,
+  rateLimiter, logger })`; env `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`,
+  `DEEPSEEK_MODEL`, `AI_ENABLED`, `AI_TIMEOUT_MS`; errors per roadmap §6.3.3.
+  `functions/api/ai/layout.js` is the Pages route; shared code sits outside
+  `functions/` because every file there becomes a route. Checked with
+  wrangler 4 (scratchpad install, not a dependency): `wrangler pages
+  functions build` compiles, and `wrangler pages dev dist` answers POST
+  /api/ai/layout with 503 ai_unavailable; Cloudflare serves a missing
+  /models/x.glb as 200 text/html (confirms the A9 check). DeepSeek's docs
+  site was blocked in the cloud session; model names and JSON mode were
+  confirmed only from third-party pages. Verification: `npm test` 326, lint,
+  build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2853,7 +2871,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 309 domain tests
+npm test          # 326 domain tests
 npm run test:ui   # 60 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)

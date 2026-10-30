@@ -264,15 +264,16 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 
 > 设计详见第 6 节。阶段 B 不需要真实密钥就能全部完成（用模拟模型）。
 
-**B1 [~] 进行中（claude，2026-10-30） 必做 — 服务端 AI 代理（Cloudflare Pages Function）**
+**B1 [x] 完成（claude，2026-10-30，60a8eca） 必做 — 服务端 AI 代理（Cloudflare Pages Function）**
 - 新建 `functions/api/ai/layout.js`，导出 `onRequestPost(context)`，路由即 `POST /api/ai/layout`。实现按 6.3 节。
+- 实际落地（2026-10-30）：Cloudflare 会把 `functions/` 下每个文件都当成路由，所以共享代码放在仓库根目录的 `server/ai/`（`layout-handler.js`、`prompt.js`，以后的 `rate-limit.js`），`functions/api/ai/layout.js` 只做转发；动作与字段白名单在 `src/domain/ai-protocol.js`，服务端和浏览器共用。
 - 把核心逻辑写成可测试的工厂函数：`export function createLayoutHandler({ fetchImpl, now })`，`onRequestPost` 只是 `createLayoutHandler({ fetchImpl: fetch })(context)`。
 - `eslint.config.js` 给 `functions/**` 配 Worker/浏览器全局变量（`fetch`、`Request`、`Response`、`crypto` 等）。
 - 测试：`test/ai-layout-function.test.js`，用假的 `fetchImpl` 覆盖：无密钥 → 503 `ai_unavailable`；请求体过大 → 413；格式不对 → 400；DeepSeek 超时/5xx → 502 `ai_upstream_error`；DeepSeek 返回非 JSON → 502 `ai_bad_output`；正常 → 200 且只返回白名单字段；请求里**绝不**带出密钥。
 - 验收：测试全绿；`npm run build` 后 Cloudflare 能识别 `functions/`（推送后在线上 `POST /api/ai/layout` 不带密钥应得到 503 JSON，而不是 404/405）。
 
-**B2 [~] 进行中（claude，2026-10-30） 必做 — 提示词与输出模式（服务端）**
-- 新建 `functions/api/ai/prompt.js`：导出 `SYSTEM_PROMPT`、`buildMessages(sceneSummary, userGoal)`、`RESPONSE_EXAMPLE`。内容按 6.5 节，**一字不差地以 6.5 为起点**，之后可按评测结果迭代（迭代要在 memory bank 记录原因和评测数据）。
+**B2 [x] 完成（claude，2026-10-30，64faa10） 必做 — 提示词与输出模式（服务端）**
+- 新建 `server/ai/prompt.js`（不要放在 `functions/` 下，见 B1）：导出 `SYSTEM_PROMPT`、`buildMessages(sceneSummary, userGoal)`、`RESPONSE_EXAMPLE`。内容按 6.5 节，**一字不差地以 6.5 为起点**，之后可按评测结果迭代（迭代要在 memory bank 记录原因和评测数据）。
 - 测试：消息结构、包含 "json" 字样（DeepSeek JSON 模式要求）、用户目标被放在数据字段而不是拼进指令、超长目标被截断到 200 字。
 
 **B3 [ ] 必做 — 防滥用与成本控制**
@@ -411,7 +412,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **校验在客户端**（那里有全部规则引擎），服务端只做结构检查。客户端校验是最终防线。
 
 ### 6.2 DeepSeek 接口（开工前先核对官方文档）
-- 官方文档：`https://api-docs.deepseek.com/`。**写代码前先读一遍，以文档为准**；下面是 2026 年时的已知做法，如有出入按文档改，并更新本节。
+- 官方文档：`https://api-docs.deepseek.com/`。**写代码前先读一遍，以文档为准**（2026-10-30 的云端会话里该域名被网络策略拦截，只核对了第三方资料，结论与下文一致；能访问时再核一次）；下面是 2026 年时的已知做法，如有出入按文档改，并更新本节。
 - 兼容 OpenAI Chat Completions：`POST {DEEPSEEK_BASE_URL}/chat/completions`，`Authorization: Bearer {DEEPSEEK_API_KEY}`，`Content-Type: application/json`。
 - 请求体：
   ```json
