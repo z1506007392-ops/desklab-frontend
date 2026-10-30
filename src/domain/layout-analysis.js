@@ -188,3 +188,26 @@ export function summarizeLayoutIssues(issues) {
 function format(value) {
   return Number.isFinite(value) ? Number(value.toFixed(3)) : '无效';
 }
+
+const SUPPORT_TOLERANCE = 0.02;
+
+/**
+ * What an object rests on: { kind: 'object', id } for the highest object
+ * whose top meets its bottom under its footprint, { kind: 'floor' }, or
+ * { kind: 'wall' } for wall outlets; null when it floats or has no geometry.
+ */
+export function findSupportingObject(object, objects) {
+  if (isWallOutlet(object)) return { kind: 'wall' };
+  const bounds = getObjectBounds(object);
+  if (!bounds) return null;
+  const supports = getRecordItems(objects)
+    .filter(candidate => candidate.id !== object.id)
+    .map(candidate => ({ candidate, top: getObjectBounds(candidate)?.maxZ }))
+    .filter(({ candidate, top }) => Number.isFinite(top)
+      && Math.abs(top - bounds.minZ) <= SUPPORT_TOLERANCE
+      && horizontalFootprintsOverlap(object, candidate))
+    .sort((first, second) => second.top - first.top);
+  if (supports.length > 0) return { kind: 'object', id: supports[0].candidate.id };
+  if (Math.abs(bounds.minZ) <= SUPPORT_TOLERANCE) return { kind: 'floor' };
+  return null;
+}
