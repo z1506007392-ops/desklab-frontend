@@ -2861,6 +2861,20 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   accepted); with "只调整显示器，别的都不要动" the second answer was only the
   monitor move (accepted). Phase C complete. Verification: `npm test` 385,
   `npm run test:ui` 88, lint, build.
+- `d7094e0` E13 Prompt iterations v2. Every hint from
+  `analyzeLayoutHeuristics` now carries a `fix`: ready actions in the same
+  shape the AI outputs (move/rotate), each one feasible on its own (desk-side
+  spots use the rotated footprint along the desk axis with a 5 cm gap and stay
+  inside the room). `buildSceneSummary` passes it through, and prompt rule 7
+  says to use a hint's `fix` as is instead of inventing positions. Eval v2
+  against the live endpoint stopped at 19/25 requests on the hourly limit
+  (429); compared on the same 19 requests with v1: messy scenes helped 81% →
+  100%, accepted/raw 21/83 (25%) → 26/49 (53%), average improvement 48.8 →
+  46.6, new errors 0, jargon 0. The other 6 requests were not rerun; to finish
+  them, `NODE_USE_ENV_PROXY=1 node tools/ai-eval/run-eval.mjs --url
+  https://desklab-frontend.pages.dev/api/ai/layout --resume
+  tools/ai-eval/results/<run folder>/` (results are gitignored, so a new
+  session reruns the full set). Verification: `npm test` 386, lint, build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -3037,7 +3051,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 385 domain tests
+npm test          # 386 domain tests
 npm run test:ui   # 88 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
