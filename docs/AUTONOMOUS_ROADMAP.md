@@ -302,7 +302,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 新建 `src/domain/layout-heuristics.js`：`analyzeLayoutHeuristics(room, objects, connections)` 返回 `[{ code, severity: 'hint', objectIds, message }]`。规则按 6.6.1 的表格实现，参数集中定义成常量。
 - 测试：每条规则正反例各至少一个；三个内置模板（`buildTemplateScene('home-office' | 'desktop-dual' | 'gaming')`）应当**零提示**（模板就是"好布局"的标准；若某条规则在模板上报提示，先检查规则阈值，再考虑改模板）。
 
-**C2 [ ] 必做 — 布局评分**
+**C2 [~] 进行中（claude，2026-10-30） 必做 — 布局评分**
 - 新建 `src/domain/layout-score.js`：`scoreLayout(project)` 按 6.6.2 计算 `{ total, errors, warnings, hints, cableMeters }`，越低越好。
 - 测试：重叠/悬空等错误显著拉高分数；把模板里的显示器挪偏，分数变差；同一项目分数稳定（纯函数）。
 
