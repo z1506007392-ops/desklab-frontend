@@ -33,6 +33,8 @@ test('missing model files fall back to simple shapes without breaking the 3D vie
   await page.waitForTimeout(1500);
   await expect(page.locator('canvas')).toBeVisible();
   await expect(page.getByRole('alert').filter({ hasText: '3D 画面' })).toHaveCount(0);
+  // Only the browser's own network log for the 404s; no uncaught errors.
+  expect(evidence.errors.filter(message => !/^Failed to load resource/.test(message))).toEqual([]);
   expect(evidence.writes).toEqual([]);
 });
 
