@@ -331,7 +331,8 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 实现：新组件 `src/components/AiSuggestions.jsx`；应用时走现有的 `recordHistory` + `setObjects/setConnections` 流程（参考 `applyImprovement` 在 `App.jsx` 中的用法），保证撤销/重做可用。
 - UI 测试（用 B6 的模拟）：正常返回 → 卡片出现 → 预览 → 应用 → 布局变化 → 撤销恢复；返回含非法建议 → 只显示合法的；503 → 显示暂未开放；超时 → 中文错误且可重试；手机视口可完整操作。
 
-**C6 [~] 进行中（claude，2026-10-30） 必做 — 离线评测集与评测脚本**
+**C6 [x] 完成（claude，2026-10-30，ae578ed；真实模型评测等待 H1） 必做 — 离线评测集与评测脚本**
+- 实际落地（2026-10-30）：场景在 `tools/ai-eval/lib.mjs` 的 `buildEvalScenes()` 里用代码从模板生成（16 个：4 个好桌面、10 个各破坏一条舒适规则、2 个旧存档形态；共 25 次请求），而不是手写 JSON 文件，这样模板和目录变化时自动跟上；`npm run eval:ai` 运行，说明见 `tools/ai-eval/README.md`。
 - 新建 `tools/ai-eval/`：
   - `scenes/*.json`：至少 15 个场景：3 个模板原样；每个模板各 3 个"弄乱"的版本（显示器偏、主机挡腿、插排在桌面上、线过长、笔记本在桌子后沿等）；3 个旧存档风格；空桌子 1 个。
   - `goals.json`：每个场景配 0–2 个用户目标句子。

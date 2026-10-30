@@ -2777,6 +2777,15 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   unavailable for the session. `openProject` gained a `room` option.
   Verification: `npm test` 373, `npm run test:ui` 76, lint, build; dialog and
   preview screenshots checked at both sizes.
+- `ae578ed` C6 Evaluation harness: `tools/ai-eval/lib.mjs` (`buildEvalScenes`,
+  `runEval({ post })`, `summarize`, `THRESHOLDS`), CLI `npm run eval:ai`
+  (tools/ai-eval/run-eval.mjs; exit 1 = threshold missed, 2 = no endpoint /
+  no key / rate-limited; raw results in ignored `tools/ai-eval/results/`).
+  The local dev server no longer rate-limits unless AI_LOCAL_RATE_LIMIT=1.
+  Mock baseline (not the target): parse 100%, messy helped 26%, new errors
+  0, jargon 0. Real-model run and `test/fixtures/ai/recorded/` wait for H1.
+  Live check after C5: AI section shows "AI 功能暂未开放" on click, canvas
+  draws. Verification: `npm test` 375, lint.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2953,7 +2962,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 373 domain tests
+npm test          # 375 domain tests
 npm run test:ui   # 76 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
