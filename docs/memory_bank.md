@@ -2815,6 +2815,15 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   og:image (`public/og-image.png`, 1200x630, rendered from the gaming
   template with panels and axes hidden). og:image is an absolute
   pages.dev URL: change it when a custom domain arrives.
+- D2 Live acceptance (2026-10-30, https://desklab-frontend.pages.dev, Chromium
+  through the proxy, 1440x900 and 390x844): first-visit guide → gaming
+  template in ~4 s; canvas drawn (121 KB / 47 KB screenshots); 布局检查,
+  布线检查, 所有连接 open with plain text; adding a strip selects it with the
+  right hint; undo/redo; save → backup reminder → export downloads; reload
+  keeps 10 objects with no 未保存; AI section answers "AI 功能暂未开放"
+  (criterion 5 waits for H1); 关于与隐私 present; no console errors, no
+  failed requests. Found: adding a second power strip leaves 布线检查 (1) /
+  改进建议 (1) (task A10).
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
