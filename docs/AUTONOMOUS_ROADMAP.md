@@ -231,7 +231,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 做法：项目为空（没有任何物体）且从未保存过时，在 3D 区域上方显示一个居中卡片："从模板开始 / 按我的设备生成 / 自己摆"，三个按钮分别打开桌面模板、按设备生成表单、关闭卡片。任何物体出现后卡片消失。不要用浏览器弹窗。
 - 验收：新 UI 测试覆盖三个按钮；空项目但已有存档版本时不出现（尊重用户）；桌面+手机截图。
 
-**A4 [ ] 必做 — WebGL 不可用时的友好提示**
+**A4 [~] 进行中（claude，2026-10-30） 必做 — WebGL 不可用时的友好提示**
 - 目标：老电脑、某些内置浏览器不支持 WebGL 时不白屏。
 - 做法：加一个 React Error Boundary 包住 3D 画布；检测 `WebGLRenderingContext` 不可用或 Canvas 创建失败时，显示中文说明（"你的浏览器无法显示 3D 画面，请换用最新版 Chrome / Edge / Safari"），其余界面（列表、检查、保存、导出）仍可用。
 - 验收：单元测试覆盖检测函数；UI 测试用 `page.addInitScript` 把 `HTMLCanvasElement.prototype.getContext` 改成返回 `null`，确认出现提示且无未捕获异常。
