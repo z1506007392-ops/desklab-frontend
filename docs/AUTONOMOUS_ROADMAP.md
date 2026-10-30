@@ -365,7 +365,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 **D3 [x] 完成（claude，2026-10-30，f3811c7） 必做 — 错误上报的最小方案（不引入第三方）**
 - 全局 `window.onerror` / `unhandledrejection` 时在界面显示"出了点问题，可以刷新页面；你的存档不受影响"，并提供"复制错误信息"按钮（方便用户反馈）。不向任何服务器发送数据。
 
-**D4 [ ] 必做 — 浏览器兼容自查**
+**D4 [~] 进行中（claude，2026-10-30） 必做 — 浏览器兼容自查**
 - 用 Playwright 的 chromium 跑全部测试（已有）；如环境里能装 webkit/firefox 就各跑一遍 UI 测试，记录结果；不能装就在 memory bank 记录"未验证 Safari/Firefox"。不要假装验证过。
 
 **D5 [ ] 可选 — SEO 与分享**
