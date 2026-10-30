@@ -21,13 +21,27 @@ function isTooLightGrey(hex) {
   return spread < 0.08 && value < 0.95 && contrastOnWhite < 4.5;
 }
 
+// Colours mostly come from the :root variables in App.css, so a
+// `color: var(--name)` is checked against the value the variable holds.
+function cssVariables(css) {
+  const variables = new Map();
+  for (const [, body] of css.matchAll(/:root\s*\{([^}]*)\}/g)) {
+    for (const [, name, hex] of body.matchAll(/(--[\w-]+):\s*(#[0-9a-fA-F]{3,6})\b/g)) variables.set(name, hex);
+  }
+  return variables;
+}
+
 test('stylesheet text colours meet 4.5:1 outside disabled states', () => {
   const css = source('src/App.css') + source('src/index.css');
+  const variables = cssVariables(css);
+  assert.ok(variables.size > 0, 'the colour variables are found');
   const offenders = [];
   for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
     if (/disabled/.test(selector)) continue;
-    for (const [, hex] of body.matchAll(/(?:^|[\s;])color:\s*(#[0-9a-fA-F]{3,6})\b/g)) {
-      if (isTooLightGrey(hex)) offenders.push(`${selector.trim()} → ${hex}`);
+    for (const [, value] of body.matchAll(/(?:^|[\s;])color:\s*(#[0-9a-fA-F]{3,6}\b|var\(--[\w-]+\))/g)) {
+      const hex = value.startsWith('var(') ? variables.get(value.slice(4, -1)) : value;
+      assert.ok(hex, `${selector.trim()} uses an unknown colour ${value}`);
+      if (isTooLightGrey(hex)) offenders.push(`${selector.trim()} → ${value}`);
     }
   }
   assert.deepEqual(offenders, []);

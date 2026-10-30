@@ -390,7 +390,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - E8 工具栏视觉分组细化（来自 docs/ui-audit.md #2）：在桌面宽度下给"房间设置 / 编辑 / 检查 / 面板与保存"加弱分隔，不改功能。
 - E9 选中设备时的可视化移动/旋转控制柄（drei `TransformControls`，来自 ui-audit #5）；手机上要能用。
 - E10 窄屏工具栏折行过多（new-skill-ui-audit #4）：手机上把次要按钮收进"更多"，让 3D 区域更大。（claude 2026-10-30 调查后暂停，未改代码：390px 宽时工具栏高 201px、约 5 行。现有 `isMobile` 状态在 App.jsx 的 `matchMedia('(max-width: 899px)')` 里可直接用；手机端 UI 测试会直接点"桌面模板""所有连接""展开资产库"按钮（backup-reminder、local-save、no-webgl、placement），把它们收进"更多"时要同步改这些测试；"DeskLab MVP"标题在 toolbar.spec 里被用来点空白处关菜单。）
-- E11 连线模式提示条的内联颜色移到 App.css（new-skill-ui-audit #5）。
+- **E11 [x] 完成（claude，2026-10-30，并入 E15 第 1 步）** 连线模式提示条的内联颜色移到 App.css（new-skill-ui-audit #5）。
 - E12 手机上按钮触控区域至少 44×44px（new-skill-ui-audit #6），视觉大小可不变。
 - **E13 [x] 完成（claude，2026-10-30，d7094e0）** 提高 AI 建议的通过率（C7 首轮：106 条原始建议只通过 25 条）：给场景摘要里的每条 hint 加上可执行的目标（例如 laptop_at_back 给出"移到 y < 桌子中心"的范围、monitor_facing_away 给出目标 rotationZ），并在提示词里说明；改完重跑 `npm run eval:ai`，要求各项门槛仍达标、通过率上升，记录到 memory bank 的 Prompt iterations。 结果：每条 hint 带上现成的 `fix`，提示词 v2；同一批 19 个请求上通过率 25% → 53%，乱桌面改善率 81% → 100%（剩 6 个请求因限流没跑，详见 memory bank）。
 - E14 线上限流目前只在单个 Cloudflare 实例内存里计数（首轮评测 29 次请求一次都没被拦），想要真正生效需要人做 H2（绑定 KV `AI_LIMITS`）；做完后用 30 次连续请求验证会出现 429。

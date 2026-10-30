@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-30 · Claude · master
 
+E15 第 1 步：`App.css` 改成一套颜色/圆角/阴影/字号/动效变量（`:root`），全部控件按"桌搭标签"重画：浅灰底、白色面板、无边框胶囊按钮、填充式输入框、白色浮起的"改进建议"标签带粉色圆点、选中提示变成带圆点的白色标签、连线模式提示改成浮起标签。组件里写死的颜色搬进 CSS 类（E11 一并完成）。布线问题卡片的彩色左边框换成状态圆点。`test/text-contrast.test.js` 现在也检查 `var(--…)` 指向的颜色。按钮文字、布局、3D 场景未动。验证：`npm test` 386、`test:ui` 88（Chromium）、lint、build，桌面和手机截图已看。还剩：去掉 emoji 状态字、手机工具栏、动效、终审和 `DESIGN.md`。
+
+### 2026-10-30 · Claude · master
+
 领取 E15 界面视觉重做。按 impeccable 流程，负责人回答了产品问题（用户两类都有、白天用、不改按钮文字/布局/3D/名字，不要后台感、AI 模板感、CAD 感），写入 `PRODUCT.md`；在真页面上做了四个方向的预览，负责人选了"桌搭标签"（浅灰底、白色面板、胶囊按钮、带粉色圆点的标签）。方向合同在 `.impeccable/surfaces/src-app-jsx.md`。还剩：按 E15 的步骤实现，最后写 `DESIGN.md`。
 
 ### 2026-10-30 · Desklab (Grok Bot) · [PR #3](https://github.com/z1506007392-ops/desklab-frontend/pull/3)

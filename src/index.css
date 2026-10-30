@@ -4,9 +4,11 @@ html, body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  color: #333;
-  background: #fff;
+  font-family: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", system-ui, sans-serif;
+  color: #1b1b1f;
+  background: #f2f3f5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #root {
@@ -21,4 +23,19 @@ html, body {
 
 * {
   box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(242, 53, 122, 0.2);
+  color: #1b1b1f;
+}
+
+input,
+textarea {
+  caret-color: #f2357a;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c9ccd2 transparent;
 }

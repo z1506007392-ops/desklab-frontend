@@ -1268,19 +1268,19 @@ export default function App() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden', fontFamily: 'sans-serif' }}>
+    <div className="app-shell">
       {/* 顶部控制栏 */}
-      <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, minWidth: 0, maxHeight: '40vh', overflowY: 'auto', background: '#f5f5f5' }}>
+      <div className="app-top">
         <div className="toolbar">
           {/* 1. 项目与房间 */}
           <div className="toolbar-group">
             <span className="toolbar-label">DeskLab MVP</span>
-            <label htmlFor="room-length" style={{ fontSize: '13px' }}>长:</label>
-            <input id="room-length" type="number" min="0.1" step="0.1" className="ui-input" value={inputRoom.length} onChange={e => setInputRoom({ ...inputRoom, length: Number(e.target.value) })} style={{ width: '60px' }} disabled={!projectEditable} />
-            <label htmlFor="room-width" style={{ fontSize: '13px' }}>宽:</label>
-            <input id="room-width" type="number" min="0.1" step="0.1" className="ui-input" value={inputRoom.width} onChange={e => setInputRoom({ ...inputRoom, width: Number(e.target.value) })} style={{ width: '60px' }} disabled={!projectEditable} />
-            <label htmlFor="room-height" style={{ fontSize: '13px' }}>高:</label>
-            <input id="room-height" type="number" min="0.1" step="0.1" className="ui-input" value={inputRoom.height} onChange={e => setInputRoom({ ...inputRoom, height: Number(e.target.value) })} style={{ width: '60px' }} disabled={!projectEditable} />
+            <label htmlFor="room-length" className="toolbar-field-label">长:</label>
+            <input id="room-length" type="number" min="0.1" step="0.1" className="ui-input toolbar-room-input" value={inputRoom.length} onChange={e => setInputRoom({ ...inputRoom, length: Number(e.target.value) })} disabled={!projectEditable} />
+            <label htmlFor="room-width" className="toolbar-field-label">宽:</label>
+            <input id="room-width" type="number" min="0.1" step="0.1" className="ui-input toolbar-room-input" value={inputRoom.width} onChange={e => setInputRoom({ ...inputRoom, width: Number(e.target.value) })} disabled={!projectEditable} />
+            <label htmlFor="room-height" className="toolbar-field-label">高:</label>
+            <input id="room-height" type="number" min="0.1" step="0.1" className="ui-input toolbar-room-input" value={inputRoom.height} onChange={e => setInputRoom({ ...inputRoom, height: Number(e.target.value) })} disabled={!projectEditable} />
             <button className="ui-button" onClick={handleUpdateRoom} disabled={!projectEditable}>更新房间</button>
             <button className="ui-button" onClick={() => setShowTemplates(true)} disabled={!projectEditable}>桌面模板</button>
           </div>
@@ -1369,7 +1369,7 @@ export default function App() {
               {!projectLoaded ? '加载中…' : saveBusy ? '保存中…' : '保存项目'}
             </button>
             {statusMsg.text && (
-              <span style={{ color: statusMsg.type === 'error' ? '#dc3545' : '#28a745', fontSize: '13px', fontWeight: 'bold' }}>
+              <span className={`toolbar-status${statusMsg.type === 'error' ? ' is-error' : ''}`}>
                 {statusMsg.type === 'error' ? '⚠️ ' : '✅ '}{statusMsg.text}
               </span>
             )}
@@ -1459,7 +1459,7 @@ export default function App() {
       >
         
         {connectionMode && (
-          <div style={{ position: 'absolute', top: 15, left: '50%', transform: 'translateX(-50%)', background: '#ff9800', color: 'white', padding: '10px 20px', borderRadius: '20px', zIndex: 100, fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+          <div className="connection-mode-banner" role="status">
             请在 3D 画面里点选要连接的设备（按 Esc 取消）
           </div>
         )}
@@ -2040,10 +2040,10 @@ export default function App() {
                 <table className="modal-table">
                   <thead>
                     <tr>
-                      <th style={{ padding: '8px' }}>起点</th>
-                      <th style={{ padding: '8px' }}>终点</th>
-                      <th style={{ padding: '8px' }}>线材/长度</th>
-                      <th style={{ padding: '8px', textAlign: 'right' }}>操作</th>
+                      <th>起点</th>
+                      <th>终点</th>
+                      <th>线材/长度</th>
+                      <th className="modal-table-actions">操作</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2056,17 +2056,17 @@ export default function App() {
                       
                       return (
                         <tr key={c.id}>
-                          <td style={{ padding: '8px' }}>
+                          <td>
                             <strong>{fromObj?.name || '未知'}</strong><br/>
-                            <span style={{ color: '#666', fontSize: '11px' }}>{fromPortName}</span>
+                            <span className="panel-note">{fromPortName}</span>
                           </td>
-                          <td style={{ padding: '8px' }}>
+                          <td>
                             <strong>{toObj?.name || '未知'}</strong><br/>
-                            <span style={{ color: '#666', fontSize: '11px' }}>{toPortName}</span>
+                            <span className="panel-note">{toPortName}</span>
                           </td>
-                          <td style={{ padding: '8px' }}>
+                          <td>
                             {c.name}<br/>
-                            <span style={{ color: '#666', fontSize: '11px' }}>{describeCableType(c.cableType)}（{c.length}m）</span>
+                            <span className="panel-note">{describeCableType(c.cableType)}（{c.length}m）</span>
                             {lengthStatus && (
                               <div className={`cable-distance ${lengthStatus.hasRecommendedSlack ? 'cable-distance-ok' : 'cable-distance-warning'}`}>
                                 端点 {lengthStatus.distance.toFixed(2)}m / 建议 {lengthStatus.recommendedLength.toFixed(2)}m
@@ -2076,7 +2076,7 @@ export default function App() {
                               </div>
                             )}
                           </td>
-                          <td style={{ padding: '8px', textAlign: 'right' }}>
+                          <td className="modal-table-actions">
                             <button 
                               type="button"
                               onClick={() => updateConnectionsWithHistory(prev => prev.filter(x => x.id !== c.id))}

@@ -239,27 +239,27 @@ const ConnectionsEditor = ({
         <div className="panel-field">
           <span className="panel-field-label">当前设备</span>
           <div className="panel-field-content">
-            <div className="panel-text-readonly" style={{ fontWeight: 'bold', color: '#222' }}>{selectedObj.name}</div>
+            <div className="panel-text-readonly panel-text-strong">{selectedObj.name}</div>
           </div>
         </div>
       </div>
 
       <div className="panel-section">
       {!isDraftActive && Object.keys(connectionDraft).length === 0 ? (
-        <button onClick={handleStartConnection} className="ui-button ui-button-primary" style={{ width: '100%' }}>
+        <button onClick={handleStartConnection} className="ui-button ui-button-primary ui-full-width">
           新建连接
         </button>
       ) : (
-        <div style={{ padding: '12px', background: '#e3f2fd', border: '1px solid #90caf9', borderRadius: '4px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <div className="panel-section-title" style={{ margin: 0, color: '#1565c0' }}>创建新连接</div>
+        <div className="connection-draft">
+          <div className="connection-draft-header">
+            <div className="panel-section-title">创建新连接</div>
             <button onClick={handleCancelConnection} className="side-panel-close">×</button>
           </div>
           
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="connection-draft-steps">
             <div className="connection-step">
               <div className="connection-step-label">1. 当前设备输出端口</div>
-              <select className="ui-select" style={{ width: '100%' }} value={connectionDraft.fromPortId || ''} onChange={e => setConnectionDraft({ fromObjectId: selectedObj.id, fromPortId: e.target.value })}>
+              <select className="ui-select ui-full-width" value={connectionDraft.fromPortId || ''} onChange={e => setConnectionDraft({ fromObjectId: selectedObj.id, fromPortId: e.target.value })}>
                 {renderPortOptions(selectedObj, 'from')}
               </select>
             </div>
@@ -268,16 +268,15 @@ const ConnectionsEditor = ({
               <div className="connection-step">
                 <div className="connection-step-label">2. 目标设备</div>
                 {!connectionDraft.toObjectId && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div className="connection-target-choice">
                     {!connectionMode ? (
                       <>
-                        <button onClick={() => setConnectionMode(true)} className="ui-button" style={{ width: '100%', borderColor: '#007bff', color: '#007bff' }}>
+                        <button onClick={() => setConnectionMode(true)} className="ui-button ui-full-width">
                           在场景中选择目标设备
                         </button>
-                        <div style={{ textAlign: 'center', fontSize: '11px', color: '#5f6b7a', margin: '2px 0' }}>─ 或在下拉列表中选择 ─</div>
+                        <div className="connection-or">─ 或在下拉列表中选择 ─</div>
                         <select
-                          className="ui-select"
-                          style={{ width: '100%' }}
+                          className="ui-select ui-full-width"
                           value={connectionDraft.toObjectId || ''}
                           onChange={e => {
                             const { value } = e.target;
@@ -298,16 +297,16 @@ const ConnectionsEditor = ({
                         </select>
                       </>
                     ) : (
-                      <div style={{ padding: '8px', background: '#ffecb3', color: '#ff8f00', fontSize: '13px', borderRadius: '3px', textAlign: 'center' }}>
+                      <div className="connection-picking">
                         请在 3D 画面里点选要连接的设备（按 Esc 取消）
                       </div>
                     )}
                   </div>
                 )}
                 {connectionDraft.toObjectId && toObj && (
-                  <div style={{ background: '#ffffff', padding: '6px 10px', border: '1px solid #dddddd', borderRadius: '3px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="connection-chosen">
                     <span>已选：<strong>{toObj.name}</strong></span>
-                    <button onClick={() => { setConnectionDraft({ fromObjectId: selectedObj.id, fromPortId: connectionDraft.fromPortId }); setConnectionMode(true); }} style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', fontSize: '12px' }}>重选</button>
+                    <button onClick={() => { setConnectionDraft({ fromObjectId: selectedObj.id, fromPortId: connectionDraft.fromPortId }); setConnectionMode(true); }} className="link-button">重选</button>
                   </div>
                 )}
               </div>
@@ -317,9 +316,9 @@ const ConnectionsEditor = ({
               <div className="connection-step">
                 <div className="connection-step-label">3. 目标端口</div>
                 {!hasCompatibleToPorts ? (
-                  <div style={{ color: '#dc3545', fontSize: '13px' }}>目标设备没有兼容端口</div>
+                  <div className="field-error">目标设备没有兼容端口</div>
                 ) : (
-                  <select className="ui-select" style={{ width: '100%' }} value={connectionDraft.toPortId || ''} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, toPortId: value })); }}>
+                  <select className="ui-select ui-full-width" value={connectionDraft.toPortId || ''} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, toPortId: value })); }}>
                     {renderPortOptions(toObj, 'to')}
                   </select>
                 )}
@@ -328,21 +327,21 @@ const ConnectionsEditor = ({
 
             {connectionDraft.toPortId && hasCompatibleToPorts && (
               <div className="connection-step">
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
-                  <div style={{ flex: 1 }}>
+                <div className="connection-cable-row">
+                  <div>
                     <div className="connection-step-label">4. 线材类型</div>
                     <div className="panel-text-readonly">
                       {cableTypes.find(c => c.value === connectionDraft.cableType)?.label || '其他'}
                     </div>
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div>
                     <div className="connection-step-label">长度(m)</div>
-                    <input className="ui-input" type="number" step="0.1" min="0.1" value={connectionDraft.length || 1} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, length: value })); }} style={{ width: '100%' }} />
+                    <input className="ui-input ui-full-width" type="number" step="0.1" min="0.1" value={connectionDraft.length || 1} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, length: value })); }} />
                   </div>
                 </div>
                 <div>
                   <div className="connection-step-label">连接名称 (可选)</div>
-                  <input className="ui-input" type="text" placeholder="留空默认使用线材名" value={connectionDraft.name || ''} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, name: value })); }} style={{ width: '100%' }} />
+                  <input className="ui-input ui-full-width" type="text" placeholder="留空默认使用线材名" value={connectionDraft.name || ''} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, name: value })); }} />
                 </div>
                 {draftLengthStatus && (
                   <div className={`cable-distance ${draftLengthStatus.hasRecommendedSlack ? 'cable-distance-ok' : 'cable-distance-warning'}`}>
@@ -354,7 +353,7 @@ const ConnectionsEditor = ({
                         : `直连不足 ${Math.abs(draftLengthStatus.slack).toFixed(2)}m`}
                   </div>
                 )}
-                <button onClick={handleAdd} className="ui-button ui-button-primary" style={{ width: '100%', marginTop: '16px' }}>
+                <button onClick={handleAdd} className="ui-button ui-button-primary connection-confirm">
                   确认连接
                 </button>
               </div>
@@ -366,8 +365,8 @@ const ConnectionsEditor = ({
 
       <div className="panel-section">
         <div className="panel-section-title">当前设备连接 ({relatedConnections.length})</div>
-        {relatedConnections.length === 0 ? <div style={{ fontSize: '13px', color: '#5f6b7a' }}>无连接</div> : null}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {relatedConnections.length === 0 ? <div className="panel-muted">无连接</div> : null}
+        <div className="connection-list">
           {relatedConnections.map(c => {
             const isFrom = c.fromObjectId === selectedObj.id;
             const otherObjId = isFrom ? c.toObjectId : c.fromObjectId;
@@ -384,8 +383,8 @@ const ConnectionsEditor = ({
 
             return (
               <div key={c.id} className="connection-list-item">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                  <strong style={{ color: isFrom ? '#007bff' : '#28a745' }}>
+                <div className="connection-item-header">
+                  <strong className="connection-direction">
                     {isFrom ? '📤 发送至' : '📥 接收自'} {otherName}
                   </strong>
                   <div className="connection-item-actions">
@@ -424,9 +423,9 @@ const ConnectionsEditor = ({
                     <button type="button" className="ui-button ui-button-primary" onClick={handleSaveEdit}>保存修改</button>
                   </div>
                 ) : (
-                  <div style={{ color: '#222222', fontSize: '13px', marginBottom: '4px' }}>{c.name} ({c.length}m)</div>
+                  <div className="connection-name">{c.name} ({c.length}m)</div>
                 )}
-                <div style={{ color: '#5f6b7a', fontSize: '11px' }}>
+                <div className="panel-note">
                   本端: {myPortName} <br/>对端: {otherPortName}
                 </div>
                 {lengthStatus && (

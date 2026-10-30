@@ -91,7 +91,7 @@ export default function PropertiesEditor({ obj, updateObject, room, onSnapToWall
   const currentLoad = hasPowerOutput ? computeDevicePowerLoad(obj.id, objects, connections) : 0;
   const percent = maxLoad > 0 ? Math.min(100, Math.round((currentLoad / maxLoad) * 100)) : 0;
   const loadStatus = classifyPowerLoad(currentLoad, maxLoad);
-  const loadColor = loadStatus === 'overload' ? '#f44336' : loadStatus === 'warning' ? '#ff9800' : '#4caf50';
+  const loadClass = loadStatus === 'overload' ? 'load-overload' : loadStatus === 'warning' ? 'load-warning' : 'load-normal';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -134,27 +134,22 @@ export default function PropertiesEditor({ obj, updateObject, room, onSnapToWall
                 onChange={value => updateObject({ maxLoad: value })} 
               />
               {maxLoad > 0 && (
-                <div style={{ paddingLeft: '78px', marginTop: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '11px', color: '#5f6b7a' }}>
+                <div className="load-meter">
+                  <div className="load-meter-row">
                     <span>已接负载：<strong>{currentLoad}W</strong> / {maxLoad}W</span>
-                    <span style={{ fontWeight: 'bold', color: loadColor }}>
+                    <span className={`load-meter-percent ${loadClass}`}>
                       {percent}%
                     </span>
                   </div>
-                  <div style={{ width: '100%', height: '6px', backgroundColor: '#e0e0e0', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{
-                      width: `${percent}%`,
-                      height: '100%',
-                      backgroundColor: loadColor,
-                      transition: 'width 0.3s ease'
-                    }} />
+                  <div className="load-meter-track">
+                    <div className={`load-meter-bar ${loadClass}`} style={{ width: `${percent}%` }} />
                   </div>
                   {loadStatus === 'overload' ? (
-                    <div style={{ color: '#f44336', fontSize: '11px', marginTop: '6px', lineHeight: '1.3' }}>
+                    <div className="load-note load-overload">
                       ⚠️ 警告: 电源已过载！请减少外接用电器。
                     </div>
                   ) : loadStatus === 'warning' ? (
-                    <div style={{ color: '#ff9800', fontSize: '11px', marginTop: '6px', lineHeight: '1.3' }}>
+                    <div className="load-note load-warning">
                       ⚠️ 提示: 负载较重，已接近承载上限。
                     </div>
                   ) : null}
