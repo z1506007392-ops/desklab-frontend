@@ -90,3 +90,12 @@ test('the connections list names cables in plain words', async ({ page }) => {
   await expect(list).not.toContainText(/\b(ethernet|hdmi|usb_c|displayport|power)\b/);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
+
+test('the template picker closes with Escape like the other dialogs', async ({ page }) => {
+  const evidence = await openProject(page, [box('桌子 A')]);
+  await page.getByRole('button', { name: '桌面模板', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: '桌面模板', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});

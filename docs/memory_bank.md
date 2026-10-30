@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-30 · Claude · master
 
+E15 第 5 步开头：按 impeccable 收尾，截了桌面和手机 14 种状态（`.impeccable/review/`，不进 git），`impeccable detect` 无发现。截图时发现"桌面模板"弹窗按 Esc 关不掉（其他弹窗都能），已修，加了测试。验证：`npm test` 386、`test:ui` 93 + 1 跳过、lint。还剩：按终审意见修改、写 `DESIGN.md`。
+
+### 2026-10-30 · Claude · master
+
 E15 第 4 步：动效。按 emil-design-eng / impeccable 的规矩只交代状态变化，150–200ms、缓出、只动 transform 和 opacity，不从 0 缩放。唯一刻意安排的一刻：选中设备时标签弹出、圆点光圈收拢一次（`key` 让每次选中都重放）。弹窗淡入上浮、"更多"菜单从右上角展开、手机上的左右面板从边上滑入、开始引导和数量圆标出现时轻轻弹入。系统开了"减少动态效果"时只淡入、按钮按下不缩放（用 `getAnimations()` 在两种设置下核对过）。验证：`npm test` 386、`test:ui` 91 + 1 跳过、lint、build。还剩：impeccable 检查、终审和 `DESIGN.md`。
 
 ### 2026-10-30 · Claude · master
@@ -3363,7 +3367,7 @@ Frontend:
 ```bash
 cd D:\desklab\frontend
 npm test          # 386 domain tests
-npm run test:ui   # 92 Chrome UI cases (91 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
+npm run test:ui   # 94 Chrome UI cases (93 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

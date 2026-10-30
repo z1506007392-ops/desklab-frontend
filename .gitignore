@@ -17,3 +17,6 @@ playwright-report/
 
 # Raw AI evaluation runs (copy representative answers to test/fixtures/ai/recorded/)
 tools/ai-eval/results/
+
+# impeccable review captures (regenerated for each finish review)
+.impeccable/review/

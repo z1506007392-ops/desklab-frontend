@@ -478,11 +478,14 @@ export default function App() {
         if (showAbout) {
           setShowAbout(false);
         }
+        if (showTemplates) {
+          setShowTemplates(false);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDownEsc);
     return () => window.removeEventListener('keydown', handleKeyDownEsc);
-  }, [closeRecommendations, connectionMode, showAbout, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations]);
+  }, [closeRecommendations, connectionMode, showAbout, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations, showTemplates]);
 
   useEffect(() => {
     const handleHistoryKeys = (e) => {
