@@ -193,3 +193,14 @@ test('uses port anchors for connection endpoints and cable distance', () => {
   });
   assert.equal(evaluateConnectionLength(connection, objects, indexedEndpoints)?.distance, 3);
 });
+
+test('port types, directions, and cable types have plain names for messages', async () => {
+  const { describePortType, describePortDirection, describeCableType } = await import('../src/domain/connections.js');
+  assert.equal(describePortType('ac_input'), '电源输入');
+  assert.equal(describePortType('usb_c'), 'USB-C');
+  assert.equal(describePortType('thunderbolt'), '其他（thunderbolt）');
+  assert.equal(describePortDirection('bidirectional'), '双向');
+  assert.equal(describePortDirection('sideways'), '未知（sideways）');
+  assert.equal(describeCableType('hdmi'), 'HDMI 线');
+  assert.equal(describeCableType('mystery'), '连接线');
+});

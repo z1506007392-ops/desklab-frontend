@@ -8,6 +8,7 @@ import {
   shouldResetConnectionDraftForSelection,
 } from '../domain/connections.js';
 import { createEntityId } from '../domain/identifiers.js';
+import { labelObjectsForPicker } from '../domain/object-labels.js';
 
 // --- Connections MVP 组件 ---
 const getCompatibleTargetPorts = (fromPort, targetObject) => {
@@ -48,6 +49,7 @@ const ConnectionsEditor = ({
     { value: 'other', label: '其他' }
   ];
 
+  const objectLabels = labelObjectsForPicker(objects);
   const relatedConnections = selectedObj
     ? connections.filter(c => c.fromObjectId === selectedObj.id || c.toObjectId === selectedObj.id)
     : [];
@@ -91,7 +93,7 @@ const ConnectionsEditor = ({
     return (
       <>
         <option value="">-- 选择端口 --</option>
-        {filteredPorts.map(p => <option key={p.id} value={p.id}>{p.name} ({p.type})</option>)}
+        {filteredPorts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
       </>
     );
   };
@@ -290,14 +292,14 @@ const ConnectionsEditor = ({
                             .filter(o => o.id !== selectedObj.id)
                             .map(o => (
                               <option key={o.id} value={o.id}>
-                                {o.name} ({o.type})
+                                {objectLabels.get(o.id)}
                               </option>
                             ))}
                         </select>
                       </>
                     ) : (
                       <div style={{ padding: '8px', background: '#ffecb3', color: '#ff8f00', fontSize: '13px', borderRadius: '3px', textAlign: 'center' }}>
-                        请点击 3D 画布中的目标设备 (Esc 取消)
+                        请在 3D 画面里点选要连接的设备（按 Esc 取消）
                       </div>
                     )}
                   </div>

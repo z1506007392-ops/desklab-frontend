@@ -121,7 +121,7 @@ export function analyzeProjectLayout(room, rawObjects) {
         code: 'out_of_bounds',
         severity: 'error',
         title: `${object.name} 超出房间边界`,
-        description: `当前位置 XYZ [${format(actual.x)}, ${format(actual.y)}, ${format(actual.z)}]，需要移回房间内部。`,
+        description: `当前位置：左右 ${format(actual.x)}m、前后 ${format(actual.y)}m、高度 ${format(actual.z)}m，需要移回房间内部。`,
         objectIds: [object.id],
       });
     }

@@ -78,3 +78,15 @@ test('the template picker warns before replacing an existing scene', async ({ pa
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
+
+test('the connections list names cables in plain words', async ({ page }) => {
+  const evidence = await openProject(page, []);
+  await page.getByRole('button', { name: '桌面模板', exact: true }).click();
+  await page.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  await page.getByRole('button', { name: '所有连接', exact: true }).click();
+  const list = page.getByRole('dialog', { name: '全部连接清单', exact: true });
+  await expect(list).toContainText('网线（');
+  await expect(list).toContainText('电源线（');
+  await expect(list).not.toContainText(/\b(ethernet|hdmi|usb_c|displayport|power)\b/);
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});

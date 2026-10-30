@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
-import { evaluateConnectionLength } from './domain/connections.js';
+import { describeCableType, evaluateConnectionLength } from './domain/connections.js';
 import { UNSAVED_PROJECT_VERSION, createLocalProjectClient } from './domain/local-project-store.js';
 import {
   analyzeProjectWiring,
@@ -837,7 +837,7 @@ export default function App() {
       const result = await projectClient.validate(parsed);
 
       const shouldImport = window.confirm(
-        `确定导入“${file.name}”并替换当前画布吗？\n导入后仍需点击“保存项目”才会保存。`
+        `确定导入“${file.name}”并替换当前的桌面吗？\n导入后仍需点击“保存项目”才会保存。`
       );
       if (!shouldImport) return;
 
@@ -924,8 +924,8 @@ export default function App() {
       const project = { room, objects, connections, camera: currentCamera };
       await navigator.clipboard.writeText(JSON.stringify(project, null, 2));
       showStatus({ text: '项目已复制，可以粘贴到别处', type: 'success' }, 3000);
-    } catch (error) {
-      showStatus({ text: `复制失败：${error.message}`, type: 'error' }, 4000);
+    } catch {
+      showStatus({ text: '复制失败：浏览器没有允许使用剪贴板，可以改用“导出备份”', type: 'error' }, 4000);
     }
   };
 
@@ -941,7 +941,7 @@ export default function App() {
       const result = await projectClient.validate(parsed);
 
       const shouldImport = window.confirm(
-        '确定从剪贴板导入项目并替换当前画布吗？\n导入后仍需点击“保存项目”才会保存。'
+        '确定从剪贴板导入项目并替换当前的桌面吗？\n导入后仍需点击“保存项目”才会保存。'
       );
       if (!shouldImport) return;
 
@@ -1078,8 +1078,8 @@ export default function App() {
     try {
       await navigator.clipboard.writeText(shoppingList.text);
       showStatus({ text: '购物清单已复制', type: 'success' }, 3000);
-    } catch (error) {
-      showStatus({ text: `复制失败：${error.message}`, type: 'error' }, 4000);
+    } catch {
+      showStatus({ text: '复制失败：浏览器没有允许使用剪贴板，可以手动选中清单文字复制', type: 'error' }, 4000);
     }
   };
 
@@ -1413,7 +1413,7 @@ export default function App() {
         
         {connectionMode && (
           <div style={{ position: 'absolute', top: 15, left: '50%', transform: 'translateX(-50%)', background: '#ff9800', color: 'white', padding: '10px 20px', borderRadius: '20px', zIndex: 100, fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-            请点击 3D 画布中的目标设备 (按 Esc 取消)
+            请在 3D 画面里点选要连接的设备（按 Esc 取消）
           </div>
         )}
 
@@ -1600,7 +1600,7 @@ export default function App() {
                 ) : (
                   <div className="empty-state">
                     <strong>未选中设备</strong><br />
-                    请在左侧 3D 画布中<br />点击任意设备以编辑其属性。
+                    在 3D 画面里点选一个设备，<br />就可以在这里编辑它。
                   </div>
                 )
               )}
@@ -2019,7 +2019,7 @@ export default function App() {
                           </td>
                           <td style={{ padding: '8px' }}>
                             {c.name}<br/>
-                            <span style={{ color: '#666', fontSize: '11px' }}>{c.cableType} ({c.length}m)</span>
+                            <span style={{ color: '#666', fontSize: '11px' }}>{describeCableType(c.cableType)}（{c.length}m）</span>
                             {lengthStatus && (
                               <div className={`cable-distance ${lengthStatus.hasRecommendedSlack ? 'cable-distance-ok' : 'cable-distance-warning'}`}>
                                 端点 {lengthStatus.distance.toFixed(2)}m / 建议 {lengthStatus.recommendedLength.toFixed(2)}m
