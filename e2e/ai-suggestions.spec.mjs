@@ -149,3 +149,27 @@ test('a request in progress can be cancelled', async ({ page }) => {
   await expect(section.getByRole('group')).toHaveCount(0, { timeout: 1000 });
   expect(evidence.writes).toEqual([]);
 });
+
+test('the user can tell the AI what to change and get a new answer', async ({ page }) => {
+  const scene = messyGaming();
+  const first = answer(scene);
+  const second = { version: 1, model: 'test', suggestions: [first.suggestions[0]] };
+  const evidence = await openProject(page, scene.objects, scene.connections, {
+    room: scene.room, ai: body => (body.followUp ? second : { ...first, suggestions: first.suggestions.slice(1) }),
+  });
+  const { section } = await openAiSection(page);
+  await section.getByRole('button', { name: '让 AI 看看', exact: true }).click();
+  await expect(section.getByText('AI 这次没有找到能让布局更好的改动。')).toBeVisible();
+
+  const retry = section.getByRole('button', { name: '按我的意见再来一次', exact: true });
+  await expect(retry).toBeDisabled();
+  await section.getByLabel('不满意？告诉 AI 怎么改').fill('显示器摆正就行');
+  await retry.click();
+  await expect(section.getByRole('group', { name: '显示器移到正前方' })).toBeVisible();
+
+  expect(evidence.aiRequests).toHaveLength(2);
+  expect(evidence.aiRequests[0].followUp).toBeUndefined();
+  expect(evidence.aiRequests[1].followUp.feedback).toBe('显示器摆正就行');
+  expect(evidence.aiRequests[1].followUp.previousSuggestions.map(s => s.id)).toEqual(['floor', 'worse']);
+  expect(evidence.errors).toEqual([]);
+});

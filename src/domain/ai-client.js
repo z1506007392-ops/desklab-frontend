@@ -19,6 +19,7 @@ function aiError(code, message = AI_ERROR_MESSAGES[code]) {
 export async function requestLayoutSuggestions({
   summary,
   goal = '',
+  followUp = null,
   signal,
   fetchImpl = (...args) => fetch(...args),
   timeoutMs = AI_REQUEST_TIMEOUT_MS,
@@ -36,7 +37,9 @@ export async function requestLayoutSuggestions({
       response = await fetchImpl('/api/ai/layout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version: AI_PROTOCOL_VERSION, summary, goal }),
+        body: JSON.stringify(followUp
+          ? { version: AI_PROTOCOL_VERSION, summary, goal, followUp }
+          : { version: AI_PROTOCOL_VERSION, summary, goal }),
         signal: controller.signal,
       });
     } catch {

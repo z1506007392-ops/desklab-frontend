@@ -74,3 +74,12 @@ test('network failure, timeout, and cancelling are told apart', async () => {
   already.abort();
   await assert.rejects(requestLayoutSuggestions({ summary, fetchImpl: hang, signal: already.signal }), { code: 'cancelled' });
 });
+
+test('a follow-up is sent along with the summary and goal', async () => {
+  let body;
+  await requestLayoutSuggestions({
+    summary, goal: '更整洁', followUp: { previousSuggestions: [], feedback: '不要动主机' },
+    fetchImpl: async (url, init) => { body = JSON.parse(init.body); return jsonResponse(200, { suggestions: [] }); },
+  });
+  assert.deepEqual(body, { version: 1, summary, goal: '更整洁', followUp: { previousSuggestions: [], feedback: '不要动主机' } });
+});

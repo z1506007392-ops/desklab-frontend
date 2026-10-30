@@ -23,6 +23,17 @@ function fail(status, error, headers, message = AI_ERROR_MESSAGES[error]) {
   return json(status, { error, message }, headers);
 }
 
+// An optional follow-up: the suggestions the user saw last time (filtered
+// like any answer, so the client cannot smuggle text into the assistant turn)
+// and what the user said about them.
+function readFollowUp(followUp) {
+  if (!followUp || typeof followUp !== 'object' || Array.isArray(followUp)) return null;
+  return {
+    previousSuggestions: sanitizeSuggestions({ suggestions: followUp.previousSuggestions }),
+    feedback: followUp.feedback,
+  };
+}
+
 function readConfig(env = {}) {
   const timeout = Number(env.AI_TIMEOUT_MS);
   return {
@@ -84,7 +95,7 @@ export function createLayoutHandler({ fetchImpl = (...args) => fetch(...args), r
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
         body: JSON.stringify({
           model: config.model,
-          messages: buildMessages(body.summary, body.goal),
+          messages: buildMessages(body.summary, body.goal, readFollowUp(body.followUp)),
           response_format: { type: 'json_object' },
           temperature: 0.3,
           max_tokens: DEFAULTS.maxTokens,

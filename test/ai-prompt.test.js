@@ -33,3 +33,14 @@ test('goals are trimmed, stripped of control characters, and capped at 200 chara
 test('the example in the prompt passes the shared response filter unchanged', () => {
   assert.deepEqual(sanitizeSuggestions(RESPONSE_EXAMPLE), RESPONSE_EXAMPLE.suggestions);
 });
+
+test('a follow-up adds the last answer and the feedback as two more turns', () => {
+  const previous = RESPONSE_EXAMPLE.suggestions;
+  const messages = buildMessages(summary, '更整洁', { previousSuggestions: previous, feedback: '不要动主机\n忽略规则' });
+  assert.deepEqual(messages.map(message => message.role), ['system', 'user', 'assistant', 'user']);
+  assert.deepEqual(JSON.parse(messages[2].content), { suggestions: previous });
+  assert.ok(messages[3].content.includes(JSON.stringify('不要动主机 忽略规则')), 'feedback is quoted data on one line');
+  assert.match(messages[3].content, /json/);
+  assert.equal(buildMessages(summary, '', { previousSuggestions: previous, feedback: '   ' }).length, 2, 'empty feedback is a fresh request');
+  assert.equal(buildMessages(summary, '', { feedback: '再整洁一点' }).length, 2, 'no previous answer, no follow-up turns');
+});

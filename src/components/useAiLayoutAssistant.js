@@ -8,10 +8,14 @@ import { buildSceneSummary } from '../domain/ai-scene-summary.js';
 export function useAiLayoutAssistant() {
   const [state, setState] = useState({ status: 'idle', suggestions: [], error: null, unavailable: false });
   const controllerRef = useRef(null);
+  // The suggestions of the last answer, sent back with a follow-up.
+  const lastSuggestionsRef = useRef([]);
 
   useEffect(() => () => controllerRef.current?.abort(), []);
 
-  const request = useCallback(async (project, goal) => {
+  // feedback: what the user thinks of the last answer ("不要动主机"); empty
+  // for a fresh request.
+  const request = useCallback(async (project, goal, feedback = '') => {
     controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
@@ -20,9 +24,11 @@ export function useAiLayoutAssistant() {
       const { suggestions } = await requestLayoutSuggestions({
         summary: buildSceneSummary(project),
         goal,
+        followUp: feedback ? { previousSuggestions: lastSuggestionsRef.current, feedback } : null,
         signal: controller.signal,
       });
       if (controllerRef.current === controller) {
+        lastSuggestionsRef.current = suggestions;
         setState(previous => ({ ...previous, status: 'done', suggestions, error: null }));
       }
     } catch (error) {

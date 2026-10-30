@@ -1240,3 +1240,9 @@
 .error-notice span {
   color: #8a1c1c;
 }
+
+.ai-suggestions-followup {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #d9e2ec;
+}

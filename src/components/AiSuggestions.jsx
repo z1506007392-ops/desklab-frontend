@@ -14,6 +14,7 @@ function deviceNames(project, ids) {
  */
 export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }) {
   const [goal, setGoal] = useState('');
+  const [feedback, setFeedback] = useState('');
   const accepted = useMemo(() => evaluateSuggestions(project, ai.suggestions).map(result => ({
     ...result,
     changedIds: changedObjectIds(project, result.nextProject),
@@ -115,6 +116,31 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {ai.status === 'done' && (
+        <div className="ai-suggestions-form ai-suggestions-followup">
+          <label htmlFor="ai-feedback">不满意？告诉 AI 怎么改</label>
+          <input
+            id="ai-feedback"
+            className="ui-input"
+            maxLength={200}
+            placeholder="例如：不要动主机 / 再整洁一点"
+            value={feedback}
+            onChange={event => setFeedback(event.target.value)}
+          />
+          <button
+            type="button"
+            className="ui-button"
+            onClick={() => {
+              ai.request(project, goal.trim(), feedback.trim());
+              setFeedback('');
+            }}
+            disabled={!editable || !feedback.trim()}
+          >
+            按我的意见再来一次
+          </button>
         </div>
       )}
 
