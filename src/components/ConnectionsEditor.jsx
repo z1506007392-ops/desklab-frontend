@@ -272,7 +272,7 @@ const ConnectionsEditor = ({
                         <button onClick={() => setConnectionMode(true)} className="ui-button" style={{ width: '100%', borderColor: '#007bff', color: '#007bff' }}>
                           在场景中选择目标设备
                         </button>
-                        <div style={{ textAlign: 'center', fontSize: '11px', color: '#888', margin: '2px 0' }}>─ 或在下拉列表中选择 ─</div>
+                        <div style={{ textAlign: 'center', fontSize: '11px', color: '#5f6b7a', margin: '2px 0' }}>─ 或在下拉列表中选择 ─</div>
                         <select
                           className="ui-select"
                           style={{ width: '100%' }}
@@ -364,7 +364,7 @@ const ConnectionsEditor = ({
 
       <div className="panel-section">
         <div className="panel-section-title">当前设备连接 ({relatedConnections.length})</div>
-        {relatedConnections.length === 0 ? <div style={{ fontSize: '13px', color: '#888888' }}>无连接</div> : null}
+        {relatedConnections.length === 0 ? <div style={{ fontSize: '13px', color: '#5f6b7a' }}>无连接</div> : null}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {relatedConnections.map(c => {
             const isFrom = c.fromObjectId === selectedObj.id;
@@ -424,7 +424,7 @@ const ConnectionsEditor = ({
                 ) : (
                   <div style={{ color: '#222222', fontSize: '13px', marginBottom: '4px' }}>{c.name} ({c.length}m)</div>
                 )}
-                <div style={{ color: '#888888', fontSize: '11px' }}>
+                <div style={{ color: '#5f6b7a', fontSize: '11px' }}>
                   本端: {myPortName} <br/>对端: {otherPortName}
                 </div>
                 {lengthStatus && (

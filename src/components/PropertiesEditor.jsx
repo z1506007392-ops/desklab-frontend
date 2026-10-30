@@ -135,7 +135,7 @@ export default function PropertiesEditor({ obj, updateObject, room, onSnapToWall
               />
               {maxLoad > 0 && (
                 <div style={{ paddingLeft: '78px', marginTop: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '11px', color: '#888' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '11px', color: '#5f6b7a' }}>
                     <span>已接负载：<strong>{currentLoad}W</strong> / {maxLoad}W</span>
                     <span style={{ fontWeight: 'bold', color: loadColor }}>
                       {percent}%
