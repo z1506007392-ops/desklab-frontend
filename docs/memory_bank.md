@@ -2738,6 +2738,14 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   20 / 5 / 1 per metre). Severity 'info' (unpowered_input, legacy_connection)
   is not counted, so no "model completion" exclusions are needed. A template
   scores only its cable metres. Verification: `npm test` 351, lint.
+- `4e327b5` C3 `buildSceneSummary(project)` (ai-scene-summary.js): roadmap
+  §6.4 format with `seats: [{ desk, x, y }]` (one per desk, via
+  `getDeskSeat()` now exported from layout-heuristics.js together with
+  `isDesk`), `restingOn` = desk id / floor / wall / air, ports with
+  `linkedTo`, connections with `needed` = recommended length, findings =
+  error + warning only, hints from C1, catalog ids. Sizes: home-office 3.5
+  KB, desktop-dual 5.1 KB, gaming 5.6 KB. Snapshot test (UPDATE_SNAPSHOTS=1
+  to rewrite). Verification: `npm test` 357, lint.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2914,7 +2922,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 351 domain tests
+npm test          # 357 domain tests
 npm run test:ui   # 64 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)

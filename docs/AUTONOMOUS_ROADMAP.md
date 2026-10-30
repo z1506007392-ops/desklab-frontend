@@ -306,7 +306,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 新建 `src/domain/layout-score.js`：`scoreLayout(project)` 按 6.6.2 计算 `{ total, errors, warnings, hints, cableMeters }`，越低越好。
 - 测试：重叠/悬空等错误显著拉高分数；把模板里的显示器挪偏，分数变差；同一项目分数稳定（纯函数）。
 
-**C3 [~] 进行中（claude，2026-10-30） 必做 — 场景摘要（发给模型的数据）**
+**C3 [x] 完成（claude，2026-10-30，4e327b5） 必做 — 场景摘要（发给模型的数据）**
 - 新建 `src/domain/ai-scene-summary.js`：`buildSceneSummary(project)` 产出 6.4 节格式的 JSON。数字保留 2 位小数；物体名称是用户输入，**原样放进 `name` 字段，不拼进任何指令文本**；每个物体给出 `restingOn`（所在支撑面：某张桌子的 id 或 `floor` 或 `wall`）。
 - 如缺少"找支撑面"的工具函数，在 `layout-analysis.js` 旁边新增 `findSupportingObject(object, objects)` 并测试。
 - 测试：模板场景的摘要快照（`test/fixtures/ai/summary-gaming.json`），体积 < 12KB；含 `findings`（布局+布线问题，去掉"没建模的线"类代码）和 `hints`（C1 的结果）。
@@ -486,6 +486,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
   "units": "米；角度为度",
   "axes": "x=左右(长)，y=前后(深)，y 越小越靠近坐在桌前的人；z=高度。position 是物体包围盒中心。",
   "room": { "length": 4, "width": 3.5, "height": 2.7 },
+  "seats": [{ "desk": "desk-1", "x": 0, "y": -0.7 }],
   "objects": [
     {
       "id": "desk-1",
@@ -524,7 +525,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 }
 ```
 规则：
-- "前方/座位"约定（已按 2026-10-30 的三个模板核实）：书桌靠在 y 较大一侧的墙边，显示器放在桌子后半部、`rotationZ = 180`（屏幕朝 -y），**用户坐在桌子 y 较小的一侧**。摘要里给出 `seat: { x, y }` = 桌子前沿（`desk.y - desk.depth/2`）中点再往 -y 0.35m。桌子 `rotationZ` 不为 0 时，按桌子朝向把"前沿"和"-y"一起旋转换算。
+- "前方/座位"约定（已按 2026-10-30 的三个模板核实）：书桌靠在 y 较大一侧的墙边，显示器放在桌子后半部、`rotationZ = 180`（屏幕朝 -y），**用户坐在桌子 y 较小的一侧**。摘要里给出 `seats: [{ desk, x, y }]`（每张桌子一个；`getDeskSeat()`）= 桌子前沿中点再往 -y 0.35m。实现：`src/domain/ai-scene-summary.js`，快照 `test/fixtures/ai/summary-gaming.json`。桌子 `rotationZ` 不为 0 时，按桌子朝向把"前沿"和"-y"一起旋转换算。
 - 不发送：`assetUrl`、`color`、锚点坐标、相机。
 - `findings` 去掉"没建模的线"相关代码（`recommendations.js` 里的 `MODEL_COMPLETION_CODES`——目前未导出，需要时导出它——以及 `unpowered_input` 等纯信息提示）。
 
