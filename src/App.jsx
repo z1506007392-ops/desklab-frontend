@@ -9,6 +9,7 @@ import {
 import { constrainProjectToRoom, safeClamp, validateAndConstrainObject } from './domain/geometry.js';
 import {
   analyzeProjectLayout,
+  settleAfterDrag,
   snapObjectToSupport,
   snapWallOutletToNearestWall,
   summarizeLayoutIssues,
@@ -29,7 +30,7 @@ import {
 import { captureCameraSnapshot } from './domain/camera-snapshot.js';
 import { placeCatalogObject } from './domain/placement.js';
 import { createEntityId } from './domain/identifiers.js';
-import { getObjectKeyboardUpdate } from './domain/keyboard-controls.js';
+import { describeKeyTarget, getObjectKeyboardUpdate, shouldIgnoreDeviceShortcut } from './domain/keyboard-controls.js';
 import {
   canEditProject,
   canStartObjectDrag,
@@ -623,10 +624,12 @@ export default function App() {
     showStatus({ text: '已吸附到最近墙面', type: 'success' });
   }, [connectionMode, objects, projectEditable, room, selectedObjectId, showStatus, updateSelectedObject]);
 
+  const dialogOpen = showTemplates || showLayoutReport || showWiringReport || showGlobalConnections || showRecommendations || showAbout;
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!projectEditable || !selectedObjectId || connectionMode) return;
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+      if (shouldIgnoreDeviceShortcut(e, describeKeyTarget(e.target), { dialogOpen })) return;
 
       if (e.ctrlKey && (e.key === 'd' || e.key === 'D')) {
         e.preventDefault();
@@ -649,7 +652,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedObjectId, objects, connectionMode, handleDeleteDevice, handleDuplicateDevice, projectEditable, updateSelectedObject]);
+  }, [selectedObjectId, objects, connectionMode, dialogOpen, handleDeleteDevice, handleDuplicateDevice, projectEditable, updateSelectedObject]);
 
   const handleResetView = () => {
     if (!projectEditable) return;
@@ -1644,7 +1647,14 @@ export default function App() {
               if (!obj) return;
               updateSelectedObject({ position: { x: point.x + dragInfo.offsetX, y: point.z + dragInfo.offsetY } });
             }}
-            onDragEnd={() => { setDragInfo(null); finishHistoryGroup(); }}
+            onDragEnd={() => {
+              // A device dragged off its support drops instead of hanging in the air.
+              const dragged = objects.find(o => o.id === dragInfo?.objId);
+              const settled = dragged && settleAfterDrag(room, dragged, objects, dragInfo.startPosition);
+              if (settled) setObjects(current => current.map(o => (o.id === settled.id ? settled : o)));
+              setDragInfo(null);
+              finishHistoryGroup();
+            }}
             showAxes={showAxes}
             objects={aiPreview ? aiPreview.nextProject.objects : objects}
             connections={aiPreview ? aiPreview.nextProject.connections : connections}
@@ -1674,7 +1684,7 @@ export default function App() {
               if (!canStartObjectDrag({ projectEditable, connectionMode })) return;
               finishHistoryGroup();
               setSelectedObjectId(obj.id);
-              setDragInfo({ objId: obj.id, planeY: point.y, offsetX: obj.position.x - point.x, offsetY: obj.position.y - point.z });
+              setDragInfo({ objId: obj.id, planeY: point.y, offsetX: obj.position.x - point.x, offsetY: obj.position.y - point.z, startPosition: obj.position });
             }}
             onObjectHover={obj => {
               if (projectEditable && connectionMode) setHoveredDeviceId(obj.id);

@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-30 · Claude · master
 
+E1 完成。先用临时探查测试（用完已删）逐个试：单击设备不动不产生撤销步骤；拖动后一次撤销回原位；删除带 2 条连线的显示器后撤销能连线一起恢复、重做再删掉；撤销回到已保存状态时"未保存"消失；输入框里按 Ctrl+Z 走浏览器自己的撤销；连按方向键合并成一步；复制设备后撤销。这些都正常。发现并修了两个问题（先写了会失败的测试）：①设备快捷键只跳过输入框：选中设备时，焦点在按钮上按空格会去抬高设备，按钮按不下去；弹窗开着时方向键和 Delete 会作用到弹窗后面的设备（还会弹出"确定要删除"）。新增 `keyboard-controls.js` 的 `shouldIgnoreDeviceShortcut` / `describeKeyTarget`：任何弹窗打开、焦点在弹窗或菜单里、在输入框里时不处理；焦点在按钮上时空格和回车留给按钮；点完工具栏按钮后方向键仍能移动设备。②把显示器拖出桌面后 z 不变，悬在半空，布局检查马上报"悬空"。新增 `layout-analysis.js` 的 `settleAfterDrag`：拖动确实移动过、松手时下面没有支撑（墙壁插座除外），就用现有的 `snapObjectToSupport` 落到下方最高的表面或地板；不另记撤销步骤，一次撤销回到拖动前（含原来的高度）。新增单元测试 4 个、UI 测试 `e2e/edit-edge-cases.spec.mjs`（桌面和手机各 3 个；用 3D 选中标签的位置找到设备再拖）。已知、没改（交互要负责人定）：选中设备时鼠标滚轮会缩放设备（每格 5%）而不是缩放视角，提示条里没写，用户想拉近看时可能误改设备尺寸（可撤销）。验证：`npm test` 390、`test:ui` 103 + 1 跳过、lint、build，拖出桌面后截图已看（落在地板上、布局检查无问题）。
+
+### 2026-10-30 · Claude · master
+
 领取 E1（撤销/重做、拖动、连线的边界情况，写 UI 测试找 bug）。还剩：E1 本身。
 
 ### 2026-10-30 · Claude · master
@@ -3386,8 +3390,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 387 domain tests
-npm run test:ui   # 98 Chrome UI cases (97 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
+npm test          # 390 domain tests
+npm run test:ui   # 104 Chrome UI cases (103 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

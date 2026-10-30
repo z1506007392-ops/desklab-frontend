@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   analyzeProjectLayout,
+  settleAfterDrag,
   snapObjectToSupport,
   snapWallOutletToNearestWall,
   summarizeLayoutIssues,
@@ -221,3 +222,19 @@ test('does not snap onto an AABB-only support under a rotated object', () => {
   const snapped = snapObjectToSupport(room, target, [support, target]);
   assert.equal(snapped.position.z, 0.1);
 });
+
+test('a dragged object that ends up in the air drops to what is below it', () => {
+  const desk = object('desk', { position: { x: 0, y: 0, z: 0.375 }, scale: { x: 1.4, y: 0.7, z: 0.75 } });
+  const box = object('box', { position: { x: 1.6, y: 0, z: 0.2 }, scale: { x: 0.4, y: 0.4, z: 0.4 } });
+  const monitor = (x, z = 0.91) => object('monitor', { position: { x, y: 0, z }, scale: { x: 0.54, y: 0.05, z: 0.32 } });
+  const start = monitor(0).position;
+
+  assert.equal(settleAfterDrag(room, monitor(0.3), [desk, box, monitor(0.3)], start), null, 'still on the desk');
+  assert.equal(settleAfterDrag(room, monitor(0), [desk, box, monitor(0)], start), null, 'a click without moving changes nothing');
+  assert.equal(settleAfterDrag(room, monitor(-1.6), [desk, box, monitor(-1.6)], start).position.z, 0.16, 'off the desk: onto the floor');
+  assert.equal(settleAfterDrag(room, monitor(1.6), [desk, box, monitor(1.6)], start).position.z, 0.56, 'over a lower box: onto the box');
+
+  const outlet = object('outlet', { modelId: 'wall-outlet', type: 'outlet', position: { x: 2.48, y: 0, z: 0.3 }, scale: { x: 0.08, y: 0.02, z: 0.08 } });
+  assert.equal(settleAfterDrag(room, outlet, [outlet], { x: 2.48, y: 0.5, z: 0.3 }), null, 'wall outlets stay on the wall');
+});
+

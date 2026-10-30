@@ -45,6 +45,21 @@ export function snapObjectToSupport(room, object, objects) {
   return null;
 }
 
+/**
+ * After a drag that moved `object` away from `startPosition`, the object in
+ * its new place if it would otherwise hang in the air: dropped onto the
+ * highest surface below it, or the floor (snapObjectToSupport). Null when it
+ * did not move, still rests on something, is a wall outlet, or cannot drop.
+ * The drag already recorded the undo step, so callers apply this without a
+ * new one.
+ */
+export function settleAfterDrag(room, object, objects, startPosition) {
+  if (!object?.position || !startPosition) return null;
+  const moved = ['x', 'y', 'z'].some(axis => Math.abs(object.position[axis] - startPosition[axis]) > GEOMETRY_EPSILON);
+  if (!moved || findSupportingObject(object, objects) !== null) return null;
+  return snapObjectToSupport(room, object, objects);
+}
+
 export function snapWallOutletToNearestWall(room, object) {
   if (!isWallOutlet(object)) return null;
 
