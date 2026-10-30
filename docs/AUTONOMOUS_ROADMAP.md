@@ -231,7 +231,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 做法：项目为空（没有任何物体）且从未保存过时，在 3D 区域上方显示一个居中卡片："从模板开始 / 按我的设备生成 / 自己摆"，三个按钮分别打开桌面模板、按设备生成表单、关闭卡片。任何物体出现后卡片消失。不要用浏览器弹窗。
 - 验收：新 UI 测试覆盖三个按钮；空项目但已有存档版本时不出现（尊重用户）；桌面+手机截图。
 
-**A4 [~] 进行中（claude，2026-10-30） 必做 — WebGL 不可用时的友好提示**
+**A4 [x] 完成（claude，2026-10-30，97a4658） 必做 — WebGL 不可用时的友好提示**
 - 目标：老电脑、某些内置浏览器不支持 WebGL 时不白屏。
 - 做法：加一个 React Error Boundary 包住 3D 画布；检测 `WebGLRenderingContext` 不可用或 Canvas 创建失败时，显示中文说明（"你的浏览器无法显示 3D 画面，请换用最新版 Chrome / Edge / Safari"），其余界面（列表、检查、保存、导出）仍可用。
 - 验收：单元测试覆盖检测函数；UI 测试用 `page.addInitScript` 把 `HTMLCanvasElement.prototype.getContext` 改成返回 `null`，确认出现提示且无未捕获异常。
@@ -249,6 +249,11 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 **A7 [ ] 必做 — 用户可见文案全面检查**
 - 做法：`grep` 出所有中文字符串和 `title=`、`aria-label=`、状态提示，逐条检查：有没有内部 id、英文、"后端"、"JSON"、"payload"之类术语；语气是否像对普通人说话；有没有"错误/失败"却没告诉用户怎么办的。改完补测试中对应文本。
 - 验收：在 memory bank 记录检查范围与改动清单。
+
+**A9 [ ] 必做 — 模型文件下载失败时不留未处理的错误**
+- 现象（A4 中发现）：`/models/*.glb` 下载失败时，每个设备会正确退回简单形状，但浏览器控制台出现未捕获的 `Could not load /models/...glb` 错误（来自 `SceneObjects.jsx` 顶部的 `useGLTF.preload` 和加载器的 Promise 拒绝）。D3 加了全局错误提示后，这会被误报成"出了点问题"。
+- 做法：找到未处理的拒绝来源（预加载、`useGLTF` 内部），在不改变"退回简单形状"行为的前提下捕获并只记一条 `console.warn`。
+- 验收：`e2e/no-webgl.spec.mjs` 里"missing model files"那条测试改为断言 `evidence.errors` 为空且仍能看到 3D 画面。
 
 **A8 [ ] 可选 — 让 Cloudflare 只部署通过测试的版本**
 - 需要人（第 7 节 H3）。人没做之前跳过；人做完后：把 Cloudflare 的 Git 自动部署关掉，改为 CI 全绿后用 `wrangler pages deploy dist --project-name desklab-frontend` 部署（GitHub secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）。

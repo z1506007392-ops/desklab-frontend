@@ -2622,6 +2622,17 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   objects, connections, { saved: false })` opens as a first-time visitor.
   Verification: `npm test` 295, `npm run test:ui` 50, lint, build;
   screenshots checked.
+- `97a4658` A4 3D view fallbacks: `canUseWebGL()` (webgl-support.js) runs once;
+  without WebGL a `SceneUnavailable` notice replaces the Canvas and the rest
+  of the app works. `SceneErrorBoundary` (components/SceneFallback.jsx) wraps
+  the Canvas with a 重新加载 3D 画面 button; its children is a function that
+  receives `reportFailure`. The Canvas now gets `gl={defaults =>
+  createRendererOrReport(...)}`: R3F creates the renderer outside React
+  rendering, so a refused context used to be an uncaught error no boundary
+  saw. Already existing: per-object `GLTFErrorBoundary` falls back to simple
+  shapes when a GLB fails (but leaves uncaught console errors, task A9).
+  Verification: `npm test` 298, `npm run test:ui` 56, lint, build; scene
+  render unchanged (screenshot), no-WebGL notice checked on phone.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2798,8 +2809,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 295 domain tests
-npm run test:ui   # 50 Chrome UI cases; storage seeded per test, no backend
+npm test          # 298 domain tests
+npm run test:ui   # 56 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (known large chunk warning is OK)
 ```
