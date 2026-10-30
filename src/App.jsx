@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
 import { evaluateConnectionLength } from './domain/connections.js';
-import { createProjectClient } from './domain/project-client.js';
+import { createLocalProjectClient } from './domain/local-project-store.js';
 import {
   analyzeProjectWiring,
   getInvalidConnectionIds,
@@ -57,11 +57,20 @@ import {
 } from './components/SceneObjects.jsx';
 
 const PROJECT_DRAFT_STORAGE_KEY = 'desklab.project-draft.v1';
-const projectClient = createProjectClient();
+const projectClient = createLocalProjectClient(() => window.localStorage);
 const projectDraftStorage = createProjectDraftStorage(
   () => window.localStorage,
   PROJECT_DRAFT_STORAGE_KEY
 );
+
+// Saves live only in this browser. Ask once that the browser keep them when
+// it is short on space; it may say no, and saving works either way.
+let persistentStorageRequested = false;
+function requestPersistentStorage() {
+  if (persistentStorageRequested) return;
+  persistentStorageRequested = true;
+  navigator.storage?.persist?.().catch(() => {});
+}
 
 const serializeLayout = (room, objects, connections) =>
   JSON.stringify({ room, objects, connections });
@@ -390,7 +399,9 @@ export default function App() {
         console.error(err);
         setProjectLoadFailed(true);
         showStatus({
-          text: '后端项目读取失败，已锁定保存以保护现有数据。请重启后端后刷新页面。',
+          text: err.code === 'storage_unavailable'
+            ? err.message
+            : '本机保存的项目无法读取，已锁定保存以保护原数据。可以尝试恢复上一版本。',
           type: 'error',
         });
         const localDraft = readLocalDraft();
@@ -648,7 +659,7 @@ export default function App() {
     }
     if (projectLoadFailed) {
       showStatus({
-        text: '项目尚未安全读取，当前禁止覆盖后端数据。请重启后端后刷新页面。',
+        text: '本机保存的项目无法读取，为保护原数据已禁止保存。',
         type: 'error',
       });
       return;
@@ -672,6 +683,7 @@ export default function App() {
     try {
       const saved = await projectClient.save(snapshot, projectVersionRef.current);
       projectVersionRef.current = saved.version;
+      requestPersistentStorage();
 
       const latest = projectStateRef.current;
       const latestProject = {
@@ -711,7 +723,7 @@ export default function App() {
 
   const handleRecoverBackup = async () => {
     const confirmed = window.confirm(
-      '确定恢复上一次成功保存的项目吗？\n当前无法读取的后端项目文件将被备份版本替换。'
+      '确定恢复上一次成功保存的项目吗？\n当前无法读取的项目将被上一版本替换。'
     );
     if (!confirmed) return;
 
@@ -796,7 +808,7 @@ export default function App() {
       const result = await projectClient.validate(parsed);
 
       const shouldImport = window.confirm(
-        `确定导入“${file.name}”并替换当前画布吗？\n导入后仍需点击“保存项目”才会写入后端。`
+        `确定导入“${file.name}”并替换当前画布吗？\n导入后仍需点击“保存项目”才会保存。`
       );
       if (!shouldImport) return;
 
@@ -881,7 +893,7 @@ export default function App() {
       const result = await projectClient.validate(parsed);
 
       const shouldImport = window.confirm(
-        '确定从剪贴板导入项目并替换当前画布吗？\n导入后仍需点击“保存项目”才会写入后端。'
+        '确定从剪贴板导入项目并替换当前画布吗？\n导入后仍需点击“保存项目”才会保存。'
       );
       if (!shouldImport) return;
 
@@ -1255,7 +1267,7 @@ export default function App() {
               title={!projectLoaded
                 ? '项目仍在加载，保存暂不可用'
                 : projectLoadFailed
-                  ? '后端项目读取失败，为防止覆盖原数据，保存已锁定'
+                  ? '本机保存的项目无法读取，为防止覆盖原数据，保存已锁定'
                   : recoveryDraft
                     ? '请先恢复或放弃本地草稿'
                   : saveBusy
@@ -1289,7 +1301,7 @@ export default function App() {
         {projectLoadFailed && (
           <div className="draft-recovery-banner" role="alert">
             <div>
-              <strong>后端项目读取失败，保存已锁定</strong>
+              <strong>本机保存的项目无法读取，保存已锁定</strong>
               <span>可尝试恢复上一次成功保存的版本；本地未保存草稿不会被删除。</span>
             </div>
             <div className="draft-recovery-actions">

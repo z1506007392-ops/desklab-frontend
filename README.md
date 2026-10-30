@@ -5,7 +5,12 @@ DeskLab is a connected 3D room desktop layout and cabling tool.
 ## Local development
 
 Run `npm ci`, then `npm run dev` from this repository. The frontend normally
-uses port 5173 and proxies `/api` to the local backend on port 3001.
+uses port 5173.
+
+There are no accounts. Each visitor's project is saved in their own browser
+(`localStorage`, see `src/domain/local-project-store.js`), together with the
+previous save as a backup, so the backend is not needed to load or save. The
+dev server still proxies `/api` to port 3001 for future server features.
 
 ## Verification
 
@@ -16,9 +21,9 @@ uses port 5173 and proxies `/api` to the local backend on port 3001.
   installed on the machine.
 
 The UI suite starts and stops its own Vite process on `127.0.0.1:5174`; that
-port must be free. It intercepts every `/api` request with isolated fixtures,
-so it needs no backend and never reads or writes the real default project.
-Each test uses a fresh browser context. Screenshots, video, and traces are
+port must be free. Each test uses a fresh browser context whose storage is
+seeded with the test's project, so it needs no backend; any `/api` request is
+blocked and reported as a failure. Screenshots, video, and traces are
 disabled; assertions check rendered controls, problem reports, undo/redo,
 and runtime errors. Test output stays in ignored `test-results/`.
 
