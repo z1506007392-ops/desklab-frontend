@@ -12,7 +12,7 @@ export function box(id, x = 0) {
   };
 }
 
-export async function openProject(page, objects, connections = []) {
+export async function openProject(page, objects, connections = [], { saved = true } = {}) {
   const project = {
     id: 'default', updatedAt: '2026-09-09T00:00:00.000Z',
     room: { length: 10, width: 10, height: 3 }, objects, connections,
@@ -30,11 +30,14 @@ export async function openProject(page, objects, connections = []) {
   // The project is seeded into this browser's storage once per tab (a reload
   // must show what the user saved, not the seed). Projects never go to a
   // server, so any API request is recorded as unexpected.
-  await page.addInitScript(({ key, raw }) => {
-    if (sessionStorage.getItem('desklab-e2e-seeded')) return;
-    localStorage.setItem(key, raw);
-    sessionStorage.setItem('desklab-e2e-seeded', '1');
-  }, { key: PROJECT_STORAGE_KEY, raw: JSON.stringify(project) });
+  // saved: false opens the app as a first-time visitor with nothing stored.
+  if (saved) {
+    await page.addInitScript(({ key, raw }) => {
+      if (sessionStorage.getItem('desklab-e2e-seeded')) return;
+      localStorage.setItem(key, raw);
+      sessionStorage.setItem('desklab-e2e-seeded', '1');
+    }, { key: PROJECT_STORAGE_KEY, raw: JSON.stringify(project) });
+  }
   await page.route('**/api/**', route => {
     writes.push(`${route.request().method()} ${route.request().url()}`);
     return route.abort();

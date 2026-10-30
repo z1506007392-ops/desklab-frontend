@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
 import { evaluateConnectionLength } from './domain/connections.js';
-import { createLocalProjectClient } from './domain/local-project-store.js';
+import { UNSAVED_PROJECT_VERSION, createLocalProjectClient } from './domain/local-project-store.js';
 import {
   analyzeProjectWiring,
   getInvalidConnectionIds,
@@ -177,6 +177,12 @@ export default function App() {
   const [showLayoutReport, setShowLayoutReport] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  // First-visit guide: only for a project that has never been saved, until
+  // the user picks a way to start or something appears in the room.
+  const [hasSavedProject, setHasSavedProject] = useState(true);
+  const [startGuideDismissed, setStartGuideDismissed] = useState(false);
+  const scrollTemplatesToBuilderRef = useRef(false);
+  const deskBuilderHeadingRef = useRef(null);
   const [purchaseGuidance, setPurchaseGuidance] = useState(null);
   const [hoveredDeviceId, setHoveredDeviceId] = useState(null);
 
@@ -380,6 +386,7 @@ export default function App() {
       .then(({ project: data, version }) => {
         if (controller.signal.aborted) return;
         projectVersionRef.current = version;
+        setHasSavedProject(version !== UNSAVED_PROJECT_VERSION);
         setProjectLoadFailed(false);
         const loadedRoom = data.room || { length: 10, width: 10, height: 3 };
         const hydratedObjects = hydrateProjectObjects(data.objects || []);
@@ -696,6 +703,7 @@ export default function App() {
     try {
       const saved = await projectClient.save(snapshot, projectVersionRef.current);
       projectVersionRef.current = saved.version;
+      setHasSavedProject(true);
       requestPersistentStorage();
 
       const latest = projectStateRef.current;
@@ -862,6 +870,25 @@ export default function App() {
       showStatus({ text: `导入失败：${describeProjectImportError(error)}`, type: 'error' }, 5000);
     } finally {
       input.value = '';
+    }
+  };
+
+  useEffect(() => {
+    if (!showTemplates || !scrollTemplatesToBuilderRef.current) return;
+    scrollTemplatesToBuilderRef.current = false;
+    deskBuilderHeadingRef.current?.scrollIntoView({ block: 'start' });
+  }, [showTemplates]);
+
+  const showStartGuide = projectLoaded && projectEditable && !hasSavedProject
+    && !startGuideDismissed && objects.length === 0;
+
+  const handleStartGuideChoice = (choice) => {
+    setStartGuideDismissed(true);
+    if (choice === 'template' || choice === 'builder') {
+      scrollTemplatesToBuilderRef.current = choice === 'builder';
+      setShowTemplates(true);
+    } else {
+      setIsLeftPanelOpen(true);
     }
   };
 
@@ -1455,6 +1482,17 @@ export default function App() {
 
         {/* 左侧/中间：3D 视图 */}
         <div ref={canvasContainerRef} style={{ flex: 1, position: 'relative', cursor: dragInfo ? 'grabbing' : 'default', minWidth: 0, minHeight: 0 }}>
+          {showStartGuide && (
+            <div className="start-guide" role="region" aria-label="开始搭建">
+              <h2 className="start-guide-title">从这里开始搭建你的桌面</h2>
+              <p className="start-guide-text">选一种方式，几秒钟就能得到一张摆好设备、接好线的桌面，之后可以随意调整。</p>
+              <div className="start-guide-actions">
+                <button type="button" className="ui-button ui-button-primary" onClick={() => handleStartGuideChoice('template')}>从模板开始</button>
+                <button type="button" className="ui-button" onClick={() => handleStartGuideChoice('builder')}>按我的设备生成</button>
+                <button type="button" className="ui-button" onClick={() => handleStartGuideChoice('manual')}>自己摆</button>
+              </div>
+            </div>
+          )}
           <Canvas onPointerMissed={() => {
             if (!connectionMode) setSelectedObjectId(null);
           }}>
@@ -1689,7 +1727,7 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <h4 className="template-section-title">按我的设备生成</h4>
+              <h4 className="template-section-title" ref={deskBuilderHeadingRef}>按我的设备生成</h4>
               <DeskBuilderForm
                 disabled={!projectEditable}
                 onGenerate={scene => applyGeneratedScene(scene, '已按你的设备生成桌面')}
