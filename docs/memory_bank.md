@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-30 · Claude · master
 
+E15 第 4 步：动效。按 emil-design-eng / impeccable 的规矩只交代状态变化，150–200ms、缓出、只动 transform 和 opacity，不从 0 缩放。唯一刻意安排的一刻：选中设备时标签弹出、圆点光圈收拢一次（`key` 让每次选中都重放）。弹窗淡入上浮、"更多"菜单从右上角展开、手机上的左右面板从边上滑入、开始引导和数量圆标出现时轻轻弹入。系统开了"减少动态效果"时只淡入、按钮按下不缩放（用 `getAnimations()` 在两种设置下核对过）。验证：`npm test` 386、`test:ui` 91 + 1 跳过、lint、build。还剩：impeccable 检查、终审和 `DESIGN.md`。
+
+### 2026-10-30 · Claude · master
+
 E15 第 3 步（E8、E10、E12）：工具栏控件在 `App.jsx` 里各定义一次，桌面和手机（`isMobile`，<900px）分别排布。桌面：按"编辑 / 检查 / 面板 / 保存"分四组，组间 20px。手机：第一行 DeskLab、未保存、撤销、重做、保存；第二行一条可横向滑动的按钮条（两端渐隐），房间尺寸收进新的"房间尺寸"按钮（`aria-expanded`）；390px 宽时工具栏约 95px（原来约 200px）。标题去掉"MVP"（负责人同意过）。触屏（`pointer: coarse`）上按钮、分类、关闭、标签页的可点范围扩到至少 44px，外观不变。新增 `e2e/compact-toolbar.spec.mjs`：手机两行、每个按钮都能滑到、房间尺寸开合；触屏上按钮边缘外 5px 仍能点中（去掉这段 CSS 时测试会失败，已验证）。验证：`npm test` 386、`test:ui` 91 通过 + 1 跳过（手机布局测试在桌面跳过）、lint、build。还剩：动效、impeccable 检查、终审和 `DESIGN.md`。
 
 ### 2026-10-30 · Claude · master

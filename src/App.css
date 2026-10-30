@@ -1781,3 +1781,105 @@
     height: 44px;
   }
 }
+
+/* 动效：只用来交代"什么变了"，150–200ms，从已经看得见的状态缓出，只动 transform 和 opacity。
+   唯一刻意安排的一刻：选中设备时，标签弹出，圆点的光圈收拢一次。 */
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.96); }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+}
+
+@keyframes drawer-from-left {
+  from { opacity: 0; transform: translateX(-24px); }
+}
+
+@keyframes drawer-from-right {
+  from { opacity: 0; transform: translateX(24px); }
+}
+
+@keyframes guide-in {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)); }
+}
+
+@keyframes dot-settle {
+  from { box-shadow: 0 0 0 7px rgba(242, 53, 122, 0); }
+  40% { box-shadow: 0 0 0 6px rgba(242, 53, 122, 0.22); }
+  to { box-shadow: 0 0 0 3px var(--dot-ring); }
+}
+
+.modal-overlay {
+  animation: fade-in var(--dur-fast) ease-out;
+}
+
+.modal-container {
+  animation: rise-in var(--dur) var(--ease-out);
+}
+
+.toolbar-menu {
+  transform-origin: top right;
+  animation: menu-in var(--dur-fast) var(--ease-out);
+}
+
+.start-guide {
+  animation: guide-in var(--dur) var(--ease-out);
+}
+
+.count-badge {
+  animation: pop-in var(--dur-fast) var(--ease-out);
+}
+
+.selection-hint-active .selection-hint-title {
+  transform-origin: left center;
+  animation: pop-in var(--dur) var(--ease-out);
+}
+
+.selection-hint-active .selection-hint-title::before {
+  animation: dot-settle 600ms var(--ease-out);
+}
+
+@media (max-width: 899px) {
+  .left-panel {
+    animation: drawer-from-left var(--dur) var(--ease-out);
+  }
+
+  .side-panel {
+    animation: drawer-from-right var(--dur) var(--ease-out);
+  }
+}
+
+/* 系统设置了"减少动态效果"：不位移、不缩放，只保留淡入。 */
+@media (prefers-reduced-motion: reduce) {
+  .modal-container,
+  .toolbar-menu,
+  .start-guide,
+  .count-badge,
+  .selection-hint-active .selection-hint-title,
+  .left-panel,
+  .side-panel {
+    animation-name: fade-in;
+  }
+
+  .selection-hint-active .selection-hint-title::before {
+    animation: none;
+  }
+
+  .ui-button:active:not(:disabled),
+  .asset-item:active:not(:disabled) {
+    transform: none;
+  }
+
+  .load-meter-bar {
+    transition: none;
+  }
+}

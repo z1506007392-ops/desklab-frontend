@@ -1513,7 +1513,7 @@ export default function App() {
         )}
 
         <div className={`selection-hint${selectedObj ? ' selection-hint-active' : ''}`}>
-          <span className="selection-hint-title">{selectionHint.title}</span>
+          <span className="selection-hint-title" key={selectedObj?.id ?? 'none'}>{selectionHint.title}</span>
           {selectionHint.tip && <span className="selection-hint-tip">{selectionHint.tip}</span>}
         </div>
       </div>
