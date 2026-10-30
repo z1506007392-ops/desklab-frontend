@@ -17,7 +17,11 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
-E2 第 5 步：把「自动检查与改进建议」抽到 `src/components/RecommendationsDialog.jsx`。五个对话框都已离开 `App.jsx`（约 2500 行降到约 1900 行），工具栏和横幅还在。应用建议、撤销、AI 预览仍走原来的处理函数。还剩：E3、E6。
+领取 E3（30 个以上设备时少做重复的布局分析，并避免拖动时重绘没被拖动的设备）。还剩：E3 本身。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
+`5db07ee` E2 第 5 步：把「自动检查与改进建议」抽到 `src/components/RecommendationsDialog.jsx`。五个对话框都已离开 `App.jsx`（1922 行），工具栏和横幅还在。应用建议、撤销、AI 预览仍走原来的处理函数。验证：`npm test` 391，`npm run lint`，`npm run build`，`npm run test:ui` 103 通过 + 1 跳过。还剩：E3、E6。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
