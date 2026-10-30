@@ -6,3 +6,8 @@ node_modules
 .vite-server.err.log
 test-results/
 playwright-report/
+
+# Secrets (DeepSeek key for local AI development, Cloudflare local vars)
+.env
+.env.*
+.dev.vars
