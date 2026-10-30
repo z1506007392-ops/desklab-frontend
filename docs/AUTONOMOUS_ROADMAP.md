@@ -241,7 +241,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 做法：用 `React.lazy` + `Suspense` 懒加载 3D 场景组件（`SceneObjects.jsx` 及 Canvas 部分），加载时显示"正在加载 3D 场景…"；或用 Vite `build.rolldownOptions.output` 把 three 相关拆成独立 chunk。不要改 `chunkSizeWarningLimit` 来掩盖。
 - 验收：build 后最大 JS chunk 明显变小（记录前后大小）；所有测试绿；线上验证首屏正常。
 
-**A6 [ ] 必做 — 核对两份 UI 审计报告**
+**A6 [~] 进行中（claude，2026-10-30） 必做 — 核对两份 UI 审计报告**
 - 文件：`docs/ui-audit.md`、`docs/new-skill-ui-audit.md`。
 - 做法：逐条对照当前代码判断是否已修复；未修复且属于 P1 的，各自拆成独立小任务追加到本阶段（编号 A6.1、A6.2 …）并逐个完成；P2 追加到阶段 E。
 - 验收：两份报告每条后面标注"已修复（提交号）/ 已拆为任务 Ax / 不再适用（原因）"。
