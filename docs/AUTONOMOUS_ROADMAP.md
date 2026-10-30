@@ -351,7 +351,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 把一批有代表性的真实响应复制到 `test/fixtures/ai/recorded/`，供单元测试回放（CI 不调用真实模型）。
 - 没有密钥时：脚本检测到无密钥直接退出并提示；任务状态写"等待密钥（H1），脚本与夹具已完成"，等 H1 完成后再回来跑。
 
-**C7 [ ] 必做（H1 已完成，可以开始） — 提示词迭代**
+**C7 [~] 进行中（claude，2026-10-30） 必做 — 提示词迭代**
 - 依赖：H1 完成、C6 完成（都已满足）。
 - 怎么跑：评测需要 25 次请求。线上 `/api/ai/layout` 每个地址每小时只允许 20 次（`AI_PER_IP_HOURLY`），所以要么在 Cloudflare 临时调高这个变量，要么用 `node tools/ai-eval/run-eval.mjs --url https://desklab-frontend.pages.dev/api/ai/layout` 分两次跑（脚本遇到 429 会停下）。云端会话里 Node 的 fetch 不走代理，要么改用能走代理的方式，要么在本机跑。
 - 做法：跑评测 → 看失败案例 → 改 `prompt.js`（每次只改一处）→ 再跑 → 记录前后指标。直到 C6 全部门槛达标。迭代记录写进 memory bank（"Prompt iterations" 小节：版本、改动、指标）。
