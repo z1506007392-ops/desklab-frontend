@@ -2746,6 +2746,17 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   error + warning only, hints from C1, catalog ids. Sizes: home-office 3.5
   KB, desktop-dual 5.1 KB, gaming 5.6 KB. Snapshot test (UPDATE_SNAPSHOTS=1
   to rewrite). Verification: `npm test` 357, lint.
+- `9a740b0` C4 AI safety core (src/domain/ai-actions.js): `applyAiActions`,
+  `evaluateSuggestion`, `evaluateSuggestions` (accepted, biggest score drop
+  first), `applySuggestionsInOrder` (re-checks each), `parseAiResponse`.
+  Placement without z keeps the level: floor items stay on the floor, others
+  drop from the ceiling onto the highest support (so a monitor moved over a
+  desk lands on it). Refusals carry Chinese reasons. Refused always: unknown
+  ids, out of room (no silent clamping), moving wall outlets or desks with
+  things on them, monitors/laptops not on a desk, busy or incompatible
+  ports, removing power lines, cables shorter than recommended, any other
+  action type. Acceptance per roadmap §6.6.4. Verification: `npm test` 372
+  (incl. summary → mock model → validation end to end), lint, build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2922,7 +2933,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 357 domain tests
+npm test          # 372 domain tests
 npm run test:ui   # 64 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)

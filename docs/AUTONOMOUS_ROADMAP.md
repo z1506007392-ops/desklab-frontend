@@ -311,7 +311,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 如缺少"找支撑面"的工具函数，在 `layout-analysis.js` 旁边新增 `findSupportingObject(object, objects)` 并测试。
 - 测试：模板场景的摘要快照（`test/fixtures/ai/summary-gaming.json`），体积 < 12KB；含 `findings`（布局+布线问题，去掉"没建模的线"类代码）和 `hints`（C1 的结果）。
 
-**C4 [~] 进行中（claude，2026-10-30） 必做 — 动作词表：解析、校验、应用**
+**C4 [x] 完成（claude，2026-10-30，9a740b0） 必做 — 动作词表：解析、校验、应用**
 - 新建 `src/domain/ai-actions.js`：
   - `parseAiResponse(json)` → 规范化的 `suggestions`（丢弃未知字段、未知动作、超出上限的条目）。
   - `applyAiActions(project, actions)` → `{ project, rejected: [{ action, reason }] }`，严格按 6.6.3 的语义和校验规则；只用现有 domain 函数（`snapObjectToSupport`、`arePortsCompatible`、`inferCableType`、`evaluateConnectionLength`、`buildConnectionCompletion` 等）。
