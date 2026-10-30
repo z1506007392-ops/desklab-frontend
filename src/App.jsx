@@ -66,7 +66,7 @@ import LazyScene3D from './components/LazyScene3D.jsx';
 
 
 import { SceneErrorBoundary, SceneUnavailable } from './components/SceneFallback.jsx';
-import { AiSuggestionsPanel } from './components/AiSuggestions.jsx';
+import RecommendationsDialog from './components/RecommendationsDialog.jsx';
 import { useAiLayoutAssistant } from './components/useAiLayoutAssistant.js';
 import { canUseWebGL } from './domain/webgl-support.js';
 import { CountBadge } from './components/CountBadge.jsx';
@@ -1855,317 +1855,65 @@ export default function App() {
       )}
 
       {showRecommendations && (
-        <div
-          className="modal-overlay"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) closeRecommendations();
+        <RecommendationsDialog
+          editable={projectEditable}
+          hasObjects={objects.length > 0}
+          recommendations={recommendations}
+          shoppingList={shoppingList}
+          layoutIssueCount={actionableLayoutIssueCount}
+          wiringIssueCount={actionableWiringIssueCount}
+          purchaseGuidance={purchaseGuidance}
+          ai={aiAssistant}
+          project={currentProject}
+          onClose={closeRecommendations}
+          onApplyAi={(nextProject, label) => {
+            handleApplyAiProject(nextProject, label);
+            closeRecommendations();
           }}
-        >
-          <div
-            className="modal-container wiring-report"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="recommendations-title"
-          >
-            <div className="modal-header">
-              <h3 id="recommendations-title" className="modal-title">自动检查与改进建议</h3>
-              <button
-                type="button"
-                onClick={closeRecommendations}
-                className="side-panel-close"
-                aria-label="关闭改进建议"
-                title="关闭"
-              >
-                <CloseIcon />
-              </button>
-            </div>
-            <div className="modal-body">
-              <p className="wiring-issue-description">
-                根据当前设备、位置和连接规则生成建议；实际摆放、走线和设备规格仍需确认。
-              </p>
-              <AiSuggestionsPanel
-                ai={aiAssistant}
-                project={currentProject}
-                editable={projectEditable}
-                onApply={(nextProject, label) => {
-                  handleApplyAiProject(nextProject, label);
-                  closeRecommendations();
-                }}
-                onPreview={handlePreviewAiSuggestion}
-              />
-              <div className="wiring-summary">
-                <span className="wiring-summary-info">免费改进 {recommendations.freeImprovements.length}</span>
-                <span className="wiring-summary-warning">加购建议 {recommendations.purchases.length}</span>
-                {recommendations.freeImprovements.length > 0 && (
-                  <button
-                    type="button"
-                    className="ui-button ui-button-primary wiring-cleanup-button"
-                    onClick={() => {
-                      if (!projectEditable) return;
-                      const next = applyAllAvailableImprovements({ room, objects, connections });
-                      recordHistory();
-                      setObjects(next.objects);
-                      setConnections(next.connections);
-                      showStatus({ text: '已自动应用所有可用免费改进', type: 'success' });
-                    }}
-                    disabled={!projectEditable}
-                  >
-                    一键修复所有免费项 ({recommendations.freeImprovements.length})
-                  </button>
-                )}
-              </div>
-
-              {(actionableLayoutIssueCount + actionableWiringIssueCount) > 0 && (
-                <div className="wiring-issue wiring-issue-warning" role="status">
-                  <div className="wiring-issue-content">
-                    <div className="wiring-issue-title">
-                      还有 {actionableLayoutIssueCount + actionableWiringIssueCount} 项检查问题需要处理
-                    </div>
-                    <div className="wiring-issue-description">
-                      自动建议仅覆盖部分问题。应用后请继续查看检查报告，确认需要手动调整的项目。
-                    </div>
-                    <div className="connection-item-actions">
-                      {actionableLayoutIssueCount > 0 && (
-                        <button type="button" className="ui-button" onClick={() => {
-                          closeRecommendations();
-                          setShowLayoutReport(true);
-                        }}>
-                          查看布局问题 ({actionableLayoutIssueCount})
-                        </button>
-                      )}
-                      {actionableWiringIssueCount > 0 && (
-                        <button type="button" className="ui-button" onClick={() => {
-                          closeRecommendations();
-                          setShowWiringReport(true);
-                        }}>
-                          查看布线问题 ({actionableWiringIssueCount})
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {purchaseGuidance && (
-                <div className="wiring-issue wiring-issue-info" style={{ marginTop: '16px' }}>
-                  <div className="wiring-issue-content">
-                    <div className="wiring-issue-title">{purchaseGuidance.title}</div>
-                    <div className="wiring-issue-description">{purchaseGuidance.description}</div>
-                  </div>
-                  <div className="connection-item-actions">
-                    <button type="button" className="ui-button ui-button-primary" onClick={handleStartPurchaseWiring}>
-                      {purchaseGuidance.actionLabel}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {recommendations.total === 0 ? (
-                <div className="empty-state" style={{ marginTop: '24px' }}>
-                  {objects.length === 0 ? (
-                    <>
-                      <p>先添加设备，建立你的桌面方案。</p>
-                      <p>可以直接套用一个桌面模板再调整，也可以从资产库逐件放入设备并设置连接。</p>
-                      <div className="empty-state-actions">
-                        <button type="button" className="ui-button ui-button-primary" disabled={!projectEditable} onClick={() => {
-                          closeRecommendations();
-                          setScrollTemplatesToBuilder(false);
-                          setShowTemplates(true);
-                        }}>
-                          使用桌面模板
-                        </button>
-                        <button type="button" className="ui-button" disabled={!projectEditable} onClick={() => {
-                          closeRecommendations();
-                          setIsLeftPanelOpen(true);
-                          if (isMobile) setIsPanelOpen(false);
-                        }}>
-                          添加第一件设备
-                        </button>
-                      </div>
-                    </>
-                  ) : (actionableLayoutIssueCount + actionableWiringIssueCount) > 0
-                    ? '暂无自动改进或加购建议，请查看上方检查问题并手动处理。'
-                    : '当前检查未发现需要处理的问题，暂无自动改进或加购建议。'}
-                </div>
-              ) : (
-                <div className="recommendations-sections" style={{ marginTop: '16px' }}>
-                  {recommendations.freeImprovements.length > 0 && (
-                    <div className="recommendation-group">
-                      <h4>免费布局与配线优化</h4>
-                      <div className="wiring-issue-list">
-                        {recommendations.freeImprovements.map(issue => (
-                          <div key={issue.id} className="wiring-issue wiring-issue-info">
-                            <div className="wiring-issue-content">
-                              <div className="wiring-issue-title">
-                                {issue.title}
-                              </div>
-                              <div className="wiring-issue-description">{issue.description}</div>
-                            </div>
-                            <div className="connection-item-actions">
-                              {issue.code === 'drop_to_support' && (
-                                <button
-                                  type="button"
-                                  className="ui-button ui-button-primary"
-                                  onClick={() => handleDropObjectToSupport(issue.objectIds[0])}
-                                  disabled={!projectEditable}
-                                >
-                                  落到表面
-                                </button>
-                              )}
-                              {issue.code === 'move_inside_room' && (
-                                <button
-                                  type="button"
-                                  className="ui-button ui-button-primary"
-                                  onClick={() => handleMoveObjectInsideRoom(issue.objectIds[0])}
-                                  disabled={!projectEditable}
-                                >
-                                  移回房间内
-                                </button>
-                              )}
-                              {issue.code === 'snap_outlet_to_wall' && (
-                                <button
-                                  type="button"
-                                  className="ui-button ui-button-primary"
-                                  onClick={() => handleSnapOutletToWall(issue.objectIds[0])}
-                                  disabled={!projectEditable}
-                                >
-                                  贴到墙面
-                                </button>
-                              )}
-                              {issue.code === 'extend_cable' && (
-                                <button
-                                  type="button"
-                                  className="ui-button ui-button-primary"
-                                  onClick={() => handleExtendCableToRecommended(issue.connectionIds[0])}
-                                  disabled={!projectEditable}
-                                >
-                                  延长线材
-                                </button>
-                              )}
-                              {issue.code === 'auto_network_device' && (
-                                <button
-                                  type="button"
-                                  className="ui-button ui-button-primary"
-                                  onClick={() => handleAutoConnectNetwork(issue.id)}
-                                  disabled={!projectEditable}
-                                >
-                                  连接网络
-                                </button>
-                              )}
-                              {issue.code === 'auto_connect_display' && (
-                                <button
-                                  type="button"
-                                  className="ui-button ui-button-primary"
-                                  onClick={() => handleAutoConnectDisplay(issue.id)}
-                                  disabled={!projectEditable}
-                                >
-                                  连接显示器
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {recommendations.purchases.length > 0 && (
-                    <div className="recommendation-group" style={{ marginTop: '24px' }}>
-                      <h4>推荐加购商品</h4>
-                      {shoppingList.items.length > 0 && (
-                        <div className="shopping-list" role="group" aria-label="购物清单">
-                          <div className="shopping-list-header">
-                            <span className="shopping-list-title">购物清单</span>
-                            <button type="button" className="ui-button" onClick={handleCopyShoppingList}>复制清单</button>
-                          </div>
-                          <ul className="shopping-list-items">
-                            {shoppingList.items.map(item => (
-                              <li key={item.key} className={item.optional ? 'shopping-list-optional' : undefined}>
-                                <span>{item.optional ? `可选：${item.name}` : item.name}</span>
-                                <span className="shopping-list-quantity">×{item.quantity}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      <div className="wiring-issue-list">
-                        {recommendations.purchases.map(issue => (
-                          <div key={issue.id} className={`wiring-issue ${issue.code === 'split_overloaded_power' ? 'wiring-issue-error' : 'wiring-issue-warning'}`}>
-                            <div className="wiring-issue-content">
-                              <div className="wiring-issue-title">
-                                {issue.title}
-                              </div>
-                              <div className="wiring-issue-description">{issue.description}</div>
-                            </div>
-                            <div className="connection-item-actions">
-                              {issue.code === 'fix_power_strip_chain' && (
-                                <button
-                                  type="button"
-                                  className="ui-button ui-button-primary"
-                                  onClick={handleAddRecommendedPowerStrip}
-                                  disabled={!projectEditable}
-                                >
-                                  加购插排
-                                </button>
-                              )}
-                              {issue.code === 'buy_cable' && (
-                                <button
-                                  type="button"
-                                  className="ui-button ui-button-primary"
-                                  onClick={() => { handleExtendCableToRecommended(issue.connectionIds[0]); }}
-                                  disabled={!projectEditable}
-                                >
-                                  采纳并更新长度
-                                </button>
-                              )}
-                              {issue.code === 'buy_power_strip_for_outlets' && (
-                                <button
-                                  type="button"
-                                  className="ui-button ui-button-primary"
-                                  onClick={handleAddRecommendedPowerStrip}
-                                  disabled={!projectEditable}
-                                >
-                                  加购插排
-                                </button>
-                              )}
-                              {issue.code === 'split_overloaded_power' && (
-                                <>
-                                  <button
-                                    type="button"
-                                    className="ui-button ui-button-primary"
-                                    onClick={handleAddRecommendedPowerStrip}
-                                    disabled={!projectEditable}
-                                  >
-                                    加购插排分流
-                                  </button>
-                                  {issue.objectIds?.length > 0 && (
-                                    <button
-                                      type="button"
-                                      className="ui-button"
-                                      onClick={() => {
-                                        setSelectedObjectId(issue.objectIds[0]);
-                                        setActiveTab('properties');
-                                        setIsPanelOpen(true);
-                                        if (isMobile) setIsLeftPanelOpen(false);
-                                        closeRecommendations();
-                                      }}
-                                    >
-                                      定位
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+          onPreviewAi={handlePreviewAiSuggestion}
+          onApplyAllFree={() => {
+            if (!projectEditable) return;
+            const next = applyAllAvailableImprovements({ room, objects, connections });
+            recordHistory();
+            setObjects(next.objects);
+            setConnections(next.connections);
+            showStatus({ text: '已自动应用所有可用免费改进', type: 'success' });
+          }}
+          onOpenLayout={() => {
+            closeRecommendations();
+            setShowLayoutReport(true);
+          }}
+          onOpenWiring={() => {
+            closeRecommendations();
+            setShowWiringReport(true);
+          }}
+          onStartPurchase={handleStartPurchaseWiring}
+          onOpenTemplates={() => {
+            closeRecommendations();
+            setScrollTemplatesToBuilder(false);
+            setShowTemplates(true);
+          }}
+          onOpenLibrary={() => {
+            closeRecommendations();
+            setIsLeftPanelOpen(true);
+            if (isMobile) setIsPanelOpen(false);
+          }}
+          onDropToSupport={handleDropObjectToSupport}
+          onMoveInsideRoom={handleMoveObjectInsideRoom}
+          onSnapOutletToWall={handleSnapOutletToWall}
+          onExtendCable={handleExtendCableToRecommended}
+          onAutoConnectNetwork={handleAutoConnectNetwork}
+          onAutoConnectDisplay={handleAutoConnectDisplay}
+          onAddPowerStrip={handleAddRecommendedPowerStrip}
+          onCopyShoppingList={handleCopyShoppingList}
+          onLocate={(objectId) => {
+            setSelectedObjectId(objectId);
+            setActiveTab('properties');
+            setIsPanelOpen(true);
+            if (isMobile) setIsLeftPanelOpen(false);
+            closeRecommendations();
+          }}
+        />
       )}
 
       {statusText}
