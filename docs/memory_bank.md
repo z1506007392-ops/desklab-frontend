@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-30 · Claude · master
 
+E17：资产库卡片加设备小图。新脚本 `tools/thumbnails/render-thumbnails.mjs`（附 `render.html`）：起 Vite、用 Playwright 的 Chromium 打开页面、three.js 载入 `public/models/<id>.glb`，RoomEnvironment 打光、透明底、前右上方视角（插排改成从上方看，才认得出插孔），按包围盒投影轮廓取景，输出 112px WebP 到 `public/thumbnails/`（10 张共约 25KB），并为每张写 `.webp.json` 来源说明（impeccable `embed-prompt` 对 WebP 用的就是这种旁注文件；`--scan` 结果 0 缺失）。`catalog.js` 新增 `catalogThumbnailUrl`；卡片左边 56px 白色圆角方块放图（`alt=""`，按钮名称不变）。改了或加了模型要重跑：`CHROMIUM_PATH=/opt/pw-browsers/chromium node tools/thumbnails/render-thumbnails.mjs`（本机有 Playwright 自带 Chromium 时不用设）。新增 `test/thumbnails.test.js`（每个设备都有 112×112 图和来源说明）、`e2e/library-thumbnails.spec.mjs`（图片加载成功、按钮名称不变）。README、`DESIGN.md`、`.impeccable/design.json` 已更新。验证：`npm test` 387、`test:ui` 97 + 1 跳过、lint、build，四个分类截图已看。还剩：无。
+
+### 2026-10-30 · Claude · master
+
 E16：负责人同意做终审提的两项改进。第一项：选中设备时，3D 画面里设备正上方钉一个白色圆点标签（`Scene3D.jsx` 的 `SelectionTag`，drei `Html`）。按 threejs-react-three-fiber 技能的提醒，fiber 9 / React 19 下 `Html` 跟画布同时挂载会是空的，所以用 `portal` 画进画布上方的 `.scene-overlay` 层（`z-index:1`、`overflow:hidden`、不接收点击），`zIndexRange` 压到 [2,1]，弹窗和手机抽屉会盖住它。标签对读屏隐藏（提示条已经说了选中谁）。"唯一刻意安排的动效"从提示条挪到这个标签上。`DESIGN.md` 和 `.impeccable/design.json` 同步更新。新增 `e2e/scene-tag.spec.mjs`。验证：`npm test` 386、`test:ui` 95 + 1 跳过、lint、build，桌面和手机截图已看（抽屉、弹窗都盖在标签上面）。还剩：E17 资产库缩略图。
 
 ### 2026-10-30 · Claude · master
@@ -3378,8 +3382,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 386 domain tests
-npm run test:ui   # 96 Chrome UI cases (95 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
+npm test          # 387 domain tests
+npm run test:ui   # 98 Chrome UI cases (97 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

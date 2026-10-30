@@ -1038,9 +1038,10 @@
 
 .asset-item {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 12px;
   width: 100%;
-  padding: 12px 14px;
+  padding: 8px 14px 8px 8px;
   border: none;
   border-radius: var(--radius-card);
   background: var(--ground);
@@ -1066,6 +1067,22 @@
 .asset-item:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* 设备小图：从仓库里的 GLB 渲染的透明底图片，放在白色圆角底上。 */
+.asset-item-thumb {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-field);
+  background: var(--surface);
+  object-fit: contain;
+}
+
+.asset-item-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
 }
 
 .asset-item-title {

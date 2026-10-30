@@ -1,0 +1,61 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>DeskLab thumbnails</title>
+<!-- Opened by render-thumbnails.mjs through the Vite dev server; not part of the app. -->
+<script type="module">
+  import {
+    ACESFilmicToneMapping, Box3, DirectionalLight, PerspectiveCamera, PMREMGenerator,
+    Scene, SRGBColorSpace, Vector3, WebGLRenderer,
+  } from 'three';
+  import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+  import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+
+  const renderer = new WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = SRGBColorSpace;
+  renderer.toneMapping = ACESFilmicToneMapping;
+  document.body.append(renderer.domElement);
+  const environment = new PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+  const loader = new GLTFLoader();
+
+  // Front faces three.js +Z (tools/blender-models/README.md); the camera
+  // looks from the front, a little to the right and above, like a product shot.
+  window.renderThumbnail = async (url, size, view = [0.55, 0.45, 1]) => {
+    renderer.setSize(size, size, false);
+    const gltf = await loader.loadAsync(url);
+    const model = gltf.scene;
+    const scene = new Scene();
+    scene.environment = environment;
+    scene.environmentIntensity = 0.8;
+    const key = new DirectionalLight(0xffffff, 1.6);
+    key.position.set(3, 5, 4);
+    scene.add(key, model);
+
+    const box = new Box3().setFromObject(model);
+    const center = box.getCenter(new Vector3());
+    const radius = box.getSize(new Vector3()).length() / 2;
+    const camera = new PerspectiveCamera(24, 1, 0.01, 100);
+    const direction = new Vector3(...view).normalize();
+    let distance = radius / Math.sin((camera.fov / 2) * Math.PI / 180);
+    // Fit the box's projected outline, not its bounding sphere, so long thin
+    // devices (power strip, desk) fill the square like the boxy ones.
+    const corners = [0, 1, 2, 3, 4, 5, 6, 7].map(i => new Vector3(
+      i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z,
+    ));
+    for (let pass = 0; pass < 4; pass += 1) {
+      camera.position.copy(center).addScaledVector(direction, distance);
+      camera.lookAt(center);
+      camera.updateMatrixWorld();
+      const extent = Math.max(...corners.map(corner => {
+        const ndc = corner.clone().project(camera);
+        return Math.max(Math.abs(ndc.x), Math.abs(ndc.y));
+      }));
+      distance *= extent / 0.86;
+    }
+    camera.position.copy(center).addScaledVector(direction, distance);
+    camera.lookAt(center);
+    renderer.render(scene, camera);
+    return renderer.domElement.toDataURL('image/webp', 0.9);
+  };
+  window.thumbnailsReady = true;
+</script>

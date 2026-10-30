@@ -440,9 +440,9 @@
       "name": "List Card",
       "kind": "card",
       "refersTo": "list-card",
-      "description": "资产、连接、模板、问题、建议的列表卡片：底灰、无边框、无阴影。",
-      "html": "<button class=\"ds-card\"><span class=\"ds-card-title\">27 英寸显示器</span><span class=\"ds-card-sub\">约 45W · HDMI / DP</span></button>",
-      "css": ".ds-card { display: flex; flex-direction: column; gap: 4px; width: 236px; padding: 12px 14px; border: none; border-radius: 14px; background: #f2f3f5; text-align: left; cursor: pointer; } .ds-card:hover { background: #eceef1; } .ds-card:focus-visible { outline: 2px solid #1b1b1f; outline-offset: 2px; } .ds-card-title { color: #1b1b1f; font-size: 14px; font-weight: 600; } .ds-card-sub { color: #55565e; font-size: 12px; }"
+      "description": "资产、连接、模板、问题、建议的列表卡片：底灰、无边框、无阴影；资产卡片左边有设备小图。",
+      "html": "<button class=\"ds-card\"><span class=\"ds-card-thumb\"></span><span class=\"ds-card-text\"><span class=\"ds-card-title\">27 英寸显示器</span><span class=\"ds-card-sub\">约 45W · HDMI / DP</span></span></button>",
+      "css": ".ds-card { display: flex; align-items: center; gap: 12px; width: 236px; padding: 8px 14px 8px 8px; border: none; border-radius: 14px; background: #f2f3f5; text-align: left; cursor: pointer; } .ds-card:hover { background: #eceef1; } .ds-card:focus-visible { outline: 2px solid #1b1b1f; outline-offset: 2px; } .ds-card-thumb { flex-shrink: 0; width: 56px; height: 56px; border-radius: 10px; background: #fff; } .ds-card-text { display: flex; flex-direction: column; gap: 4px; } .ds-card-title { color: #1b1b1f; font-size: 14px; font-weight: 600; } .ds-card-sub { color: #55565e; font-size: 12px; }"
     },
     {
       "name": "Segmented Tabs",

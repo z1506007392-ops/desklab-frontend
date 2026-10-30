@@ -21,6 +21,7 @@ import { createProjectDraftStorage } from './domain/draft-storage.js';
 import './App.css';
 import {
   DEVICE_CATALOG,
+  catalogThumbnailUrl,
   describeCatalogModel,
   findModelTemplate,
   hydrateProjectObjects,
@@ -1600,8 +1601,11 @@ export default function App() {
 
                 return matchedModels.map((m, idx) => (
                   <button type="button" key={`${m.modelId}-${idx}`} className="asset-item" onClick={() => handleAddDevice(m, m.categoryId)} disabled={!projectEditable}>
-                    <div className="asset-item-title">{m.displayName}</div>
-                    <div className="asset-item-subtitle">{describeCatalogModel(m)}</div>
+                    <img className="asset-item-thumb" src={catalogThumbnailUrl(m.modelId)} alt="" width="56" height="56" loading="lazy" decoding="async" />
+                    <span className="asset-item-text">
+                      <span className="asset-item-title">{m.displayName}</span>
+                      <span className="asset-item-subtitle">{describeCatalogModel(m)}</span>
+                    </span>
                   </button>
                 ));
               })()}

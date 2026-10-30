@@ -17,6 +17,12 @@ export function catalogModelUrl(modelId) {
   return `${assetBaseUrl()}models/${modelId}.glb`;
 }
 
+// The small picture on the asset library card, rendered from the GLB by
+// tools/thumbnails/render-thumbnails.mjs.
+export function catalogThumbnailUrl(modelId) {
+  return `${assetBaseUrl()}thumbnails/${modelId}.webp`;
+}
+
 export const DEVICE_CATALOG = [
   {
     category: 'furniture', categoryName: '家具',

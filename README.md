@@ -44,6 +44,11 @@ missing or fails to load, the in-house generic shape is drawn, then a plain
 box. Handoff notes for anchors, the wall-outlet yaw, and known visual gaps are
 in `docs/memory_bank.md`.
 
+The asset library cards show `public/thumbnails/<modelId>.webp`, rendered from
+those GLBs by `node tools/thumbnails/render-thumbnails.mjs` (Playwright's
+Chromium; set `CHROMIUM_PATH` to use another binary). Rerun it after changing
+or adding a model; it also writes each picture's `.webp.json` provenance note.
+
 ## Verification
 
 - `npm test`: domain behavior tests.
