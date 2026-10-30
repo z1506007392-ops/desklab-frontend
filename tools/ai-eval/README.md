@@ -9,9 +9,13 @@ npm run eval:ai                                # terminal 2
 ```
 
 - Scenes are built in code (`buildEvalScenes()`): the three templates as is,
-  three "messy" variants of each (monitor off-centre or turned away, laptop at
-  the back, tower in the legroom, power strip on the desk, cable far too long),
-  old-save shapes, and an empty desk. Each scene has 1–2 user goals.
+  every applicable "messy" variant of each (monitor off-centre, turned away,
+  or too close; laptop at the back; tower in the legroom or in the middle of
+  the desk; power strip on the desk; cable far too long; router buried under
+  the desk), old-save shapes, and an empty desk. Good desks have one goal.
+  Each messy desk has two goals, drawn from a longer list (blank, tidier,
+  gaming, dual monitors, face me, keep the tower out of the legroom, shorter
+  cables, leave the laptop alone).
 - Each run saves every raw answer and the metrics to `results/<timestamp>/`
   (ignored by git) and exits 1 if a threshold is missed, 2 if the endpoint is
   missing, has no key, or rate-limits.

@@ -15,7 +15,7 @@ export const THRESHOLDS = Object.freeze({
   jargonRate: 0,
 });
 
-const GOALS = ['', '更整洁', '适合打游戏', '双屏办公'];
+const GOALS = ['', '更整洁', '适合打游戏', '双屏办公', '显示器正对我', '主机别挡腿', '线少一点', '不要动笔记本'];
 
 function edit(project, modelId, change) {
   return {
@@ -58,6 +58,30 @@ const MESSES = [
     if (!video) return null;
     return { ...project, connections: project.connections.map(c => (c.id === video.id ? { ...c, length: 10 } : c)) };
   }],
+  ['monitor-too-close', project => {
+    const monitor = project.objects.find(object => /monitor/.test(object.modelId));
+    const desk = deskOf(project);
+    return edit(project, monitor.modelId, item => {
+      item.position.y = desk.position.y - desk.scale.y / 2 + item.scale.y / 2 + 0.01;
+      return item;
+    });
+  }],
+  ['tower-on-desk', project => {
+    if (!project.objects.some(object => object.modelId === 'desktop-pc')) return null;
+    const desk = deskOf(project);
+    return edit(project, 'desktop-pc', pc => {
+      pc.position = { x: desk.position.x, y: desk.position.y, z: deskTop(project) + pc.scale.z / 2 };
+      return pc;
+    });
+  }],
+  ['router-buried', project => {
+    if (!project.objects.some(object => object.modelId === 'router')) return null;
+    const desk = deskOf(project);
+    return edit(project, 'router', router => {
+      router.position = { x: desk.position.x, y: desk.position.y, z: router.scale.z / 2 };
+      return router;
+    });
+  }],
 ];
 
 /** The evaluation scenes: { id, kind: 'good' | 'messy' | 'legacy', project, goals }. */
@@ -68,7 +92,6 @@ export function buildEvalScenes() {
     scenes.push({ id: `${templateId}`, kind: 'good', project: base, goals: [''] });
     let added = 0;
     for (const [messId, mess] of MESSES) {
-      if (added === 3) break;
       const project = mess(buildTemplateScene(templateId));
       if (!project) continue;
       scenes.push({ id: `${templateId}/${messId}`, kind: 'messy', project, goals: [GOALS[added % GOALS.length], GOALS[(added + 1) % GOALS.length]] });

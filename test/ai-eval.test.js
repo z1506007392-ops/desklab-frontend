@@ -4,8 +4,21 @@ import assert from 'node:assert/strict';
 import { buildEvalScenes, runEval, summarize } from '../tools/ai-eval/lib.mjs';
 import { createLayoutHandler } from '../server/ai/layout-handler.js';
 import { createMockFetch } from '../server/ai/mock-model.js';
+import { analyzeLayoutHeuristics } from '../src/domain/layout-heuristics.js';
 import { scoreLayout } from '../src/domain/layout-score.js';
 import { isProjectEnvelope } from '../src/domain/project-validation.js';
+
+const MESS_HINT = {
+  'monitor-off-centre': 'monitor_off_center',
+  'monitor-turned-away': 'monitor_facing_away',
+  'monitor-too-close': 'monitor_too_close',
+  'laptop-at-back': 'laptop_at_back',
+  'tower-in-legroom': 'tower_blocks_legroom',
+  'tower-on-desk': 'tower_on_desk_center',
+  'strip-on-desk': 'strip_on_desk',
+  'cable-too-long': 'cable_too_long',
+  'router-buried': 'router_buried',
+};
 
 test('the evaluation set has at least 15 scenes and each kind is what it claims', () => {
   const scenes = buildEvalScenes();
@@ -19,6 +32,15 @@ test('the evaluation set has at least 15 scenes and each kind is what it claims'
     assert.ok(scene.goals.length >= 1);
   }
   assert.ok(scenes.filter(scene => scene.kind === 'messy').length >= 9);
+  const goalSentences = new Set(scenes.flatMap(scene => scene.goals).filter(Boolean));
+  assert.ok(goalSentences.size >= 7, `only ${goalSentences.size} goal sentences`);
+  for (const scene of scenes) {
+    const mess = scene.id.split('/')[1];
+    const code = MESS_HINT[mess];
+    if (!code) continue;
+    const hints = analyzeLayoutHeuristics(scene.project.room, scene.project.objects, scene.project.connections);
+    assert.ok(hints.some(hint => hint.code === code), `${scene.id} should report ${code}`);
+  }
 });
 
 test('a run through the mock model produces sound metrics', async () => {

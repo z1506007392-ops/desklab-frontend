@@ -17,7 +17,7 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
-领取 E5（扩充 AI 评测场景和目标句子，并记下指标）。还剩：E5 本身。
+E5：评测集从 16 个场景、25 次请求扩到 30 个场景、53 次请求。每个模板补上原先没覆盖的弄乱方式（插排上桌、线太长、显示器太近、主机占桌面中间、路由器被桌子挡住，能用到的都加上），目标句子增加「显示器正对我」「主机别挡腿」「线少一点」「不要动笔记本」。原有场景的摆放和目标没改，录制回放仍对得上。线上跑了 34/53 就撞上每小时限额（429），这 34 次：可解析 100%，乱桌面至少一条被接受 93.5%（29/31），接受建议平均改善 42.3，新增错误 0，英文或内部 id 0。门槛都过。没被接受的两次都是家庭办公「显示器太近」（目标「主机别挡腿」「线少一点」）。剩下 19 次要等限额过去再 `--resume tools/ai-eval/results/2026-10-30T22-02-07-776Z/`（结果不进 git）。模拟模型全量 53 次：可解析 100%，乱桌面改善率 19.1%（模拟模型本来就不会修全部），平均改善 16.1，新增错误 0。提示词这次没改。还剩：线上余下 19 次。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
@@ -3226,6 +3226,18 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   https://desklab-frontend.pages.dev/api/ai/layout --resume
   tools/ai-eval/results/<run folder>/` (results are gitignored, so a new
   session reruns the full set). Verification: `npm test` 386, lint, build.
+- E5 (2026-10-31, Desklab): evaluation set grew from 16 scenes / 25 requests to
+  30 scenes / 53 requests. New messes: monitor too close, tower on the desk,
+  router buried under the desk, plus the strip-on-desk and cable-too-long
+  cases that the old per-template cap of 3 had been dropping. New goal
+  sentences: 显示器正对我, 主机别挡腿, 线少一点, 不要动笔记本. Live run
+  against https://desklab-frontend.pages.dev/api/ai/layout stopped at 34/53
+  on HTTP 429. Those 34: parse 100%, messy helped 93.5% (29/31), average
+  improvement 42.3, new errors 0, jargon 0 (all thresholds met). The two
+  misses were both home-office/monitor-too-close. Resume with
+  `--resume tools/ai-eval/results/2026-10-30T22-02-07-776Z/` after the hourly
+  limit. Mock model on all 53: parse 100%, messy helped 19.1%, average
+  improvement 16.1, new errors 0. Prompt unchanged.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
