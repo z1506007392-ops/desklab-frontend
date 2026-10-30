@@ -271,7 +271,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 测试：`test/ai-layout-function.test.js`，用假的 `fetchImpl` 覆盖：无密钥 → 503 `ai_unavailable`；请求体过大 → 413；格式不对 → 400；DeepSeek 超时/5xx → 502 `ai_upstream_error`；DeepSeek 返回非 JSON → 502 `ai_bad_output`；正常 → 200 且只返回白名单字段；请求里**绝不**带出密钥。
 - 验收：测试全绿；`npm run build` 后 Cloudflare 能识别 `functions/`（推送后在线上 `POST /api/ai/layout` 不带密钥应得到 503 JSON，而不是 404/405）。
 
-**B2 [ ] 必做 — 提示词与输出模式（服务端）**
+**B2 [~] 进行中（claude，2026-10-30） 必做 — 提示词与输出模式（服务端）**
 - 新建 `functions/api/ai/prompt.js`：导出 `SYSTEM_PROMPT`、`buildMessages(sceneSummary, userGoal)`、`RESPONSE_EXAMPLE`。内容按 6.5 节，**一字不差地以 6.5 为起点**，之后可按评测结果迭代（迭代要在 memory bank 记录原因和评测数据）。
 - 测试：消息结构、包含 "json" 字样（DeepSeek JSON 模式要求）、用户目标被放在数据字段而不是拼进指令、超长目标被截断到 200 字。
 
