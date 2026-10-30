@@ -306,7 +306,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 新建 `src/domain/layout-score.js`：`scoreLayout(project)` 按 6.6.2 计算 `{ total, errors, warnings, hints, cableMeters }`，越低越好。
 - 测试：重叠/悬空等错误显著拉高分数；把模板里的显示器挪偏，分数变差；同一项目分数稳定（纯函数）。
 
-**C3 [ ] 必做 — 场景摘要（发给模型的数据）**
+**C3 [~] 进行中（claude，2026-10-30） 必做 — 场景摘要（发给模型的数据）**
 - 新建 `src/domain/ai-scene-summary.js`：`buildSceneSummary(project)` 产出 6.4 节格式的 JSON。数字保留 2 位小数；物体名称是用户输入，**原样放进 `name` 字段，不拼进任何指令文本**；每个物体给出 `restingOn`（所在支撑面：某张桌子的 id 或 `floor` 或 `wall`）。
 - 如缺少"找支撑面"的工具函数，在 `layout-analysis.js` 旁边新增 `findSupportingObject(object, objects)` 并测试。
 - 测试：模板场景的摘要快照（`test/fixtures/ai/summary-gaming.json`），体积 < 12KB；含 `findings`（布局+布线问题，去掉"没建模的线"类代码）和 `hints`（C1 的结果）。
