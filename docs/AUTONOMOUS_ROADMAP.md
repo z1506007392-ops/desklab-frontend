@@ -216,7 +216,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 
 ### 阶段 A：基础打磨（让普通人用得顺）
 
-**A1 [ ] 必做 — "更多"菜单去掉 JSON 字样**
+**A1 [~] 进行中（claude，2026-10-30） 必做 — "更多"菜单去掉 JSON 字样**
 - 目标：普通人看得懂备份入口。
 - 做法：菜单项改为 `导入备份`、`导出备份`、`粘贴项目`、`复制项目`；备份提醒横幅里的"更多 → 导入 JSON"同步改为"更多 → 导入备份"；导入确认框、状态提示里的"JSON"字样一并替换；文件 input 的 `aria-label` 改为 `导入 DeskLab 备份文件`。更新 `e2e/toolbar.spec.mjs`、`e2e/backup-reminder.spec.mjs` 中的名称。导出文件名前缀保持 `desklab-project-`（兼容）。
 - 验收：`grep -rn "JSON" src --include=*.jsx` 不再出现在用户可见文案里（代码里的 `JSON.parse` 等不算）；全部测试绿；截图确认菜单。
