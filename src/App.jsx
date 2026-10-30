@@ -37,6 +37,12 @@ import {
   getCanvasObjectClickAction,
 } from './domain/project-access.js';
 import { createProjectExport } from './domain/project-export.js';
+import {
+  readBackupReminderState,
+  recordBackupExport,
+  shouldRemindBackup,
+  snoozeBackupReminder,
+} from './domain/backup-reminder.js';
 import { assertProjectImportSize, getProjectImportByteLength } from './domain/project-import-limits.js';
 import { getPurchaseGuidance } from './domain/purchase-guidance.js';
 import { DESK_TEMPLATES, buildTemplateScene } from './domain/desk-templates.js';
@@ -57,9 +63,10 @@ import {
 } from './components/SceneObjects.jsx';
 
 const PROJECT_DRAFT_STORAGE_KEY = 'desklab.project-draft.v1';
-const projectClient = createLocalProjectClient(() => window.localStorage);
+const getBrowserStorage = () => window.localStorage;
+const projectClient = createLocalProjectClient(getBrowserStorage);
 const projectDraftStorage = createProjectDraftStorage(
-  () => window.localStorage,
+  getBrowserStorage,
   PROJECT_DRAFT_STORAGE_KEY
 );
 
@@ -108,6 +115,7 @@ export default function App() {
   const [backupRecoveryBusy, setBackupRecoveryBusy] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
   const [recoveryDraft, setRecoveryDraft] = useState(null);
+  const [showBackupReminder, setShowBackupReminder] = useState(false);
   const projectEditable = canEditProject({
     projectLoaded,
     projectLoadFailed,
@@ -704,6 +712,11 @@ export default function App() {
       }
       setRecoveryDraft(null);
       const draftCleared = !fullyCurrent || clearLocalDraft();
+      setShowBackupReminder(shouldRemindBackup({
+        objectCount: saved.project.objects.length,
+        state: readBackupReminderState(getBrowserStorage),
+        now: new Date(),
+      }));
       showStatus(
         fullyCurrent && !draftCleared
           ? { text: '项目已保存，但本地草稿清理失败；刷新前请检查浏览器存储权限。', type: 'error' }
@@ -784,7 +797,14 @@ export default function App() {
       camera: getCurrentCamera(),
       connections,
     }, 'desklab-project');
+    recordBackupExport(getBrowserStorage, new Date());
+    setShowBackupReminder(false);
     showStatus({ text: '项目已导出', type: 'success' }, 3000);
+  };
+
+  const handleSnoozeBackupReminder = () => {
+    snoozeBackupReminder(getBrowserStorage, new Date());
+    setShowBackupReminder(false);
   };
 
   const handleExportRecoveryDraft = () => {
@@ -1294,6 +1314,19 @@ export default function App() {
               <button type="button" className="ui-button ui-button-primary" onClick={handleRestoreDraft}>恢复草稿</button>
               <button type="button" className="ui-button" onClick={handleExportRecoveryDraft}>导出草稿</button>
               <button type="button" className="ui-button" onClick={handleDiscardDraft}>放弃</button>
+            </div>
+          </div>
+        )}
+
+        {showBackupReminder && !recoveryDraft && !projectLoadFailed && (
+          <div className="draft-recovery-banner" role="region" aria-label="备份提醒">
+            <div>
+              <strong>建议导出一份备份</strong>
+              <span>桌面只保存在这个浏览器里，清理浏览器数据或换设备后就找不到了。需要时可用“更多 → 导入 JSON”恢复备份。</span>
+            </div>
+            <div className="draft-recovery-actions">
+              <button type="button" className="ui-button ui-button-primary" onClick={handleExportProject}>导出备份</button>
+              <button type="button" className="ui-button" onClick={handleSnoozeBackupReminder}>以后再说</button>
             </div>
           </div>
         )}
