@@ -2613,6 +2613,15 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   of clipping. `e2e/selection-hint.spec.mjs` asserts scrollWidth <=
   clientWidth at both viewports. Verification: `npm test` 295,
   `npm run test:ui` 42, lint, build; screenshots checked.
+- `6efa9da` A3 First-visit guide: region "开始搭建" centered over the 3D view
+  when the project was never saved (`version === UNSAVED_PROJECT_VERSION`),
+  is editable, and has no objects. Buttons: 从模板开始 (template picker),
+  按我的设备生成 (picker scrolled to the builder heading via a ref flag; a
+  setState inside the effect fails the react-hooks lint rule), 自己摆 (opens
+  the library). Any choice dismisses it for the visit. `openProject(page,
+  objects, connections, { saved: false })` opens as a first-time visitor.
+  Verification: `npm test` 295, `npm run test:ui` 50, lint, build;
+  screenshots checked.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2790,7 +2799,7 @@ Frontend:
 ```bash
 cd D:\desklab\frontend
 npm test          # 295 domain tests
-npm run test:ui   # 42 Chrome UI cases; storage seeded per test, no backend
+npm run test:ui   # 50 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (known large chunk warning is OK)
 ```
