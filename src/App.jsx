@@ -63,6 +63,7 @@ import WiringReportDialog from './components/WiringReportDialog.jsx';
 import ConnectionsListDialog from './components/ConnectionsListDialog.jsx';
 import ErrorNotice from './components/ErrorNotice.jsx';
 import DraftRecoveryBanner from './components/DraftRecoveryBanner.jsx';
+import BackupReminderBanner from './components/BackupReminderBanner.jsx';
 import LazyScene3D from './components/LazyScene3D.jsx';
 
 
@@ -1487,16 +1488,7 @@ export default function App() {
         )}
 
         {showBackupReminder && !recoveryDraft && !projectLoadFailed && (
-          <div className="draft-recovery-banner" role="region" aria-label="备份提醒">
-            <div>
-              <strong>建议导出一份备份</strong>
-              <span>桌面只保存在这个浏览器里，清理浏览器数据或换设备后就找不到了。需要时可用“更多 → 导入备份”恢复。</span>
-            </div>
-            <div className="draft-recovery-actions">
-              <button type="button" className="ui-button ui-button-primary" onClick={handleExportProject}>导出备份</button>
-              <button type="button" className="ui-button" onClick={handleSnoozeBackupReminder}>以后再说</button>
-            </div>
-          </div>
+          <BackupReminderBanner onExport={handleExportProject} onSnooze={handleSnoozeBackupReminder} />
         )}
 
         <ErrorNotice />

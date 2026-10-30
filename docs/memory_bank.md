@@ -17,7 +17,11 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
-E18 第 1 步：未保存草稿横幅抽到 `src/components/DraftRecoveryBanner.jsx`。恢复、导出、放弃仍走原来的处理函数。还剩：其余横幅和工具栏，然后 E5。
+E18 第 2 步：备份提醒横幅抽到 `src/components/BackupReminderBanner.jsx`。导出和「以后再说」仍走原来的处理函数。还剩：其余横幅和工具栏，然后 E5。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
+`04b1a27` E18 第 1 步：未保存草稿横幅抽到 `src/components/DraftRecoveryBanner.jsx`。恢复、导出、放弃仍走原来的处理函数。验证：`npm test` 394，`npm run lint`，`npm run build`，`npm run test:ui` 107 通过 + 1 跳过。还剩：其余横幅和工具栏。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
