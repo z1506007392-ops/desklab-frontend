@@ -17,7 +17,11 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
-E18 第 8 步：桌面和手机工具栏抽到 `src/components/AppToolbar.jsx`。按钮仍在 `App.jsx` 里各定义一次，只是换了摆放的地方。还剩：E5。
+领取 E5（扩充 AI 评测场景和目标句子，并记下指标）。还剩：E5 本身。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
+`18eceac` E18 第 8 步：桌面和手机工具栏抽到 `src/components/AppToolbar.jsx`。按钮仍在 `App.jsx` 里各定义一次，只是换了摆放的地方。验证：`npm test` 394，`npm run lint`，`npm run build`，`npm run test:ui` 107 通过 + 1 跳过。E18 完成。还剩：E5。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
