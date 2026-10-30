@@ -17,7 +17,11 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
-E18 第 7 步：底部状态消息抽到 `src/components/StatusToast.jsx`。成功和出错的样式不变。还剩：工具栏，然后 E5。
+E18 第 8 步：桌面和手机工具栏抽到 `src/components/AppToolbar.jsx`。按钮仍在 `App.jsx` 里各定义一次，只是换了摆放的地方。还剩：E5。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
+`920929f` E18 第 7 步：底部状态消息抽到 `src/components/StatusToast.jsx`。成功和出错的样式不变。验证：`npm test` 394，`npm run lint`，`npm run build`，`npm run test:ui` 107 通过 + 1 跳过。还剩：工具栏。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 

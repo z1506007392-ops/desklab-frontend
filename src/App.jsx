@@ -69,6 +69,7 @@ import CorruptSaveBanner from './components/CorruptSaveBanner.jsx';
 import ConnectionModeBanner from './components/ConnectionModeBanner.jsx';
 import SelectionHint from './components/SelectionHint.jsx';
 import StatusToast from './components/StatusToast.jsx';
+import AppToolbar from './components/AppToolbar.jsx';
 import LazyScene3D from './components/LazyScene3D.jsx';
 
 
@@ -1403,57 +1404,29 @@ export default function App() {
       {!projectLoaded ? '加载中…' : saveBusy ? '保存中…' : '保存项目'}
     </button>
   );
-  const desktopToolbar = (
-    <div className="toolbar">
-      <div className="toolbar-group">
-        {titleLabel}
-        {roomFields}
-        {templatesButton}
-      </div>
-      <div className="toolbar-group global-actions">
-        <div className="toolbar-cluster">{undoButton}{redoButton}{resetViewButton}</div>
-        <div className="toolbar-cluster">{connectionsButton}{layoutButton}{wiringButton}{recommendButton}</div>
-        <div className="toolbar-cluster">{moreButton}{leftPanelButton}{rightPanelButton}</div>
-        <div className="toolbar-cluster">{unsavedIndicator}{saveButton}</div>
-      </div>
-      {moreMenu}
-      {importInput}
-    </div>
-  );
-
-  // 手机：第一行是名字、撤销、重做、保存；其余按钮放进一行可以横向滑动的条里；
-  // 房间尺寸收在"房间尺寸"按钮后面。
-  const compactToolbar = (
-    <div className="toolbar toolbar-compact">
-      <div className="toolbar-row">
-        {titleLabel}
-        {unsavedIndicator}
-        <div className="toolbar-cluster toolbar-row-end">{undoButton}{redoButton}{saveButton}</div>
-      </div>
-      <div className="toolbar-strip" role="group" aria-label="工具">
-        {leftPanelButton}
-        {recommendButton}
-        {layoutButton}
-        {wiringButton}
-        {templatesButton}
-        <button
-          type="button"
-          className="ui-button"
-          aria-expanded={isRoomEditorOpen}
-          aria-controls="toolbar-room"
-          onClick={() => setIsRoomEditorOpen(open => !open)}
-        >
-          房间尺寸
-        </button>
-        {connectionsButton}
-        {resetViewButton}
-        {rightPanelButton}
-        {moreButton}
-      </div>
-      {isRoomEditorOpen && roomFields}
-      {moreMenu}
-      {importInput}
-    </div>
+  const appToolbar = (
+    <AppToolbar
+      isMobile={isMobile}
+      isRoomEditorOpen={isRoomEditorOpen}
+      onToggleRoom={() => setIsRoomEditorOpen(open => !open)}
+      titleLabel={titleLabel}
+      roomFields={roomFields}
+      templatesButton={templatesButton}
+      undoButton={undoButton}
+      redoButton={redoButton}
+      resetViewButton={resetViewButton}
+      connectionsButton={connectionsButton}
+      layoutButton={layoutButton}
+      wiringButton={wiringButton}
+      recommendButton={recommendButton}
+      moreButton={moreButton}
+      leftPanelButton={leftPanelButton}
+      rightPanelButton={rightPanelButton}
+      unsavedIndicator={unsavedIndicator}
+      saveButton={saveButton}
+      moreMenu={moreMenu}
+      importInput={importInput}
+    />
   );
 
   const movePanelTab = (event, current) => {
@@ -1475,7 +1448,7 @@ export default function App() {
     <div className="app-shell">
       {/* 顶部控制栏 */}
       <div className="app-top">
-        {isMobile ? compactToolbar : desktopToolbar}
+        {appToolbar}
 
         {recoveryDraft && (
           <DraftRecoveryBanner
