@@ -14,3 +14,6 @@ playwright-report/
 
 # Local Cloudflare runtime state (wrangler pages dev)
 .wrangler/
+
+# Raw AI evaluation runs (copy representative answers to test/fixtures/ai/recorded/)
+tools/ai-eval/results/

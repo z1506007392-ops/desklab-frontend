@@ -4,6 +4,8 @@
 //   AI_MOCK=1 npm run dev:api                 offline mock answers
 // Other settings (DEEPSEEK_MODEL, AI_TIMEOUT_MS, ...) come from the
 // environment, as on Cloudflare. A .env file is not read automatically.
+// Rate limits only protect the public site; set AI_LOCAL_RATE_LIMIT=1 to
+// try them locally (evaluation runs would otherwise hit them).
 import { createServer } from 'node:http';
 
 import { createLayoutHandler } from '../server/ai/layout-handler.js';
@@ -15,7 +17,7 @@ const mock = process.env.AI_MOCK === '1';
 const env = mock ? { ...process.env, DEEPSEEK_API_KEY: 'mock' } : process.env;
 const handleLayoutRequest = createLayoutHandler({
   fetchImpl: mock ? createMockFetch() : undefined,
-  rateLimiter: createRateLimiter(),
+  rateLimiter: process.env.AI_LOCAL_RATE_LIMIT === '1' ? createRateLimiter() : null,
 });
 
 const server = createServer(async (req, res) => {

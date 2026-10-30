@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "node tools/dev-api-server.mjs",
+    "eval:ai": "node tools/ai-eval/run-eval.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "test": "node --test",
