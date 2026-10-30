@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { WebGLRenderer } from 'three';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
 import { evaluateConnectionLength } from './domain/connections.js';
@@ -58,6 +59,8 @@ import { createStatusNotifier } from './domain/status-notifier.js';
 import PropertiesEditor from './components/PropertiesEditor.jsx';
 import ConnectionsEditor from './components/ConnectionsEditor.jsx';
 import DeskBuilderForm from './components/DeskBuilderForm.jsx';
+import { SceneErrorBoundary, SceneUnavailable } from './components/SceneFallback.jsx';
+import { canUseWebGL, createRendererOrReport } from './domain/webgl-support.js';
 import {
   CameraSetup,
   ConnectionsRenderer,
@@ -177,6 +180,7 @@ export default function App() {
   const [showLayoutReport, setShowLayoutReport] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [webglAvailable] = useState(() => canUseWebGL());
   // First-visit guide: only for a project that has never been saved, until
   // the user picks a way to start or something appears in the room.
   const [hasSavedProject, setHasSavedProject] = useState(true);
@@ -1493,7 +1497,12 @@ export default function App() {
               </div>
             </div>
           )}
-          <Canvas onPointerMissed={() => {
+          {!webglAvailable ? <SceneUnavailable reason="no-webgl" /> : (
+          <SceneErrorBoundary>
+          {reportSceneFailure => (
+          <Canvas
+            gl={defaults => createRendererOrReport(props => new WebGLRenderer(props), defaults, reportSceneFailure)}
+            onPointerMissed={() => {
             if (!connectionMode) setSelectedObjectId(null);
           }}>
             <ambientLight intensity={0.5} />
@@ -1588,6 +1597,9 @@ export default function App() {
               ));
             })()}
           </Canvas>
+          )}
+          </SceneErrorBoundary>
+          )}
         </div>
 
         {/* 右侧：面板 */}

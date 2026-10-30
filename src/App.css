@@ -1097,3 +1097,28 @@
   justify-content: center;
   gap: 8px;
 }
+
+.scene-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 24px;
+  background: #f8f9fa;
+  color: #52606d;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.scene-fallback strong {
+  color: #1f2933;
+  font-size: 16px;
+}
+
+.scene-fallback span {
+  max-width: 420px;
+}
