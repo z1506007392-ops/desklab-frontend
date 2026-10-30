@@ -11,3 +11,6 @@ playwright-report/
 .env
 .env.*
 .dev.vars
+
+# Local Cloudflare runtime state (wrangler pages dev)
+.wrangler/
