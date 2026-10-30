@@ -13,7 +13,9 @@ Last updated: 2026-10-30, Asia/Singapore
 [PR #2](https://github.com/z1506007392-ops/desklab-frontend/pull/2)
 （分支 `docs/glb-models`）里有一份更完整的进度记录和协作规则；两边都改了本文件开头，合并时要手工合一下。下面只记这次。
 
-### 2026-10-30 · Desklab (Grok Bot) · PR 链接待补
+### 2026-10-30 · Desklab (Grok Bot) · [PR #3](https://github.com/z1506007392-ops/desklab-frontend/pull/3)
+
+分支 `cursor/vendor-agent-skills-2dc1`。
 
 把可以再分发的第三方 agent skills 放进 `.claude/skills/`。Cursor 的文档写明也会读这个目录，所以没有再复制到 `.cursor/skills/`，也没有用符号链接。清单、上游 commit 和更新方法在 `docs/skills.md`。
 
