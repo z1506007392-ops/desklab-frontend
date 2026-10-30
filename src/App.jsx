@@ -234,8 +234,12 @@ export default function App() {
     return () => notifier.dispose();
   }, []);
 
+  const currentLayoutSnapshot = useMemo(
+    () => serializeLayout(room, objects, connections),
+    [room, objects, connections],
+  );
   const isDirty = savedLayout !== null && (
-    serializeLayout(room, objects, connections) !== savedLayout || cameraDirty
+    currentLayoutSnapshot !== savedLayout || cameraDirty
   );
 
   const readLocalDraft = useCallback(() => {
@@ -1110,8 +1114,8 @@ export default function App() {
   const layoutSummary = useMemo(() => summarizeLayoutIssues(layoutIssues), [layoutIssues]);
   const actionableLayoutIssueCount = layoutSummary.error + layoutSummary.warning;
   const recommendations = useMemo(
-    () => buildRecommendations({ room, objects, connections }, { wiringIssues }),
-    [room, objects, connections, wiringIssues]
+    () => buildRecommendations({ room, objects, connections }, { wiringIssues, layoutIssues }),
+    [room, objects, connections, wiringIssues, layoutIssues]
   );
   const shoppingList = useMemo(
     () => buildShoppingList(recommendations.purchases),

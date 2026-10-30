@@ -79,27 +79,37 @@ export function RoomWalls({ room }) {
   );
 }
 
+const CableLine = React.memo(function CableLine({ connection, fromObject, toObject }) {
+  const endpoints = getConnectionEndpoints(connection, [fromObject, toObject]);
+  if (!endpoints) return null;
+  const lengthStatus = evaluateConnectionLength(connection, [fromObject, toObject], endpoints);
+  return (
+    <Line
+      points={[toThreePosition(endpoints.from), toThreePosition(endpoints.to)]}
+      color={CABLE_COLORS[connection.cableType] || CABLE_COLORS.other}
+      lineWidth={3}
+      dashed={Boolean(lengthStatus && !lengthStatus.sufficient)}
+      dashSize={0.15}
+      gapSize={0.1}
+      raycast={() => null}
+    />
+  );
+});
+
 export function ConnectionsRenderer({ connections, objects }) {
   const objectById = new Map(objects.map(object => [object.id, object]));
   return (
     <group>
       {connections.map(connection => {
-        if (!objectById.has(connection.fromObjectId) || !objectById.has(connection.toObjectId)) {
-          return null;
-        }
-        const endpoints = getConnectionEndpoints(connection, objects, objectById);
-        if (!endpoints) return null;
-        const lengthStatus = evaluateConnectionLength(connection, objects, endpoints);
+        const fromObject = objectById.get(connection.fromObjectId);
+        const toObject = objectById.get(connection.toObjectId);
+        if (!fromObject || !toObject) return null;
         return (
-          <Line
+          <CableLine
             key={connection.id}
-            points={[toThreePosition(endpoints.from), toThreePosition(endpoints.to)]}
-            color={CABLE_COLORS[connection.cableType] || CABLE_COLORS.other}
-            lineWidth={3}
-            dashed={Boolean(lengthStatus && !lengthStatus.sufficient)}
-            dashSize={0.15}
-            gapSize={0.1}
-            raycast={() => null}
+            connection={connection}
+            fromObject={fromObject}
+            toObject={toObject}
           />
         );
       })}
@@ -644,15 +654,12 @@ function GenericModel({ asset, obj, materialProps }) {
   return <FallbackBox obj={obj} materialProps={materialProps} />;
 }
 
-export function DeviceMesh({
+export const DeviceMesh = React.memo(function DeviceMesh({
   obj,
   isSelected,
   isRelated,
   isHovered,
-  onClick,
-  onPointerDown,
-  onPointerOver,
-  onPointerOut,
+  handlersRef,
 }) {
   const defaultScale = obj.modelId ? getModelDefaultScale(obj.category, obj.modelId) : null;
   const scaleRatio = defaultScale ? {
@@ -671,10 +678,22 @@ export function DeviceMesh({
     <group
       position={toThreePosition(obj.position)}
       rotation={toThreeZRotation(obj.rotation?.z)}
-      onClick={onClick}
-      onPointerDown={onPointerDown}
-      onPointerOver={onPointerOver}
-      onPointerOut={onPointerOut}
+      onClick={(event) => {
+        event.stopPropagation();
+        handlersRef.current.onObjectClick(obj);
+      }}
+      onPointerDown={(event) => {
+        event.stopPropagation();
+        handlersRef.current.onObjectPointerDown(obj, event.point);
+      }}
+      onPointerOver={(event) => {
+        event.stopPropagation();
+        handlersRef.current.onObjectHover(obj);
+      }}
+      onPointerOut={(event) => {
+        event.stopPropagation();
+        handlersRef.current.onObjectHoverEnd(obj);
+      }}
     >
       {modelState === 'available' ? (
         <GLTFErrorBoundary fallback={renderFallback()}>
@@ -693,9 +712,39 @@ export function DeviceMesh({
       {isSelected ? <PortMarkers obj={obj} /> : null}
     </group>
   );
-}
+});
 
 const POWER_OUTPUT_TYPES = new Set(['ac_output', 'dc_output']);
+
+// Load numbers stay the same while a device is dragged, so unchanged labels
+// skip the text layout. The dragged device's object identity changes, so its
+// label moves with it.
+const PowerLabel = React.memo(function PowerLabel({ obj, currentLoad, maxLoad }) {
+  const loadStatus = classifyPowerLoad(currentLoad, maxLoad);
+  const color = loadStatus === 'overload' ? '#f44336' : loadStatus === 'warning' ? '#ff9800' : '#4caf50';
+  const label = `⚡${currentLoad}W/${maxLoad}W`;
+  return (
+    <Billboard
+      position={[
+        obj.position.x,
+        obj.position.z + obj.scale.z + 0.15,
+        obj.position.y,
+      ]}
+    >
+      <Text
+        fontSize={0.08}
+        color={color}
+        anchorX="center"
+        anchorY="bottom"
+        outlineWidth={0.004}
+        outlineColor="#000000"
+        raycast={() => null}
+      >
+        {label}
+      </Text>
+    </Billboard>
+  );
+});
 
 export function PowerStatusOverlay({ objects, connections }) {
   const powerGraph = useMemo(
@@ -715,32 +764,13 @@ export function PowerStatusOverlay({ objects, connections }) {
         const currentLoad = computeDevicePowerLoad(obj.id, objects, connections, powerGraph);
         if (currentLoad <= 0) return null;
 
-        const loadStatus = classifyPowerLoad(currentLoad, maxLoad);
-        const color = loadStatus === 'overload' ? '#f44336' : loadStatus === 'warning' ? '#ff9800' : '#4caf50';
-        const label = `⚡${currentLoad}W/${maxLoad}W`;
-
-        // Billboard keeps the label facing the camera so it never reads mirrored.
         return (
-          <Billboard
+          <PowerLabel
             key={`power-${obj.id}`}
-            position={[
-              obj.position.x,
-              obj.position.z + obj.scale.z + 0.15,
-              obj.position.y,
-            ]}
-          >
-            <Text
-              fontSize={0.08}
-              color={color}
-              anchorX="center"
-              anchorY="bottom"
-              outlineWidth={0.004}
-              outlineColor="#000000"
-              raycast={() => null}
-            >
-              {label}
-            </Text>
-          </Billboard>
+            obj={obj}
+            currentLoad={currentLoad}
+            maxLoad={maxLoad}
+          />
         );
       })}
     </group>

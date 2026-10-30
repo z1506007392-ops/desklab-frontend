@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+E3：改进建议复用已经算好的布局报告，不再对同一份桌面分析第二遍。拖动时用 `React.memo` 跳过没动的设备、线缆和功耗标签，画面外观不变。未保存判断用的整份快照也做了 `useMemo`。36 个设备的分析在新测试里必须短于 200ms。还剩：E6。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 领取 E3（30 个以上设备时少做重复的布局分析，并避免拖动时重绘没被拖动的设备）。还剩：E3 本身。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
@@ -3430,7 +3434,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 391 domain tests
+npm test          # 393 domain tests
 npm run test:ui   # 104 Chrome UI cases (103 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)

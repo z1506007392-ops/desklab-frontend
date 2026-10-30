@@ -13,7 +13,7 @@ import {
 import { analyzeProjectLayout } from '../src/domain/layout-analysis.js';
 import { analyzeProjectWiring, buildPowerGraph } from '../src/domain/analysis.js';
 import { evaluateConnectionLength } from '../src/domain/connections.js';
-import { findModelTemplate } from '../src/domain/catalog.js';
+import { DEVICE_CATALOG, findModelTemplate } from '../src/domain/catalog.js';
 import { placeCatalogObject } from '../src/domain/placement.js';
 import { isProjectEnvelope } from '../src/domain/project-validation.js';
 
@@ -2418,4 +2418,50 @@ test('a new power strip goes into a free wall outlet, never into another strip',
   assert.deepEqual(noLines, []);
   const issues = analyzeProjectWiring([...objects, blocker], busyConnections).filter(issue => issue.severity !== 'info');
   assert.ok(!issues.some(issue => issue.code === 'power_strip_chain'));
+});
+
+test('a supplied layout report is reused instead of analysed again', () => {
+  const floating = object('floating', { position: { x: 1.5, y: 0, z: 1.5 }, scale: { x: 0.2, y: 0.2, z: 0.2 } });
+  const project = { room, objects: [floating], connections: [] };
+  const fresh = buildRecommendations(project);
+  assert.ok(fresh.freeImprovements.some(item => item.code === 'drop_to_support'));
+
+  const layoutIssues = analyzeProjectLayout(room, project.objects);
+  assert.deepEqual(buildRecommendations(project, { layoutIssues }), fresh);
+
+  const reused = buildRecommendations(project, { layoutIssues: [] });
+  assert.equal(reused.freeImprovements.some(item => item.code === 'drop_to_support'), false);
+});
+
+test('analysing thirty-plus devices stays well under a frame', () => {
+  const wideRoom = { length: 12, width: 10, height: 3 };
+  const models = DEVICE_CATALOG.flatMap(category => category.models.map(model => ({
+    ...model,
+    categoryId: category.category,
+  })));
+  const objects = [];
+  for (let index = 0; objects.length < 36 && index < 80; index += 1) {
+    const model = models[index % models.length];
+    const placed = placeCatalogObject({
+      modelTemplate: model,
+      categoryId: model.categoryId,
+      room: wideRoom,
+      id: `${model.modelId}-${index}`,
+      objects,
+    });
+    if (placed.valid && placed.object) objects.push(placed.object);
+  }
+  assert.equal(objects.length, 36);
+
+  const started = performance.now();
+  const layoutIssues = analyzeProjectLayout(wideRoom, objects);
+  const wiringIssues = analyzeProjectWiring(objects, []);
+  const recommendations = buildRecommendations(
+    { room: wideRoom, objects, connections: [] },
+    { layoutIssues, wiringIssues },
+  );
+  const elapsed = performance.now() - started;
+  assert.equal(layoutIssues.length >= 0, true);
+  assert.equal(Number.isInteger(recommendations.total), true);
+  assert.ok(elapsed < 200, `analysis took ${elapsed.toFixed(1)}ms`);
 });

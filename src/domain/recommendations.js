@@ -189,8 +189,11 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
     : analyzeProjectWiring(objects, connections);
   const powerGraph = options.powerGraph || buildPowerGraph(objects, connections);
   const invalidConnectionIds = getInvalidConnectionIds(wiringIssues);
+  const layoutIssues = Array.isArray(options.layoutIssues)
+    ? options.layoutIssues
+    : analyzeProjectLayout(room, objects);
 
-  for (const issue of analyzeProjectLayout(room, objects)) {
+  for (const issue of layoutIssues) {
     if (issue.code === 'floating_object') {
       const object = objectsById.get(issue.objectIds[0]);
       const fixed = object && snapObjectToSupport(room, object, objects);
@@ -776,10 +779,13 @@ export function buildRecommendations(project = {}, options = {}) {
     ? options.wiringIssues
     : analyzeProjectWiring(objects, connections);
   const powerGraph = options.powerGraph || buildPowerGraph(objects, connections);
+  const layoutIssues = Array.isArray(options.layoutIssues)
+    ? options.layoutIssues
+    : (room ? analyzeProjectLayout(room, objects) : []);
   // Drawing missing power, video or network lines only completes the model;
   // the user's real devices already work, so these are not offered as fixes.
   const freeImprovements = room
-    ? buildFreeImprovements(room, objects, connections, { wiringIssues, powerGraph })
+    ? buildFreeImprovements(room, objects, connections, { wiringIssues, powerGraph, layoutIssues })
       .filter(suggestion => !MODEL_COMPLETION_CODES.has(suggestion.code))
     : [];
   const purchases = buildPurchaseSuggestions(objects, connections, { wiringIssues, powerGraph });

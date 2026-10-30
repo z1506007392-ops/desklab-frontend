@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { WebGLRenderer } from 'three';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, Html } from '@react-three/drei';
@@ -46,6 +46,22 @@ export default function Scene3D({
   // over the canvas instead (threejs-react-three-fiber skill).
   const [overlay, setOverlay] = useState(null);
   const selected = objects.find(obj => obj.id === selectedObjectId);
+  // Stable for React.memo: only the device whose object, selection, or hover
+  // changed re-renders. Handlers stay current without new function props.
+  const handlersRef = useRef({
+    onObjectClick,
+    onObjectPointerDown,
+    onObjectHover,
+    onObjectHoverEnd,
+  });
+  useEffect(() => {
+    handlersRef.current = {
+      onObjectClick,
+      onObjectPointerDown,
+      onObjectHover,
+      onObjectHoverEnd,
+    };
+  }, [onObjectClick, onObjectPointerDown, onObjectHover, onObjectHoverEnd]);
 
   return (
     <>
@@ -97,22 +113,7 @@ export default function Scene3D({
           isSelected={selectedObjectId === obj.id}
           isRelated={relatedIds.has(obj.id)}
           isHovered={hoveredObjectId === obj.id && obj.id !== selectedObjectId}
-          onClick={(e) => {
-            e.stopPropagation();
-            onObjectClick(obj);
-          }}
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            onObjectPointerDown(obj, e.point);
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            onObjectHover(obj);
-          }}
-          onPointerOut={(e) => {
-            e.stopPropagation();
-            onObjectHoverEnd(obj);
-          }}
+          handlersRef={handlersRef}
         />
       ))}
 
