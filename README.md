@@ -10,7 +10,18 @@ uses port 5173.
 There are no accounts. Each visitor's project is saved in their own browser
 (`localStorage`, see `src/domain/local-project-store.js`), together with the
 previous save as a backup, so the backend is not needed to load or save. The
-dev server still proxies `/api` to port 3001 for future server features.
+dev server proxies `/api` to port 3001, where `npm run dev:api` serves the AI
+endpoint locally (the same handler Cloudflare runs from `functions/`):
+
+- `AI_MOCK=1 npm run dev:api`: offline mock answers, no key needed.
+- `DEEPSEEK_API_KEY=sk-... npm run dev:api`: real DeepSeek. Never commit the
+  key; `.env` files are ignored by git but not read automatically.
+- No key: the endpoint answers 503 and the app shows AI as not yet open.
+
+In production the key is the Cloudflare Pages secret `DEEPSEEK_API_KEY`;
+optional settings: `DEEPSEEK_MODEL`, `DEEPSEEK_BASE_URL`, `AI_ENABLED`,
+`AI_TIMEOUT_MS`, `AI_PER_IP_HOURLY`, `AI_DAILY_TOTAL`, and a KV binding
+`AI_LIMITS` for shared rate-limit counts.
 
 ## Deployment
 
