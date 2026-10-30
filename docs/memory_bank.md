@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-30 · Claude · master
 
+领取 E1（撤销/重做、拖动、连线的边界情况，写 UI 测试找 bug）。还剩：E1 本身。
+
+### 2026-10-30 · Claude · master
+
 E17：资产库卡片加设备小图。新脚本 `tools/thumbnails/render-thumbnails.mjs`（附 `render.html`）：起 Vite、用 Playwright 的 Chromium 打开页面、three.js 载入 `public/models/<id>.glb`，RoomEnvironment 打光、透明底、前右上方视角（插排改成从上方看，才认得出插孔），按包围盒投影轮廓取景，输出 112px WebP 到 `public/thumbnails/`（10 张共约 25KB），并为每张写 `.webp.json` 来源说明（impeccable `embed-prompt` 对 WebP 用的就是这种旁注文件；`--scan` 结果 0 缺失）。`catalog.js` 新增 `catalogThumbnailUrl`；卡片左边 56px 白色圆角方块放图（`alt=""`，按钮名称不变）。改了或加了模型要重跑：`CHROMIUM_PATH=/opt/pw-browsers/chromium node tools/thumbnails/render-thumbnails.mjs`（本机有 Playwright 自带 Chromium 时不用设）。新增 `test/thumbnails.test.js`（每个设备都有 112×112 图和来源说明）、`e2e/library-thumbnails.spec.mjs`（图片加载成功、按钮名称不变）。README、`DESIGN.md`、`.impeccable/design.json` 已更新。验证：`npm test` 387、`test:ui` 97 + 1 跳过、lint、build，四个分类截图已看。还剩：无。
 
 ### 2026-10-30 · Claude · master
