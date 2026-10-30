@@ -236,7 +236,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 做法：加一个 React Error Boundary 包住 3D 画布；检测 `WebGLRenderingContext` 不可用或 Canvas 创建失败时，显示中文说明（"你的浏览器无法显示 3D 画面，请换用最新版 Chrome / Edge / Safari"），其余界面（列表、检查、保存、导出）仍可用。
 - 验收：单元测试覆盖检测函数；UI 测试用 `page.addInitScript` 把 `HTMLCanvasElement.prototype.getContext` 改成返回 `null`，确认出现提示且无未捕获异常。
 
-**A5 [~] 进行中（claude，2026-10-30） 必做 — 首屏体积（代码分割）**
+**A5 [x] 完成（claude，2026-10-30，126c945） 必做 — 首屏体积（代码分割）**
 - 现状：build 提示主 chunk > 500kB（three.js 全打在一起）。
 - 做法：用 `React.lazy` + `Suspense` 懒加载 3D 场景组件（`SceneObjects.jsx` 及 Canvas 部分），加载时显示"正在加载 3D 场景…"；或用 Vite `build.rolldownOptions.output` 把 three 相关拆成独立 chunk。不要改 `chunkSizeWarningLimit` 来掩盖。
 - 验收：build 后最大 JS chunk 明显变小（记录前后大小）；所有测试绿；线上验证首屏正常。

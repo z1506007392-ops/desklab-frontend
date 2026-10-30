@@ -2633,6 +2633,20 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   shapes when a GLB fails (but leaves uncaught console errors, task A9).
   Verification: `npm test` 298, `npm run test:ui` 56, lint, build; scene
   render unchanged (screenshot), no-WebGL notice checked on phone.
+- `126c945` A5 Code splitting: the Canvas subtree lives in
+  `src/components/Scene3D.jsx` (only file importing three / R3F / drei /
+  SceneObjects), loaded with `React.lazy` + `Suspense` ("正在加载 3D 画面…");
+  App passes state and callbacks (drag, click, hover, background click).
+  `vite.config.js` puts `node_modules/three` in its own chunk via
+  `build.rolldownOptions.output.codeSplitting.groups`. Sizes: before one
+  1,453 KB chunk (412 KB gz); after entry 330 KB (101 KB gz), Scene3D 405 KB
+  (129 KB gz), three 723 KB (184 KB gz). The >500 KB warning that remains
+  is three.js itself. `SceneErrorBoundary` now tells a chunk download
+  failure (`isCodeDownloadError`, load-errors.js) from a crash and offers
+  刷新页面 for it, because browsers cache failed module imports.
+  Verification: `npm test` 300, `npm run test:ui` 58 (suite time 3.7 → 1.7
+  min), lint, build; production `vite preview` checked in Chromium (load
+  order, save + reload, no console errors).
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2809,10 +2823,10 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 298 domain tests
-npm run test:ui   # 56 Chrome UI cases; storage seeded per test, no backend
+npm test          # 300 domain tests
+npm run test:ui   # 58 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
-npm run build     # vite build (known large chunk warning is OK)
+npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
 
 Backend:
