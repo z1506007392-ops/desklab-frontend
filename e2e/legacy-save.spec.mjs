@@ -33,6 +33,9 @@ test('an old save with a closed-lid laptop and removed devices still opens', asy
   await expect(page.locator('canvas')).toBeVisible();
   // Let the GLBs load and a few frames render before checking for errors.
   await page.waitForTimeout(1500);
+  // Migrating the old save is part of loading it, not an edit to save.
+  const unsaved = page.getByRole('status').filter({ hasText: '未保存' });
+  await expect(unsaved).toHaveCount(0);
   expect(evidence.errors).toEqual([]);
   expect(evidence.writes).toEqual([]);
 });
