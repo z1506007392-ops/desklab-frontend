@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { describeCableType, evaluateConnectionLength } from './domain/connections.js';
 import { UNSAVED_PROJECT_VERSION, createLocalProjectClient } from './domain/local-project-store.js';
 import {
   analyzeProjectWiring,
@@ -61,6 +60,7 @@ import AboutDialog from './components/AboutDialog.jsx';
 import TemplateDialog from './components/TemplateDialog.jsx';
 import LayoutReportDialog from './components/LayoutReportDialog.jsx';
 import WiringReportDialog from './components/WiringReportDialog.jsx';
+import ConnectionsListDialog from './components/ConnectionsListDialog.jsx';
 import ErrorNotice from './components/ErrorNotice.jsx';
 import LazyScene3D from './components/LazyScene3D.jsx';
 
@@ -1846,93 +1846,12 @@ export default function App() {
       )}
 
       {showGlobalConnections && (
-        <div 
-          className="modal-overlay" 
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowGlobalConnections(false);
-            }
-          }}
-        >
-          <div 
-            className="modal-container"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="global-connections-title"
-          >
-            <div className="modal-header">
-              <h3 id="global-connections-title" className="modal-title">全部连接清单</h3>
-              <button 
-                type="button" 
-                onClick={() => setShowGlobalConnections(false)} 
-                className="side-panel-close" 
-                aria-label="关闭全部连接清单"
-                title="关闭"
-              >
-                <CloseIcon />
-              </button>
-            </div>
-            <div className="modal-body">
-              {connections.length === 0 ? (
-                <div className="empty-state" style={{ marginTop: '20px' }}>当前没有任何连接</div>
-              ) : (
-                <table className="modal-table">
-                  <thead>
-                    <tr>
-                      <th>起点</th>
-                      <th>终点</th>
-                      <th>线材/长度</th>
-                      <th className="modal-table-actions">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {connections.map(c => {
-                      const fromObj = objects.find(o => o.id === c.fromObjectId);
-                      const toObj = objects.find(o => o.id === c.toObjectId);
-                      const fromPortName = fromObj?.ports?.find(p => p.id === c.fromPortId)?.name || c.fromPortId || '旧连接';
-                      const toPortName = toObj?.ports?.find(p => p.id === c.toPortId)?.name || c.toPortId || '旧连接';
-                      const lengthStatus = evaluateConnectionLength(c, objects);
-                      
-                      return (
-                        <tr key={c.id}>
-                          <td>
-                            <strong>{fromObj?.name || '未知'}</strong><br/>
-                            <span className="panel-note">{fromPortName}</span>
-                          </td>
-                          <td>
-                            <strong>{toObj?.name || '未知'}</strong><br/>
-                            <span className="panel-note">{toPortName}</span>
-                          </td>
-                          <td>
-                            {c.name}<br/>
-                            <span className="panel-note">{describeCableType(c.cableType)}（{c.length}m）</span>
-                            {lengthStatus && (
-                              <div className={`cable-distance ${lengthStatus.hasRecommendedSlack ? 'cable-distance-ok' : 'cable-distance-warning'}`}>
-                                端点 {lengthStatus.distance.toFixed(2)}m / 建议 {lengthStatus.recommendedLength.toFixed(2)}m
-                                {!lengthStatus.hasRecommendedSlack && (
-                                  lengthStatus.sufficient ? '，维护余量不足' : `，直连不足 ${Math.abs(lengthStatus.slack).toFixed(2)}m`
-                                )}
-                              </div>
-                            )}
-                          </td>
-                          <td className="modal-table-actions">
-                            <button 
-                              type="button"
-                              onClick={() => updateConnectionsWithHistory(prev => prev.filter(x => x.id !== c.id))}
-                              className="ui-button ui-button-danger"
-                            >
-                              删除
-                            </button>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
-        </div>
+        <ConnectionsListDialog
+          connections={connections}
+          objects={objects}
+          onClose={() => setShowGlobalConnections(false)}
+          onDelete={(connectionId) => updateConnectionsWithHistory(prev => prev.filter(connection => connection.id !== connectionId))}
+        />
       )}
 
       {showRecommendations && (

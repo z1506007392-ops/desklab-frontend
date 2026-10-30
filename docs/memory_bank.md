@@ -17,7 +17,11 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
-E2 第 3 步：把「布线检查」对话框抽到 `src/components/WiringReportDialog.jsx`。延长线材、清理无效连接、加插排、定位和查看连接仍调用原来的处理函数。还剩：连接清单。
+E2 第 4 步：把「全部连接清单」抽到 `src/components/ConnectionsListDialog.jsx`。删除连接仍记入撤销。还剩：改进建议对话框，以及 E3、E6。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
+`6aa4876` E2 第 3 步：把「布线检查」对话框抽到 `src/components/WiringReportDialog.jsx`。延长线材、清理无效连接、加插排、定位和查看连接仍调用原来的处理函数。验证：`npm test` 391，`npm run lint`，`npm run build`，`npm run test:ui` 103 通过 + 1 跳过。还剩：连接清单。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
