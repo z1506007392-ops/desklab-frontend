@@ -65,6 +65,7 @@ import { SceneErrorBoundary, SceneUnavailable } from './components/SceneFallback
 import { AiSuggestionsPanel } from './components/AiSuggestions.jsx';
 import { useAiLayoutAssistant } from './components/useAiLayoutAssistant.js';
 import { canUseWebGL } from './domain/webgl-support.js';
+import { CountBadge } from './components/CountBadge.jsx';
 
 const PROJECT_DRAFT_STORAGE_KEY = 'desklab.project-draft.v1';
 const getBrowserStorage = () => window.localStorage;
@@ -77,6 +78,11 @@ const projectDraftStorage = createProjectDraftStorage(
 // Saves live only in this browser. Ask once that the browser keep them when
 // it is short on space; it may say no, and saving works either way.
 let persistentStorageRequested = false;
+// Name of a toolbar button that shows a count badge, e.g. "布局检查 (2)".
+function countLabel(text, count) {
+  return count > 0 ? `${text} (${count})` : undefined;
+}
+
 function requestPersistentStorage() {
   if (persistentStorageRequested) return;
   persistentStorageRequested = true;
@@ -1291,14 +1297,14 @@ export default function App() {
             <button className="ui-button" onClick={handleRedo} disabled={!projectEditable || !historyStatus.canRedo} title="重做 (Ctrl+Y)">重做</button>
             <button className="ui-button" onClick={handleResetView} disabled={!projectEditable}>重置视角</button>
             <button className="ui-button" onClick={() => setShowGlobalConnections(true)}>所有连接</button>
-            <button className="ui-button" onClick={() => setShowLayoutReport(true)}>
-              布局检查{actionableLayoutIssueCount > 0 ? ` (${actionableLayoutIssueCount})` : ''}
+            <button className="ui-button" onClick={() => setShowLayoutReport(true)} aria-label={countLabel('布局检查', actionableLayoutIssueCount)}>
+              布局检查<CountBadge count={actionableLayoutIssueCount} />
             </button>
-            <button className="ui-button" onClick={() => setShowWiringReport(true)}>
-              布线检查{actionableWiringIssueCount > 0 ? ` (${actionableWiringIssueCount})` : ''}
+            <button className="ui-button" onClick={() => setShowWiringReport(true)} aria-label={countLabel('布线检查', actionableWiringIssueCount)}>
+              布线检查<CountBadge count={actionableWiringIssueCount} />
             </button>
-            <button className="ui-button ui-button-recommend" onClick={() => setShowRecommendations(true)}>
-              改进建议{recommendations.total > 0 ? ` (${recommendations.total})` : ''}
+            <button className="ui-button ui-button-recommend" onClick={() => setShowRecommendations(true)} aria-label={countLabel('改进建议', recommendations.total)}>
+              改进建议<CountBadge count={recommendations.total} />
             </button>
             <button
               ref={moreButtonRef}
@@ -1351,7 +1357,7 @@ export default function App() {
             <button className="ui-button" onClick={handleToggleRightPanel}>
               {isPanelOpen ? '收起属性面板' : '展开属性面板'}
             </button>
-            {isDirty && <span className="unsaved-indicator" role="status">● 未保存</span>}
+            {isDirty && <span className="unsaved-indicator" role="status">未保存</span>}
             <button
               className="ui-button ui-button-primary"
               onClick={handleSave}
@@ -1370,7 +1376,7 @@ export default function App() {
             </button>
             {statusMsg.text && (
               <span className={`toolbar-status${statusMsg.type === 'error' ? ' is-error' : ''}`}>
-                {statusMsg.type === 'error' ? '⚠️ ' : '✅ '}{statusMsg.text}
+                {statusMsg.text}
               </span>
             )}
           </div>

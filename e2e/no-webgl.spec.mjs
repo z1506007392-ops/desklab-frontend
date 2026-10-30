@@ -21,7 +21,7 @@ test('without WebGL the page explains it and everything else still works', async
   await expect(list).toContainText('台式主机网线');
   await list.getByRole('button', { name: /关闭/ }).click();
   await page.getByRole('button', { name: '保存项目', exact: true }).click();
-  await expect(page.getByText(/^✅ 已保存$/)).toBeVisible();
+  await expect(page.getByText(/^已保存$/)).toBeVisible();
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
 

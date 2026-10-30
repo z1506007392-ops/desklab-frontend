@@ -69,7 +69,7 @@ test('AI suggestions are checked, previewed, applied, and undone', async ({ page
   await reopened.section.getByRole('group', { name: '显示器移到正前方' }).getByRole('button', { name: '应用', exact: true }).click();
   await expect(page.getByText(/已应用 AI 建议：显示器移到正前方/)).toBeVisible();
   await page.getByRole('button', { name: '保存项目', exact: true }).click();
-  await expect(page.getByText(/^✅ 已保存$/)).toBeVisible();
+  await expect(page.getByText(/^已保存$/)).toBeVisible();
   expect(await storedMonitorX(page, scene)).toBe(0);
 
   // Applied suggestions disappear; undo brings the old layout back.
@@ -78,7 +78,7 @@ test('AI suggestions are checked, previewed, applied, and undone', async ({ page
   await again.dialog.getByRole('button', { name: '关闭改进建议' }).click();
   await page.getByRole('button', { name: '撤销', exact: true }).click();
   await page.getByRole('button', { name: '保存项目', exact: true }).click();
-  await expect(page.getByText(/^✅ 已保存$/)).toBeVisible();
+  await expect(page.getByText(/^已保存$/)).toBeVisible();
   expect(await storedMonitorX(page, scene)).toBe(0.4);
   expect(evidence.errors).toEqual([]);
   expect(evidence.writes).toEqual([]);

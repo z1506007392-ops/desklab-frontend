@@ -24,7 +24,7 @@ test('a saved desk stays in this browser after a reload, with no server involved
   await expect(unsaved).toBeVisible();
 
   await page.getByRole('button', { name: '保存项目', exact: true }).click();
-  await expect(page.getByText(/^✅ 已保存$/)).toBeVisible();
+  await expect(page.getByText(/^已保存$/)).toBeVisible();
   await expect(unsaved).toHaveCount(0);
 
   await page.reload();
@@ -42,7 +42,7 @@ test('a second tab cannot overwrite a newer save', async ({ page, context }) => 
 
   await applyGamingTemplate(page);
   await page.getByRole('button', { name: '保存项目', exact: true }).click();
-  await expect(page.getByText(/^✅ 已保存$/)).toBeVisible();
+  await expect(page.getByText(/^已保存$/)).toBeVisible();
 
   await other.getByRole('button', { name: '保存项目', exact: true }).click();
   await expect(other.getByText(/项目已在另一个页面中更新/)).toBeVisible();
@@ -55,10 +55,10 @@ test('a damaged save locks saving until the previous version is restored', async
   const evidence = await openProject(page, []);
   await applyGamingTemplate(page);
   await page.getByRole('button', { name: '保存项目', exact: true }).click();
-  await expect(page.getByText(/^✅ 已保存$/)).toBeVisible();
+  await expect(page.getByText(/^已保存$/)).toBeVisible();
   await page.getByRole('button', { name: '撤销', exact: true }).click();
   await page.getByRole('button', { name: '保存项目', exact: true }).click();
-  await expect(page.getByText(/^✅ 已保存$/)).toBeVisible();
+  await expect(page.getByText(/^已保存$/)).toBeVisible();
 
   await page.evaluate(key => localStorage.setItem(key, '{"room":'), PROJECT_STORAGE_KEY);
   await page.reload();

@@ -385,7 +385,7 @@ const ConnectionsEditor = ({
               <div key={c.id} className="connection-list-item">
                 <div className="connection-item-header">
                   <strong className="connection-direction">
-                    {isFrom ? '📤 发送至' : '📥 接收自'} {otherName}
+                    {isFrom ? '发送至' : '接收自'} {otherName}
                   </strong>
                   <div className="connection-item-actions">
                     <button

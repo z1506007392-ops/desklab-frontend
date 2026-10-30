@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
 import { describeCatalogModel, findModelTemplate, getLegacyModelInfo } from '../domain/catalog.js';
 import { computeDevicePowerLoad, classifyPowerLoad, getEffectiveMaxLoad, getEffectiveWattage } from '../domain/analysis.js';
@@ -18,6 +18,7 @@ function PropertyField({
   max = undefined,
   decimals = 3,
 }) {
+  const inputId = useId();
   const [prevValue, setPrevValue] = useState(value);
   const [localVal, setLocalVal] = useState(formatNumericInputValue(value, decimals));
 
@@ -43,18 +44,19 @@ function PropertyField({
 
   return (
     <div className="panel-field">
-      <label className="panel-field-label">{label}</label>
+      <label className="panel-field-label" htmlFor={inputId}>{label}</label>
       <div className="panel-field-content">
         {type === 'text' ? (
           <input
+            id={inputId}
             type="text"
             value={value}
             onChange={event => onChange(event.target.value)}
-            className="ui-input"
-            style={{ width: '100%' }}
+            className="ui-input ui-full-width"
           />
         ) : (
           <input
+            id={inputId}
             type="number"
             step={step}
             min={min}
@@ -63,8 +65,7 @@ function PropertyField({
             onChange={handleChange}
             onBlur={handleBlur}
             onKeyDown={event => event.key === 'Enter' && handleBlur()}
-            className="ui-input"
-            style={{ width: '100%' }}
+            className="ui-input ui-full-width"
           />
         )}
       </div>
@@ -146,11 +147,11 @@ export default function PropertiesEditor({ obj, updateObject, room, onSnapToWall
                   </div>
                   {loadStatus === 'overload' ? (
                     <div className="load-note load-overload">
-                      ⚠️ 警告: 电源已过载！请减少外接用电器。
+                      警告：电源已过载！请减少外接用电器。
                     </div>
                   ) : loadStatus === 'warning' ? (
                     <div className="load-note load-warning">
-                      ⚠️ 提示: 负载较重，已接近承载上限。
+                      提示：负载较重，已接近承载上限。
                     </div>
                   ) : null}
                 </div>
