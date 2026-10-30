@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { findModelTemplate } from '../domain/catalog.js';
 import { buildDeskScene, DESK_SCENE_DEVICE_LIMITS, DESK_SIZE_LIMITS } from '../domain/scene-builder.js';
+import { MinusIcon, PlusIcon } from './Icons.jsx';
 
 const DEFAULT_COUNTS = Object.freeze({ 'laptop-15': 1, 'monitor-27': 1 });
 const DEFAULT_DESK = Object.freeze({ length: '1.4', depth: '0.7' });
@@ -41,7 +42,7 @@ const DeskBuilderForm = ({ disabled, onGenerate }) => {
                   disabled={disabled || count <= 0}
                   aria-label={`减少${name}`}
                 >
-                  −
+                  <MinusIcon />
                 </button>
                 <output className="desk-builder-count" aria-label={`${name}数量`}>{count}</output>
                 <button
@@ -51,7 +52,7 @@ const DeskBuilderForm = ({ disabled, onGenerate }) => {
                   disabled={disabled || count >= limit}
                   aria-label={`增加${name}`}
                 >
-                  +
+                  <PlusIcon />
                 </button>
               </div>
             </div>

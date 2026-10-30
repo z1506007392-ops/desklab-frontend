@@ -23,8 +23,7 @@
   --warn-bg: #fff3d9;
   --bad: #b42318;
   --bad-bg: #fdecea;
-  --info: #2a5bb5;
-  --info-bg: #ebf1fd;
+  --warn-dot: #d98a00;
 
   --radius-pill: 999px;
   --radius-field: 10px;
@@ -148,10 +147,6 @@
   padding: 4px 12px 6px;
 }
 
-.toolbar-compact .toolbar-status {
-  padding: 0 12px 4px;
-}
-
 @media (max-width: 359px) {
   .toolbar-compact .toolbar-label {
     display: none;
@@ -175,17 +170,38 @@
   width: 64px;
 }
 
-.toolbar-status {
+/* 保存、导入等结果：屏幕下方居中浮起的标签，几秒后消失；不挤动工具栏，也不挡点击。 */
+.status-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 2000;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: var(--ok);
+  gap: 8px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 16px 8px 14px;
+  transform: translateX(-50%);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow-menu);
+  color: var(--ink);
   font-size: var(--text-sm);
   font-weight: 600;
+  pointer-events: none;
+  animation: toast-in var(--dur) var(--ease-out);
 }
 
-.toolbar-status.is-error {
+.status-toast::before {
+  background: var(--ok);
+}
+
+.status-toast.is-error {
   color: var(--bad);
+}
+
+.status-toast.is-error::before {
+  background: var(--bad);
 }
 
 .toolbar-menu {
@@ -327,7 +343,7 @@
   color: var(--ink);
   font: inherit;
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
   display: inline-flex;
@@ -362,6 +378,7 @@
 .ui-button-primary {
   background: var(--ink);
   color: #ffffff;
+  font-weight: 600;
 }
 
 .ui-button-primary:hover {
@@ -391,7 +408,7 @@
   padding: 0 10px;
   border: 1px solid transparent;
   border-radius: var(--radius-field);
-  background: var(--fill);
+  background-color: var(--fill);
   color: var(--ink);
   font: inherit;
   font-size: var(--text-sm);
@@ -404,7 +421,13 @@
 }
 
 .ui-select {
-  padding-right: 28px;
+  padding-right: 32px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%2355565e' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 6.5 8 10l3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px 16px;
   cursor: pointer;
 }
 
@@ -414,20 +437,20 @@
 
 .ui-input:hover,
 .ui-select:hover {
-  background: var(--fill-hover);
+  background-color: var(--fill-hover);
 }
 
 .ui-input:focus,
 .ui-select:focus {
   outline: none;
   border-color: var(--ink);
-  background: var(--surface);
+  background-color: var(--surface);
   box-shadow: var(--focus-ring);
 }
 
 .ui-input:disabled,
 .ui-select:disabled {
-  background: #f4f5f7;
+  background-color: #f4f5f7;
   color: var(--ink-disabled);
   cursor: not-allowed;
 }
@@ -458,13 +481,13 @@
   gap: 6px;
   color: var(--dot-ink);
   font-size: var(--text-xs);
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 /* 圆点：桌搭标签里标出物品的那个点。只用来标"选中的、要注意的、改进建议"。 */
 .unsaved-indicator::before,
-.toolbar-status::before,
+.status-toast::before,
 .load-note::before {
   content: '';
   flex-shrink: 0;
@@ -480,24 +503,14 @@
 }
 
 .count-badge {
-  min-width: 18px;
-  height: 18px;
-  margin-left: 6px;
-  padding: 0 5px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-pill);
-  background: var(--dot-ink);
-  color: #ffffff;
-  font-size: 11px;
+  margin-left: -2px;
+  color: var(--dot-ink);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  line-height: 1;
 }
 
 .ui-button:disabled .count-badge {
-  background: var(--ink-disabled);
+  color: var(--ink-disabled);
 }
 
 
@@ -550,6 +563,11 @@
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
+.icon {
+  flex-shrink: 0;
+  display: block;
+}
+
 .side-panel-close:hover {
   background: var(--fill);
   color: var(--ink);
@@ -575,7 +593,7 @@
   cursor: pointer;
   font: inherit;
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink-2);
   border: none;
   border-radius: var(--radius-pill);
@@ -595,7 +613,7 @@
 
 .side-panel-tab.side-panel-tab-active {
   color: var(--ink);
-  font-weight: 800;
+  font-weight: 600;
   background: var(--fill);
 }
 
@@ -660,7 +678,7 @@
 
 .panel-text-strong {
   color: var(--ink);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .panel-muted {
@@ -702,7 +720,7 @@
 
 .connection-direction {
   color: var(--ink);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .connection-name {
@@ -848,7 +866,7 @@
 
 .connection-step-label {
   font-size: var(--text-xs);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink-2);
   margin-bottom: 4px;
 }
@@ -884,7 +902,7 @@
 }
 
 .load-meter-percent {
-  font-weight: 700;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -906,7 +924,7 @@
 .load-warning { color: var(--warn); }
 .load-overload { color: var(--bad); }
 .load-meter-bar.load-normal { background: var(--ok); }
-.load-meter-bar.load-warning { background: #d98a00; }
+.load-meter-bar.load-warning { background: var(--warn-dot); }
 .load-meter-bar.load-overload { background: var(--bad); }
 
 .load-note {
@@ -991,7 +1009,7 @@
   color: var(--ink);
   font: inherit;
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
@@ -1056,7 +1074,7 @@
   margin-bottom: 4px;
   color: var(--ink);
   font-size: var(--text-md);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .asset-item-subtitle {
@@ -1342,7 +1360,7 @@
   border-bottom: 1px solid var(--line);
   color: var(--ink-2);
   font-size: var(--text-xs);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .modal-table td {
@@ -1373,7 +1391,7 @@
   gap: 8px;
   margin-bottom: 16px;
   font-size: var(--text-xs);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .wiring-summary span {
@@ -1383,7 +1401,7 @@
 
 .wiring-summary-error { color: var(--bad); background: var(--bad-bg); }
 .wiring-summary-warning { color: var(--warn); background: var(--warn-bg); }
-.wiring-summary-info { color: var(--info); background: var(--info-bg); }
+.wiring-summary-info { color: var(--ink-2); background: var(--fill); }
 
 .wiring-cleanup-button {
   margin-left: auto;
@@ -1415,11 +1433,11 @@
 }
 
 .wiring-issue-error::before { background: var(--bad); box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.16); }
-.wiring-issue-warning::before { background: #d98a00; box-shadow: 0 0 0 3px rgba(217, 138, 0, 0.18); }
-.wiring-issue-info::before { background: var(--info); box-shadow: 0 0 0 3px rgba(42, 91, 181, 0.16); }
+.wiring-issue-warning::before { background: var(--warn-dot); box-shadow: 0 0 0 3px rgba(217, 138, 0, 0.18); }
+.wiring-issue-info::before { background: var(--ink-3); }
 
 .wiring-issue-content { flex: 1; min-width: 0; }
-.wiring-issue-title { color: var(--ink); font-size: var(--text-sm); font-weight: 700; }
+.wiring-issue-title { color: var(--ink); font-size: var(--text-sm); font-weight: 600; }
 .wiring-issue-description { margin-top: 4px; color: var(--ink-2); font-size: var(--text-xs); line-height: 1.6; }
 .wiring-issue-severity { margin-right: 8px; font-size: var(--text-xs); }
 
@@ -1432,17 +1450,20 @@
   line-height: 1.6;
 }
 
-/* 改进建议：工具栏上唯一一个白色浮起的"标签"按钮 */
+/* 标签按钮：白色浮起、带粉色圆点。"改进建议"一直是标签；
+   "布局检查""布线检查"有要处理的问题时也变成标签，数字写在里面。 */
 
-.ui-button-recommend {
+.ui-button-tag {
   gap: 8px;
   background: var(--surface);
   color: var(--ink);
+  font-weight: 600;
   box-shadow: var(--shadow-float);
 }
 
-.ui-button-recommend::before {
+.ui-button-tag::before {
   content: '';
+  flex-shrink: 0;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -1450,24 +1471,20 @@
   box-shadow: 0 0 0 3px var(--dot-ring);
 }
 
-.ui-button-recommend:has(.count-badge)::before {
-  display: none;
-}
-
-.ui-button-recommend:hover {
+.ui-button-tag:hover {
   background: var(--surface);
   box-shadow: 0 1px 2px rgba(27, 27, 31, 0.1), 0 6px 16px rgba(27, 27, 31, 0.12);
 }
 
-.ui-button-recommend:active:not(:disabled) {
+.ui-button-tag:active:not(:disabled) {
   background: var(--ground);
 }
 
-.ui-button-recommend:disabled {
+.ui-button-tag:disabled {
   box-shadow: none;
 }
 
-.ui-button-recommend:disabled::before {
+.ui-button-tag:disabled::before {
   background: var(--ink-disabled);
   box-shadow: none;
 }
@@ -1520,7 +1537,7 @@
   background: var(--surface);
   box-shadow: var(--shadow-float);
   color: var(--ink);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .selection-hint-active .selection-hint-title::before {
@@ -1554,7 +1571,7 @@
   box-shadow: var(--shadow-menu);
   color: var(--ink);
   font-size: var(--text-sm);
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -1666,6 +1683,13 @@
   min-width: 0;
 }
 
+/* 手机上输入框独占一行，例句不会被截断。 */
+@media (max-width: 599px) {
+  .ai-suggestions-form .ui-input {
+    flex-basis: 100%;
+  }
+}
+
 .ai-suggestions-status {
   display: flex;
   flex-wrap: wrap;
@@ -1707,7 +1731,7 @@
 .ai-suggestion-title {
   color: var(--ink);
   font-size: var(--text-md);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .ai-suggestion-reason {
@@ -1808,6 +1832,10 @@
   from { opacity: 0; transform: translateX(24px); }
 }
 
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+}
+
 @keyframes guide-in {
   from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)); }
 }
@@ -1863,6 +1891,7 @@
   .modal-container,
   .toolbar-menu,
   .start-guide,
+  .status-toast,
   .count-badge,
   .selection-hint-active .selection-hint-title,
   .left-panel,

@@ -9,6 +9,7 @@ import {
 } from '../domain/connections.js';
 import { createEntityId } from '../domain/identifiers.js';
 import { labelObjectsForPicker } from '../domain/object-labels.js';
+import { CloseIcon } from './Icons.jsx';
 
 // --- Connections MVP 组件 ---
 const getCompatibleTargetPorts = (fromPort, targetObject) => {
@@ -253,7 +254,7 @@ const ConnectionsEditor = ({
         <div className="connection-draft">
           <div className="connection-draft-header">
             <div className="panel-section-title">创建新连接</div>
-            <button onClick={handleCancelConnection} className="side-panel-close">×</button>
+            <button type="button" onClick={handleCancelConnection} className="side-panel-close" aria-label="取消新建连接" title="取消"><CloseIcon /></button>
           </div>
           
           <div className="connection-draft-steps">

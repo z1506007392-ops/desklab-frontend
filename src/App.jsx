@@ -66,6 +66,7 @@ import { AiSuggestionsPanel } from './components/AiSuggestions.jsx';
 import { useAiLayoutAssistant } from './components/useAiLayoutAssistant.js';
 import { canUseWebGL } from './domain/webgl-support.js';
 import { CountBadge } from './components/CountBadge.jsx';
+import { CloseIcon } from './components/Icons.jsx';
 
 const PROJECT_DRAFT_STORAGE_KEY = 'desklab.project-draft.v1';
 const getBrowserStorage = () => window.localStorage;
@@ -1296,17 +1297,17 @@ export default function App() {
   const resetViewButton = <button className="ui-button" onClick={handleResetView} disabled={!projectEditable}>重置视角</button>;
   const connectionsButton = <button className="ui-button" onClick={() => setShowGlobalConnections(true)}>所有连接</button>;
   const layoutButton = (
-    <button className="ui-button" onClick={() => setShowLayoutReport(true)} aria-label={countLabel('布局检查', actionableLayoutIssueCount)}>
+    <button className={`ui-button${actionableLayoutIssueCount > 0 ? ' ui-button-tag' : ''}`} onClick={() => setShowLayoutReport(true)} aria-label={countLabel('布局检查', actionableLayoutIssueCount)}>
       布局检查<CountBadge count={actionableLayoutIssueCount} />
     </button>
   );
   const wiringButton = (
-    <button className="ui-button" onClick={() => setShowWiringReport(true)} aria-label={countLabel('布线检查', actionableWiringIssueCount)}>
+    <button className={`ui-button${actionableWiringIssueCount > 0 ? ' ui-button-tag' : ''}`} onClick={() => setShowWiringReport(true)} aria-label={countLabel('布线检查', actionableWiringIssueCount)}>
       布线检查<CountBadge count={actionableWiringIssueCount} />
     </button>
   );
   const recommendButton = (
-    <button className="ui-button ui-button-recommend" onClick={() => setShowRecommendations(true)} aria-label={countLabel('改进建议', recommendations.total)}>
+    <button className="ui-button ui-button-tag" onClick={() => setShowRecommendations(true)} aria-label={countLabel('改进建议', recommendations.total)}>
       改进建议<CountBadge count={recommendations.total} />
     </button>
   );
@@ -1389,7 +1390,7 @@ export default function App() {
     </button>
   );
   const statusText = statusMsg.text && (
-    <span className={`toolbar-status${statusMsg.type === 'error' ? ' is-error' : ''}`}>
+    <span className={`status-toast${statusMsg.type === 'error' ? ' is-error' : ''}`}>
       {statusMsg.text}
     </span>
   );
@@ -1405,7 +1406,7 @@ export default function App() {
         <div className="toolbar-cluster">{undoButton}{redoButton}{resetViewButton}</div>
         <div className="toolbar-cluster">{connectionsButton}{layoutButton}{wiringButton}{recommendButton}</div>
         <div className="toolbar-cluster">{moreButton}{leftPanelButton}{rightPanelButton}</div>
-        <div className="toolbar-cluster">{unsavedIndicator}{saveButton}{statusText}</div>
+        <div className="toolbar-cluster">{unsavedIndicator}{saveButton}</div>
       </div>
       {moreMenu}
       {importInput}
@@ -1442,7 +1443,6 @@ export default function App() {
         {moreButton}
       </div>
       {isRoomEditorOpen && roomFields}
-      {statusText}
       {moreMenu}
       {importInput}
     </div>
@@ -1546,7 +1546,7 @@ export default function App() {
           <div className="left-panel">
             <div className="left-panel-header">
               <div className="left-panel-title">资产库</div>
-              <button onClick={() => setIsLeftPanelOpen(false)} className="side-panel-close" aria-label="关闭资产库" title="关闭">×</button>
+              <button onClick={() => setIsLeftPanelOpen(false)} className="side-panel-close" aria-label="关闭资产库" title="关闭"><CloseIcon /></button>
             </div>
             <div className="asset-search-container">
               <input 
@@ -1706,7 +1706,7 @@ export default function App() {
               >
                 连接
               </button>
-              <button onClick={() => setIsPanelOpen(false)} className="side-panel-close" aria-label="关闭面板" title="关闭面板">×</button>
+              <button onClick={() => setIsPanelOpen(false)} className="side-panel-close" aria-label="关闭面板" title="关闭面板"><CloseIcon /></button>
             </div>
 
             <div className="side-panel-content">
@@ -1790,7 +1790,7 @@ export default function App() {
                 aria-label="关闭桌面模板"
                 title="关闭"
               >
-                ×
+                <CloseIcon />
               </button>
             </div>
             <div className="modal-body">
@@ -1855,7 +1855,7 @@ export default function App() {
                 aria-label="关闭布局检查"
                 title="关闭"
               >
-                ×
+                <CloseIcon />
               </button>
             </div>
             <div className="modal-body">
@@ -1969,7 +1969,7 @@ export default function App() {
                 aria-label="关闭布线检查"
                 title="关闭"
               >
-                ×
+                <CloseIcon />
               </button>
             </div>
             <div className="modal-body">
@@ -2108,7 +2108,7 @@ export default function App() {
                 aria-label="关闭全部连接清单"
                 title="关闭"
               >
-                ×
+                <CloseIcon />
               </button>
             </div>
             <div className="modal-body">
@@ -2196,7 +2196,7 @@ export default function App() {
                 aria-label="关闭改进建议"
                 title="关闭"
               >
-                ×
+                <CloseIcon />
               </button>
             </div>
             <div className="modal-body">
@@ -2487,6 +2487,7 @@ export default function App() {
         </div>
       )}
 
+      {statusText}
     </div>
   );
 };
