@@ -2703,6 +2703,13 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   the hour and day limits. The route creates the limiter at module scope.
   Checked in `wrangler pages dev` with a fake key: third call at limit 2 →
   429. Verification: `npm test` 331, lint, build.
+- `ea51b15` B4 Local AI: `npm run dev:api` (tools/dev-api-server.mjs, Node
+  http on PORT or 3001) runs `createLayoutHandler` with `process.env`;
+  `AI_MOCK=1` swaps DeepSeek for `server/ai/mock-model.js` (rule-based
+  answers in DeepSeek's response format, read from the scene in the prompt).
+  `test/ai-dev-server.test.js` starts the real server in both modes. Live
+  site check after B1–B3: POST /api/ai/layout → 503 ai_unavailable (H1 not
+  done yet). Verification: `npm test` 333, lint, build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2879,7 +2886,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 331 domain tests
+npm test          # 333 domain tests
 npm run test:ui   # 60 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
