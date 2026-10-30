@@ -2598,6 +2598,13 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   clears the snooze. Hidden while a draft-recovery or load-failure banner is
   up. `e2e/backup-reminder.spec.mjs` covers snooze across a reload and
   export → re-import. Verification: `npm test` 291, `npm run test:ui` 38.
+- `940e696` A1 Plain-word backup tools: "更多" menu items are 导入备份 / 导出备份 /
+  粘贴项目 / 复制项目; recovery and status messages say 导出备份; the import
+  input is labelled 导入 DeskLab 备份文件. `describeProjectImportError()`
+  (project-import-limits.js) turns a JSON parse error into "这不是 DeskLab
+  的备份文件，或者文件已损坏". Export file names keep the `desklab-project-`
+  prefix. Verification: `npm test` 292, `npm run test:ui` 40, lint, build;
+  menu screenshots at desktop and phone width checked.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2774,8 +2781,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 291 domain tests
-npm run test:ui   # 38 Chrome UI cases; storage seeded per test, no backend
+npm test          # 292 domain tests
+npm run test:ui   # 40 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (known large chunk warning is OK)
 ```
