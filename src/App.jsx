@@ -68,6 +68,7 @@ import AiPreviewBanner from './components/AiPreviewBanner.jsx';
 import CorruptSaveBanner from './components/CorruptSaveBanner.jsx';
 import ConnectionModeBanner from './components/ConnectionModeBanner.jsx';
 import SelectionHint from './components/SelectionHint.jsx';
+import StatusToast from './components/StatusToast.jsx';
 import LazyScene3D from './components/LazyScene3D.jsx';
 
 
@@ -1402,12 +1403,6 @@ export default function App() {
       {!projectLoaded ? '加载中…' : saveBusy ? '保存中…' : '保存项目'}
     </button>
   );
-  const statusText = statusMsg.text && (
-    <span className={`status-toast${statusMsg.type === 'error' ? ' is-error' : ''}`}>
-      {statusMsg.text}
-    </span>
-  );
-
   const desktopToolbar = (
     <div className="toolbar">
       <div className="toolbar-group">
@@ -1918,7 +1913,7 @@ export default function App() {
         />
       )}
 
-      {statusText}
+      <StatusToast text={statusMsg.text} type={statusMsg.type} />
     </div>
   );
 };

@@ -17,7 +17,11 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
-E18 第 6 步：选中提示抽到 `src/components/SelectionHint.jsx`。文案仍由 `describeSelectionHint` 决定。还剩：状态消息和工具栏，然后 E5。
+E18 第 7 步：底部状态消息抽到 `src/components/StatusToast.jsx`。成功和出错的样式不变。还剩：工具栏，然后 E5。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
+`badea5e` E18 第 6 步：选中提示抽到 `src/components/SelectionHint.jsx`。文案仍由 `describeSelectionHint` 决定。验证：`npm test` 394，`npm run lint`，`npm run build`，`npm run test:ui` 107 通过 + 1 跳过。还剩：状态消息和工具栏。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
