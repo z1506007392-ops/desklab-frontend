@@ -1,0 +1,29 @@
+# Run the checks a contributor runs locally on every push to master and on
+# pull requests. Deployment is done by Cloudflare Pages, which builds the
+# static site from master itself.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+      - run: npm run build
+      # ubuntu-latest ships Google Chrome, which playwright.config.mjs uses.
+      - run: npm run test:ui
