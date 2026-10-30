@@ -290,7 +290,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 新建 `src/domain/ai-client.js`：`requestLayoutSuggestions({ summary, goal, signal })` → `POST /api/ai/layout`，45 秒超时（`AbortController`），把服务端错误码映射成中文提示（6.3.3 表）。
 - 测试：用假 `fetch` 覆盖所有错误码、超时、取消。
 
-**B6 [ ] 必做 — e2e 夹具支持模拟 AI**
+**B6 [~] 进行中（claude，2026-10-30） 必做 — e2e 夹具支持模拟 AI**
 - `e2e/project-fixture.mjs` 的 `openProject` 增加可选参数 `{ ai: (requestBody) => responseJson | { status, json } }`：提供时，对 `/api/ai/layout` 用 `page.route` 返回该结果，**不计入 writes**；其他 `/api` 请求仍然计为失败。
 - 验收：现有全部 UI 测试不改行为仍通过。
 
