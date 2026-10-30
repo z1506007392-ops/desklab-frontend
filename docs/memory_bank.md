@@ -2837,6 +2837,21 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   rejected for new warnings or no gain. Live browser run (desktop + phone):
   one card, preview, apply, save → monitor x = 0, no console errors.
   Next: C7 (see roadmap for running the eval within the rate limit).
+- C7 Prompt iterations. v1 = the roadmap §6.5 starting prompt, unchanged.
+  First real run 2026-10-30 against the live endpoint (model reported as
+  deepseek-flash; 25 requests, ~2–3 s each, ~2.5k prompt / ~0.4k completion
+  tokens): parse 100%, messy scenes helped 84% (16/19), average improvement
+  44.3, new errors 0, jargon 0 → all thresholds met, so no prompt change was
+  needed. Raw suggestions 106, accepted 25; rejection reasons: no gain 62,
+  new warnings 33, outside the room 12, monitor/laptop not on a desk 7.
+  Misses: home-office/laptop-at-back (laptop moved onto the monitor's
+  footprint) and desktop-dual/monitor-turned-away + 适合打游戏 (moved instead
+  of rotated) → task E13. Ran from the cloud session with
+  `NODE_USE_ENV_PROXY=1 node tools/ai-eval/run-eval.mjs --url
+  https://desklab-frontend.pages.dev/api/ai/layout`; the in-memory rate
+  limit never triggered (29 calls in an hour) → task E14 / H2. `ca62f5c` stores
+  three answers in test/fixtures/ai/recorded/ with a replay test.
+  Verification: `npm test` 382.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -3013,7 +3028,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 378 domain tests
+npm test          # 382 domain tests
 npm run test:ui   # 86 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
