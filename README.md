@@ -30,6 +30,20 @@ Cloudflare Pages builds `master` on every push (`npm run build`, output
 https://desklab-frontend.pages.dev. GitHub Actions (`.github/workflows/ci.yml`)
 runs the checks below on pushes and pull requests.
 
+## 3D models
+
+Catalog devices render from `public/models/<modelId>.glb`. The files are
+generated headlessly with Blender 4.2 by the scripts in `tools/blender-models/`
+(see that directory's README for axes and how to regenerate them). Each mesh is
+built at the catalog `defaultScale`, centred on its bounding box, glTF +Y up,
+with the front toward three.js +Z.
+
+`src/domain/catalog.js` sets `assetUrl` to those files and prefixes Vite's
+`base` (`import.meta.env.BASE_URL`). The scene preloads them. If a GLB is
+missing or fails to load, the in-house generic shape is drawn, then a plain
+box. Handoff notes for anchors, the wall-outlet yaw, and known visual gaps are
+in `docs/memory_bank.md`.
+
 ## Verification
 
 - `npm test`: domain behavior tests.
@@ -48,9 +62,12 @@ and runtime errors. Test output stays in ignored `test-results/`.
 For one scenario, use `npm run test:ui -- --project=desktop --grep "no automatic"`.
 
 Agents: start with `docs/AUTONOMOUS_ROADMAP.md` (plan, task board, LLM
-design), then `docs/memory_bank.md` (history and decisions).
+design), then `docs/memory_bank.md` (history and decisions). Read the memory
+bank before starting, and append a 进度记录 entry in the same change (see
+协作规则 at the top of that file).
 
-Current handoff documentation lives at:
+Current handoff documentation lives at `docs/memory_bank.md` in this
+repository. External copies, when present, are:
 
 ```text
 D:\desklab\memory-bank\DeskLab-Claude-memory.md
