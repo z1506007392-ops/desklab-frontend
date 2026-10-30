@@ -178,7 +178,14 @@ export default function App() {
     );
   }, []);
 
-  useEffect(() => () => statusNotifierRef.current.dispose(), []);
+  // StrictMode mounts, unmounts, and remounts in development; a notifier
+  // disposed by the first cleanup would drop every later status, so each
+  // mount gets its own.
+  useEffect(() => {
+    const notifier = createStatusNotifier(setStatusMsg);
+    statusNotifierRef.current = notifier;
+    return () => notifier.dispose();
+  }, []);
 
   const isDirty = savedLayout !== null && (
     serializeLayout(room, objects, connections) !== savedLayout || cameraDirty
