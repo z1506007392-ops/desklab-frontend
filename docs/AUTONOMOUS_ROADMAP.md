@@ -276,7 +276,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 新建 `server/ai/prompt.js`（不要放在 `functions/` 下，见 B1）：导出 `SYSTEM_PROMPT`、`buildMessages(sceneSummary, userGoal)`、`RESPONSE_EXAMPLE`。内容按 6.5 节，**一字不差地以 6.5 为起点**，之后可按评测结果迭代（迭代要在 memory bank 记录原因和评测数据）。
 - 测试：消息结构、包含 "json" 字样（DeepSeek JSON 模式要求）、用户目标被放在数据字段而不是拼进指令、超长目标被截断到 200 字。
 
-**B3 [ ] 必做 — 防滥用与成本控制**
+**B3 [~] 进行中（claude，2026-10-30） 必做 — 防滥用与成本控制**
 - 做法（按 6.3.4）：请求体 ≤ 64KB；用户目标 ≤ 200 字；`max_tokens` ≤ 2000；每 IP 每小时次数限制、全站每日次数上限；环境变量 `AI_ENABLED=false` 时一律 503（总开关）。
 - 计数存储：如果绑定了 KV 命名空间 `AI_LIMITS`（需要人，第 7 节 H2）就用 KV；没绑定就用 isolate 内存计数（弱限制，但不报错），并在响应头 `X-AI-Limit-Mode: memory|kv` 标明。
 - 测试：两种模式都覆盖；超限返回 429 `ai_rate_limited`，中文提示"今天的 AI 次数用完了，明天再试"。
