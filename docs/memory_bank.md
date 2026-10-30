@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-30 · Claude · master
 
+E16：负责人同意做终审提的两项改进。第一项：选中设备时，3D 画面里设备正上方钉一个白色圆点标签（`Scene3D.jsx` 的 `SelectionTag`，drei `Html`）。按 threejs-react-three-fiber 技能的提醒，fiber 9 / React 19 下 `Html` 跟画布同时挂载会是空的，所以用 `portal` 画进画布上方的 `.scene-overlay` 层（`z-index:1`、`overflow:hidden`、不接收点击），`zIndexRange` 压到 [2,1]，弹窗和手机抽屉会盖住它。标签对读屏隐藏（提示条已经说了选中谁）。"唯一刻意安排的动效"从提示条挪到这个标签上。`DESIGN.md` 和 `.impeccable/design.json` 同步更新。新增 `e2e/scene-tag.spec.mjs`。验证：`npm test` 386、`test:ui` 95 + 1 跳过、lint、build，桌面和手机截图已看（抽屉、弹窗都盖在标签上面）。还剩：E17 资产库缩略图。
+
+### 2026-10-30 · Claude · master
+
 E15 完成：写了根目录 `DESIGN.md`（impeccable 格式：YAML 设计变量 + 八个固定章节 + 六条命名规则）和 `.impeccable/design.json`（色阶、阴影、动效、断点、9 个组件片段）。impeccable 自带的文档代理没装，按 `reference/degraded/documenter.md` 在本对话里写，只记录代码里真用到的值（删掉了没用到的 `--ok-bg`、`--text-xl`；`DESIGN.md` 里 18 个颜色和 `App.css` 逐一核对一致）。以后改界面先读 `DESIGN.md`。还剩：无（可选后续见路线图 E15）。
 
 ### 2026-10-30 · Claude · master
@@ -3375,7 +3379,7 @@ Frontend:
 ```bash
 cd D:\desklab\frontend
 npm test          # 386 domain tests
-npm run test:ui   # 94 Chrome UI cases (93 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
+npm run test:ui   # 96 Chrome UI cases (95 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

@@ -356,12 +356,12 @@
       {
         "name": "dur",
         "value": "200ms",
-        "purpose": "弹窗上浮、抽屉滑入、选中标签弹入、底部消息。"
+        "purpose": "弹窗上浮、抽屉滑入、3D 选中标签弹入、底部消息。"
       },
       {
         "name": "dot-settle",
         "value": "600ms",
-        "purpose": "选中设备时圆点光圈收拢一次（唯一刻意安排的动效）。"
+        "purpose": "选中设备时 3D 画面里标签的圆点光圈收拢一次（唯一刻意安排的动效）。"
       }
     ],
     "breakpoints": [
@@ -416,7 +416,7 @@
       "name": "Selection Tag",
       "kind": "custom",
       "refersTo": "button-tag",
-      "description": "提示条里标出选中的设备。",
+      "description": "选中的设备：钉在 3D 画面里设备上方（只写名字），提示条里另有\"已选中：设备名\"。",
       "html": "<span class=\"ds-selected\">已选中：27 英寸显示器</span>",
       "css": ".ds-selected { display: inline-flex; align-items: center; gap: 8px; padding: 5px 14px 5px 12px; border-radius: 999px; background: #fff; color: #1b1b1f; font-size: 13px; font-weight: 600; box-shadow: 0 1px 2px rgba(27,27,31,.08), 0 4px 12px rgba(27,27,31,.08); } .ds-selected::before { content: \"\"; width: 8px; height: 8px; border-radius: 50%; background: #f2357a; box-shadow: 0 0 0 3px rgba(242,53,122,.18); }"
     },

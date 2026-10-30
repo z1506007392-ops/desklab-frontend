@@ -1582,6 +1582,43 @@
   box-shadow: 0 0 0 3px var(--dot-ring);
 }
 
+/* 3D 画面上的选中标签：像桌搭帖子在照片上给物品打的标签，钉在选中设备的正上方。
+   画在盖在画布上的一层里，不挡 3D 操作，也不会盖住弹窗和手机抽屉。 */
+.scene-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.scene-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 10px;
+  transform: translate(-50%, calc(-100% - 8px));
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  animation: scene-tag-in var(--dur) var(--ease-out);
+}
+
+.scene-tag::before {
+  content: '';
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dot);
+  box-shadow: 0 0 0 3px var(--dot-ring);
+  animation: dot-settle 600ms var(--ease-out);
+}
+
 /* 空场景的开始引导 */
 
 .start-guide {
@@ -1805,7 +1842,7 @@
 }
 
 /* 动效：只用来交代"什么变了"，150–200ms，从已经看得见的状态缓出，只动 transform 和 opacity。
-   唯一刻意安排的一刻：选中设备时，标签弹出，圆点的光圈收拢一次。 */
+   唯一刻意安排的一刻：选中设备时，3D 画面里设备上方的标签弹出，圆点的光圈收拢一次。 */
 @keyframes fade-in {
   from { opacity: 0; }
 }
@@ -1832,6 +1869,10 @@
 
 @keyframes toast-in {
   from { opacity: 0; transform: translate(-50%, 8px); }
+}
+
+@keyframes scene-tag-in {
+  from { opacity: 0; transform: translate(-50%, calc(-100% - 2px)) scale(0.96); }
 }
 
 @keyframes guide-in {
@@ -1865,15 +1906,6 @@
   animation: pop-in var(--dur-fast) var(--ease-out);
 }
 
-.selection-hint-active .selection-hint-title {
-  transform-origin: left center;
-  animation: pop-in var(--dur) var(--ease-out);
-}
-
-.selection-hint-active .selection-hint-title::before {
-  animation: dot-settle 600ms var(--ease-out);
-}
-
 @media (max-width: 899px) {
   .left-panel {
     animation: drawer-from-left var(--dur) var(--ease-out);
@@ -1891,13 +1923,13 @@
   .start-guide,
   .status-toast,
   .count-badge,
-  .selection-hint-active .selection-hint-title,
+  .scene-tag,
   .left-panel,
   .side-panel {
     animation-name: fade-in;
   }
 
-  .selection-hint-active .selection-hint-title::before {
+  .scene-tag::before {
     animation: none;
   }
 
