@@ -124,8 +124,12 @@
 .toolbar-strip {
   display: flex;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 6px 32px 6px 12px;
   overflow-x: auto;
+  /* A button scrolled into view (keyboard focus, a tap at the edge) stops
+     clear of the faded ends instead of flush against the screen edge, where
+     fractional button widths left a sliver of it cut off. */
+  scroll-padding-inline: 12px 32px;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
   -webkit-mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 28px), transparent);

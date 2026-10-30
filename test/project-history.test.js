@@ -83,6 +83,25 @@ test('clock rollback starts a new history group instead of merging operations', 
   assert.deepEqual(undone.status, { canUndo: true, canRedo: true });
 });
 
+test('a held group stays one undo step however slowly it is recorded, until it is finished', () => {
+  let timestamp = 0;
+  const history = createProjectHistory({ now: () => timestamp });
+
+  history.record(state('before-drag'), { groupKey: 'drag:desk', holdGroup: true });
+  timestamp = 2000;
+  history.record(state('paused-mid-drag'), { groupKey: 'drag:desk', holdGroup: true });
+  timestamp = 9000;
+  history.record(state('end-of-drag'), { groupKey: 'drag:desk', holdGroup: true });
+  history.finishGroup();
+  history.record(state('next-drag'), { groupKey: 'drag:desk', holdGroup: true });
+
+  const firstUndo = history.undo(state('after-next-drag'));
+  assert.deepEqual(firstUndo.snapshot, state('next-drag'));
+  const secondUndo = history.undo(firstUndo.snapshot);
+  assert.deepEqual(secondUndo.snapshot, state('before-drag'));
+  assert.deepEqual(secondUndo.status, { canUndo: false, canRedo: true });
+});
+
 test('finishing a group lets the next matching group create a new undo point immediately', () => {
   let timestamp = 0;
   const history = createProjectHistory({ now: () => timestamp });

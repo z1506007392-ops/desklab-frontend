@@ -15,6 +15,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。Claude 在 master 上的记录原先写在正文里，这里按提交作者收成同一份日志。
 
+### 2026-10-31 · Claude · master
+
+E1 补修：master 上 CI 的 Playwright 有 3 个失败（`a8e5811` 起），两个原因，都先在本地复现再修，没改测试阈值。①`edit-edge-cases.spec.mjs:52`（桌面、手机）：拖动的撤销分组只合并 500ms 内的记录，CI 机器慢、拖动中间停顿超过 500ms 就被拆成几步，撤销一次只回到拖动途中的位置（CI 里是 {x:0.654, y:0.873}）。本地在拖动测试里加 0.7 秒停顿（像用户拖到一半停下看）就复现了。修法：`project-history.js` 的 `record` 新增 `holdGroup`，拖动从按下到松手用同一个"不限时"的分组 `drag:<id>`，只在 `finishGroup`、撤销、重做时结束；`updateSelectedObject` 增加第二个参数选分组。拖动加松手后的掉落现在是一步撤销，回到拖动前的位置和高度。新增单元测试（慢速记录仍是一步）。②`compact-toolbar.spec.mjs:21`（手机）："房间尺寸" 可见比例 0.998。原因：按钮被滚进视野时浏览器把它的边缘贴着横向按钮条的边（也就是屏幕边），CI 的字体让按钮宽度带小数，贴边后就有零点几像素被裁掉；本地字体宽度是整数所以没事。本地把按钮宽度改成小数就复现了（"所有连接" 0.9996、"更多" 0.9966）。修法：按钮条加 `scroll-padding-inline: 12px 32px`、右内边距改 32px，滚进来的按钮停在离左边 12px、离右边 32px 处，也不再压在右侧 28px 的渐隐里。验证：`npm test` 391、`test:ui` 103 + 1 跳过、lint、build，手机按钮条截图已看。教训：每次推送后要看 GitHub 上的 CI，本地全绿不等于 CI 绿（这次从 `010317d` 起 CI 就一直是红的，我没去看）。
+
 ### 2026-10-30 · Claude · master
 
 E1 完成。先用临时探查测试（用完已删）逐个试：单击设备不动不产生撤销步骤；拖动后一次撤销回原位；删除带 2 条连线的显示器后撤销能连线一起恢复、重做再删掉；撤销回到已保存状态时"未保存"消失；输入框里按 Ctrl+Z 走浏览器自己的撤销；连按方向键合并成一步；复制设备后撤销。这些都正常。发现并修了两个问题（先写了会失败的测试）：①设备快捷键只跳过输入框：选中设备时，焦点在按钮上按空格会去抬高设备，按钮按不下去；弹窗开着时方向键和 Delete 会作用到弹窗后面的设备（还会弹出"确定要删除"）。新增 `keyboard-controls.js` 的 `shouldIgnoreDeviceShortcut` / `describeKeyTarget`：任何弹窗打开、焦点在弹窗或菜单里、在输入框里时不处理；焦点在按钮上时空格和回车留给按钮；点完工具栏按钮后方向键仍能移动设备。②把显示器拖出桌面后 z 不变，悬在半空，布局检查马上报"悬空"。新增 `layout-analysis.js` 的 `settleAfterDrag`：拖动确实移动过、松手时下面没有支撑（墙壁插座除外），就用现有的 `snapObjectToSupport` 落到下方最高的表面或地板；不另记撤销步骤，一次撤销回到拖动前（含原来的高度）。新增单元测试 4 个、UI 测试 `e2e/edit-edge-cases.spec.mjs`（桌面和手机各 3 个；用 3D 选中标签的位置找到设备再拖）。已知、没改（交互要负责人定）：选中设备时鼠标滚轮会缩放设备（每格 5%）而不是缩放视角，提示条里没写，用户想拉近看时可能误改设备尺寸（可撤销）。验证：`npm test` 390、`test:ui` 103 + 1 跳过、lint、build，拖出桌面后截图已看（落在地板上、布局检查无问题）。
@@ -3390,7 +3394,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 390 domain tests
+npm test          # 391 domain tests
 npm run test:ui   # 104 Chrome UI cases (103 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)

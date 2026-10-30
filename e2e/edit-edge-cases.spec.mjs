@@ -41,10 +41,13 @@ async function grabPoint(page) {
   return { x: box.x + box.width / 2, y: box.y + box.height + 24 };
 }
 
+// Drags with a pause halfway, like a user who stops to look before letting
+// go (and like a slow CI machine): the drag must still be one undo step.
 async function drag(page, from, dx, dy) {
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   await page.mouse.move(from.x + dx / 2, from.y + dy / 2, { steps: 8 });
+  await page.waitForTimeout(700);
   await page.mouse.move(from.x + dx, from.y + dy, { steps: 8 });
   await page.mouse.up();
 }

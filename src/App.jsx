@@ -365,7 +365,9 @@ export default function App() {
   }, []);
 
   // 数据层核心更新函数：包含对象合并和统一验证约束
-  const updateSelectedObject = useCallback((newProps) => {
+  // `history` lets a caller choose the undo group, e.g. a drag keeps one held
+  // group from pointer down to pointer up however long it takes.
+  const updateSelectedObject = useCallback((newProps, history = {}) => {
     if (!projectEditable || !selectedObjectId) return;
     const obj = objects.find(item => item.id === selectedObjectId);
     if (!obj) return;
@@ -394,7 +396,7 @@ export default function App() {
     if (JSON.stringify(obj) === JSON.stringify(constrainedObj)) return;
 
     const changedFields = Object.keys(newProps).sort().join(',');
-    recordHistory(`object:${selectedObjectId}:${changedFields}`);
+    recordHistory(history.groupKey ?? `object:${selectedObjectId}:${changedFields}`, { holdGroup: Boolean(history.holdGroup) });
     setObjects(prev => prev.map(item => item.id === selectedObjectId ? constrainedObj : item));
   }, [objects, projectEditable, recordHistory, room, selectedObjectId, showStatus]);
 
@@ -1645,7 +1647,10 @@ export default function App() {
             onDragMove={point => {
               const obj = objects.find(o => o.id === dragInfo?.objId);
               if (!obj) return;
-              updateSelectedObject({ position: { x: point.x + dragInfo.offsetX, y: point.z + dragInfo.offsetY } });
+              updateSelectedObject(
+                { position: { x: point.x + dragInfo.offsetX, y: point.z + dragInfo.offsetY } },
+                { groupKey: `drag:${obj.id}`, holdGroup: true },
+              );
             }}
             onDragEnd={() => {
               // A device dragged off its support drops instead of hanging in the air.

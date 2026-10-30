@@ -16,8 +16,12 @@ export function createProjectHistory({
     canRedo: future.length > 0,
   });
 
+  // A group merges records with the same key that come within groupWindowMs
+  // of each other. A held group (`holdGroup`, used for a drag) merges them
+  // however far apart they are, until finishGroup(), undo or redo ends it.
   const record = (current, {
     groupKey = null,
+    holdGroup = false,
     includeCamera = false,
     camera = null,
     cameraDirty = false,
@@ -25,9 +29,8 @@ export function createProjectHistory({
     const timestamp = now();
     if (groupKey
       && activeGroup?.key === groupKey
-      && timestamp >= activeGroup.time
-      && timestamp - activeGroup.time < groupWindowMs) {
-      activeGroup = { key: groupKey, time: timestamp };
+      && (activeGroup.held || (timestamp >= activeGroup.time && timestamp - activeGroup.time < groupWindowMs))) {
+      activeGroup = { ...activeGroup, time: timestamp };
       return status();
     }
 
@@ -38,7 +41,7 @@ export function createProjectHistory({
     }
     past = appendBounded(past, snapshot, historyLimit);
     future = [];
-    activeGroup = groupKey ? { key: groupKey, time: timestamp } : null;
+    activeGroup = groupKey ? { key: groupKey, time: timestamp, held: Boolean(holdGroup) } : null;
     return status();
   };
 
