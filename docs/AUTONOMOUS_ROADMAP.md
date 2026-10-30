@@ -286,7 +286,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - `package.json` 加脚本 `"dev:api": "node tools/dev-api-server.mjs"`。README 写清楚：本地要用真模型时 `DEEPSEEK_API_KEY=... npm run dev:api`，另开终端 `npm run dev`。
 - 加一个**模拟模式**：`AI_MOCK=1` 时不调 DeepSeek，方便离线开发和演示。（实际实现：`server/ai/mock-model.js` 按场景摘要用简单规则生成回答——显示器居中、主机下桌——而不是固定录音，这样对任何场景都能给出可校验的建议。）
 
-**B5 [ ] 必做 — 前端 AI 客户端**
+**B5 [~] 进行中（claude，2026-10-30） 必做 — 前端 AI 客户端**
 - 新建 `src/domain/ai-client.js`：`requestLayoutSuggestions({ summary, goal, signal })` → `POST /api/ai/layout`，45 秒超时（`AbortController`），把服务端错误码映射成中文提示（6.3.3 表）。
 - 测试：用假 `fetch` 覆盖所有错误码、超时、取消。
 
