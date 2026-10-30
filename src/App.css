@@ -1122,3 +1122,13 @@
 .scene-fallback span {
   max-width: 420px;
 }
+
+.scene-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #f8f9fa;
+  color: #52606d;
+  font-size: 13px;
+}

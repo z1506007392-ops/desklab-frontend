@@ -1,7 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { WebGLRenderer } from 'three';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Grid } from '@react-three/drei';
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { evaluateConnectionLength } from './domain/connections.js';
 import { UNSAVED_PROJECT_VERSION, createLocalProjectClient } from './domain/local-project-store.js';
 import {
@@ -59,16 +56,11 @@ import { createStatusNotifier } from './domain/status-notifier.js';
 import PropertiesEditor from './components/PropertiesEditor.jsx';
 import ConnectionsEditor from './components/ConnectionsEditor.jsx';
 import DeskBuilderForm from './components/DeskBuilderForm.jsx';
+
+// three.js and the 3D view load after the rest of the page (see Scene3D.jsx).
+const Scene3D = lazy(() => import('./components/Scene3D.jsx'));
 import { SceneErrorBoundary, SceneUnavailable } from './components/SceneFallback.jsx';
-import { canUseWebGL, createRendererOrReport } from './domain/webgl-support.js';
-import {
-  CameraSetup,
-  ConnectionsRenderer,
-  DeskLabAxes,
-  DeviceMesh,
-  PowerStatusOverlay,
-  RoomWalls,
-} from './components/SceneObjects.jsx';
+import { canUseWebGL } from './domain/webgl-support.js';
 
 const PROJECT_DRAFT_STORAGE_KEY = 'desklab.project-draft.v1';
 const getBrowserStorage = () => window.localStorage;
@@ -1037,6 +1029,14 @@ export default function App() {
   };
 
   const selectedObj = objects.find(o => o.id === selectedObjectId);
+  // Devices linked to the selection, highlighted while the connections tab is open.
+  const sceneRelatedIds = new Set();
+  if (isPanelOpen && activeTab === 'connections' && selectedObjectId) {
+    connections.forEach(c => {
+      if (c.fromObjectId === selectedObjectId) sceneRelatedIds.add(c.toObjectId);
+      if (c.toObjectId === selectedObjectId) sceneRelatedIds.add(c.fromObjectId);
+    });
+  }
   const selectionHint = describeSelectionHint({
     selectedName: selectedObj ? selectedObj.name : null,
     isMobile,
@@ -1500,103 +1500,62 @@ export default function App() {
           {!webglAvailable ? <SceneUnavailable reason="no-webgl" /> : (
           <SceneErrorBoundary>
           {reportSceneFailure => (
-          <Canvas
-            gl={defaults => createRendererOrReport(props => new WebGLRenderer(props), defaults, reportSceneFailure)}
-            onPointerMissed={() => {
-            if (!connectionMode) setSelectedObjectId(null);
-          }}>
-            <ambientLight intensity={0.5} />
-            <directionalLight position={[10, 10, 5]} intensity={1} />
-            <CameraSetup cameraConfig={cameraConfig} room={room} controlsRef={controlsRef} cameraRef={cameraRef} />
-            <OrbitControls
-              ref={controlsRef}
-              makeDefault
-              enabled={projectEditable && !dragInfo && !connectionMode}
-              enableZoom={!selectedObjectId && !connectionMode}
-              onEnd={handleCameraInteractionEnd}
-            />
-
-            {dragInfo && (
-              <mesh
-                rotation={[-Math.PI / 2, 0, 0]} position={[0, dragInfo.planeY, 0]}
-                onPointerMove={(e) => {
-                  e.stopPropagation();
-                  const obj = objects.find(o => o.id === dragInfo.objId);
-                  if (!obj) return;
-                  updateSelectedObject({ position: { x: e.point.x + dragInfo.offsetX, y: e.point.z + dragInfo.offsetY } });
-                }}
-                onPointerUp={(e) => { e.stopPropagation(); setDragInfo(null); finishHistoryGroup(); }}
-              >
-                <planeGeometry args={[2000, 2000]} />
-                <meshBasicMaterial visible={false} />
-              </mesh>
-            )}
-
-            {showAxes && <DeskLabAxes room={room} />}
-            <Grid infiniteGrid fadeDistance={40} sectionColor="#cfd8dc" cellColor="#eceff1" />
-            
-            {/* 实体墙壁与线框 */}
-            <RoomWalls room={room} />
-            
-            {/* 连接线渲染 */}
-            <ConnectionsRenderer connections={connections} objects={objects} />
-
-            {/* 电力状态浮标 */}
-            <PowerStatusOverlay objects={objects} connections={connections} />
-
-            {(() => {
-              const isConnectionTab = isPanelOpen && activeTab === 'connections';
-              const relatedIds = new Set();
-              if (isConnectionTab && selectedObjectId) {
-                connections.forEach(c => {
-                  if (c.fromObjectId === selectedObjectId) relatedIds.add(c.toObjectId);
-                  if (c.toObjectId === selectedObjectId) relatedIds.add(c.fromObjectId);
-                });
+          <Suspense fallback={<div className="scene-loading">正在加载 3D 画面…</div>}>
+          <Scene3D
+            reportFailure={reportSceneFailure}
+            cameraConfig={cameraConfig}
+            room={room}
+            controlsRef={controlsRef}
+            cameraRef={cameraRef}
+            controlsEnabled={projectEditable && !dragInfo && !connectionMode}
+            zoomEnabled={!selectedObjectId && !connectionMode}
+            onCameraInteractionEnd={handleCameraInteractionEnd}
+            dragPlaneY={dragInfo ? dragInfo.planeY : null}
+            onDragMove={point => {
+              const obj = objects.find(o => o.id === dragInfo?.objId);
+              if (!obj) return;
+              updateSelectedObject({ position: { x: point.x + dragInfo.offsetX, y: point.z + dragInfo.offsetY } });
+            }}
+            onDragEnd={() => { setDragInfo(null); finishHistoryGroup(); }}
+            showAxes={showAxes}
+            objects={objects}
+            connections={connections}
+            selectedObjectId={selectedObjectId}
+            relatedIds={sceneRelatedIds}
+            hoveredObjectId={connectionMode ? hoveredDeviceId : null}
+            onBackgroundClick={() => {
+              if (!connectionMode) setSelectedObjectId(null);
+            }}
+            onObjectClick={obj => {
+              const clickAction = getCanvasObjectClickAction({
+                projectEditable,
+                connectionMode,
+                objectId: obj.id,
+                selectedObjectId,
+              });
+              if (clickAction === 'ignore') return;
+              if (clickAction === 'choose-connection-target') {
+                setConnectionDraft(prev => ({ ...prev, toObjectId: obj.id, toPortId: '' }));
+                setConnectionMode(false);
+                setHoveredDeviceId(null);
+                return;
               }
-
-              return objects.map(obj => (
-                <DeviceMesh 
-                  key={obj.id}
-                  obj={obj}
-                  isSelected={selectedObjectId === obj.id}
-                  isRelated={relatedIds.has(obj.id)}
-                  isHovered={connectionMode && hoveredDeviceId === obj.id && obj.id !== selectedObjectId}
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    const clickAction = getCanvasObjectClickAction({
-                      projectEditable,
-                      connectionMode,
-                      objectId: obj.id,
-                      selectedObjectId,
-                    });
-                    if (clickAction === 'ignore') return;
-                    if (clickAction === 'choose-connection-target') {
-                      setConnectionDraft(prev => ({ ...prev, toObjectId: obj.id, toPortId: '' }));
-                      setConnectionMode(false);
-                      setHoveredDeviceId(null);
-                      return;
-                    }
-                    setSelectedObjectId(obj.id);
-                  }}
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                    if (!canStartObjectDrag({ projectEditable, connectionMode })) return;
-                    finishHistoryGroup();
-                    setSelectedObjectId(obj.id);
-                    setDragInfo({ objId: obj.id, planeY: e.point.y, offsetX: obj.position.x - e.point.x, offsetY: obj.position.y - e.point.z });
-                  }}
-                  onPointerOver={(e) => {
-                    e.stopPropagation();
-                    if (projectEditable && connectionMode) setHoveredDeviceId(obj.id);
-                  }}
-                  onPointerOut={(e) => {
-                    e.stopPropagation();
-                    if (projectEditable && connectionMode && hoveredDeviceId === obj.id) setHoveredDeviceId(null);
-                  }}
-                />
-              ));
-            })()}
-          </Canvas>
+              setSelectedObjectId(obj.id);
+            }}
+            onObjectPointerDown={(obj, point) => {
+              if (!canStartObjectDrag({ projectEditable, connectionMode })) return;
+              finishHistoryGroup();
+              setSelectedObjectId(obj.id);
+              setDragInfo({ objId: obj.id, planeY: point.y, offsetX: obj.position.x - point.x, offsetY: obj.position.y - point.z });
+            }}
+            onObjectHover={obj => {
+              if (projectEditable && connectionMode) setHoveredDeviceId(obj.id);
+            }}
+            onObjectHoverEnd={obj => {
+              if (projectEditable && connectionMode && hoveredDeviceId === obj.id) setHoveredDeviceId(null);
+            }}
+          />
+          </Suspense>
           )}
           </SceneErrorBoundary>
           )}

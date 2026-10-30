@@ -66,3 +66,21 @@ test('if the 3D view crashes, the rest of the page survives and the view can be 
   expect(evidence.errors.filter(message => !/WebGL|context/i.test(message))).toEqual([]);
   expect(evidence.writes).toEqual([]);
 });
+
+test('if the 3D code fails to download, a page refresh fetches it again', async ({ page }) => {
+  let failSceneCode = true;
+  await page.route(/\/(src\/components\/Scene3D\.jsx|assets\/Scene3D-[^/]+\.js)(\?.*)?$/, route => (
+    failSceneCode ? route.abort('failed') : route.fallback()
+  ));
+  const evidence = await openProject(page, []);
+
+  const fallback = page.getByRole('alert').filter({ hasText: '3D 画面没有下载完整' });
+  await expect(fallback).toBeVisible();
+  await expect(page.getByRole('button', { name: '保存项目', exact: true })).toBeEnabled();
+
+  failSceneCode = false;
+  await fallback.getByRole('button', { name: '刷新页面', exact: true }).click();
+  await expect(page.locator('canvas')).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: '3D 画面' })).toHaveCount(0);
+  expect(evidence.writes).toEqual([]);
+});
