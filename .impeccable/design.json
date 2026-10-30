@@ -1,0 +1,523 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-30T15:13:40.975Z",
+  "title": "Design System: DeskLab",
+  "extensions": {
+    "colorMeta": {
+      "tag-dot": {
+        "role": "primary",
+        "displayName": "标签粉",
+        "canonical": "#f2357a",
+        "oklch": "oklch(64.1% 0.226 4.9)",
+        "tonalRamp": [
+          "oklch(15.0% 0.034 4.9)",
+          "oklch(27.0% 0.096 4.9)",
+          "oklch(39.0% 0.164 4.9)",
+          "oklch(51.0% 0.226 4.9)",
+          "oklch(63.0% 0.209 4.9)",
+          "oklch(75.0% 0.141 4.9)",
+          "oklch(86.0% 0.079 4.9)",
+          "oklch(95.0% 0.034 4.9)"
+        ]
+      },
+      "tag-dot-ink": {
+        "role": "primary",
+        "displayName": "深标签粉",
+        "canonical": "#c4185a",
+        "oklch": "oklch(53.5% 0.203 6.4)",
+        "tonalRamp": [
+          "oklch(15.0% 0.030 6.4)",
+          "oklch(27.0% 0.086 6.4)",
+          "oklch(39.0% 0.147 6.4)",
+          "oklch(51.0% 0.203 6.4)",
+          "oklch(63.0% 0.188 6.4)",
+          "oklch(75.0% 0.127 6.4)",
+          "oklch(86.0% 0.071 6.4)",
+          "oklch(95.0% 0.030 6.4)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "墨",
+        "canonical": "#1b1b1f",
+        "oklch": "oklch(22.4% 0.008 285.8)",
+        "tonalRamp": [
+          "oklch(15.0% 0.001 285.8)",
+          "oklch(27.0% 0.003 285.8)",
+          "oklch(39.0% 0.006 285.8)",
+          "oklch(51.0% 0.008 285.8)",
+          "oklch(63.0% 0.007 285.8)",
+          "oklch(75.0% 0.005 285.8)",
+          "oklch(86.0% 0.003 285.8)",
+          "oklch(95.0% 0.001 285.8)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "说明灰",
+        "canonical": "#55565e",
+        "oklch": "oklch(45.5% 0.013 280.2)",
+        "tonalRamp": [
+          "oklch(15.0% 0.002 280.2)",
+          "oklch(27.0% 0.006 280.2)",
+          "oklch(39.0% 0.009 280.2)",
+          "oklch(51.0% 0.013 280.2)",
+          "oklch(63.0% 0.012 280.2)",
+          "oklch(75.0% 0.008 280.2)",
+          "oklch(86.0% 0.005 280.2)",
+          "oklch(95.0% 0.002 280.2)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "安静灰",
+        "canonical": "#64666f",
+        "oklch": "oklch(51.2% 0.014 275.9)",
+        "tonalRamp": [
+          "oklch(15.0% 0.002 275.9)",
+          "oklch(27.0% 0.006 275.9)",
+          "oklch(39.0% 0.010 275.9)",
+          "oklch(51.0% 0.014 275.9)",
+          "oklch(63.0% 0.013 275.9)",
+          "oklch(75.0% 0.009 275.9)",
+          "oklch(86.0% 0.005 275.9)",
+          "oklch(95.0% 0.002 275.9)"
+        ]
+      },
+      "ink-disabled": {
+        "role": "neutral",
+        "displayName": "禁用灰",
+        "canonical": "#9a9ca5",
+        "oklch": "oklch(69.4% 0.013 276.0)",
+        "tonalRamp": [
+          "oklch(15.0% 0.002 276.0)",
+          "oklch(27.0% 0.006 276.0)",
+          "oklch(39.0% 0.010 276.0)",
+          "oklch(51.0% 0.013 276.0)",
+          "oklch(63.0% 0.012 276.0)",
+          "oklch(75.0% 0.008 276.0)",
+          "oklch(86.0% 0.005 276.0)",
+          "oklch(95.0% 0.002 276.0)"
+        ]
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "底灰",
+        "canonical": "#f2f3f5",
+        "oklch": "oklch(96.4% 0.003 264.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.000 264.5)",
+          "oklch(27.0% 0.001 264.5)",
+          "oklch(39.0% 0.002 264.5)",
+          "oklch(51.0% 0.003 264.5)",
+          "oklch(63.0% 0.003 264.5)",
+          "oklch(75.0% 0.002 264.5)",
+          "oklch(86.0% 0.001 264.5)",
+          "oklch(95.0% 0.000 264.5)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "纸白",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "oklch(15.0% 0.000 89.9)",
+          "oklch(27.0% 0.000 89.9)",
+          "oklch(39.0% 0.000 89.9)",
+          "oklch(51.0% 0.000 89.9)",
+          "oklch(63.0% 0.000 89.9)",
+          "oklch(75.0% 0.000 89.9)",
+          "oklch(86.0% 0.000 89.9)",
+          "oklch(95.0% 0.000 89.9)"
+        ]
+      },
+      "fill": {
+        "role": "neutral",
+        "displayName": "胶囊灰",
+        "canonical": "#eceef1",
+        "oklch": "oklch(94.8% 0.005 258.3)",
+        "tonalRamp": [
+          "oklch(15.0% 0.001 258.3)",
+          "oklch(27.0% 0.002 258.3)",
+          "oklch(39.0% 0.003 258.3)",
+          "oklch(51.0% 0.005 258.3)",
+          "oklch(63.0% 0.004 258.3)",
+          "oklch(75.0% 0.003 258.3)",
+          "oklch(86.0% 0.002 258.3)",
+          "oklch(95.0% 0.001 258.3)"
+        ]
+      },
+      "fill-hover": {
+        "role": "neutral",
+        "displayName": "胶囊灰（悬停）",
+        "canonical": "#e2e5e9",
+        "oklch": "oklch(92.1% 0.006 255.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.001 255.5)",
+          "oklch(27.0% 0.003 255.5)",
+          "oklch(39.0% 0.005 255.5)",
+          "oklch(51.0% 0.006 255.5)",
+          "oklch(63.0% 0.006 255.5)",
+          "oklch(75.0% 0.004 255.5)",
+          "oklch(86.0% 0.002 255.5)",
+          "oklch(95.0% 0.001 255.5)"
+        ]
+      },
+      "fill-press": {
+        "role": "neutral",
+        "displayName": "胶囊灰（按下）",
+        "canonical": "#d8dce1",
+        "oklch": "oklch(89.3% 0.008 253.9)",
+        "tonalRamp": [
+          "oklch(15.0% 0.001 253.9)",
+          "oklch(27.0% 0.003 253.9)",
+          "oklch(39.0% 0.006 253.9)",
+          "oklch(51.0% 0.008 253.9)",
+          "oklch(63.0% 0.007 253.9)",
+          "oklch(75.0% 0.005 253.9)",
+          "oklch(86.0% 0.003 253.9)",
+          "oklch(95.0% 0.001 253.9)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "细线",
+        "canonical": "#e4e6ea",
+        "oklch": "oklch(92.5% 0.006 264.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.001 264.5)",
+          "oklch(27.0% 0.002 264.5)",
+          "oklch(39.0% 0.004 264.5)",
+          "oklch(51.0% 0.006 264.5)",
+          "oklch(63.0% 0.005 264.5)",
+          "oklch(75.0% 0.004 264.5)",
+          "oklch(86.0% 0.002 264.5)",
+          "oklch(95.0% 0.001 264.5)"
+        ]
+      },
+      "ok": {
+        "role": "status",
+        "displayName": "通过绿",
+        "canonical": "#18794e",
+        "oklch": "oklch(51.1% 0.110 158.4)",
+        "tonalRamp": [
+          "oklch(15.0% 0.017 158.4)",
+          "oklch(27.0% 0.047 158.4)",
+          "oklch(39.0% 0.080 158.4)",
+          "oklch(51.0% 0.110 158.4)",
+          "oklch(63.0% 0.102 158.4)",
+          "oklch(75.0% 0.069 158.4)",
+          "oklch(86.0% 0.039 158.4)",
+          "oklch(95.0% 0.017 158.4)"
+        ]
+      },
+      "warn": {
+        "role": "status",
+        "displayName": "警告琥珀",
+        "canonical": "#8f5500",
+        "oklch": "oklch(50.5% 0.112 65.9)",
+        "tonalRamp": [
+          "oklch(15.0% 0.017 65.9)",
+          "oklch(27.0% 0.048 65.9)",
+          "oklch(39.0% 0.082 65.9)",
+          "oklch(51.0% 0.112 65.9)",
+          "oklch(63.0% 0.104 65.9)",
+          "oklch(75.0% 0.070 65.9)",
+          "oklch(86.0% 0.039 65.9)",
+          "oklch(95.0% 0.017 65.9)"
+        ]
+      },
+      "warn-bg": {
+        "role": "status",
+        "displayName": "警告浅底",
+        "canonical": "#fff3d9",
+        "oklch": "oklch(96.7% 0.036 86.2)",
+        "tonalRamp": [
+          "oklch(15.0% 0.005 86.2)",
+          "oklch(27.0% 0.015 86.2)",
+          "oklch(39.0% 0.026 86.2)",
+          "oklch(51.0% 0.036 86.2)",
+          "oklch(63.0% 0.034 86.2)",
+          "oklch(75.0% 0.023 86.2)",
+          "oklch(86.0% 0.013 86.2)",
+          "oklch(95.0% 0.005 86.2)"
+        ]
+      },
+      "warn-dot": {
+        "role": "status",
+        "displayName": "警告圆点",
+        "canonical": "#d98a00",
+        "oklch": "oklch(69.9% 0.152 69.6)",
+        "tonalRamp": [
+          "oklch(15.0% 0.023 69.6)",
+          "oklch(27.0% 0.064 69.6)",
+          "oklch(39.0% 0.110 69.6)",
+          "oklch(51.0% 0.152 69.6)",
+          "oklch(63.0% 0.140 69.6)",
+          "oklch(75.0% 0.095 69.6)",
+          "oklch(86.0% 0.053 69.6)",
+          "oklch(95.0% 0.023 69.6)"
+        ]
+      },
+      "bad": {
+        "role": "status",
+        "displayName": "出错红",
+        "canonical": "#b42318",
+        "oklch": "oklch(50.0% 0.182 29.5)",
+        "tonalRamp": [
+          "oklch(15.0% 0.027 29.5)",
+          "oklch(27.0% 0.077 29.5)",
+          "oklch(39.0% 0.132 29.5)",
+          "oklch(51.0% 0.182 29.5)",
+          "oklch(63.0% 0.168 29.5)",
+          "oklch(75.0% 0.114 29.5)",
+          "oklch(86.0% 0.064 29.5)",
+          "oklch(95.0% 0.027 29.5)"
+        ]
+      },
+      "bad-bg": {
+        "role": "status",
+        "displayName": "出错浅底",
+        "canonical": "#fdecea",
+        "oklch": "oklch(95.6% 0.019 25.6)",
+        "tonalRamp": [
+          "oklch(15.0% 0.003 25.6)",
+          "oklch(27.0% 0.008 25.6)",
+          "oklch(39.0% 0.014 25.6)",
+          "oklch(51.0% 0.019 25.6)",
+          "oklch(63.0% 0.017 25.6)",
+          "oklch(75.0% 0.012 25.6)",
+          "oklch(86.0% 0.007 25.6)",
+          "oklch(95.0% 0.003 25.6)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "工具栏上的 DeskLab 名字、开始引导标题。"
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "弹窗标题。"
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "面板分区标题、模板名称、建议分组标题。"
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "说明文字、提示、弹窗正文。"
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "按钮文字、分类标签、字段名；强调时 600，数量 800。"
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-float",
+        "value": "0 1px 2px rgba(27, 27, 31, 0.08), 0 4px 12px rgba(27, 27, 31, 0.08)",
+        "purpose": "标签按钮、选中标签。"
+      },
+      {
+        "name": "shadow-menu",
+        "value": "0 2px 6px rgba(27, 27, 31, 0.08), 0 12px 32px rgba(27, 27, 31, 0.14)",
+        "purpose": "更多菜单、连线模式提示、底部消息。"
+      },
+      {
+        "name": "shadow-dialog",
+        "value": "0 2px 6px rgba(27, 27, 31, 0.06), 0 24px 60px rgba(27, 27, 31, 0.18)",
+        "purpose": "弹窗、开始引导、手机抽屉面板。"
+      },
+      {
+        "name": "focus-ring",
+        "value": "0 0 0 3px rgba(27, 27, 31, 0.16)",
+        "purpose": "输入框获得焦点时的外圈；按钮用 2px 墨色描边外扩 2px。"
+      },
+      {
+        "name": "dot-ring",
+        "value": "0 0 0 3px rgba(242, 53, 122, 0.18)",
+        "purpose": "标签圆点外面的淡粉光圈。"
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "所有进入和状态变化。"
+      },
+      {
+        "name": "dur-fast",
+        "value": "150ms",
+        "purpose": "颜色变化、菜单展开、遮罩淡入、数量出现。"
+      },
+      {
+        "name": "dur",
+        "value": "200ms",
+        "purpose": "弹窗上浮、抽屉滑入、选中标签弹入、底部消息。"
+      },
+      {
+        "name": "dot-settle",
+        "value": "600ms",
+        "purpose": "选中设备时圆点光圈收拢一次（唯一刻意安排的动效）。"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "899px",
+        "purpose": "以下为手机布局：两行工具栏、抽屉面板。"
+      },
+      {
+        "name": "narrow",
+        "value": "700px",
+        "purpose": "模板卡片、草稿横幅改为纵向。"
+      },
+      {
+        "name": "ai-form",
+        "value": "599px",
+        "purpose": "AI 输入框独占一行。"
+      },
+      {
+        "name": "tiny",
+        "value": "359px",
+        "purpose": "隐藏工具栏上的名字。"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "默认按钮：无边框胶囊。",
+      "html": "<button class=\"ds-btn\">重置视角</button>",
+      "css": ".ds-btn { height: 32px; padding: 0 14px; border: none; border-radius: 999px; background: #eceef1; color: #1b1b1f; font-size: 13px; font-weight: 500; cursor: pointer; transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1), transform 100ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn:hover { background: #e2e5e9; } .ds-btn:active { background: #d8dce1; transform: scale(0.97); } .ds-btn:focus-visible { outline: 2px solid #1b1b1f; outline-offset: 2px; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "一屏只有一个的主操作（保存项目）。",
+      "html": "<button class=\"ds-btn-primary\">保存项目</button>",
+      "css": ".ds-btn-primary { height: 32px; padding: 0 14px; border: none; border-radius: 999px; background: #1b1b1f; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: transform 100ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-primary:hover { background: #000; } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:focus-visible { outline: 2px solid #1b1b1f; outline-offset: 2px; }"
+    },
+    {
+      "name": "Tag Button",
+      "kind": "custom",
+      "refersTo": "button-tag",
+      "description": "招牌：白色浮起标签，带粉色圆点；有问题时显示数量。",
+      "html": "<button class=\"ds-tag\">布局检查<span class=\"ds-tag-count\">2</span></button>",
+      "css": ".ds-tag { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px; border: none; border-radius: 999px; background: #fff; color: #1b1b1f; font-size: 13px; font-weight: 600; box-shadow: 0 1px 2px rgba(27,27,31,.08), 0 4px 12px rgba(27,27,31,.08); cursor: pointer; } .ds-tag::before { content: \"\"; width: 8px; height: 8px; border-radius: 50%; background: #f2357a; box-shadow: 0 0 0 3px rgba(242,53,122,.18); } .ds-tag:hover { box-shadow: 0 1px 2px rgba(27,27,31,.1), 0 6px 16px rgba(27,27,31,.12); } .ds-tag:focus-visible { outline: 2px solid #1b1b1f; outline-offset: 2px; } .ds-tag-count { margin-left: -2px; color: #c4185a; font-weight: 800; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Selection Tag",
+      "kind": "custom",
+      "refersTo": "button-tag",
+      "description": "提示条里标出选中的设备。",
+      "html": "<span class=\"ds-selected\">已选中：27 英寸显示器</span>",
+      "css": ".ds-selected { display: inline-flex; align-items: center; gap: 8px; padding: 5px 14px 5px 12px; border-radius: 999px; background: #fff; color: #1b1b1f; font-size: 13px; font-weight: 600; box-shadow: 0 1px 2px rgba(27,27,31,.08), 0 4px 12px rgba(27,27,31,.08); } .ds-selected::before { content: \"\"; width: 8px; height: 8px; border-radius: 50%; background: #f2357a; box-shadow: 0 0 0 3px rgba(242,53,122,.18); }"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "填充式输入框。",
+      "html": "<input class=\"ds-input\" placeholder=\"搜索设备名称、类型、型号...\">",
+      "css": ".ds-input { height: 32px; padding: 0 10px; border: 1px solid transparent; border-radius: 10px; background: #eceef1; color: #1b1b1f; font-size: 13px; font-variant-numeric: tabular-nums; } .ds-input::placeholder { color: #64666f; } .ds-input:hover { background: #e2e5e9; } .ds-input:focus { outline: none; background: #fff; border-color: #1b1b1f; box-shadow: 0 0 0 3px rgba(27,27,31,.16); }"
+    },
+    {
+      "name": "Category Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "资产库分类；选中为墨色。",
+      "html": "<button class=\"ds-chip\">电脑</button><button class=\"ds-chip ds-chip-on\">显示设备</button>",
+      "css": ".ds-chip { height: 30px; padding: 0 12px; margin-right: 6px; border: none; border-radius: 999px; background: #eceef1; color: #1b1b1f; font-size: 12px; font-weight: 500; cursor: pointer; } .ds-chip:hover { background: #e2e5e9; } .ds-chip-on, .ds-chip-on:hover { background: #1b1b1f; color: #fff; } .ds-chip:focus-visible { outline: 2px solid #1b1b1f; outline-offset: 2px; }"
+    },
+    {
+      "name": "List Card",
+      "kind": "card",
+      "refersTo": "list-card",
+      "description": "资产、连接、模板、问题、建议的列表卡片：底灰、无边框、无阴影。",
+      "html": "<button class=\"ds-card\"><span class=\"ds-card-title\">27 英寸显示器</span><span class=\"ds-card-sub\">约 45W · HDMI / DP</span></button>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 4px; width: 236px; padding: 12px 14px; border: none; border-radius: 14px; background: #f2f3f5; text-align: left; cursor: pointer; } .ds-card:hover { background: #eceef1; } .ds-card:focus-visible { outline: 2px solid #1b1b1f; outline-offset: 2px; } .ds-card-title { color: #1b1b1f; font-size: 14px; font-weight: 600; } .ds-card-sub { color: #55565e; font-size: 12px; }"
+    },
+    {
+      "name": "Segmented Tabs",
+      "kind": "nav",
+      "refersTo": "chip",
+      "description": "属性 / 连接 两个标签页。",
+      "html": "<div class=\"ds-tabs\"><button class=\"ds-tab ds-tab-on\">属性</button><button class=\"ds-tab\">连接</button></div>",
+      "css": ".ds-tabs { display: flex; gap: 4px; width: 300px; } .ds-tab { flex: 1; height: 34px; border: none; border-radius: 999px; background: transparent; color: #55565e; font-size: 13px; font-weight: 500; cursor: pointer; } .ds-tab:hover { background: #f2f3f5; color: #1b1b1f; } .ds-tab-on, .ds-tab-on:hover { background: #eceef1; color: #1b1b1f; font-weight: 600; }"
+    },
+    {
+      "name": "Status Toast",
+      "kind": "custom",
+      "refersTo": "status-toast",
+      "description": "保存、导入结果：屏幕下方居中浮起的标签。",
+      "html": "<span class=\"ds-toast\">已保存</span>",
+      "css": ".ds-toast { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px 8px 14px; border-radius: 999px; background: #fff; color: #1b1b1f; font-size: 13px; font-weight: 600; box-shadow: 0 2px 6px rgba(27,27,31,.08), 0 12px 32px rgba(27,27,31,.14); } .ds-toast::before { content: \"\"; width: 7px; height: 7px; border-radius: 50%; background: #18794e; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "桌搭标签（The Tagged Desk Post）",
+    "overview": "DeskLab 看起来像一篇桌搭分享帖：用户自己的桌面是那张照片，界面是照片旁边干净的白纸和浅灰底。帖子里给物品打的小白标签，在这里专门用来标出三件事：选中的设备、需要处理的问题、改进建议。其余一切都退到后面，让人一眼先看到自己的桌子。\n\n这是一个干活用的界面（Operate）：熟悉的按钮、输入框、标签页，密度适中，亮色，因为用户白天边看着真桌子边规划。负责人明确不要的三种感觉：像后台管理系统、像通用 AI 模板（米色底、到处一样的圆角卡片和阴影）、像专业 CAD 软件。\n\n3D 场景（背景、网格、灯光、模型）不属于这套界面系统，由负责人冻结，界面改版不碰它。",
+    "keyCharacteristics": [
+      "冷调浅灰底（#f2f3f5）上放纯白面板，不用米色、不用描边框。",
+      "所有按钮都是无边框胶囊，只有\"保存项目\"是墨色实心。",
+      "粉色圆点是唯一的强调色，一屏上只出现在少数几个标签上。",
+      "只有浮起的东西才有阴影：标签、菜单、弹窗、提示。",
+      "一种系统中文字体，靠 500 / 600 / 800 三档字重分层。"
+    ],
+    "rules": [
+      {
+        "name": "The One Dot Rule",
+        "body": "粉色只属于圆点和它标出的东西。不拿粉色做按钮底、标题、装饰或大面积色块；新功能想\"醒目一点\"时，用标签，不用新颜色。",
+        "section": "colors"
+      },
+      {
+        "name": "The Three States Rule",
+        "body": "状态色只有绿、琥珀、红三种，而且必须代表真实的检查结果。不加蓝色\"信息色\"，不加第五种色相。",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Weights Rule",
+        "body": "只用 500、600、800 三档（正文 400）。不用 700：Windows 上的微软雅黑只有 400/700 两档，多一档就会和别的层级糊成一样粗。",
+        "section": "typography"
+      },
+      {
+        "name": "The Numbers Line Up Rule",
+        "body": "输入框、数量、清单里的数字一律等宽数字（tabular-nums）。",
+        "section": "typography"
+      },
+      {
+        "name": "The Still Toolbar Rule",
+        "body": "工具栏的按钮位置不随状态变化。临时消息（已保存、导入失败）以浮起标签出现在屏幕下方居中，不插进工具栏，不挡点击。",
+        "section": "layout"
+      },
+      {
+        "name": "The Only Floating Things Cast Shadows Rule",
+        "body": "静止在页面里的东西（按钮、输入框、列表卡片、面板）没有阴影。要让某个东西\"浮起来\"，它必须真的叠在别的内容上，或者是一个标签。",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do 用标签（白底 + 粉色圆点）标出需要用户注意的东西，并且只标这些。",
+      "Do 从 `src/App.css` 顶部的变量取颜色、圆角、阴影、字号；新颜色先进变量再用。",
+      "Do 让文字对比度至少 4.5:1；`test/text-contrast.test.js` 会检查变量里的文字颜色。",
+      "Do 新增图标时画在 16px 网格上、1.75px 圆头线条，放进 `Icons.jsx`。",
+      "Do 手机和桌面都截图看一遍再提交；按钮文字保持不变，界面测试按文字找按钮。"
+    ],
+    "donts": [
+      "Don't 用米色或暖色底、衬线大标题、赤陶色强调（负责人不要通用 AI 模板感）。",
+      "Don't 做成灰底满屏描边按钮和表格的后台风格，也不要做成工程图、尺寸标注式的 CAD 风格。",
+      "Don't 在卡片、提示、问题项上加超过 1px 的彩色左/右边条，用状态圆点代替。",
+      "Don't 用 emoji 或 ×、−、+ 这类文字字符当图标。",
+      "Don't 用渐变、毛玻璃、发光边当装饰，也不要硬边偏移阴影。",
+      "Don't 加第四种状态色（比如蓝色\"信息色\"）或第二种强调色。",
+      "Don't 改 3D 场景的背景、网格、灯光和模型外观（负责人冻结）。"
+    ]
+  }
+}

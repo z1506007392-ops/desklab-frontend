@@ -25,4 +25,6 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 ## Open decisions
 
-- The "MVP" in the title may be dropped (owner allowed it).
+- Done: the title is "DeskLab" (the owner allowed dropping "MVP").
+- Not built, needs the owner first (the 3D look is frozen): pin the selection tag next to the device inside the 3D view.
+- Not built: device thumbnails on the library cards.

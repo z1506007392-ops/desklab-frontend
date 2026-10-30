@@ -18,7 +18,6 @@
   --dot-ring: rgba(242, 53, 122, 0.18);
   --dot-ink: #c4185a;
   --ok: #18794e;
-  --ok-bg: #e7f5ed;
   --warn: #8f5500;
   --warn-bg: #fff3d9;
   --bad: #b42318;
@@ -39,7 +38,6 @@
   --text-sm: 13px;
   --text-md: 14px;
   --text-lg: 17px;
-  --text-xl: 20px;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --dur-fast: 150ms;

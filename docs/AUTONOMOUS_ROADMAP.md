@@ -394,7 +394,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E12 [x] 完成（claude，2026-10-30，并入 E15 第 3 步）** 触屏上按钮可点范围至少 44×44px，看起来大小不变（`@media (pointer: coarse)` 的透明扩展区，测试同上）。
 - **E13 [x] 完成（claude，2026-10-30，d7094e0）** 提高 AI 建议的通过率（C7 首轮：106 条原始建议只通过 25 条）：给场景摘要里的每条 hint 加上可执行的目标（例如 laptop_at_back 给出"移到 y < 桌子中心"的范围、monitor_facing_away 给出目标 rotationZ），并在提示词里说明；改完重跑 `npm run eval:ai`，要求各项门槛仍达标、通过率上升，记录到 memory bank 的 Prompt iterations。 结果：每条 hint 带上现成的 `fix`，提示词 v2；同一批 19 个请求上通过率 25% → 53%，乱桌面改善率 81% → 100%（剩 6 个请求因限流没跑，详见 memory bank）。
 - E14 线上限流目前只在单个 Cloudflare 实例内存里计数（首轮评测 29 次请求一次都没被拦），想要真正生效需要人做 H2（绑定 KV `AI_LIMITS`）；做完后用 30 次连续请求验证会出现 429。
-- E15 [~] 进行中（claude，2026-10-30） 界面视觉重做，按 `.claude/skills/impeccable` 的流程：负责人确认了 `PRODUCT.md`，选了"桌搭标签"方向（方向合同在 `.impeccable/surfaces/src-app-jsx.md`）。按钮和菜单文字、整体布局、3D 场景、DeskLab 名字都不改。分几次提交：颜色/字体/控件的统一变量 → 行内样式搬进 CSS（含 E11）→ 招牌"圆点标签" → 手机工具栏（E10）和 44px 触控（E12）→ 动效 → impeccable 检查、终审和 `DESIGN.md`。E8 也在这里一起做。
+- **E15 [x] 完成（claude，2026-10-30）** 界面视觉重做，按 `.claude/skills/impeccable` 的流程：负责人确认 `PRODUCT.md`，从四个真页面预览里选了"桌搭标签"（方向合同 `.impeccable/surfaces/src-app-jsx.md`）。按钮和菜单文字、整体布局、3D 场景、DeskLab 名字都没改。做了：颜色/字体/控件统一变量、行内样式搬进 CSS（E11）、emoji 换成圆点和画出来的图标、手机两行工具栏（E10）、44px 触控（E12）、桌面分组（E8）、状态动效、底部浮起的消息标签。impeccable 检查器无发现；全新子代理按 impeccable 终审，第一轮六条全部修完，复审 ship。设计规则写在根目录 `DESIGN.md` 和 `.impeccable/design.json`，以后改界面先读它。可选的后续（审查提的，没做）：把选中标签钉在 3D 画面里设备旁边（要先问负责人，因为 3D 外观冻结）；资产库卡片加设备缩略图。
 
 ---
 

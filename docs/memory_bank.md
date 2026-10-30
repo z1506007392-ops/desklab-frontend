@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-30 · Claude · master
 
+E15 完成：写了根目录 `DESIGN.md`（impeccable 格式：YAML 设计变量 + 八个固定章节 + 六条命名规则）和 `.impeccable/design.json`（色阶、阴影、动效、断点、9 个组件片段）。impeccable 自带的文档代理没装，按 `reference/degraded/documenter.md` 在本对话里写，只记录代码里真用到的值（删掉了没用到的 `--ok-bg`、`--text-xl`；`DESIGN.md` 里 18 个颜色和 `App.css` 逐一核对一致）。以后改界面先读 `DESIGN.md`。还剩：无（可选后续见路线图 E15）。
+
+### 2026-10-30 · Claude · master
+
 E15 第 5 步：impeccable 终审。没有装 impeccable 自带的审查代理，所以用一个全新的通用子代理按 `reference/degraded/finish-reviewer.md` 审（不带构建过程的上下文）。第一轮结论 fix，六条：①问题数量也要用"标签"样式（白底、圆点、墨色数字），不用实心粉色圆标；②保存/出错提示放在工具栏末尾会把整排按钮往左挤约 350px；③关闭按钮的"×"和步进器的"−/+"是文字字符，不是图标；④蓝色"提示"标签是方向里没有的第四种颜色；⑤字重用了方向没写的 700；⑥下拉框还是浏览器自带箭头、手机上 AI 输入框例句被截断。全部修了：`.ui-button-tag` 统一标签样式，"布局检查""布线检查"有问题时变标签；提示改成屏幕下方居中浮起的标签（`.status-toast`，不挡点击）；新增 `Icons.jsx`（关闭、减、加，同一线宽）；提示色改中性灰，`#d98a00` 收成 `--warn-dot`；字重只剩 500/600/800；下拉框画了同线宽的箭头；手机上 AI 输入框独占一行。复审结论 ship（只针对这六条）。审查提的可选方向没做：把选中标签钉在 3D 画面里设备旁边（3D 外观由负责人冻结，要先问）、资产库卡片加设备缩略图。验证：`npm test` 386、`test:ui` 93 + 1 跳过、lint、build。还剩：`DESIGN.md`。
 
 ### 2026-10-30 · Claude · master
