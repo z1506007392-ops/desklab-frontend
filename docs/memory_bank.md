@@ -17,7 +17,11 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
-领取 E18（把工具栏和横幅从 `App.jsx` 拆出去，一块一个提交，行为不变）。还剩：E18 本身，然后 E5。
+E18 第 1 步：未保存草稿横幅抽到 `src/components/DraftRecoveryBanner.jsx`。恢复、导出、放弃仍走原来的处理函数。还剩：其余横幅和工具栏，然后 E5。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
+`7aba642` 领取 E18（把工具栏和横幅从 `App.jsx` 拆出去，一块一个提交，行为不变）。还剩：E18 本身，然后 E5。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 

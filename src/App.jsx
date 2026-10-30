@@ -62,6 +62,7 @@ import LayoutReportDialog from './components/LayoutReportDialog.jsx';
 import WiringReportDialog from './components/WiringReportDialog.jsx';
 import ConnectionsListDialog from './components/ConnectionsListDialog.jsx';
 import ErrorNotice from './components/ErrorNotice.jsx';
+import DraftRecoveryBanner from './components/DraftRecoveryBanner.jsx';
 import LazyScene3D from './components/LazyScene3D.jsx';
 
 
@@ -1477,17 +1478,12 @@ export default function App() {
         {isMobile ? compactToolbar : desktopToolbar}
 
         {recoveryDraft && (
-          <div className="draft-recovery-banner" role="alert">
-            <div>
-              <strong>发现未保存的本地草稿</strong>
-              <span>保存于 {new Date(recoveryDraft.savedAt).toLocaleString()}</span>
-            </div>
-            <div className="draft-recovery-actions">
-              <button type="button" className="ui-button ui-button-primary" onClick={handleRestoreDraft}>恢复草稿</button>
-              <button type="button" className="ui-button" onClick={handleExportRecoveryDraft}>导出草稿</button>
-              <button type="button" className="ui-button" onClick={handleDiscardDraft}>放弃</button>
-            </div>
-          </div>
+          <DraftRecoveryBanner
+            savedAt={recoveryDraft.savedAt}
+            onRestore={handleRestoreDraft}
+            onExport={handleExportRecoveryDraft}
+            onDiscard={handleDiscardDraft}
+          />
         )}
 
         {showBackupReminder && !recoveryDraft && !projectLoadFailed && (
