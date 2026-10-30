@@ -298,7 +298,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 
 > 设计详见第 6 节。顺序：先做确定性的规则（C1–C3），它们不依赖模型就有价值，也给模型提供结构化输入；再做模型对接（C4–C8）。
 
-**C1 [~] 进行中（claude，2026-10-30） 必做 — 人体工学/整洁度启发式规则（不靠 AI）**
+**C1 [x] 完成（claude，2026-10-30，1a0a2ae） 必做 — 人体工学/整洁度启发式规则（不靠 AI）**
 - 新建 `src/domain/layout-heuristics.js`：`analyzeLayoutHeuristics(room, objects, connections)` 返回 `[{ code, severity: 'hint', objectIds, message }]`。规则按 6.6.1 的表格实现，参数集中定义成常量。
 - 测试：每条规则正反例各至少一个；三个内置模板（`buildTemplateScene('home-office' | 'desktop-dual' | 'gaming')`）应当**零提示**（模板就是"好布局"的标准；若某条规则在模板上报提示，先检查规则阈值，再考虑改模板）。
 
@@ -594,7 +594,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 | `monitor_off_center` | 只有 1 台显示器时，其中心 x 与座位 x 相差 > 0.15m；多台时，整体中心相差 > 0.2m | 主显示器偏离座位正前方 |
 | `monitor_too_close` | 显示器中心到座位的 y 距离 < 0.45m | 显示器离人太近 |
 | `monitor_not_on_desk` | 显示器 `restingOn` 不是桌子 | 显示器没有放在桌面上 |
-| `monitor_facing_away` | 显示器屏幕朝向（模板约定：`rotationZ = 180` 时朝 -y）与"显示器→座位"方向夹角 > 30° | 显示器没有朝向座位 |
+| `monitor_facing_away` | 显示器正面（本地 +y）与桌子"朝座位"方向（桌子本地 -y）夹角 > 30°（只看朝向，不看左右位置，否则双屏两侧会被误报） | 显示器没有朝向座位 |
 | `laptop_at_back` | 笔记本在桌子后半部（y 比桌子中心更远离座位） | 笔记本离人太远，不好打字 |
 | `tower_on_desk_center` | 台式主机放在桌面上且占用桌面中部（x 在桌子中间 60% 范围） | 主机占用桌面中间位置 |
 | `tower_blocks_legroom` | 台式主机在地面，且 x 在桌子中间 60% 范围、y 在桌子前沿到后沿之间 | 主机挡住腿下空间 |

@@ -2723,6 +2723,16 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   Without `ai`, an AI request is a recorded write and fails tests. Phase B
   is complete. Verification: `npm test` 337, `npm run test:ui` 64, lint,
   build.
+- `1a0a2ae` C1 Layout hints: `analyzeLayoutHeuristics(room, objects,
+  connections)` (layout-heuristics.js) → `{ code, severity: 'hint',
+  objectIds, message, connectionIds? }` for the 10 rules in roadmap §6.6.1;
+  constants in `HEURISTIC_LIMITS`. Desk frame: device front = local +y; seat
+  on the desk's local -y side 0.35 m past the front edge; facing is checked
+  against the desk's "toward seat" axis, not the seat point (dual monitors).
+  Desk detection: modelId office-desk or type ending in -desk (an early
+  /desk/ test matched desktop-pc). `findSupportingObject()` added to
+  layout-analysis.js. Templates and all 1,728 `buildDeskScene` combinations
+  (6 desk sizes) give zero hints. Verification: `npm test` 347, lint, build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2899,7 +2909,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 337 domain tests
+npm test          # 347 domain tests
 npm run test:ui   # 64 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
