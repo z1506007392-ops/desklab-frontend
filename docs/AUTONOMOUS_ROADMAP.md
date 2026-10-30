@@ -264,7 +264,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 
 > 设计详见第 6 节。阶段 B 不需要真实密钥就能全部完成（用模拟模型）。
 
-**B1 [ ] 必做 — 服务端 AI 代理（Cloudflare Pages Function）**
+**B1 [~] 进行中（claude，2026-10-30） 必做 — 服务端 AI 代理（Cloudflare Pages Function）**
 - 新建 `functions/api/ai/layout.js`，导出 `onRequestPost(context)`，路由即 `POST /api/ai/layout`。实现按 6.3 节。
 - 把核心逻辑写成可测试的工厂函数：`export function createLayoutHandler({ fetchImpl, now })`，`onRequestPost` 只是 `createLayoutHandler({ fetchImpl: fetch })(context)`。
 - `eslint.config.js` 给 `functions/**` 配 Worker/浏览器全局变量（`fetch`、`Request`、`Response`、`crypto` 等）。
