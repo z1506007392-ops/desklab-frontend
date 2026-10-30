@@ -14,6 +14,19 @@ export const AI_LIMITS = Object.freeze({
   maxIdChars: 100,
 });
 
+// Error codes from /api/ai/layout and what the user is told. The server
+// sends the message too; the browser falls back to this table.
+export const AI_ERROR_MESSAGES = Object.freeze({
+  bad_request: '请求内容不完整，请刷新页面后重试',
+  too_large: '桌面内容太多，暂时无法交给 AI 分析',
+  ai_rate_limited: '今天的 AI 次数用完了，明天再试',
+  ai_rate_limited_hour: '用得太频繁了，请一小时后再试',
+  ai_upstream_error: 'AI 服务暂时没有响应，请稍后再试',
+  ai_bad_output: 'AI 这次的回答看不懂，请再试一次',
+  ai_unavailable: 'AI 功能暂未开放',
+  ai_timeout: 'AI 想得太久了，请再试一次',
+});
+
 export const SUGGESTION_CATEGORIES = Object.freeze(['ergonomics', 'tidiness', 'safety', 'space', 'cabling']);
 
 // Allowed action types and their fields: 'string' ids or finite 'number's.
