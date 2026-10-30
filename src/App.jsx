@@ -56,6 +56,7 @@ import { createStatusNotifier } from './domain/status-notifier.js';
 import PropertiesEditor from './components/PropertiesEditor.jsx';
 import ConnectionsEditor from './components/ConnectionsEditor.jsx';
 import DeskBuilderForm from './components/DeskBuilderForm.jsx';
+import AboutDialog from './components/AboutDialog.jsx';
 import LazyScene3D from './components/LazyScene3D.jsx';
 
 
@@ -178,6 +179,7 @@ export default function App() {
   const [showLayoutReport, setShowLayoutReport] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [webglAvailable] = useState(() => canUseWebGL());
   // First-visit guide: only for a project that has never been saved, until
   // the user picks a way to start or something appears in the room.
@@ -465,11 +467,14 @@ export default function App() {
         if (showRecommendations) {
           closeRecommendations();
         }
+        if (showAbout) {
+          setShowAbout(false);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDownEsc);
     return () => window.removeEventListener('keydown', handleKeyDownEsc);
-  }, [closeRecommendations, connectionMode, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations]);
+  }, [closeRecommendations, connectionMode, showAbout, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations]);
 
   useEffect(() => {
     const handleHistoryKeys = (e) => {
@@ -1327,6 +1332,8 @@ export default function App() {
                 <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleExportProject)} disabled={!projectEditable}>导出备份</button>
                 <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handlePasteProjectFromClipboard)} disabled={!projectEditable} title="粘贴别人分享或从另一台设备复制的项目">粘贴项目</button>
                 <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleCopyProjectToClipboard)} disabled={!projectEditable} title="复制项目，可以粘贴给别人或另一台设备">复制项目</button>
+                <div className="toolbar-menu-separator" role="separator" />
+                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowAbout(true))}>关于与隐私</button>
               </div>
             )}
             <input
@@ -1677,6 +1684,8 @@ export default function App() {
         )}
 
       </div>
+
+      {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
 
       {showTemplates && (
         <div

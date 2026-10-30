@@ -44,7 +44,7 @@ test('AI suggestions are checked, previewed, applied, and undone', async ({ page
   const scene = messyGaming();
   const evidence = await openProject(page, scene.objects, scene.connections, { room: scene.room, ai: () => answer(scene) });
   const { dialog, section } = await openAiSection(page);
-  await expect(section).toContainText('使用 AI 时，桌面布局数据会发送给 DeepSeek 处理');
+  await expect(section).toContainText('使用 AI 时，桌面布局（包括你起的设备名称和填写的要求）会发送给 DeepSeek 处理');
 
   await section.getByLabel('想怎么改？（可选）').fill('适合打游戏');
   await section.getByRole('button', { name: '让 AI 看看', exact: true }).click();

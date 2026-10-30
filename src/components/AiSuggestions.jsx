@@ -118,7 +118,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
         </div>
       )}
 
-      <p className="ai-suggestions-privacy">使用 AI 时，桌面布局数据会发送给 DeepSeek 处理，不包含你的个人信息。</p>
+      <p className="ai-suggestions-privacy">使用 AI 时，桌面布局（包括你起的设备名称和填写的要求）会发送给 DeepSeek 处理，请不要填写个人信息。详见“更多 → 关于与隐私”。</p>
     </section>
   );
 }

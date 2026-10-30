@@ -1215,3 +1215,18 @@
   font-size: 12px;
   color: #5f6b7a;
 }
+
+.about-dialog {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #334e68;
+}
+
+.about-dialog p {
+  margin: 0 0 8px;
+}
+
+.about-dialog ul {
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
