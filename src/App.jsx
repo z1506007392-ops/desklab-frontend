@@ -59,6 +59,7 @@ import PropertiesEditor from './components/PropertiesEditor.jsx';
 import ConnectionsEditor from './components/ConnectionsEditor.jsx';
 import AboutDialog from './components/AboutDialog.jsx';
 import TemplateDialog from './components/TemplateDialog.jsx';
+import LayoutReportDialog from './components/LayoutReportDialog.jsx';
 import ErrorNotice from './components/ErrorNotice.jsx';
 import LazyScene3D from './components/LazyScene3D.jsx';
 
@@ -1797,117 +1798,24 @@ export default function App() {
       )}
 
       {showLayoutReport && (
-        <div
-          className="modal-overlay"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setShowLayoutReport(false);
+        <LayoutReportDialog
+          summary={layoutSummary}
+          issues={layoutIssues}
+          autoFixableCount={layoutAutoFixableCount}
+          editable={projectEditable}
+          onClose={() => setShowLayoutReport(false)}
+          onAutoFix={() => handleApplyAutoFixes(layoutAutoFixCodes)}
+          onDropToSupport={handleDropObjectToSupport}
+          onMoveInsideRoom={handleMoveObjectInsideRoom}
+          onSnapOutletToWall={handleSnapOutletToWall}
+          onLocate={(objectId) => {
+            setSelectedObjectId(objectId);
+            setActiveTab('properties');
+            setIsPanelOpen(true);
+            if (isMobile) setIsLeftPanelOpen(false);
+            setShowLayoutReport(false);
           }}
-        >
-          <div
-            className="modal-container wiring-report"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="layout-report-title"
-          >
-            <div className="modal-header">
-              <h3 id="layout-report-title" className="modal-title">布局检查</h3>
-              <button
-                type="button"
-                onClick={() => setShowLayoutReport(false)}
-                className="side-panel-close"
-                aria-label="关闭布局检查"
-                title="关闭"
-              >
-                <CloseIcon />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="wiring-summary">
-                <span className="wiring-summary-error">严重 {layoutSummary.error}</span>
-                <span className="wiring-summary-warning">警告 {layoutSummary.warning}</span>
-                <span className="wiring-summary-info">提示 {layoutSummary.info}</span>
-                {layoutAutoFixableCount > 0 && (
-                  <button
-                    type="button"
-                    className="ui-button ui-button-primary wiring-cleanup-button"
-                    onClick={() => handleApplyAutoFixes(layoutAutoFixCodes)}
-                    disabled={!projectEditable}
-                  >
-                    一键修复可处理项 ({layoutAutoFixableCount})
-                  </button>
-                )}
-              </div>
-
-              {layoutIssues.length === 0 ? (
-                <div className="empty-state" style={{ marginTop: '24px' }}>
-                  当前未发现可识别的布局问题。
-                </div>
-              ) : (
-                <div className="wiring-issue-list">
-                  {layoutIssues.map(issue => (
-                    <div key={issue.id} className={`wiring-issue wiring-issue-${issue.severity}`}>
-                      <div className="wiring-issue-content">
-                        <div className="wiring-issue-title">
-                          <span className="wiring-issue-severity">
-                            {issue.severity === 'error' ? '严重' : issue.severity === 'warning' ? '警告' : '提示'}
-                          </span>
-                          {issue.title}
-                        </div>
-                        <div className="wiring-issue-description">{issue.description}</div>
-                      </div>
-                      <div className="connection-item-actions">
-                        {issue.code === 'floating_object' && (
-                          <button
-                            type="button"
-                            className="ui-button ui-button-primary"
-                            onClick={() => handleDropObjectToSupport(issue.objectIds[0])}
-                          >
-                            落到表面
-                          </button>
-                        )}
-                        {issue.code === 'out_of_bounds' && (
-                          <button
-                            type="button"
-                            className="ui-button ui-button-primary"
-                            onClick={() => handleMoveObjectInsideRoom(issue.objectIds[0])}
-                          >
-                            移回房间内
-                          </button>
-                        )}
-                        {issue.code === 'outlet_off_wall' && (
-                          <button
-                            type="button"
-                            className="ui-button ui-button-primary"
-                            onClick={() => handleSnapOutletToWall(issue.objectIds[0])}
-                          >
-                            贴到墙面
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className="ui-button"
-                          onClick={() => {
-                            setSelectedObjectId(issue.objectIds[0]);
-                            setActiveTab('properties');
-                            setIsPanelOpen(true);
-                            if (isMobile) setIsLeftPanelOpen(false);
-                            setShowLayoutReport(false);
-                          }}
-                        >
-                          定位
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <p className="wiring-disclaimer">
-                相交检查基于物体旋转后的轴对齐包围盒，适合作为布局预警；复杂模型仍应结合 3D 视图确认。
-              </p>
-            </div>
-          </div>
-        </div>
+        />
       )}
 
       {showWiringReport && (

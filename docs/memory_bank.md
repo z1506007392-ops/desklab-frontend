@@ -17,7 +17,11 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
-E2 第 1 步：把「桌面模板」对话框抽到 `src/components/TemplateDialog.jsx`。套用模板、按设备生成、从开始引导滚到生成表单、Esc 关闭都还走原来的处理函数。还剩：继续拆布局检查、布线检查、连接清单。
+E2 第 2 步：把「布局检查」对话框抽到 `src/components/LayoutReportDialog.jsx`。修复、落到表面、移回房间、贴墙和定位仍调用原来的处理函数。还剩：布线检查、连接清单。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
+`9b4ca66` E2 第 1 步：把「桌面模板」对话框抽到 `src/components/TemplateDialog.jsx`。套用模板、按设备生成、从开始引导滚到生成表单、Esc 关闭都还走原来的处理函数。验证：`npm test` 391，`npm run lint`，`npm run build`，`npm run test:ui` 103 通过 + 1 跳过。还剩：继续拆布局检查、布线检查、连接清单。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
