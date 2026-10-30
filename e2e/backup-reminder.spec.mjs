@@ -39,8 +39,8 @@ test('exporting from the reminder downloads a backup that can be imported again'
 
   const path = await download.path();
   page.once('dialog', dialog => dialog.accept());
-  await page.getByLabel('导入 DeskLab 项目 JSON', { exact: true }).setInputFiles(path);
-  await expect(page.getByText(/项目已导入/)).toBeVisible();
+  await page.getByLabel('导入 DeskLab 备份文件', { exact: true }).setInputFiles(path);
+  await expect(page.getByText(/备份已导入/)).toBeVisible();
 
   await page.getByRole('button', { name: '保存项目', exact: true }).click();
   await expect(page.getByText(/^✅ 已保存$/)).toBeVisible();

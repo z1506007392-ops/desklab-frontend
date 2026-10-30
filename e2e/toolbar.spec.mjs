@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { box, openProject } from './project-fixture.mjs';
 
-const DATA_TOOLS = ['导入 JSON', '导出 JSON', '粘贴 JSON', '复制 JSON'];
+const DATA_TOOLS = ['导入备份', '导出备份', '粘贴项目', '复制项目'];
 
 test('project data tools and axes live behind the more menu', async ({ page }) => {
   const evidence = await openProject(page, [box('桌子 A')]);
@@ -36,9 +36,18 @@ test('project data tools and axes live behind the more menu', async ({ page }) =
 
   await more.click();
   const download = page.waitForEvent('download');
-  await menu.getByRole('menuitem', { name: '导出 JSON', exact: true }).click();
+  await menu.getByRole('menuitem', { name: '导出备份', exact: true }).click();
   expect((await download).suggestedFilename()).toMatch(/^desklab-project-.*\.json$/);
   await expect(menu).toHaveCount(0);
 
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
+
+test('importing a file that is not a backup explains it in plain words', async ({ page }) => {
+  const evidence = await openProject(page, [box('桌子 A')]);
+  await page.getByLabel('导入 DeskLab 备份文件', { exact: true }).setInputFiles({
+    name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('hello'),
+  });
+  await expect(page.getByText('⚠️ 导入失败：这不是 DeskLab 的备份文件，或者文件已损坏')).toBeVisible();
   expect(evidence).toEqual({ errors: [], writes: [] });
 });

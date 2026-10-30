@@ -43,7 +43,11 @@ import {
   shouldRemindBackup,
   snoozeBackupReminder,
 } from './domain/backup-reminder.js';
-import { assertProjectImportSize, getProjectImportByteLength } from './domain/project-import-limits.js';
+import {
+  assertProjectImportSize,
+  describeProjectImportError,
+  getProjectImportByteLength,
+} from './domain/project-import-limits.js';
 import { getPurchaseGuidance } from './domain/purchase-guidance.js';
 import { DESK_TEMPLATES, buildTemplateScene } from './domain/desk-templates.js';
 import { buildShoppingList } from './domain/shopping-list.js';
@@ -213,7 +217,7 @@ export default function App() {
     if (result.ok) return result.draft;
     console.warn('Unable to read local project draft.', result.error);
     showStatus({
-      text: '无法读取本地草稿；请尽快保存项目或导出 JSON，避免未保存修改丢失。',
+      text: '无法读取本地草稿；请尽快保存项目或导出备份，避免未保存修改丢失。',
       type: 'error',
     });
     return null;
@@ -225,7 +229,7 @@ export default function App() {
     console.warn('Unable to clear local project draft.', result.error);
     showStatus({
       text: result.operation === 'clear-blocked'
-        ? '本地草稿读取失败，已阻止清理以保留恢复材料；请尽快保存项目或导出 JSON。'
+        ? '本地草稿读取失败，已阻止清理以保留恢复材料；请尽快保存项目或导出备份。'
         : '本地草稿清理失败；请检查浏览器存储权限后重试。',
       type: 'error',
     });
@@ -648,7 +652,7 @@ export default function App() {
       if (!result.ok) {
         console.warn('Unable to save local project draft.', result.error);
         showStatus({
-          text: '本地草稿保存失败；请立即保存项目或导出 JSON。',
+          text: '本地草稿保存失败；请立即保存项目或导出备份。',
           type: 'error',
         });
       }
@@ -799,7 +803,7 @@ export default function App() {
     }, 'desklab-project');
     recordBackupExport(getBrowserStorage, new Date());
     setShowBackupReminder(false);
-    showStatus({ text: '项目已导出', type: 'success' }, 3000);
+    showStatus({ text: '备份已导出', type: 'success' }, 3000);
   };
 
   const handleSnoozeBackupReminder = () => {
@@ -852,9 +856,9 @@ export default function App() {
       setConnectionMode(false);
       setConnectionDraft({});
       setHoveredDeviceId(null);
-      showStatus({ text: '项目已导入，尚未保存', type: 'success' }, 3000);
+      showStatus({ text: '备份已导入，尚未保存', type: 'success' }, 3000);
     } catch (error) {
-      showStatus({ text: `导入失败：${error.message}`, type: 'error' }, 5000);
+      showStatus({ text: `导入失败：${describeProjectImportError(error)}`, type: 'error' }, 5000);
     } finally {
       input.value = '';
     }
@@ -895,7 +899,7 @@ export default function App() {
       const currentCamera = getCurrentCamera();
       const project = { room, objects, connections, camera: currentCamera };
       await navigator.clipboard.writeText(JSON.stringify(project, null, 2));
-      showStatus({ text: '项目数据已复制到剪贴板', type: 'success' }, 3000);
+      showStatus({ text: '项目已复制，可以粘贴到别处', type: 'success' }, 3000);
     } catch (error) {
       showStatus({ text: `复制失败：${error.message}`, type: 'error' }, 4000);
     }
@@ -937,9 +941,9 @@ export default function App() {
       setConnectionMode(false);
       setConnectionDraft({});
       setHoveredDeviceId(null);
-      showStatus({ text: '项目已从剪贴板导入，尚未保存', type: 'success' }, 3000);
+      showStatus({ text: '项目已粘贴，尚未保存', type: 'success' }, 3000);
     } catch (error) {
-      showStatus({ text: `从剪贴板导入失败：${error.message}`, type: 'error' }, 5000);
+      showStatus({ text: `粘贴失败：${describeProjectImportError(error)}`, type: 'error' }, 5000);
     }
   };
 
@@ -1259,10 +1263,10 @@ export default function App() {
                   显示坐标轴
                 </button>
                 <div className="toolbar-menu-separator" role="separator" />
-                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => importInputRef.current?.click())} disabled={!projectEditable}>导入 JSON</button>
-                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleExportProject)} disabled={!projectEditable}>导出 JSON</button>
-                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handlePasteProjectFromClipboard)} disabled={!projectEditable} title="从剪贴板粘贴项目数据">粘贴 JSON</button>
-                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleCopyProjectToClipboard)} disabled={!projectEditable} title="复制项目数据到剪贴板">复制 JSON</button>
+                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => importInputRef.current?.click())} disabled={!projectEditable}>导入备份</button>
+                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleExportProject)} disabled={!projectEditable}>导出备份</button>
+                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handlePasteProjectFromClipboard)} disabled={!projectEditable} title="粘贴别人分享或从另一台设备复制的项目">粘贴项目</button>
+                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleCopyProjectToClipboard)} disabled={!projectEditable} title="复制项目，可以粘贴给别人或另一台设备">复制项目</button>
               </div>
             )}
             <input
@@ -1271,7 +1275,7 @@ export default function App() {
               accept="application/json,.json"
               onChange={handleImportProject}
               style={{ display: 'none' }}
-              aria-label="导入 DeskLab 项目 JSON"
+              aria-label="导入 DeskLab 备份文件"
             />
             <button className="ui-button" onClick={handleToggleLeftPanel}>
               {isLeftPanelOpen ? '收起资产库' : '展开资产库'}
@@ -1322,7 +1326,7 @@ export default function App() {
           <div className="draft-recovery-banner" role="region" aria-label="备份提醒">
             <div>
               <strong>建议导出一份备份</strong>
-              <span>桌面只保存在这个浏览器里，清理浏览器数据或换设备后就找不到了。需要时可用“更多 → 导入 JSON”恢复备份。</span>
+              <span>桌面只保存在这个浏览器里，清理浏览器数据或换设备后就找不到了。需要时可用“更多 → 导入备份”恢复。</span>
             </div>
             <div className="draft-recovery-actions">
               <button type="button" className="ui-button ui-button-primary" onClick={handleExportProject}>导出备份</button>
