@@ -2828,6 +2828,15 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   sources when the device is itself a strip (`isPowerStrip` now exported
   from analysis.js). Found by the D2 live run. Verification: `npm test` 378,
   `npm run test:ui` 86, lint, build.
+- H1 done (2026-10-30): the owner added `DEEPSEEK_API_KEY` in Cloudflare and
+  redeployed. Live POST /api/ai/layout → 200; DeepSeek reports the model as
+  `deepseek-flash` (DEEPSEEK_MODEL unset, default `deepseek-chat`). First
+  real answer for `gaming/monitor-off-centre` + "更整洁": 5 suggestions in
+  ~3 s (2,519 prompt / 367 completion tokens); "显示器移到正前方" accepted
+  (score 19.5 → 14.5), the other 4 (laptop, power strip, router, adapters)
+  rejected for new warnings or no gain. Live browser run (desktop + phone):
+  one card, preview, apply, save → monitor x = 0, no console errors.
+  Next: C7 (see roadmap for running the eval within the rate limit).
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from

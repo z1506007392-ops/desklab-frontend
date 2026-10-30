@@ -351,8 +351,9 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 把一批有代表性的真实响应复制到 `test/fixtures/ai/recorded/`，供单元测试回放（CI 不调用真实模型）。
 - 没有密钥时：脚本检测到无密钥直接退出并提示；任务状态写"等待密钥（H1），脚本与夹具已完成"，等 H1 完成后再回来跑。
 
-**C7 [ ] 必做（等待 H1：需要真实 DeepSeek 回答） — 提示词迭代**
-- 依赖：H1 完成、C6 完成。
+**C7 [ ] 必做（H1 已完成，可以开始） — 提示词迭代**
+- 依赖：H1 完成、C6 完成（都已满足）。
+- 怎么跑：评测需要 25 次请求。线上 `/api/ai/layout` 每个地址每小时只允许 20 次（`AI_PER_IP_HOURLY`），所以要么在 Cloudflare 临时调高这个变量，要么用 `node tools/ai-eval/run-eval.mjs --url https://desklab-frontend.pages.dev/api/ai/layout` 分两次跑（脚本遇到 429 会停下）。云端会话里 Node 的 fetch 不走代理，要么改用能走代理的方式，要么在本机跑。
 - 做法：跑评测 → 看失败案例 → 改 `prompt.js`（每次只改一处）→ 再跑 → 记录前后指标。直到 C6 全部门槛达标。迭代记录写进 memory bank（"Prompt iterations" 小节：版本、改动、指标）。
 - 常见改法：补充坐标系示例；给出"好位置"的具体数值范围（来自 C1 规则常量）；限制每条建议的动作数；强调"不确定就少给建议"。
 
@@ -659,7 +660,7 @@ total = 100 × errors + 20 × warnings + 5 × hints + 1 × cableMeters
 
 | 编号 | 事情 | 谁做 | 没做之前 AI 怎么办 |
 |---|---|---|---|
-| H1 | 申请 DeepSeek API 密钥，并在 Cloudflare Pages 项目 `desklab-frontend` → 设置 → 环境变量（生产 + 预览）里添加加密变量 `DEEPSEEK_API_KEY` | 产品负责人 | 阶段 B、C 全部照做（用模拟模型和录制响应）；C6 脚本写好但不跑；C7 标"等待 H1" |
+| H1（已完成 2026-10-30） | 申请 DeepSeek API 密钥，并在 Cloudflare Pages 项目 `desklab-frontend` → 设置 → 环境变量（生产 + 预览）里添加加密变量 `DEEPSEEK_API_KEY` | 产品负责人 | 阶段 B、C 全部照做（用模拟模型和录制响应）；C6 脚本写好但不跑；C7 标"等待 H1" |
 | H2 | （可选）在 Cloudflare 创建 KV 命名空间并绑定为 `AI_LIMITS` | 产品负责人 | 用内存限流（B3 已设计） |
 | H3 | （可选）创建 Cloudflare API Token，放进 GitHub secrets，用于"测试通过才部署" | 产品负责人 | 跳过 A8 |
 | H4 | 域名 ICP 备案、国内服务器部署 | 产品负责人（已决定暂缓） | 不做任何相关工作 |
