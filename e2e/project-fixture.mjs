@@ -12,7 +12,16 @@ export function box(id, x = 0) {
   };
 }
 
-export async function openProject(page, objects, connections = [], { saved = true } = {}) {
+/**
+ * Open the app with `objects` and `connections` stored as the saved project.
+ * Options:
+ * - saved: false opens it as a first-time visitor with nothing stored.
+ * - ai: (requestBody) => responseJson | { status, json } answers
+ *   POST /api/ai/layout; each request body is collected in
+ *   evidence.aiRequests. Without it, an AI request fails the test like any
+ *   other /api call.
+ */
+export async function openProject(page, objects, connections = [], { saved = true, ai = null } = {}) {
   const project = {
     id: 'default', updatedAt: '2026-09-09T00:00:00.000Z',
     room: { length: 10, width: 10, height: 3 }, objects, connections,
@@ -30,7 +39,6 @@ export async function openProject(page, objects, connections = [], { saved = tru
   // The project is seeded into this browser's storage once per tab (a reload
   // must show what the user saved, not the seed). Projects never go to a
   // server, so any API request is recorded as unexpected.
-  // saved: false opens the app as a first-time visitor with nothing stored.
   if (saved) {
     await page.addInitScript(({ key, raw }) => {
       if (sessionStorage.getItem('desklab-e2e-seeded')) return;
@@ -42,9 +50,21 @@ export async function openProject(page, objects, connections = [], { saved = tru
     writes.push(`${route.request().method()} ${route.request().url()}`);
     return route.abort();
   });
+  // Registered later, so Playwright tries it before the catch-all above.
+  const aiRequests = [];
+  if (ai) {
+    await page.route('**/api/ai/layout', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      const body = route.request().postDataJSON();
+      aiRequests.push(body);
+      const answer = await ai(body);
+      const { status = 200, json = answer } = answer && 'status' in answer && 'json' in answer ? answer : {};
+      return route.fulfill({ status, json });
+    });
+  }
   await page.goto('/');
   await expect(page).toHaveTitle('DeskLab');
   await expect(page.getByRole('button', { name: '保存项目', exact: true })).toBeEnabled();
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
-  return { errors, writes };
+  return ai ? { errors, writes, aiRequests } : { errors, writes };
 }
