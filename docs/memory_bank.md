@@ -2733,6 +2733,11 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   /desk/ test matched desktop-pc). `findSupportingObject()` added to
   layout-analysis.js. Templates and all 1,728 `buildDeskScene` combinations
   (6 desk sizes) give zero hints. Verification: `npm test` 347, lint, build.
+- `7df818b` C2 `scoreLayout(project)` (layout-score.js) → `{ total, errors,
+  warnings, hints, cableMeters, codes }`; weights in `SCORE_WEIGHTS` (100 /
+  20 / 5 / 1 per metre). Severity 'info' (unpowered_input, legacy_connection)
+  is not counted, so no "model completion" exclusions are needed. A template
+  scores only its cable metres. Verification: `npm test` 351, lint.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2909,7 +2914,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 347 domain tests
+npm test          # 351 domain tests
 npm run test:ui   # 64 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
