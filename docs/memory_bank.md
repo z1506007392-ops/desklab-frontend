@@ -2757,6 +2757,26 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   ports, removing power lines, cables shorter than recommended, any other
   action type. Acceptance per roadmap §6.6.4. Verification: `npm test` 372
   (incl. summary → mock model → validation end to end), lint, build.
+- `1fc4ff1` Dev rendering regression from A5: with `React.lazy` + `Suspense`,
+  StrictMode's double mount left the R3F canvas blank in development (no
+  errors; production fine). Found while screenshotting C5. `LazyScene3D.jsx`
+  now imports Scene3D in an effect and mounts the canvas once; a failed
+  download is rethrown for `SceneErrorBoundary`. `e2e/scene-render.spec.mjs`
+  fails if the canvas screenshot is under 20 KB (blank ≈ 3.6 KB, drawn 46–146
+  KB). Lesson: a visual check must look at the pixels; passing UI tests did
+  not catch a blank canvas.
+- `5407119` C5 AI UI: `AiSuggestionsPanel` (components/AiSuggestions.jsx) inside
+  the 自动检查与改进建议 dialog (region "AI 建议"); request state in
+  `useAiLayoutAssistant()` (components/useAiLayoutAssistant.js), held by App
+  so suggestions survive a preview. Cards = `evaluateSuggestions(current
+  project, raw suggestions)`, recomputed on every change. Preview: App state
+  `aiPreview` swaps the Scene3D objects/connections, highlights
+  `changedObjectIds()`, shows region "AI 预览" with 应用 / 取消, and sets
+  `projectEditable` false (`projectBaseEditable` is the old value). Apply =
+  `recordHistory()` + set objects/connections (one undo step). A 503 marks AI
+  unavailable for the session. `openProject` gained a `room` option.
+  Verification: `npm test` 373, `npm run test:ui` 76, lint, build; dialog and
+  preview screenshots checked at both sizes.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2933,8 +2953,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 372 domain tests
-npm run test:ui   # 64 Chrome UI cases; storage seeded per test, no backend
+npm test          # 373 domain tests
+npm run test:ui   # 76 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
