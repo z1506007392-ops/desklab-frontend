@@ -663,7 +663,7 @@ total = 100 × errors + 20 × warnings + 5 × hints + 1 × cableMeters
 | 编号 | 事情 | 谁做 | 没做之前 AI 怎么办 |
 |---|---|---|---|
 | H1（已完成 2026-10-30） | 申请 DeepSeek API 密钥，并在 Cloudflare Pages 项目 `desklab-frontend` → 设置 → 环境变量（生产 + 预览）里添加加密变量 `DEEPSEEK_API_KEY` | 产品负责人 | 阶段 B、C 全部照做（用模拟模型和录制响应）；C6 脚本写好但不跑；C7 标"等待 H1" |
-| H2 | （可选）在 Cloudflare 创建 KV 命名空间并绑定为 `AI_LIMITS` | 产品负责人 | 用内存限流（B3 已设计） |
+| H2 | （可选）在 Cloudflare 创建 KV 命名空间并绑定为 `AI_LIMITS`（2026-10-30 负责人决定暂缓，以后再做） | 产品负责人 | 用内存限流（B3 已设计）；不要催，也不要替负责人做 |
 | H3 | （可选）创建 Cloudflare API Token，放进 GitHub secrets，用于"测试通过才部署" | 产品负责人 | 跳过 A8 |
 | H4 | 域名 ICP 备案、国内服务器部署 | 产品负责人（已决定暂缓） | 不做任何相关工作 |
 | H5 | 本地旧数据迁移（后端 `data/default-project.json` → 浏览器） | 产品负责人：新版里"更多 → 导入"那个文件再保存 | 无需处理 |
