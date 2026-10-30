@@ -3,7 +3,7 @@ import {
   snapObjectToSupport,
   snapWallOutletToNearestWall,
 } from './layout-analysis.js';
-import { analyzeProjectWiring, buildPowerGraph, computeDevicePowerLoad, getEffectiveMaxLoad, classifyPowerLoad } from './analysis.js';
+import { analyzeProjectWiring, buildPowerGraph, computeDevicePowerLoad, getEffectiveMaxLoad, classifyPowerLoad, isPowerStrip } from './analysis.js';
 import { calculatePositionDistance, evaluateConnectionLength, arePortsCompatible, arePortTypesCompatible, isPortDirectionConsistent, inferCableType, standardCableLength, CABLE_TYPE_NAMES } from './connections.js';
 import { validateAndConstrainObject } from './geometry.js';
 import { findModelTemplate } from './catalog.js';
@@ -141,6 +141,9 @@ function findNearestFreePowerSource(object, port, candidates, occupiedPorts, pow
     let best = null;
     for (const candidate of candidates) {
       if (candidate.id === object.id) continue;
+      // Plugging a strip into another strip is the daisy chain the wiring
+      // check reports as a problem; a strip only goes into a wall outlet.
+      if (isPowerStrip(object) && isPowerStrip(candidate)) continue;
       if (!allowUnpowered && requiresPowerButIsUnpowered(candidate, poweredObjectIds)) continue;
       for (const candidatePort of getActionablePortRecords(candidate)) {
         const hasFromDir = candidatePort.direction === 'output' || candidatePort.direction === 'bidirectional';

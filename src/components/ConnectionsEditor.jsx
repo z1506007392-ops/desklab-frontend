@@ -8,6 +8,7 @@ import {
   shouldResetConnectionDraftForSelection,
 } from '../domain/connections.js';
 import { createEntityId } from '../domain/identifiers.js';
+import { labelObjectsForPicker } from '../domain/object-labels.js';
 
 // --- Connections MVP 组件 ---
 const getCompatibleTargetPorts = (fromPort, targetObject) => {
@@ -48,6 +49,7 @@ const ConnectionsEditor = ({
     { value: 'other', label: '其他' }
   ];
 
+  const objectLabels = labelObjectsForPicker(objects);
   const relatedConnections = selectedObj
     ? connections.filter(c => c.fromObjectId === selectedObj.id || c.toObjectId === selectedObj.id)
     : [];
@@ -91,7 +93,7 @@ const ConnectionsEditor = ({
     return (
       <>
         <option value="">-- 选择端口 --</option>
-        {filteredPorts.map(p => <option key={p.id} value={p.id}>{p.name} ({p.type})</option>)}
+        {filteredPorts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
       </>
     );
   };
@@ -272,7 +274,7 @@ const ConnectionsEditor = ({
                         <button onClick={() => setConnectionMode(true)} className="ui-button" style={{ width: '100%', borderColor: '#007bff', color: '#007bff' }}>
                           在场景中选择目标设备
                         </button>
-                        <div style={{ textAlign: 'center', fontSize: '11px', color: '#888', margin: '2px 0' }}>─ 或在下拉列表中选择 ─</div>
+                        <div style={{ textAlign: 'center', fontSize: '11px', color: '#5f6b7a', margin: '2px 0' }}>─ 或在下拉列表中选择 ─</div>
                         <select
                           className="ui-select"
                           style={{ width: '100%' }}
@@ -290,14 +292,14 @@ const ConnectionsEditor = ({
                             .filter(o => o.id !== selectedObj.id)
                             .map(o => (
                               <option key={o.id} value={o.id}>
-                                {o.name} ({o.type})
+                                {objectLabels.get(o.id)}
                               </option>
                             ))}
                         </select>
                       </>
                     ) : (
                       <div style={{ padding: '8px', background: '#ffecb3', color: '#ff8f00', fontSize: '13px', borderRadius: '3px', textAlign: 'center' }}>
-                        请点击 3D 画布中的目标设备 (Esc 取消)
+                        请在 3D 画面里点选要连接的设备（按 Esc 取消）
                       </div>
                     )}
                   </div>
@@ -364,7 +366,7 @@ const ConnectionsEditor = ({
 
       <div className="panel-section">
         <div className="panel-section-title">当前设备连接 ({relatedConnections.length})</div>
-        {relatedConnections.length === 0 ? <div style={{ fontSize: '13px', color: '#888888' }}>无连接</div> : null}
+        {relatedConnections.length === 0 ? <div style={{ fontSize: '13px', color: '#5f6b7a' }}>无连接</div> : null}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {relatedConnections.map(c => {
             const isFrom = c.fromObjectId === selectedObj.id;
@@ -424,7 +426,7 @@ const ConnectionsEditor = ({
                 ) : (
                   <div style={{ color: '#222222', fontSize: '13px', marginBottom: '4px' }}>{c.name} ({c.length}m)</div>
                 )}
-                <div style={{ color: '#888888', fontSize: '11px' }}>
+                <div style={{ color: '#5f6b7a', fontSize: '11px' }}>
                   本端: {myPortName} <br/>对端: {otherPortName}
                 </div>
                 {lengthStatus && (

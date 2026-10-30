@@ -106,7 +106,7 @@ export function validateAndConstrainObject(proposedObject, room) {
   const z = safeClamp(proposedObject.position?.z, minZ, maxZ);
 
   if (![x, y, z].every(Number.isFinite)) {
-    return { valid: false, reason: '坐标非法', object: null };
+    return { valid: false, reason: '位置数值无效', object: null };
   }
 
   return {

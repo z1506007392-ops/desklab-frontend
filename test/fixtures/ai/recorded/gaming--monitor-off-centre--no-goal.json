@@ -1,0 +1,69 @@
+{
+  "scene": "gaming/monitor-off-centre",
+  "goal": "",
+  "recorded": "2026-10-30",
+  "model": "deepseek-flash",
+  "acceptedCount": 1,
+  "response": {
+    "version": 1,
+    "model": "deepseek-flash",
+    "suggestions": [
+      {
+        "id": "s1",
+        "title": "显示器移到正前方",
+        "reason": "显示器正对座位，看屏幕时不用歪头，久坐脖子更舒服。",
+        "category": "ergonomics",
+        "actions": [
+          {
+            "type": "move",
+            "objectId": "ultrawide-monitor-1",
+            "x": 0,
+            "y": 1.45
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "title": "笔记本挪到左侧",
+        "reason": "笔记本移到左边，和显示器错开，桌面更整齐，也不挡视线。",
+        "category": "space",
+        "actions": [
+          {
+            "type": "move",
+            "objectId": "laptop",
+            "x": -0.5,
+            "y": 1.05
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "title": "插排收进桌下",
+        "reason": "插排从脚边移到桌下靠墙，走路不容易踢到，地面也更清爽。",
+        "category": "safety",
+        "actions": [
+          {
+            "type": "move",
+            "objectId": "power-strip",
+            "x": 0,
+            "y": 1.65
+          }
+        ]
+      },
+      {
+        "id": "s4",
+        "title": "路由器靠墙放好",
+        "reason": "路由器贴着墙边放，不占走道，信号也更稳定。",
+        "category": "space",
+        "actions": [
+          {
+            "type": "move",
+            "objectId": "router",
+            "x": -1.03,
+            "y": 1.7
+          }
+        ]
+      }
+    ]
+  }
+}

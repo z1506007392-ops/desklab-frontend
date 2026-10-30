@@ -2390,3 +2390,32 @@ test('completion returns nothing when there is nothing to connect', () => {
   assert.deepEqual(buildConnectionCompletion({ room, objects: [], connections: [] }, 'missing'), []);
   assert.deepEqual(buildConnectionCompletion({ objects: [acDevice('pc')], connections: [] }, 'pc'), []);
 });
+
+test('a new power strip goes into a free wall outlet, never into another strip', async () => {
+  const { buildTemplateScene } = await import('../src/domain/desk-templates.js');
+  const { findModelTemplate } = await import('../src/domain/catalog.js');
+  const { placeCatalogObject } = await import('../src/domain/placement.js');
+  const { analyzeProjectWiring } = await import('../src/domain/analysis.js');
+  const scene = buildTemplateScene('gaming');
+  const { object: strip } = placeCatalogObject({
+    modelTemplate: findModelTemplate({ modelId: 'power-strip' }), categoryId: 'power', room: scene.room, id: 'strip-2', objects: scene.objects,
+  });
+  const objects = [...scene.objects, strip];
+  const outlet = objects.find(object => object.modelId === 'wall-outlet');
+
+  const lines = buildConnectionCompletion({ room: scene.room, objects, connections: scene.connections }, 'strip-2');
+  assert.deepEqual(lines.map(line => [line.fromObjectId, line.toObjectId, line.toPortId]), [[outlet.id, 'strip-2', 'ac-in']]);
+  assert.deepEqual(analyzeProjectWiring(objects, [...scene.connections, ...lines]).filter(issue => issue.severity !== 'info'), []);
+
+  // With every wall socket taken, the strip is left undrawn rather than chained.
+  const blocker = { id: 'lamp', name: '台灯', type: 'lamp', shape: 'rect', position: { ...outlet.position }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 0.1, y: 0.1, z: 0.1 },
+    ports: [{ id: 'ac-in', name: '电源', type: 'ac_input', direction: 'input' }] };
+  const busyConnections = [...scene.connections, {
+    id: 'lamp-power', name: '台灯电源线', cableType: 'power', length: 1.5,
+    fromObjectId: outlet.id, fromPortId: 'ac-out-2', toObjectId: 'lamp', toPortId: 'ac-in',
+  }];
+  const noLines = buildConnectionCompletion({ room: scene.room, objects: [...objects, blocker], connections: busyConnections }, 'strip-2');
+  assert.deepEqual(noLines, []);
+  const issues = analyzeProjectWiring([...objects, blocker], busyConnections).filter(issue => issue.severity !== 'info');
+  assert.ok(!issues.some(issue => issue.code === 'power_strip_chain'));
+});

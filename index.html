@@ -5,9 +5,35 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DeskLab</title>
+    <meta name="description" content="DeskLab：在 3D 里摆好你的桌面，自动接好电源线、视频线和网线，检查插孔和用电，给出免费的改进建议。不用注册，打开就能用。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="DeskLab · 3D 桌面布置与理线" />
+    <meta property="og:description" content="在 3D 里摆好桌面、理清线缆，检查用电，获得改进建议。" />
+    <!-- Crawlers need an absolute URL; update it if the site moves to its own domain. -->
+    <meta property="og:image" content="https://desklab-frontend.pages.dev/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Browsers older than the build target (Chrome/Edge 111, Firefox 114,
+      // Safari/iOS 16.4) may not run the app at all and would show a blank
+      // page. Check a few features the app needs and explain instead.
+      (function () {
+        var supported = typeof structuredClone === 'function'
+          && typeof Object.hasOwn === 'function'
+          && typeof Array.prototype.at === 'function'
+          && typeof window.localStorage !== 'undefined';
+        if (supported) return;
+        window.__DESKLAB_UNSUPPORTED__ = true;
+        document.getElementById('root').innerHTML = '<div role="alert" style="max-width:420px;margin:15vh auto;padding:24px;'
+          + 'font:14px/1.7 system-ui,sans-serif;color:#334e68;text-align:center">'
+          + '<strong style="display:block;margin-bottom:8px;font-size:17px;color:#1f2933">你的浏览器版本太旧，DeskLab 打不开</strong>'
+          + '请升级到最新版的 Chrome、Edge 或 Safari（iPhone 需 iOS 16.4 及以上），或换用其他浏览器打开这个网址。</div>';
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

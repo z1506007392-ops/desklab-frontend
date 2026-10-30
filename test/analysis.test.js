@@ -950,3 +950,36 @@ test('shared power graph produces the same load totals as standalone load checks
   assert.equal(computeDevicePowerLoad('my-strip', objects, conns, powerGraph), computeDevicePowerLoad('my-strip', objects, conns));
   assert.equal(computeDevicePowerLoad('my-pc', objects, conns, powerGraph), computeDevicePowerLoad('my-pc', objects, conns));
 });
+
+test('wiring problems on odd imported data are explained without internal type names', async () => {
+  const { analyzeProjectWiring } = await import('../src/domain/analysis.js');
+  const device = (id, ports) => ({
+    id, name: id, type: 'device', shape: 'rect',
+    position: { x: 0, y: 0, z: 0.5 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 0.2, y: 0.2, z: 0.2 }, ports,
+  });
+  const objects = [
+    device('主机', [
+      { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' },
+      { id: 'usb', name: 'USB-C', type: 'usb_c', direction: 'output' },
+      { id: 'odd', name: '奇怪接口', type: 'hdmi', direction: 'sideways' },
+      { id: 'power', name: '电源', type: 'ac_input', direction: 'output' },
+    ]),
+    device('显示器', [
+      { id: 'dp-in', name: 'DP 输入', type: 'displayport', direction: 'input' },
+      { id: 'hdmi-in', name: 'HDMI 输入', type: 'hdmi', direction: 'input' },
+    ]),
+  ];
+  const connections = [
+    { id: 'c1', name: '视频线', fromObjectId: '主机', fromPortId: 'usb', toObjectId: '显示器', toPortId: 'dp-in', cableType: 'usb_c', length: 2 },
+    { id: 'c2', name: '另一根', fromObjectId: '主机', fromPortId: 'hdmi-out', toObjectId: '显示器', toPortId: 'hdmi-in', cableType: 'ethernet', length: 2 },
+  ];
+  const issues = analyzeProjectWiring(objects, connections);
+  const codes = issues.map(issue => issue.code);
+  for (const code of ['incompatible_port_types', 'cable_type_mismatch', 'invalid_port_direction_definition', 'invalid_power_port_definition']) {
+    assert.ok(codes.includes(code), `expected ${code} in ${codes.join(', ')}`);
+  }
+  for (const issue of issues) {
+    assert.doesNotMatch(`${issue.title} ${issue.description}`,
+      /\b(ac_input|ac_output|usb_c|displayport|ethernet|hdmi|input|output|bidirectional)\b/, issue.code);
+  }
+});

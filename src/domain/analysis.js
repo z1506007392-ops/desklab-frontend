@@ -1,6 +1,9 @@
 import {
   arePortTypesCompatible,
   CABLE_TYPE_VALUES,
+  describeCableType,
+  describePortDirection,
+  describePortType,
   evaluateConnectionLength,
   inferCableType,
   isPortDirectionConsistent,
@@ -63,7 +66,7 @@ export function classifyPowerLoad(currentLoad, maxLoad) {
 
 const getPortItems = object => Array.isArray(object?.ports) ? object.ports : [];
 const getPort = (object, portId) => getPortRecords(object).find(port => port.id === portId);
-const isPowerStrip = (object) =>
+export const isPowerStrip = (object) =>
   object?.modelId === 'power-strip' || object?.type === 'power_strip';
 
 function getDuplicateIds(items) {
@@ -493,7 +496,7 @@ export function analyzeProjectWiring(rawObjects, rawConnections) {
         code: 'incompatible_port_types',
         severity: 'error',
         title: `连接“${connection.name}”的端口类型不兼容`,
-        description: `${fromPort.type} 不能连接到 ${toPort.type}。`,
+        description: `${describePortType(fromPort.type)} 不能连接到 ${describePortType(toPort.type)}。`,
         connectionIds: [connection.id],
         invalidConnectionIds: [connection.id],
         objectIds: [connection.fromObjectId, connection.toObjectId],
@@ -508,7 +511,7 @@ export function analyzeProjectWiring(rawObjects, rawConnections) {
         code: 'cable_type_mismatch',
         severity: 'error',
         title: `连接“${connection.name}”的线材类型不匹配`,
-        description: `当前记录为 ${connection.cableType}，所选端口需要 ${expectedCableType}。`,
+        description: `当前记录为${describeCableType(connection.cableType)}，这两个接口需要${describeCableType(expectedCableType)}。`,
         connectionIds: [connection.id],
         invalidConnectionIds: [connection.id],
         objectIds: [connection.fromObjectId, connection.toObjectId],
@@ -661,7 +664,7 @@ export function analyzeProjectWiring(rawObjects, rawConnections) {
           code: 'invalid_port_direction_definition',
           severity: 'error',
           title: `${object.name} 的端口方向无效`,
-          description: `端口“${port.name}”的方向必须是 input、output 或 bidirectional。`,
+          description: `端口“${port.name}”的方向只能是输入、输出或双向。`,
           connectionIds: [],
           objectIds: [object.id],
         });
@@ -684,7 +687,7 @@ export function analyzeProjectWiring(rawObjects, rawConnections) {
           code: 'invalid_power_port_definition',
           severity: 'error',
           title: `${object.name} 的电源端口方向定义错误`,
-          description: `端口“${port.name}”的类型为 ${port.type}，但方向记录为 ${port.direction}。`,
+          description: `端口“${port.name}”是${describePortType(port.type)}，方向却记录为${describePortDirection(port.direction)}。`,
           connectionIds: [],
           objectIds: [object.id],
         });

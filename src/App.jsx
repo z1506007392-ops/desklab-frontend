@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Grid } from '@react-three/drei';
-import { evaluateConnectionLength } from './domain/connections.js';
-import { createProjectClient } from './domain/project-client.js';
+import { describeCableType, evaluateConnectionLength } from './domain/connections.js';
+import { UNSAVED_PROJECT_VERSION, createLocalProjectClient } from './domain/local-project-store.js';
 import {
   analyzeProjectWiring,
   getInvalidConnectionIds,
@@ -37,7 +35,18 @@ import {
   getCanvasObjectClickAction,
 } from './domain/project-access.js';
 import { createProjectExport } from './domain/project-export.js';
-import { assertProjectImportSize, getProjectImportByteLength } from './domain/project-import-limits.js';
+import { describeSelectionHint } from './domain/selection-hint.js';
+import {
+  readBackupReminderState,
+  recordBackupExport,
+  shouldRemindBackup,
+  snoozeBackupReminder,
+} from './domain/backup-reminder.js';
+import {
+  assertProjectImportSize,
+  describeProjectImportError,
+  getProjectImportByteLength,
+} from './domain/project-import-limits.js';
 import { getPurchaseGuidance } from './domain/purchase-guidance.js';
 import { DESK_TEMPLATES, buildTemplateScene } from './domain/desk-templates.js';
 import { buildShoppingList } from './domain/shopping-list.js';
@@ -47,21 +56,32 @@ import { createStatusNotifier } from './domain/status-notifier.js';
 import PropertiesEditor from './components/PropertiesEditor.jsx';
 import ConnectionsEditor from './components/ConnectionsEditor.jsx';
 import DeskBuilderForm from './components/DeskBuilderForm.jsx';
-import {
-  CameraSetup,
-  ConnectionsRenderer,
-  DeskLabAxes,
-  DeviceMesh,
-  PowerStatusOverlay,
-  RoomWalls,
-} from './components/SceneObjects.jsx';
+import AboutDialog from './components/AboutDialog.jsx';
+import ErrorNotice from './components/ErrorNotice.jsx';
+import LazyScene3D from './components/LazyScene3D.jsx';
+
+
+import { SceneErrorBoundary, SceneUnavailable } from './components/SceneFallback.jsx';
+import { AiSuggestionsPanel } from './components/AiSuggestions.jsx';
+import { useAiLayoutAssistant } from './components/useAiLayoutAssistant.js';
+import { canUseWebGL } from './domain/webgl-support.js';
 
 const PROJECT_DRAFT_STORAGE_KEY = 'desklab.project-draft.v1';
-const projectClient = createProjectClient();
+const getBrowserStorage = () => window.localStorage;
+const projectClient = createLocalProjectClient(getBrowserStorage);
 const projectDraftStorage = createProjectDraftStorage(
-  () => window.localStorage,
+  getBrowserStorage,
   PROJECT_DRAFT_STORAGE_KEY
 );
+
+// Saves live only in this browser. Ask once that the browser keep them when
+// it is short on space; it may say no, and saving works either way.
+let persistentStorageRequested = false;
+function requestPersistentStorage() {
+  if (persistentStorageRequested) return;
+  persistentStorageRequested = true;
+  navigator.storage?.persist?.().catch(() => {});
+}
 
 const serializeLayout = (room, objects, connections) =>
   JSON.stringify({ room, objects, connections });
@@ -99,11 +119,16 @@ export default function App() {
   const [backupRecoveryBusy, setBackupRecoveryBusy] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
   const [recoveryDraft, setRecoveryDraft] = useState(null);
-  const projectEditable = canEditProject({
+  const [showBackupReminder, setShowBackupReminder] = useState(false);
+  // While an AI suggestion is previewed in 3D, editing waits until the user
+  // applies or cancels it.
+  const [aiPreview, setAiPreview] = useState(null);
+  const projectBaseEditable = canEditProject({
     projectLoaded,
     projectLoadFailed,
     recoveryPending: Boolean(recoveryDraft),
   });
+  const projectEditable = projectBaseEditable && !aiPreview;
   
   const cameraRef = useRef(null);
   const controlsRef = useRef(null);
@@ -155,8 +180,19 @@ export default function App() {
   const [showLayoutReport, setShowLayoutReport] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  const [webglAvailable] = useState(() => canUseWebGL());
+  // First-visit guide: only for a project that has never been saved, until
+  // the user picks a way to start or something appears in the room.
+  const [hasSavedProject, setHasSavedProject] = useState(true);
+  const [startGuideDismissed, setStartGuideDismissed] = useState(false);
+  const scrollTemplatesToBuilderRef = useRef(false);
+  const deskBuilderHeadingRef = useRef(null);
   const [purchaseGuidance, setPurchaseGuidance] = useState(null);
   const [hoveredDeviceId, setHoveredDeviceId] = useState(null);
+
+  const aiAssistant = useAiLayoutAssistant();
+  const currentProject = useMemo(() => ({ room, objects, connections }), [room, objects, connections]);
 
   const closeRecommendations = useCallback(() => {
     setPurchaseGuidance(null);
@@ -178,7 +214,14 @@ export default function App() {
     );
   }, []);
 
-  useEffect(() => () => statusNotifierRef.current.dispose(), []);
+  // StrictMode mounts, unmounts, and remounts in development; a notifier
+  // disposed by the first cleanup would drop every later status, so each
+  // mount gets its own.
+  useEffect(() => {
+    const notifier = createStatusNotifier(setStatusMsg);
+    statusNotifierRef.current = notifier;
+    return () => notifier.dispose();
+  }, []);
 
   const isDirty = savedLayout !== null && (
     serializeLayout(room, objects, connections) !== savedLayout || cameraDirty
@@ -189,7 +232,7 @@ export default function App() {
     if (result.ok) return result.draft;
     console.warn('Unable to read local project draft.', result.error);
     showStatus({
-      text: '无法读取本地草稿；请尽快保存项目或导出 JSON，避免未保存修改丢失。',
+      text: '无法读取本地草稿；请尽快保存项目或导出备份，避免未保存修改丢失。',
       type: 'error',
     });
     return null;
@@ -201,7 +244,7 @@ export default function App() {
     console.warn('Unable to clear local project draft.', result.error);
     showStatus({
       text: result.operation === 'clear-blocked'
-        ? '本地草稿读取失败，已阻止清理以保留恢复材料；请尽快保存项目或导出 JSON。'
+        ? '本地草稿读取失败，已阻止清理以保留恢复材料；请尽快保存项目或导出备份。'
         : '本地草稿清理失败；请检查浏览器存储权限后重试。',
       type: 'error',
     });
@@ -351,6 +394,7 @@ export default function App() {
       .then(({ project: data, version }) => {
         if (controller.signal.aborted) return;
         projectVersionRef.current = version;
+        setHasSavedProject(version !== UNSAVED_PROJECT_VERSION);
         setProjectLoadFailed(false);
         const loadedRoom = data.room || { length: 10, width: 10, height: 3 };
         const hydratedObjects = hydrateProjectObjects(data.objects || []);
@@ -383,7 +427,9 @@ export default function App() {
         console.error(err);
         setProjectLoadFailed(true);
         showStatus({
-          text: '后端项目读取失败，已锁定保存以保护现有数据。请重启后端后刷新页面。',
+          text: err.code === 'storage_unavailable'
+            ? err.message
+            : '本机保存的项目无法读取，已锁定保存以保护原数据。可以尝试恢复上一版本。',
           type: 'error',
         });
         const localDraft = readLocalDraft();
@@ -422,11 +468,14 @@ export default function App() {
         if (showRecommendations) {
           closeRecommendations();
         }
+        if (showAbout) {
+          setShowAbout(false);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDownEsc);
     return () => window.removeEventListener('keydown', handleKeyDownEsc);
-  }, [closeRecommendations, connectionMode, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations]);
+  }, [closeRecommendations, connectionMode, showAbout, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations]);
 
   useEffect(() => {
     const handleHistoryKeys = (e) => {
@@ -622,7 +671,7 @@ export default function App() {
       if (!result.ok) {
         console.warn('Unable to save local project draft.', result.error);
         showStatus({
-          text: '本地草稿保存失败；请立即保存项目或导出 JSON。',
+          text: '本地草稿保存失败；请立即保存项目或导出备份。',
           type: 'error',
         });
       }
@@ -641,7 +690,7 @@ export default function App() {
     }
     if (projectLoadFailed) {
       showStatus({
-        text: '项目尚未安全读取，当前禁止覆盖后端数据。请重启后端后刷新页面。',
+        text: '本机保存的项目无法读取，为保护原数据已禁止保存。',
         type: 'error',
       });
       return;
@@ -665,6 +714,8 @@ export default function App() {
     try {
       const saved = await projectClient.save(snapshot, projectVersionRef.current);
       projectVersionRef.current = saved.version;
+      setHasSavedProject(true);
+      requestPersistentStorage();
 
       const latest = projectStateRef.current;
       const latestProject = {
@@ -685,6 +736,11 @@ export default function App() {
       }
       setRecoveryDraft(null);
       const draftCleared = !fullyCurrent || clearLocalDraft();
+      setShowBackupReminder(shouldRemindBackup({
+        objectCount: saved.project.objects.length,
+        state: readBackupReminderState(getBrowserStorage),
+        now: new Date(),
+      }));
       showStatus(
         fullyCurrent && !draftCleared
           ? { text: '项目已保存，但本地草稿清理失败；刷新前请检查浏览器存储权限。', type: 'error' }
@@ -704,7 +760,7 @@ export default function App() {
 
   const handleRecoverBackup = async () => {
     const confirmed = window.confirm(
-      '确定恢复上一次成功保存的项目吗？\n当前无法读取的后端项目文件将被备份版本替换。'
+      '确定恢复上一次成功保存的项目吗？\n当前无法读取的项目将被上一版本替换。'
     );
     if (!confirmed) return;
 
@@ -765,7 +821,14 @@ export default function App() {
       camera: getCurrentCamera(),
       connections,
     }, 'desklab-project');
-    showStatus({ text: '项目已导出', type: 'success' }, 3000);
+    recordBackupExport(getBrowserStorage, new Date());
+    setShowBackupReminder(false);
+    showStatus({ text: '备份已导出', type: 'success' }, 3000);
+  };
+
+  const handleSnoozeBackupReminder = () => {
+    snoozeBackupReminder(getBrowserStorage, new Date());
+    setShowBackupReminder(false);
   };
 
   const handleExportRecoveryDraft = () => {
@@ -789,7 +852,7 @@ export default function App() {
       const result = await projectClient.validate(parsed);
 
       const shouldImport = window.confirm(
-        `确定导入“${file.name}”并替换当前画布吗？\n导入后仍需点击“保存项目”才会写入后端。`
+        `确定导入“${file.name}”并替换当前的桌面吗？\n导入后仍需点击“保存项目”才会保存。`
       );
       if (!shouldImport) return;
 
@@ -813,11 +876,30 @@ export default function App() {
       setConnectionMode(false);
       setConnectionDraft({});
       setHoveredDeviceId(null);
-      showStatus({ text: '项目已导入，尚未保存', type: 'success' }, 3000);
+      showStatus({ text: '备份已导入，尚未保存', type: 'success' }, 3000);
     } catch (error) {
-      showStatus({ text: `导入失败：${error.message}`, type: 'error' }, 5000);
+      showStatus({ text: `导入失败：${describeProjectImportError(error)}`, type: 'error' }, 5000);
     } finally {
       input.value = '';
+    }
+  };
+
+  useEffect(() => {
+    if (!showTemplates || !scrollTemplatesToBuilderRef.current) return;
+    scrollTemplatesToBuilderRef.current = false;
+    deskBuilderHeadingRef.current?.scrollIntoView({ block: 'start' });
+  }, [showTemplates]);
+
+  const showStartGuide = projectLoaded && projectEditable && !hasSavedProject
+    && !startGuideDismissed && objects.length === 0;
+
+  const handleStartGuideChoice = (choice) => {
+    setStartGuideDismissed(true);
+    if (choice === 'template' || choice === 'builder') {
+      scrollTemplatesToBuilderRef.current = choice === 'builder';
+      setShowTemplates(true);
+    } else {
+      setIsLeftPanelOpen(true);
     }
   };
 
@@ -856,9 +938,9 @@ export default function App() {
       const currentCamera = getCurrentCamera();
       const project = { room, objects, connections, camera: currentCamera };
       await navigator.clipboard.writeText(JSON.stringify(project, null, 2));
-      showStatus({ text: '项目数据已复制到剪贴板', type: 'success' }, 3000);
-    } catch (error) {
-      showStatus({ text: `复制失败：${error.message}`, type: 'error' }, 4000);
+      showStatus({ text: '项目已复制，可以粘贴到别处', type: 'success' }, 3000);
+    } catch {
+      showStatus({ text: '复制失败：浏览器没有允许使用剪贴板，可以改用“导出备份”', type: 'error' }, 4000);
     }
   };
 
@@ -874,7 +956,7 @@ export default function App() {
       const result = await projectClient.validate(parsed);
 
       const shouldImport = window.confirm(
-        '确定从剪贴板导入项目并替换当前画布吗？\n导入后仍需点击“保存项目”才会写入后端。'
+        '确定从剪贴板导入项目并替换当前的桌面吗？\n导入后仍需点击“保存项目”才会保存。'
       );
       if (!shouldImport) return;
 
@@ -898,9 +980,9 @@ export default function App() {
       setConnectionMode(false);
       setConnectionDraft({});
       setHoveredDeviceId(null);
-      showStatus({ text: '项目已从剪贴板导入，尚未保存', type: 'success' }, 3000);
+      showStatus({ text: '项目已粘贴，尚未保存', type: 'success' }, 3000);
     } catch (error) {
-      showStatus({ text: `从剪贴板导入失败：${error.message}`, type: 'error' }, 5000);
+      showStatus({ text: `粘贴失败：${describeProjectImportError(error)}`, type: 'error' }, 5000);
     }
   };
 
@@ -962,6 +1044,33 @@ export default function App() {
   };
 
   const selectedObj = objects.find(o => o.id === selectedObjectId);
+  const handleApplyAiProject = (nextProject, label) => {
+    if (!projectBaseEditable) return;
+    recordHistory();
+    setObjects(nextProject.objects);
+    setConnections(nextProject.connections);
+    setAiPreview(null);
+    showStatus({ text: `已应用 AI 建议：${label}`, type: 'success' }, 3000);
+  };
+
+  const handlePreviewAiSuggestion = (preview) => {
+    closeRecommendations();
+    setSelectedObjectId(null);
+    setAiPreview(preview);
+  };
+
+  // Devices linked to the selection, highlighted while the connections tab is open.
+  const sceneRelatedIds = new Set();
+  if (isPanelOpen && activeTab === 'connections' && selectedObjectId) {
+    connections.forEach(c => {
+      if (c.fromObjectId === selectedObjectId) sceneRelatedIds.add(c.toObjectId);
+      if (c.toObjectId === selectedObjectId) sceneRelatedIds.add(c.fromObjectId);
+    });
+  }
+  const selectionHint = describeSelectionHint({
+    selectedName: selectedObj ? selectedObj.name : null,
+    isMobile,
+  });
   const wiringIssues = useMemo(
     () => analyzeProjectWiring(objects, connections),
     [objects, connections]
@@ -999,8 +1108,8 @@ export default function App() {
     try {
       await navigator.clipboard.writeText(shoppingList.text);
       showStatus({ text: '购物清单已复制', type: 'success' }, 3000);
-    } catch (error) {
-      showStatus({ text: `复制失败：${error.message}`, type: 'error' }, 4000);
+    } catch {
+      showStatus({ text: '复制失败：浏览器没有允许使用剪贴板，可以手动选中清单文字复制', type: 'error' }, 4000);
     }
   };
 
@@ -1220,10 +1329,12 @@ export default function App() {
                   显示坐标轴
                 </button>
                 <div className="toolbar-menu-separator" role="separator" />
-                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => importInputRef.current?.click())} disabled={!projectEditable}>导入 JSON</button>
-                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleExportProject)} disabled={!projectEditable}>导出 JSON</button>
-                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handlePasteProjectFromClipboard)} disabled={!projectEditable} title="从剪贴板粘贴项目数据">粘贴 JSON</button>
-                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleCopyProjectToClipboard)} disabled={!projectEditable} title="复制项目数据到剪贴板">复制 JSON</button>
+                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => importInputRef.current?.click())} disabled={!projectEditable}>导入备份</button>
+                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleExportProject)} disabled={!projectEditable}>导出备份</button>
+                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handlePasteProjectFromClipboard)} disabled={!projectEditable} title="粘贴别人分享或从另一台设备复制的项目">粘贴项目</button>
+                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleCopyProjectToClipboard)} disabled={!projectEditable} title="复制项目，可以粘贴给别人或另一台设备">复制项目</button>
+                <div className="toolbar-menu-separator" role="separator" />
+                <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowAbout(true))}>关于与隐私</button>
               </div>
             )}
             <input
@@ -1232,7 +1343,7 @@ export default function App() {
               accept="application/json,.json"
               onChange={handleImportProject}
               style={{ display: 'none' }}
-              aria-label="导入 DeskLab 项目 JSON"
+              aria-label="导入 DeskLab 备份文件"
             />
             <button className="ui-button" onClick={handleToggleLeftPanel}>
               {isLeftPanelOpen ? '收起资产库' : '展开资产库'}
@@ -1248,7 +1359,7 @@ export default function App() {
               title={!projectLoaded
                 ? '项目仍在加载，保存暂不可用'
                 : projectLoadFailed
-                  ? '后端项目读取失败，为防止覆盖原数据，保存已锁定'
+                  ? '本机保存的项目无法读取，为防止覆盖原数据，保存已锁定'
                   : recoveryDraft
                     ? '请先恢复或放弃本地草稿'
                   : saveBusy
@@ -1279,10 +1390,38 @@ export default function App() {
           </div>
         )}
 
+        {showBackupReminder && !recoveryDraft && !projectLoadFailed && (
+          <div className="draft-recovery-banner" role="region" aria-label="备份提醒">
+            <div>
+              <strong>建议导出一份备份</strong>
+              <span>桌面只保存在这个浏览器里，清理浏览器数据或换设备后就找不到了。需要时可用“更多 → 导入备份”恢复。</span>
+            </div>
+            <div className="draft-recovery-actions">
+              <button type="button" className="ui-button ui-button-primary" onClick={handleExportProject}>导出备份</button>
+              <button type="button" className="ui-button" onClick={handleSnoozeBackupReminder}>以后再说</button>
+            </div>
+          </div>
+        )}
+
+        <ErrorNotice />
+
+        {aiPreview && (
+          <div className="draft-recovery-banner" role="region" aria-label="AI 预览">
+            <div>
+              <strong>预览 AI 建议：{aiPreview.title}</strong>
+              <span>高亮的设备会被调整，确认后才会改动你的桌面。</span>
+            </div>
+            <div className="draft-recovery-actions">
+              <button type="button" className="ui-button ui-button-primary" onClick={() => handleApplyAiProject(aiPreview.nextProject, aiPreview.title)}>应用</button>
+              <button type="button" className="ui-button" onClick={() => setAiPreview(null)}>取消</button>
+            </div>
+          </div>
+        )}
+
         {projectLoadFailed && (
           <div className="draft-recovery-banner" role="alert">
             <div>
-              <strong>后端项目读取失败，保存已锁定</strong>
+              <strong>本机保存的项目无法读取，保存已锁定</strong>
               <span>可尝试恢复上一次成功保存的版本；本地未保存草稿不会被删除。</span>
             </div>
             <div className="draft-recovery-actions">
@@ -1298,20 +1437,9 @@ export default function App() {
           </div>
         )}
 
-        {/* 固定的信息提示栏（精简版） */}
-        <div style={{ 
-          height: '40px', background: selectedObj ? '#e0ffe0' : '#f8f9fa', padding: '0 16px', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', borderBottom: '1px solid #ddd', flexShrink: 0
-        }}>
-          {selectedObj ? (
-            <div style={{ display: 'flex', gap: '15px', alignItems: 'center', overflow: 'hidden' }}>
-              <span style={{ fontSize: '13px' }}><strong>已选中:</strong> {selectedObj.name} ({selectedObj.type})</span>
-              <span style={{ fontSize: '13px', color: '#555', marginLeft: '10px', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                💡 提示: 右侧面板可精确编辑。快捷键: 拖拽/方向平移, 滚轮缩放, Q/E旋转, Space/Shift+Space升降
-              </span>
-            </div>
-          ) : (
-            <span style={{ fontSize: '13px', color: '#666' }}>未选中设备。点击 3D 视图中的设备进行交互，并在右侧属性面板编辑。</span>
-          )}
+        <div className={`selection-hint${selectedObj ? ' selection-hint-active' : ''}`}>
+          <span className="selection-hint-title">{selectionHint.title}</span>
+          {selectionHint.tip && <span className="selection-hint-tip">{selectionHint.tip}</span>}
         </div>
       </div>
 
@@ -1332,7 +1460,7 @@ export default function App() {
         
         {connectionMode && (
           <div style={{ position: 'absolute', top: 15, left: '50%', transform: 'translateX(-50%)', background: '#ff9800', color: 'white', padding: '10px 20px', borderRadius: '20px', zIndex: 100, fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-            请点击 3D 画布中的目标设备 (按 Esc 取消)
+            请在 3D 画面里点选要连接的设备（按 Esc 取消）
           </div>
         )}
 
@@ -1405,101 +1533,77 @@ export default function App() {
 
         {/* 左侧/中间：3D 视图 */}
         <div ref={canvasContainerRef} style={{ flex: 1, position: 'relative', cursor: dragInfo ? 'grabbing' : 'default', minWidth: 0, minHeight: 0 }}>
-          <Canvas onPointerMissed={() => {
-            if (!connectionMode) setSelectedObjectId(null);
-          }}>
-            <ambientLight intensity={0.5} />
-            <directionalLight position={[10, 10, 5]} intensity={1} />
-            <CameraSetup cameraConfig={cameraConfig} room={room} controlsRef={controlsRef} cameraRef={cameraRef} />
-            <OrbitControls
-              ref={controlsRef}
-              makeDefault
-              enabled={projectEditable && !dragInfo && !connectionMode}
-              enableZoom={!selectedObjectId && !connectionMode}
-              onEnd={handleCameraInteractionEnd}
-            />
-
-            {dragInfo && (
-              <mesh
-                rotation={[-Math.PI / 2, 0, 0]} position={[0, dragInfo.planeY, 0]}
-                onPointerMove={(e) => {
-                  e.stopPropagation();
-                  const obj = objects.find(o => o.id === dragInfo.objId);
-                  if (!obj) return;
-                  updateSelectedObject({ position: { x: e.point.x + dragInfo.offsetX, y: e.point.z + dragInfo.offsetY } });
-                }}
-                onPointerUp={(e) => { e.stopPropagation(); setDragInfo(null); finishHistoryGroup(); }}
-              >
-                <planeGeometry args={[2000, 2000]} />
-                <meshBasicMaterial visible={false} />
-              </mesh>
-            )}
-
-            {showAxes && <DeskLabAxes room={room} />}
-            <Grid infiniteGrid fadeDistance={40} sectionColor="#cfd8dc" cellColor="#eceff1" />
-            
-            {/* 实体墙壁与线框 */}
-            <RoomWalls room={room} />
-            
-            {/* 连接线渲染 */}
-            <ConnectionsRenderer connections={connections} objects={objects} />
-
-            {/* 电力状态浮标 */}
-            <PowerStatusOverlay objects={objects} connections={connections} />
-
-            {(() => {
-              const isConnectionTab = isPanelOpen && activeTab === 'connections';
-              const relatedIds = new Set();
-              if (isConnectionTab && selectedObjectId) {
-                connections.forEach(c => {
-                  if (c.fromObjectId === selectedObjectId) relatedIds.add(c.toObjectId);
-                  if (c.toObjectId === selectedObjectId) relatedIds.add(c.fromObjectId);
-                });
+          {showStartGuide && (
+            <div className="start-guide" role="region" aria-label="开始搭建">
+              <h2 className="start-guide-title">从这里开始搭建你的桌面</h2>
+              <p className="start-guide-text">选一种方式，几秒钟就能得到一张摆好设备、接好线的桌面，之后可以随意调整。</p>
+              <div className="start-guide-actions">
+                <button type="button" className="ui-button ui-button-primary" onClick={() => handleStartGuideChoice('template')}>从模板开始</button>
+                <button type="button" className="ui-button" onClick={() => handleStartGuideChoice('builder')}>按我的设备生成</button>
+                <button type="button" className="ui-button" onClick={() => handleStartGuideChoice('manual')}>自己摆</button>
+              </div>
+            </div>
+          )}
+          {!webglAvailable ? <SceneUnavailable reason="no-webgl" /> : (
+          <SceneErrorBoundary>
+          {reportSceneFailure => (
+          <LazyScene3D
+            reportFailure={reportSceneFailure}
+            cameraConfig={cameraConfig}
+            room={room}
+            controlsRef={controlsRef}
+            cameraRef={cameraRef}
+            controlsEnabled={projectEditable && !dragInfo && !connectionMode}
+            zoomEnabled={!selectedObjectId && !connectionMode}
+            onCameraInteractionEnd={handleCameraInteractionEnd}
+            dragPlaneY={dragInfo ? dragInfo.planeY : null}
+            onDragMove={point => {
+              const obj = objects.find(o => o.id === dragInfo?.objId);
+              if (!obj) return;
+              updateSelectedObject({ position: { x: point.x + dragInfo.offsetX, y: point.z + dragInfo.offsetY } });
+            }}
+            onDragEnd={() => { setDragInfo(null); finishHistoryGroup(); }}
+            showAxes={showAxes}
+            objects={aiPreview ? aiPreview.nextProject.objects : objects}
+            connections={aiPreview ? aiPreview.nextProject.connections : connections}
+            selectedObjectId={selectedObjectId}
+            relatedIds={aiPreview ? new Set(aiPreview.changedIds) : sceneRelatedIds}
+            hoveredObjectId={connectionMode ? hoveredDeviceId : null}
+            onBackgroundClick={() => {
+              if (!connectionMode) setSelectedObjectId(null);
+            }}
+            onObjectClick={obj => {
+              const clickAction = getCanvasObjectClickAction({
+                projectEditable,
+                connectionMode,
+                objectId: obj.id,
+                selectedObjectId,
+              });
+              if (clickAction === 'ignore') return;
+              if (clickAction === 'choose-connection-target') {
+                setConnectionDraft(prev => ({ ...prev, toObjectId: obj.id, toPortId: '' }));
+                setConnectionMode(false);
+                setHoveredDeviceId(null);
+                return;
               }
-
-              return objects.map(obj => (
-                <DeviceMesh 
-                  key={obj.id}
-                  obj={obj}
-                  isSelected={selectedObjectId === obj.id}
-                  isRelated={relatedIds.has(obj.id)}
-                  isHovered={connectionMode && hoveredDeviceId === obj.id && obj.id !== selectedObjectId}
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    const clickAction = getCanvasObjectClickAction({
-                      projectEditable,
-                      connectionMode,
-                      objectId: obj.id,
-                      selectedObjectId,
-                    });
-                    if (clickAction === 'ignore') return;
-                    if (clickAction === 'choose-connection-target') {
-                      setConnectionDraft(prev => ({ ...prev, toObjectId: obj.id, toPortId: '' }));
-                      setConnectionMode(false);
-                      setHoveredDeviceId(null);
-                      return;
-                    }
-                    setSelectedObjectId(obj.id);
-                  }}
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                    if (!canStartObjectDrag({ projectEditable, connectionMode })) return;
-                    finishHistoryGroup();
-                    setSelectedObjectId(obj.id);
-                    setDragInfo({ objId: obj.id, planeY: e.point.y, offsetX: obj.position.x - e.point.x, offsetY: obj.position.y - e.point.z });
-                  }}
-                  onPointerOver={(e) => {
-                    e.stopPropagation();
-                    if (projectEditable && connectionMode) setHoveredDeviceId(obj.id);
-                  }}
-                  onPointerOut={(e) => {
-                    e.stopPropagation();
-                    if (projectEditable && connectionMode && hoveredDeviceId === obj.id) setHoveredDeviceId(null);
-                  }}
-                />
-              ));
-            })()}
-          </Canvas>
+              setSelectedObjectId(obj.id);
+            }}
+            onObjectPointerDown={(obj, point) => {
+              if (!canStartObjectDrag({ projectEditable, connectionMode })) return;
+              finishHistoryGroup();
+              setSelectedObjectId(obj.id);
+              setDragInfo({ objId: obj.id, planeY: point.y, offsetX: obj.position.x - point.x, offsetY: obj.position.y - point.z });
+            }}
+            onObjectHover={obj => {
+              if (projectEditable && connectionMode) setHoveredDeviceId(obj.id);
+            }}
+            onObjectHoverEnd={obj => {
+              if (projectEditable && connectionMode && hoveredDeviceId === obj.id) setHoveredDeviceId(null);
+            }}
+          />
+          )}
+          </SceneErrorBoundary>
+          )}
         </div>
 
         {/* 右侧：面板 */}
@@ -1541,7 +1645,7 @@ export default function App() {
                 ) : (
                   <div className="empty-state">
                     <strong>未选中设备</strong><br />
-                    请在左侧 3D 画布中<br />点击任意设备以编辑其属性。
+                    在 3D 画面里点选一个设备，<br />就可以在这里编辑它。
                   </div>
                 )
               )}
@@ -1583,6 +1687,8 @@ export default function App() {
         )}
 
       </div>
+
+      {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
 
       {showTemplates && (
         <div
@@ -1639,7 +1745,7 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <h4 className="template-section-title">按我的设备生成</h4>
+              <h4 className="template-section-title" ref={deskBuilderHeadingRef}>按我的设备生成</h4>
               <DeskBuilderForm
                 disabled={!projectEditable}
                 onGenerate={scene => applyGeneratedScene(scene, '已按你的设备生成桌面')}
@@ -1960,7 +2066,7 @@ export default function App() {
                           </td>
                           <td style={{ padding: '8px' }}>
                             {c.name}<br/>
-                            <span style={{ color: '#666', fontSize: '11px' }}>{c.cableType} ({c.length}m)</span>
+                            <span style={{ color: '#666', fontSize: '11px' }}>{describeCableType(c.cableType)}（{c.length}m）</span>
                             {lengthStatus && (
                               <div className={`cable-distance ${lengthStatus.hasRecommendedSlack ? 'cable-distance-ok' : 'cable-distance-warning'}`}>
                                 端点 {lengthStatus.distance.toFixed(2)}m / 建议 {lengthStatus.recommendedLength.toFixed(2)}m
@@ -2019,6 +2125,16 @@ export default function App() {
               <p className="wiring-issue-description">
                 根据当前设备、位置和连接规则生成建议；实际摆放、走线和设备规格仍需确认。
               </p>
+              <AiSuggestionsPanel
+                ai={aiAssistant}
+                project={currentProject}
+                editable={projectEditable}
+                onApply={(nextProject, label) => {
+                  handleApplyAiProject(nextProject, label);
+                  closeRecommendations();
+                }}
+                onPreview={handlePreviewAiSuggestion}
+              />
               <div className="wiring-summary">
                 <span className="wiring-summary-info">免费改进 {recommendations.freeImprovements.length}</span>
                 <span className="wiring-summary-warning">加购建议 {recommendations.purchases.length}</span>

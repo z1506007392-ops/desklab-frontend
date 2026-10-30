@@ -10,6 +10,7 @@ import { toThreePosition, toThreeZRotation } from '../domain/coordinates.js';
 import { applyGlbHighlight } from '../domain/glb-highlight.js';
 import { getGenericModelAsset } from '../domain/model-assets.js';
 import { getGenericModelLayout } from '../domain/generic-model-layouts.js';
+import { modelAvailability } from '../domain/model-availability.js';
 
 // The outlet plate is authored on three.js +Z, but wall snap aims local -Y
 // (three.js -Z) into the room. Yaw the mesh so the plate meets the anchors.
@@ -204,6 +205,20 @@ function cloneSceneWithHighlight(scene, highlight) {
     child.material = Array.isArray(child.material) ? cloned : cloned[0];
   });
   return clone;
+}
+
+// 'none' without a URL; otherwise 'pending' until the file check settles.
+function useModelAvailability(url) {
+  const [state, setState] = React.useState(() => (url ? modelAvailability.peek(url) : 'none'));
+  useEffect(() => {
+    if (!url) return undefined;
+    let active = true;
+    modelAvailability.check(url).then(available => {
+      if (active) setState(available ? 'available' : 'missing');
+    });
+    return () => { active = false; };
+  }, [url]);
+  return url ? state : 'none';
 }
 
 function GLBModel({ url, scaleRatio, meshYaw = 0, isSelected, isRelated, isHovered }) {
@@ -647,6 +662,7 @@ export function DeviceMesh({
   } : { x: 1, y: 1, z: 1 };
   const materialProps = getHighlightMaterialProps({ isSelected, isRelated, isHovered });
   const genericAsset = getGenericModelAsset(obj.modelId);
+  const modelState = useModelAvailability(obj.assetUrl);
   const renderFallback = () => (genericAsset
     ? <GenericModel asset={genericAsset} obj={obj} materialProps={materialProps} />
     : <FallbackBox obj={obj} materialProps={materialProps} />);
@@ -660,7 +676,7 @@ export function DeviceMesh({
       onPointerOver={onPointerOver}
       onPointerOut={onPointerOut}
     >
-      {obj.assetUrl ? (
+      {modelState === 'available' ? (
         <GLTFErrorBoundary fallback={renderFallback()}>
           <Suspense fallback={renderFallback()}>
             <GLBModel

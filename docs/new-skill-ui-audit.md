@@ -43,6 +43,8 @@ We assessed the current codebase across 5 technical and visual dimensions:
 ### P1: Major Issues (WCAG AA Violations & Professional Quality Gaps)
 
 #### 1. [P1] Global Connections Dialog Accessibility & Styling
+> **核对（2026-10-30，claude）**：已修复：关闭按钮有 `type="button"`、`aria-label="关闭全部连接清单"`、`.side-panel-close`；删除按钮为 `.ui-button-danger`。
+
 - **Location**: [App.jsx:L1394-1445](file:///C:/Users/lyj/.gemini/antigravity/scratch/DeskLab/src/App.jsx#L1394-L1445)
 - **Category**: Accessibility / Anti-Pattern
 - **Impact**: 
@@ -54,6 +56,8 @@ We assessed the current codebase across 5 technical and visual dimensions:
 - **Suggested command**: `$impeccable polish`
 
 #### 2. [P1] Toolbar Form Controls Lack Explicit Association
+> **核对（2026-10-30，claude）**：已修复：长 / 宽 / 高是 `<label htmlFor="room-*">`，输入框有对应 id。
+
 - **Location**: [App.jsx:L1054-1060](file:///C:/Users/lyj/.gemini/antigravity/scratch/DeskLab/src/App.jsx#L1054-L1060)
 - **Category**: Accessibility
 - **Impact**: 
@@ -63,6 +67,8 @@ We assessed the current codebase across 5 technical and visual dimensions:
 - **Suggested command**: `$impeccable layout`
 
 #### 3. [P1] Low Contrast Text in Editor Empty States & Descriptions
+> **核对（2026-10-30，claude）**：已修复（ffefe20）：空状态文字为 #555；其余灰色说明文字从 #888 改为 #5f6b7a；`test/text-contrast.test.js` 防止回退。
+
 - **Location**: [App.jsx:L1382-1386](file:///C:/Users/lyj/.gemini/antigravity/scratch/DeskLab/src/App.jsx#L1382-L1386)
 - **Category**: Accessibility
 - **Impact**: 
@@ -76,6 +82,8 @@ We assessed the current codebase across 5 technical and visual dimensions:
 ### P2: Minor Issues (Visual Polish & Layout Refinement)
 
 #### 4. [P2] Over-wrapping in Toolbar Layout on Narrow Screens
+> **核对（2026-10-30，claude）**：未做（P2）→ 任务 E10。
+
 - **Location**: [App.jsx:L1050-1099](file:///C:/Users/lyj/.gemini/antigravity/scratch/DeskLab/src/App.jsx#L1050-L1099)
 - **Category**: Responsive Design
 - **Impact**:
@@ -84,6 +92,8 @@ We assessed the current codebase across 5 technical and visual dimensions:
 - **Suggested command**: `$impeccable adapt`
 
 #### 5. [P2] Hardcoded Inline Colors in Connection Banner
+> **核对（2026-10-30，claude）**：未做（P2）→ 任务 E11。
+
 - **Location**: [App.jsx:L1197-1201](file:///C:/Users/lyj/.gemini/antigravity/scratch/DeskLab/src/App.jsx#L1197-L1201)
 - **Category**: Theming
 - **Impact**:
@@ -92,6 +102,8 @@ We assessed the current codebase across 5 technical and visual dimensions:
 - **Suggested command**: `$impeccable colorize`
 
 #### 6. [P2] Micro-interactions & Missing Hover States
+> **核对（2026-10-30，claude）**：未做（P2）→ 任务 E12。
+
 - **Location**: [App.css:L433-469](file:///C:/Users/lyj/.gemini/antigravity/scratch/DeskLab/src/App.css#L433-L469)
 - **Category**: Responsive Design / Performance
 - **Impact**:

@@ -11,6 +11,37 @@ export const CABLE_TYPE_NAMES = Object.freeze({
   other: '连接线',
 });
 
+// Plain names for the stored port types and directions, for any message a
+// user can see. Unknown values come from imported data and are shown as is.
+export const PORT_TYPE_NAMES = Object.freeze({
+  ac_input: '电源输入',
+  ac_output: '电源插孔',
+  dc_input: 'DC 电源输入',
+  dc_output: 'DC 输出',
+  hdmi: 'HDMI',
+  displayport: 'DP',
+  usb_c: 'USB-C',
+  ethernet: '网口',
+});
+
+export const PORT_DIRECTION_NAMES = Object.freeze({
+  input: '输入',
+  output: '输出',
+  bidirectional: '双向',
+});
+
+export function describePortType(type) {
+  return PORT_TYPE_NAMES[type] ?? `其他（${type}）`;
+}
+
+export function describePortDirection(direction) {
+  return PORT_DIRECTION_NAMES[direction] ?? `未知（${direction}）`;
+}
+
+export function describeCableType(type) {
+  return CABLE_TYPE_NAMES[type] ?? '连接线';
+}
+
 // Lengths cables are commonly sold in, in metres.
 export const STANDARD_CABLE_LENGTHS = Object.freeze([0.5, 1, 1.5, 1.8, 2, 3, 5, 10]);
 

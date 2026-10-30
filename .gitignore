@@ -6,3 +6,14 @@ node_modules
 .vite-server.err.log
 test-results/
 playwright-report/
+
+# Secrets (DeepSeek key for local AI development, Cloudflare local vars)
+.env
+.env.*
+.dev.vars
+
+# Local Cloudflare runtime state (wrangler pages dev)
+.wrangler/
+
+# Raw AI evaluation runs (copy representative answers to test/fixtures/ai/recorded/)
+tools/ai-eval/results/

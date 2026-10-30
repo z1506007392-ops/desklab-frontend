@@ -1,14 +1,162 @@
 # DeskLab Memory Bank for Claude
 
-Last updated: 2026-10-29, Asia/Singapore
+Last updated: 2026-10-30, Asia/Singapore
+
+> Start here: `docs/AUTONOMOUS_ROADMAP.md` is the step-by-step plan, task
+> board, and LLM (DeepSeek) design that every agent follows. This memory bank
+> records what was done and why.
 
 ## 协作规则
 
-两位贡献者会交替推进这个仓库：**Desklab**（Grok Bot，经 Cursor cloud agents）和 **Claude**。动工前先读完本文件。任何代码或文档改动，必须在同一个 PR 里追加下面的「进度记录」一条：日期（UTC+8）、贡献者、分支或 PR 链接、做了什么、还剩什么。没有这条记录的 PR 不算完成。
+两位贡献者会交替推进这个仓库：**Desklab**（Grok Bot，经 Cursor cloud agents，提交作者名 `grok`）和 **Claude**（提交作者名 `claude`）。动工前先读 `docs/AUTONOMOUS_ROADMAP.md`，再读完本文件。任何代码或文档改动，必须在同一个 PR 或同一次推送里追加下面的「进度记录」一条：日期（UTC+8）、贡献者、分支或 PR 链接、做了什么、还剩什么。没有这条记录的改动不算完成。
 
 ## 进度记录 / Progress Log
 
-最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。
+最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。Claude 在 master 上的记录原先写在正文里，这里按提交作者收成同一份日志。
+
+### 2026-10-30 · Desklab · [PR #2](https://github.com/z1506007392-ops/desklab-frontend/pull/2)
+
+把当时的 `master`（`28c0216`）合并进 `docs/glb-models`。保留 Claude 的代码和文档，也保留本 PR 的协作规则、进度记录、`AGENTS.md`、`CLAUDE.md`、README 指针和 `ATTRIBUTION.md`。冲突只在 `README.md` 和 `docs/memory_bank.md`。还剩：E13 评测余下 6 个请求、E10 等负责人先放入技能、H2 的 KV 限流绑定，以及屏幕发黑、近景功耗标签和线缆过大。
+
+### 2026-10-30 · Claude · [`28c0216`](https://github.com/z1506007392-ops/desklab-frontend/commit/28c0216)
+
+`d7094e0`。E13：每条布局提示带上可直接用的 `fix`，提示词 v2 在同一批 19 个请求上把采纳率从 25% 提到 53%。后 6 个请求撞上每小时限额，没有重跑。E10 未改代码就放开，等负责人先把技能放进仓库。
+
+### 2026-10-30 · Claude · [`eecabdb`](https://github.com/z1506007392-ops/desklab-frontend/commit/eecabdb)
+
+`66231cb`。C8：用户可以针对上一次 AI 回答再说一句，服务端把上一轮建议和这句话送回去。阶段 C 结束。还剩阶段 E。
+
+### 2026-10-30 · Claude · [`6525476`](https://github.com/z1506007392-ops/desklab-frontend/commit/6525476)
+
+负责人暂缓 H2（Cloudflare KV 上的共享限流）。限流仍是单实例内存。
+
+### 2026-10-30 · Claude · [`886b332`](https://github.com/z1506007392-ops/desklab-frontend/commit/886b332)
+
+`ca62f5c`、`c1ee1ab`。C7：对线上 DeepSeek 跑完第一轮评测，各项门槛都过，提示词不用改。评测可以在限额处停下再续跑。记下两个没帮上忙的场景，交给 E13。
+
+### 2026-10-30 · Claude · [`e2533ce`](https://github.com/z1506007392-ops/desklab-frontend/commit/e2533ce)
+
+负责人已在 Cloudflare 配好 `DEEPSEEK_API_KEY` 并重新部署。线上 `/api/ai/layout` 返回 200，模型名为 `deepseek-flash`。C7 可以开始。
+
+### 2026-10-30 · Claude · [`e4018ea`](https://github.com/z1506007392-ops/desklab-frontend/commit/e4018ea)
+
+`2297f1f`。A10：新插排不再自动插到另一只插排上。线上验收时加第二只插排会报布线问题，这里修掉。
+
+### 2026-10-30 · Claude · [`9c12f59`](https://github.com/z1506007392-ops/desklab-frontend/commit/9c12f59)
+
+D2：在 https://desklab-frontend.pages.dev 上做了桌面和手机验收（模板、保存、导出、关于页）。AI 当时仍显示未开放。发现第二只插排的串联问题（A10）。
+
+### 2026-10-30 · Claude · [`7827dda`](https://github.com/z1506007392-ops/desklab-frontend/commit/7827dda)
+
+`deaf439`。D5：补上搜索和链接预览用的描述与 `og:image`。自定义域名还没有。
+
+### 2026-10-30 · Claude · [`285ff35`](https://github.com/z1506007392-ops/desklab-frontend/commit/285ff35)
+
+`0209fa0`。D4：过旧的浏览器看到「版本太旧」，应用不再启动。Safari、Firefox、微信内置浏览器还没在真机上验过。
+
+### 2026-10-30 · Claude · [`bc2fd15`](https://github.com/z1506007392-ops/desklab-frontend/commit/bc2fd15)
+
+`f3811c7`。D3：页面出错时给出可复制的提示，不把内容发出去。GLB 回退和 ResizeObserver 的噪音不算。
+
+### 2026-10-30 · Claude · [`6ffef0a`](https://github.com/z1506007392-ops/desklab-frontend/commit/6ffef0a)
+
+`835eb4c`。D1：更多菜单里的「关于与隐私」。项目只存在本机；点「让 AI 看看」才会把布局和设备名称发给 DeepSeek。还没有联系方式。
+
+### 2026-10-30 · Claude · [`c022798`](https://github.com/z1506007392-ops/desklab-frontend/commit/c022798)
+
+`ae578ed`。C6：`npm run eval:ai` 离线评测。真模型结果等 H1。本地开发服务器默认不再限流。
+
+### 2026-10-30 · Claude · [`c3246cc`](https://github.com/z1506007392-ops/desklab-frontend/commit/c3246cc)
+
+`5407119`、`1fc4ff1`。C5：改进建议对话框里的 AI 建议，可预览、应用、撤销。A5 的懒加载在开发环境把画面留白，`LazyScene3D` 改为挂载一次；测试会把空白截图判失败。
+
+### 2026-10-30 · Claude · [`d7bda2a`](https://github.com/z1506007392-ops/desklab-frontend/commit/d7bda2a)
+
+`9a740b0`。C4：AI 动作先过规则引擎。越界、搬桌子、拆电源线、线太短等直接拒绝，并给出中文原因。
+
+### 2026-10-30 · Claude · [`4bc1f6c`](https://github.com/z1506007392-ops/desklab-frontend/commit/4bc1f6c)
+
+`4e327b5`。C3：把当前桌面收成给 AI 的摘要（座位、谁放在谁上面、线长、检查结果）。
+
+### 2026-10-30 · Claude · [`3cc8bd2`](https://github.com/z1506007392-ops/desklab-frontend/commit/3cc8bd2)
+
+`7df818b`。C2：给布局打分，用来判断 AI 的改动有没有变好。未建模的缺线不计入。
+
+### 2026-10-30 · Claude · [`881f471`](https://github.com/z1506007392-ops/desklab-frontend/commit/881f471)
+
+`1a0a2ae`。C1：舒适和整齐方面的布局提示（路线图 6.6.1 的 10 条）。模板和场景生成组合都应是 0 条提示。
+
+### 2026-10-30 · Claude · [`b15678f`](https://github.com/z1506007392-ops/desklab-frontend/commit/b15678f)
+
+`3287f5d`。B6：界面测试可以代答 AI 接口。阶段 B 结束。还剩阶段 C 的建议校验和界面。
+
+### 2026-10-30 · Claude · [`221762d`](https://github.com/z1506007392-ops/desklab-frontend/commit/221762d)
+
+`f38b3cf`。B5：浏览器端请求 AI 布局建议的客户端，错误有中文说明。
+
+### 2026-10-30 · Claude · [`2739d5c`](https://github.com/z1506007392-ops/desklab-frontend/commit/2739d5c)
+
+`ea51b15`。B4：`npm run dev:api` 在本机跑同一个 AI 处理函数；`AI_MOCK=1` 不需要密钥。
+
+### 2026-10-30 · Claude · [`c831074`](https://github.com/z1506007392-ops/desklab-frontend/commit/c831074)
+
+`202c2c8`。B3：按地址的每小时上限和全站每日上限（北京时间零点）。有 KV 就用 KV，否则用本机内存。
+
+### 2026-10-30 · Claude · [`756a206`](https://github.com/z1506007392-ops/desklab-frontend/commit/756a206)
+
+`64faa10`、`60a8eca`。B1 和 B2：约定 AI 建议的格式和 DeepSeek 提示词，并加上 Cloudflare Pages 的 `/api/ai/layout`。没配密钥时返回 503。
+
+### 2026-10-30 · Claude · [`b756467`](https://github.com/z1506007392-ops/desklab-frontend/commit/b756467)
+
+`4e5aa30`。A9：GLB 缺失时先 HEAD 检查，缺了就画通用形状，不再变成未捕获的页面错误。阶段 A 的必做部分到此结束。
+
+### 2026-10-30 · Claude · [`f80e841`](https://github.com/z1506007392-ops/desklab-frontend/commit/f80e841)
+
+`b45316e`。A7：界面上漏出的内部名称改成白话（线缆类型、端口、越界提示、导入错误）。HDMI、DP、USB-C 和单位保留。
+
+### 2026-10-30 · Claude · [`9e916cf`](https://github.com/z1506007392-ops/desklab-frontend/commit/9e916cf)
+
+`ffefe20`。A6：灰色辅助文字对比度提到可读；审计里已修好的条目标在文档上，剩下的变成 E8–E12。
+
+### 2026-10-30 · Claude · [`cf993c8`](https://github.com/z1506007392-ops/desklab-frontend/commit/cf993c8)
+
+`126c945`。A5：3D 画面延后加载，three.js 单独成块。下载失败和崩溃的提示分开。
+
+### 2026-10-30 · Claude · [`a6905c7`](https://github.com/z1506007392-ops/desklab-frontend/commit/a6905c7)
+
+`97a4658`。A4：没有 WebGL 或画面崩溃时，其余界面仍可用，并可以重新加载 3D。顺手记下 A9（模型加载的未捕获错误）。
+
+### 2026-10-30 · Claude · [`7306d9f`](https://github.com/z1506007392-ops/desklab-frontend/commit/7306d9f)
+
+`6efa9da`。A3：第一次打开、还没保存时，画面上有「开始搭建」（模板、按我的设备生成、自己摆）。
+
+### 2026-10-30 · Claude · [`0bd266b`](https://github.com/z1506007392-ops/desklab-frontend/commit/0bd266b)
+
+`20a8fc8`。A2：工具栏下的提示在手机上改短，并换行，不再被裁掉。选中设备显示用户起的名字。
+
+### 2026-10-30 · Claude · [`d73844f`](https://github.com/z1506007392-ops/desklab-frontend/commit/d73844f)
+
+`940e696`。A1：「更多」里的导入导出改成「导入备份 / 导出备份」等白话，坏文件有明确的中文错误。
+
+### 2026-10-30 · Claude · [`51b7f7b`](https://github.com/z1506007392-ops/desklab-frontend/commit/51b7f7b)
+
+写下 `docs/AUTONOMOUS_ROADMAP.md`：阶段 A–E 的任务板和 DeepSeek 设计，给后续代理当入口。
+
+### 2026-10-30 · Claude · [`b3c3daa`](https://github.com/z1506007392-ops/desklab-frontend/commit/b3c3daa)
+
+`62ca3a3`、`d7dc408`。仓库是私有的，不用 GitHub Pages。改由 Cloudflare Pages 构建 `master`，站点 https://desklab-frontend.pages.dev 。GitHub Actions 只跑检查。`e4018ea` 是后来的 A10 文档，不是这次部署本身。
+
+### 2026-10-30 · Claude · [`d52561b`](https://github.com/z1506007392-ops/desklab-frontend/commit/d52561b)
+
+`f68761f`。保存后若 7 天没导出，黄条提醒导出备份。导出或「以后再说」会消掉。
+
+### 2026-10-30 · Claude · [`f3f2cd1`](https://github.com/z1506007392-ops/desklab-frontend/commit/f3f2cd1)
+
+`8447785`、`5919d80`。每个访客的项目改存在自己的浏览器里（含上一份备份），不再读写后端那份共享文件。修了 StrictMode 卸掉状态通知器之后开发环境不显示状态的问题。
+
+### 2026-10-29 · Claude · [`8bb93ea`](https://github.com/z1506007392-ops/desklab-frontend/commit/8bb93ea)
+
+`c21c28e`。旧存档打开时：目录端口改用现在的 GLB 锚点；过扁的 15 寸笔记本恢复成打开的高度，底面不动。提交作者约定为 Claude `claude`、Grok `grok`。转动视角会使项目变成未保存。
 
 ### 2026-10-29 · Desklab · [PR #2](https://github.com/z1506007392-ops/desklab-frontend/pull/2)
 
@@ -69,7 +217,6 @@ Last updated: 2026-10-29, Asia/Singapore
 ### 2026-06-25 · 未记录 · [`114ed1b`](https://github.com/z1506007392-ops/desklab-frontend/commit/114ed1b)
 
 `eef96fe..114ed1b`。前端仓库在 D 盘迁移后重新建库。功率读写收拢到同一套分类；建议引擎避开缺坐标的设备；端口锚点不重叠；修掉 React 19 的 `inert` 警告。还剩：目录设备没有通用外形，分析仍是方块。
-
 ## Mission
 
 DeskLab is a connected 3D room desktop layout and cabling tool. The long-term product direction is:
@@ -100,6 +247,9 @@ Product decisions from the product owner (2026-10-25):
   a warning or recommend buying something because of it; complete the model
   for the user instead. Only flag what is a real-world concern (too few
   outlets, overload, daisy-chained strips, cables too short).
+- Accounts (2026-10-30): start anonymous. Each visitor's project is saved in
+  their own browser, not on the server (see "Browser-local saves" below).
+  Accounts or cloud sync may come later.
 
 The current work mode is autonomous engineering:
 
@@ -136,8 +286,16 @@ D:\desklab\frontend\docs\memory_bank.md
 Moved on 2026-10-28 from the hollowell1225 account to z1506007392-ops (new
 repositories with full history). The old repositories remain as the
 `hollowell1225` git remote. Both local repos use the GitHub CLI as their
-credential helper (repo-local config), so pushes use the active `gh` account,
-and commit author is `z1506007392-ops <285454369+z1506007392-ops@users.noreply.github.com>`.
+credential helper (repo-local config), so pushes use the active `gh` account.
+
+Commit author (product owner rule, 2026-10-30): two agents work on these repos,
+and each marks its own commits by author name, with the same email
+`285454369+z1506007392-ops@users.noreply.github.com`:
+- Claude: `claude`
+- Grok: `grok`
+Set `user.name` / `user.email` repo-locally only. No AI sign-off lines in
+commit messages. Before starting, pull both repos and read the other agent's
+recent commits.
 
 Keep this external handoff copy and the tracked copy synchronized whenever the
 memory bank is updated. The tracked copy is committed and pushed with the
@@ -146,7 +304,8 @@ frontend repository so it is protected by the GitHub backup.
 Expected dev URLs:
 ```
 Frontend: http://localhost:5173/
-Backend:  http://localhost:3001/api/projects/default
+Backend:  http://localhost:3001/api/projects/default (no longer used by the
+          frontend since 2026-10-30; projects are saved in the browser)
 ```
 
 Services may or may not be running. Check and restart them when needed.
@@ -182,14 +341,18 @@ npm start
   ```
 
 - Do NOT overwrite or delete: `D:\desklab\backend\data\default-project.json`
+  (the owner's pre-2026-10-30 project; the frontend no longer reads it. To
+  move it into the browser: in the app, 更多 → 导入 JSON, pick the file, then 保存项目.)
   Backend tests that touch runtime data should back it up and restore it, or use isolated test storage.
 
 - Never claim browser/visual QA unless actually performed. If browser runtime fails, record the failure instead of pretending.
 
-## Current Git State (2026-10-29 handoff)
+## Current Git State (2026-10-30 handoff)
 
 ### Frontend `D:\desklab\frontend`
-- Feature HEAD: `1f10bfc Merge pull request #1 from z1506007392-ops/feat/glb-models`
+- Feature HEAD on `master` at this merge: `28c0216 docs: record E13 results and pause E10`
+- Since 2026-10-29 the product owner wants each verified slice pushed straight
+  to `origin/master` (pull --rebase and re-verify first if the remote moved).
 - Catalog devices render from `public/models/<modelId>.glb`. See
   "Catalog GLB models (2026-10-29)" below.
 - Untracked: none expected.
@@ -2577,6 +2740,352 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   be drawn. Engine robustness tests use a local `engineRecommendations`
   helper. Verification: `npm test` 301/301, `npm run test:ui` 26/26, lint,
   build.
+- `3f556ec` / `4ee93b6` (merged as `1f10bfc`, 2026-10-29): every catalog model
+  now has a low-poly GLB at `public/models/<modelId>.glb`, built at the
+  catalog `defaultScale` by the Blender scripts in `tools/blender-models/`.
+  `catalogModelUrl()` includes Vite's base URL; the renderer scales a GLB by
+  `obj.scale / defaultScale`. Port anchors are authored per model in
+  `PORT_ANCHOR_BY_MODEL` (catalog.js) to sit on the mesh connectors. The
+  laptop GLB is open-lid (`defaultScale.z = 0.22`).
+- `c21c28e` Old saves vs the GLB models, in `hydrateProjectObjects()` (runs on
+  load, import, and draft restore): a laptop-15 whose height is below 60% of
+  the default (old closed-lid saves store about 0.058 or 0.105 m, which
+  squashed the open-lid mesh into a flat tray) is restored to the default
+  height, keeping its footprint and its bottom, so it still rests on the desk.
+  Catalog ports take the `PORT_ANCHOR_BY_MODEL` anchor by `port.id` instead of
+  the saved one; ports and models outside the catalog keep stored anchors.
+  Saves with removed models (mini-pc, all-in-one) load unchanged and render
+  as plain boxes. `e2e/legacy-save.spec.mjs` opens such a save and checks for
+  no runtime errors and no 未保存 flag. Visual QA (real Chromium screenshots,
+  before/after, against a copy of the backend with a constructed old save):
+  the laptop lid stands up and the HDMI cable leaves the laptop's side port.
+  The owner's real `default-project.json` was not available (cloud session),
+  so it has not been checked against these changes.
+- 未保存 note: the camera view is saved with the project, so orbiting or
+  zooming marks the project unsaved (`cameraDirty`); loading alone does not.
+- Browser-local saves (2026-10-30, `5919d80`, `8447785`): the backend kept
+  one shared project file, so a public launch would let visitors overwrite
+  each other. `src/domain/local-project-store.js`
+  (`createLocalProjectClient(getStorage)`) replaced the HTTP
+  `project-client.js` with the same interface (load / save(project, version)
+  / validate / recoverBackup). Keys: `desklab.project.v1` (save),
+  `desklab.project-backup.v1` (previous save); the unsaved-changes draft keeps
+  `desklab.project-draft.v1`. First visit: empty 5 x 4 x 3 m room, version
+  `"unsaved"`. Version = length + FNV-1a hash of the stored text; a mismatch
+  is the old 412 conflict (`project_conflict`, same Chinese message), which
+  stops a second tab overwriting a newer save. A damaged save throws
+  `project_unreadable`, locks saving, and the banner restores the backup.
+  `normalizeProject()` = `isProjectEnvelope` + the backend validator's field
+  whitelist. Blocked storage → `storage_unavailable`; full →
+  `storage_write_failed`; both have plain Chinese messages. After the first
+  save the app calls `navigator.storage.persist()` (best effort). Known
+  limit: browsers can still drop site data (user clears it; Safari may evict
+  storage of sites unused for 7 days), so 导出 stays the user's backup.
+  The UI fixture seeds `localStorage` once per tab via `addInitScript` and
+  fails on any `/api` request; `e2e/local-save.spec.mjs` covers save+reload,
+  the two-tab conflict, and backup recovery.
+- `5919d80` StrictMode bug: the unmount cleanup disposed the only status
+  notifier, so in dev (and the UI suite) every status message was dropped
+  after the StrictMode remount. Each mount now creates its own notifier.
+  Production builds were not affected.
+- Backup reminder (2026-10-30): `src/domain/backup-reminder.js`
+  (`shouldRemindBackup`, state in `desklab.backup-reminder.v1`). After a save
+  with at least one object, a yellow bar (region "备份提醒") offers 导出备份 /
+  以后再说 when there is no export yet or the last one is 7+ days old;
+  以后再说 snoozes 7 days; any 导出 JSON or 导出备份 records the export and
+  clears the snooze. Hidden while a draft-recovery or load-failure banner is
+  up. `e2e/backup-reminder.spec.mjs` covers snooze across a reload and
+  export → re-import. Verification: `npm test` 291, `npm run test:ui` 38.
+- `940e696` A1 Plain-word backup tools: "更多" menu items are 导入备份 / 导出备份 /
+  粘贴项目 / 复制项目; recovery and status messages say 导出备份; the import
+  input is labelled 导入 DeskLab 备份文件. `describeProjectImportError()`
+  (project-import-limits.js) turns a JSON parse error into "这不是 DeskLab
+  的备份文件，或者文件已损坏". Export file names keep the `desklab-project-`
+  prefix. Verification: `npm test` 292, `npm run test:ui` 40, lint, build;
+  menu screenshots at desktop and phone width checked.
+- `20a8fc8` A2 Hint bar under the toolbar: text comes from
+  `describeSelectionHint({ selectedName, isMobile })` (selection-hint.js);
+  phones get "点选设备即可编辑" / "拖动可移动，属性面板可精确调整", desktop keeps
+  the shortcuts; the selected device shows its user-given name, never the
+  type id. Styles moved to `.selection-hint` in App.css, which wraps instead
+  of clipping. `e2e/selection-hint.spec.mjs` asserts scrollWidth <=
+  clientWidth at both viewports. Verification: `npm test` 295,
+  `npm run test:ui` 42, lint, build; screenshots checked.
+- `6efa9da` A3 First-visit guide: region "开始搭建" centered over the 3D view
+  when the project was never saved (`version === UNSAVED_PROJECT_VERSION`),
+  is editable, and has no objects. Buttons: 从模板开始 (template picker),
+  按我的设备生成 (picker scrolled to the builder heading via a ref flag; a
+  setState inside the effect fails the react-hooks lint rule), 自己摆 (opens
+  the library). Any choice dismisses it for the visit. `openProject(page,
+  objects, connections, { saved: false })` opens as a first-time visitor.
+  Verification: `npm test` 295, `npm run test:ui` 50, lint, build;
+  screenshots checked.
+- `97a4658` A4 3D view fallbacks: `canUseWebGL()` (webgl-support.js) runs once;
+  without WebGL a `SceneUnavailable` notice replaces the Canvas and the rest
+  of the app works. `SceneErrorBoundary` (components/SceneFallback.jsx) wraps
+  the Canvas with a 重新加载 3D 画面 button; its children is a function that
+  receives `reportFailure`. The Canvas now gets `gl={defaults =>
+  createRendererOrReport(...)}`: R3F creates the renderer outside React
+  rendering, so a refused context used to be an uncaught error no boundary
+  saw. Already existing: per-object `GLTFErrorBoundary` falls back to simple
+  shapes when a GLB fails (but leaves uncaught console errors, task A9).
+  Verification: `npm test` 298, `npm run test:ui` 56, lint, build; scene
+  render unchanged (screenshot), no-WebGL notice checked on phone.
+- `126c945` A5 Code splitting: the Canvas subtree lives in
+  `src/components/Scene3D.jsx` (only file importing three / R3F / drei /
+  SceneObjects), loaded with `React.lazy` + `Suspense` ("正在加载 3D 画面…");
+  App passes state and callbacks (drag, click, hover, background click).
+  `vite.config.js` puts `node_modules/three` in its own chunk via
+  `build.rolldownOptions.output.codeSplitting.groups`. Sizes: before one
+  1,453 KB chunk (412 KB gz); after entry 330 KB (101 KB gz), Scene3D 405 KB
+  (129 KB gz), three 723 KB (184 KB gz). The >500 KB warning that remains
+  is three.js itself. `SceneErrorBoundary` now tells a chunk download
+  failure (`isCodeDownloadError`, load-errors.js) from a crash and offers
+  刷新页面 for it, because browsers cache failed module imports.
+  Verification: `npm test` 300, `npm run test:ui` 58 (suite time 3.7 → 1.7
+  min), lint, build; production `vite preview` checked in Chromium (load
+  order, save + reload, no console errors).
+- `ffefe20` A6 UI audit check: of the 12 findings in docs/ui-audit.md and
+  docs/new-skill-ui-audit.md, 8 were already fixed (annotated in place), the
+  open P1 (grey text #888 at 3.5:1) is fixed (#5f6b7a; disabled states keep
+  #888, which WCAG exempts) with `test/text-contrast.test.js` scanning CSS and
+  inline styles, and the P2 items became roadmap tasks E8–E12. Found for A7:
+  the connections list shows raw cable types (`hdmi`, `usb_c`). Verification:
+  `npm test` 302, `npm run test:ui` 58, lint, build.
+- `b45316e` A7 Copy review. Scope: every string literal with Chinese in src/
+  scanned for English words, rendered `.type` / `.cableType` / `.modelId` /
+  `.direction`, `error.message` passthrough, and jargon (画布, 坐标, 锚点).
+  Changes: connections.js gained `PORT_TYPE_NAMES`, `PORT_DIRECTION_NAMES`,
+  `describePortType/Direction`, `describeCableType`; analysis.js wiring
+  messages use them; the connections list shows `describeCableType`;
+  `labelObjectsForPicker()` (object-labels.js) names devices in the
+  connection editor by user name, numbering duplicates; port options show
+  only the port name; the out-of-room message reads 左右/前后/高度; clipboard
+  copy and paste failures have plain messages; 画布 → 画面 / 桌面. Left as
+  is: Ctrl+Z / Ctrl+Y in tooltips, units (m, W, MB), brand-style names
+  (HDMI, DP, USB-C). Verification: `npm test` 306, `npm run test:ui` 60,
+  lint, build.
+- `4e5aa30` A9 Missing GLBs: R3F's `createRoot` passes `reportError` as
+  onCaughtError, so a GLB load failure caught by `GLTFErrorBoundary` still
+  became a window error event (an uncaught page error). `DeviceMesh` now
+  renders the GLB only after `modelAvailability.check(url)`
+  (model-availability.js: one HEAD per URL, cached; non-2xx, network error,
+  or a text/html answer = missing) says it exists; until then and when
+  missing it draws the generic shape. Verification: `npm test` 309,
+  `npm run test:ui` 60 (the missing-model test now fails on any uncaught
+  error), lint, build; production preview: 8 HEAD + 10 GET for the gaming
+  template, all 200, no console errors.
+- `64faa10` B2 + `60a8eca` B1 AI endpoint. `src/domain/ai-protocol.js` (shared by
+  server and browser): `ACTION_FIELDS` for move / rotate / swap / connect /
+  disconnect / set_cable_length, `SUGGESTION_CATEGORIES`, `AI_LIMITS`, and
+  `sanitizeSuggestions()` (drops a whole suggestion if any action is unknown
+  or malformed). `server/ai/prompt.js`: roadmap §6.5 system prompt, scene and
+  goal JSON-quoted inside the user message, goal capped at 200 chars.
+  `server/ai/layout-handler.js`: `createLayoutHandler({ fetchImpl,
+  rateLimiter, logger })`; env `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`,
+  `DEEPSEEK_MODEL`, `AI_ENABLED`, `AI_TIMEOUT_MS`; errors per roadmap §6.3.3.
+  `functions/api/ai/layout.js` is the Pages route; shared code sits outside
+  `functions/` because every file there becomes a route. Checked with
+  wrangler 4 (scratchpad install, not a dependency): `wrangler pages
+  functions build` compiles, and `wrangler pages dev dist` answers POST
+  /api/ai/layout with 503 ai_unavailable; Cloudflare serves a missing
+  /models/x.glb as 200 text/html (confirms the A9 check). DeepSeek's docs
+  site was blocked in the cloud session; model names and JSON mode were
+  confirmed only from third-party pages. Verification: `npm test` 326, lint,
+  build.
+- `202c2c8` B3 Rate limits: `server/ai/rate-limit.js` `createRateLimiter()`;
+  per-address hourly (`AI_PER_IP_HOURLY`, 20) and site-wide daily
+  (`AI_DAILY_TOTAL`, 2000, day boundary = Beijing midnight). KV binding
+  `AI_LIMITS` if present (approximate, eventually consistent), otherwise
+  per-instance memory; mode in `X-AI-Limit-Mode`. 429 message differs for
+  the hour and day limits. The route creates the limiter at module scope.
+  Checked in `wrangler pages dev` with a fake key: third call at limit 2 →
+  429. Verification: `npm test` 331, lint, build.
+- `ea51b15` B4 Local AI: `npm run dev:api` (tools/dev-api-server.mjs, Node
+  http on PORT or 3001) runs `createLayoutHandler` with `process.env`;
+  `AI_MOCK=1` swaps DeepSeek for `server/ai/mock-model.js` (rule-based
+  answers in DeepSeek's response format, read from the scene in the prompt).
+  `test/ai-dev-server.test.js` starts the real server in both modes. Live
+  site check after B1–B3: POST /api/ai/layout → 503 ai_unavailable (H1 not
+  done yet). Verification: `npm test` 333, lint, build.
+- `f38b3cf` B5 Browser AI client: `requestLayoutSuggestions({ summary, goal,
+  signal, fetchImpl, timeoutMs = 45000 })` (src/domain/ai-client.js) →
+  `{ suggestions, model }` or an Error with `code` (server code,
+  `network_error`, `ai_timeout`, `cancelled`) and a Chinese message.
+  `AI_ERROR_MESSAGES` now lives in ai-protocol.js for both sides.
+  Verification: `npm test` 337, lint, build.
+- `3287f5d` B6 `openProject(page, objects, connections, { ai })`: `ai(body)`
+  returns the JSON (or `{ status, json }`) for POST /api/ai/layout and
+  bodies land in `evidence.aiRequests` (only present when `ai` is given, so
+  existing `toEqual({ errors: [], writes: [] })` checks still hold).
+  Without `ai`, an AI request is a recorded write and fails tests. Phase B
+  is complete. Verification: `npm test` 337, `npm run test:ui` 64, lint,
+  build.
+- `1a0a2ae` C1 Layout hints: `analyzeLayoutHeuristics(room, objects,
+  connections)` (layout-heuristics.js) → `{ code, severity: 'hint',
+  objectIds, message, connectionIds? }` for the 10 rules in roadmap §6.6.1;
+  constants in `HEURISTIC_LIMITS`. Desk frame: device front = local +y; seat
+  on the desk's local -y side 0.35 m past the front edge; facing is checked
+  against the desk's "toward seat" axis, not the seat point (dual monitors).
+  Desk detection: modelId office-desk or type ending in -desk (an early
+  /desk/ test matched desktop-pc). `findSupportingObject()` added to
+  layout-analysis.js. Templates and all 1,728 `buildDeskScene` combinations
+  (6 desk sizes) give zero hints. Verification: `npm test` 347, lint, build.
+- `7df818b` C2 `scoreLayout(project)` (layout-score.js) → `{ total, errors,
+  warnings, hints, cableMeters, codes }`; weights in `SCORE_WEIGHTS` (100 /
+  20 / 5 / 1 per metre). Severity 'info' (unpowered_input, legacy_connection)
+  is not counted, so no "model completion" exclusions are needed. A template
+  scores only its cable metres. Verification: `npm test` 351, lint.
+- `4e327b5` C3 `buildSceneSummary(project)` (ai-scene-summary.js): roadmap
+  §6.4 format with `seats: [{ desk, x, y }]` (one per desk, via
+  `getDeskSeat()` now exported from layout-heuristics.js together with
+  `isDesk`), `restingOn` = desk id / floor / wall / air, ports with
+  `linkedTo`, connections with `needed` = recommended length, findings =
+  error + warning only, hints from C1, catalog ids. Sizes: home-office 3.5
+  KB, desktop-dual 5.1 KB, gaming 5.6 KB. Snapshot test (UPDATE_SNAPSHOTS=1
+  to rewrite). Verification: `npm test` 357, lint.
+- `9a740b0` C4 AI safety core (src/domain/ai-actions.js): `applyAiActions`,
+  `evaluateSuggestion`, `evaluateSuggestions` (accepted, biggest score drop
+  first), `applySuggestionsInOrder` (re-checks each), `parseAiResponse`.
+  Placement without z keeps the level: floor items stay on the floor, others
+  drop from the ceiling onto the highest support (so a monitor moved over a
+  desk lands on it). Refusals carry Chinese reasons. Refused always: unknown
+  ids, out of room (no silent clamping), moving wall outlets or desks with
+  things on them, monitors/laptops not on a desk, busy or incompatible
+  ports, removing power lines, cables shorter than recommended, any other
+  action type. Acceptance per roadmap §6.6.4. Verification: `npm test` 372
+  (incl. summary → mock model → validation end to end), lint, build.
+- `1fc4ff1` Dev rendering regression from A5: with `React.lazy` + `Suspense`,
+  StrictMode's double mount left the R3F canvas blank in development (no
+  errors; production fine). Found while screenshotting C5. `LazyScene3D.jsx`
+  now imports Scene3D in an effect and mounts the canvas once; a failed
+  download is rethrown for `SceneErrorBoundary`. `e2e/scene-render.spec.mjs`
+  fails if the canvas screenshot is under 20 KB (blank ≈ 3.6 KB, drawn 46–146
+  KB). Lesson: a visual check must look at the pixels; passing UI tests did
+  not catch a blank canvas.
+- `5407119` C5 AI UI: `AiSuggestionsPanel` (components/AiSuggestions.jsx) inside
+  the 自动检查与改进建议 dialog (region "AI 建议"); request state in
+  `useAiLayoutAssistant()` (components/useAiLayoutAssistant.js), held by App
+  so suggestions survive a preview. Cards = `evaluateSuggestions(current
+  project, raw suggestions)`, recomputed on every change. Preview: App state
+  `aiPreview` swaps the Scene3D objects/connections, highlights
+  `changedObjectIds()`, shows region "AI 预览" with 应用 / 取消, and sets
+  `projectEditable` false (`projectBaseEditable` is the old value). Apply =
+  `recordHistory()` + set objects/connections (one undo step). A 503 marks AI
+  unavailable for the session. `openProject` gained a `room` option.
+  Verification: `npm test` 373, `npm run test:ui` 76, lint, build; dialog and
+  preview screenshots checked at both sizes.
+- `ae578ed` C6 Evaluation harness: `tools/ai-eval/lib.mjs` (`buildEvalScenes`,
+  `runEval({ post })`, `summarize`, `THRESHOLDS`), CLI `npm run eval:ai`
+  (tools/ai-eval/run-eval.mjs; exit 1 = threshold missed, 2 = no endpoint /
+  no key / rate-limited; raw results in ignored `tools/ai-eval/results/`).
+  The local dev server no longer rate-limits unless AI_LOCAL_RATE_LIMIT=1.
+  Mock baseline (not the target): parse 100%, messy helped 26%, new errors
+  0, jargon 0. Real-model run and `test/fixtures/ai/recorded/` wait for H1.
+  Live check after C5: AI section shows "AI 功能暂未开放" on click, canvas
+  draws. Verification: `npm test` 375, lint.
+- `835eb4c` D1 About & privacy: `components/AboutDialog.jsx`, opened from
+  更多 → 关于与隐私 (Esc closes). Must stay true to the code: saves only in
+  localStorage; AI sends room, devices, cables, user-given device names, and
+  the goal to DeepSeek only on 让 AI 看看; no analytics. No contact details:
+  the owner has not provided any (add them when given). The AI section's
+  notice was corrected (it claimed no personal info was sent). Verification:
+  `npm test` 375, `npm run test:ui` 78, lint, build; phone screenshot.
+- `f3811c7` D3 Error notice: `components/ErrorNotice.jsx` (region alert "出错提示")
+  listens to window error and unhandledrejection; `shouldReportError()` /
+  `formatErrorReport()` in domain/error-report.js. Ignored: ResizeObserver
+  loop, "Could not load ..." (GLB fallback; R3F reports caught errors
+  globally), AbortError. Copy falls back to `window.prompt` when the
+  clipboard is blocked. Nothing is sent. Verification: `npm test` 377,
+  `npm run test:ui` 82, lint, build.
+- `0209fa0` D4 Browser support. Build target = Vite `baseline-widely-available`
+  = Chrome/Edge 111, Firefox 114, Safari/iOS 16.4. Newer APIs in src
+  (structuredClone, Object.hasOwn, ??=, crypto.randomUUID guarded,
+  navigator.storage optional) are all within that target. index.html now
+  has a classic-script feature check that shows "你的浏览器版本太旧" and sets
+  `window.__DESKLAB_UNSUPPORTED__` so main.jsx does not start the app
+  (`e2e/old-browser.spec.mjs`). NOT verified: Safari, Firefox, iOS, WeChat's
+  in-app browser. Only Chromium exists in the cloud container and the
+  environment forbids installing other Playwright browsers; check on real
+  devices when possible. Verification: `npm test` 377, `npm run test:ui` 84,
+  lint, build.
+- `deaf439` D5 index.html: meta description, og:title / og:description /
+  og:image (`public/og-image.png`, 1200x630, rendered from the gaming
+  template with panels and axes hidden). og:image is an absolute
+  pages.dev URL: change it when a custom domain arrives.
+- D2 Live acceptance (2026-10-30, https://desklab-frontend.pages.dev, Chromium
+  through the proxy, 1440x900 and 390x844): first-visit guide → gaming
+  template in ~4 s; canvas drawn (121 KB / 47 KB screenshots); 布局检查,
+  布线检查, 所有连接 open with plain text; adding a strip selects it with the
+  right hint; undo/redo; save → backup reminder → export downloads; reload
+  keeps 10 objects with no 未保存; AI section answers "AI 功能暂未开放"
+  (criterion 5 waits for H1); 关于与隐私 present; no console errors, no
+  failed requests. Found: adding a second power strip leaves 布线检查 (1) /
+  改进建议 (1) (task A10).
+- `2297f1f` A10 `findNearestFreePowerSource` (recommendations.js) skips strip
+  sources when the device is itself a strip (`isPowerStrip` now exported
+  from analysis.js). Found by the D2 live run. Verification: `npm test` 378,
+  `npm run test:ui` 86, lint, build.
+- H1 done (2026-10-30): the owner added `DEEPSEEK_API_KEY` in Cloudflare and
+  redeployed. Live POST /api/ai/layout → 200; DeepSeek reports the model as
+  `deepseek-flash` (DEEPSEEK_MODEL unset, default `deepseek-chat`). First
+  real answer for `gaming/monitor-off-centre` + "更整洁": 5 suggestions in
+  ~3 s (2,519 prompt / 367 completion tokens); "显示器移到正前方" accepted
+  (score 19.5 → 14.5), the other 4 (laptop, power strip, router, adapters)
+  rejected for new warnings or no gain. Live browser run (desktop + phone):
+  one card, preview, apply, save → monitor x = 0, no console errors.
+  Next: C7 (see roadmap for running the eval within the rate limit).
+- C7 Prompt iterations. v1 = the roadmap §6.5 starting prompt, unchanged.
+  First real run 2026-10-30 against the live endpoint (model reported as
+  deepseek-flash; 25 requests, ~2–3 s each, ~2.5k prompt / ~0.4k completion
+  tokens): parse 100%, messy scenes helped 84% (16/19), average improvement
+  44.3, new errors 0, jargon 0 → all thresholds met, so no prompt change was
+  needed. Raw suggestions 106, accepted 25; rejection reasons: no gain 62,
+  new warnings 33, outside the room 12, monitor/laptop not on a desk 7.
+  Misses: home-office/laptop-at-back (laptop moved onto the monitor's
+  footprint) and desktop-dual/monitor-turned-away + 适合打游戏 (moved instead
+  of rotated) → task E13. Ran from the cloud session with
+  `NODE_USE_ENV_PROXY=1 node tools/ai-eval/run-eval.mjs --url
+  https://desklab-frontend.pages.dev/api/ai/layout`; the in-memory rate
+  limit never triggered (29 calls in an hour) → task E14 / H2. `ca62f5c` stores
+  three answers in test/fixtures/ai/recorded/ with a replay test.
+  Verification: `npm test` 382.
+- `66231cb` C8 Follow-up: request body may carry `followUp: { previousSuggestions,
+  feedback }`; the server re-filters the previous suggestions with
+  `sanitizeSuggestions` and `buildMessages` adds an assistant turn (previous
+  JSON) and a user turn (feedback quoted, ≤200 chars). The hook keeps the
+  last answer in a ref; the panel shows "不满意？告诉 AI 怎么改" + 按我的意见再来一次
+  after an answer. Live check with DeepSeek: first answer 5 suggestions (1
+  accepted); with "只调整显示器，别的都不要动" the second answer was only the
+  monitor move (accepted). Phase C complete. Verification: `npm test` 385,
+  `npm run test:ui` 88, lint, build.
+- `d7094e0` E13 Prompt iterations v2. Every hint from
+  `analyzeLayoutHeuristics` now carries a `fix`: ready actions in the same
+  shape the AI outputs (move/rotate), each one feasible on its own (desk-side
+  spots use the rotated footprint along the desk axis with a 5 cm gap and stay
+  inside the room). `buildSceneSummary` passes it through, and prompt rule 7
+  says to use a hint's `fix` as is instead of inventing positions. Eval v2
+  against the live endpoint stopped at 19/25 requests on the hourly limit
+  (429); compared on the same 19 requests with v1: messy scenes helped 81% →
+  100%, accepted/raw 21/83 (25%) → 26/49 (53%), average improvement 48.8 →
+  46.6, new errors 0, jargon 0. The other 6 requests were not rerun; to finish
+  them, `NODE_USE_ENV_PROXY=1 node tools/ai-eval/run-eval.mjs --url
+  https://desklab-frontend.pages.dev/api/ai/layout --resume
+  tools/ai-eval/results/<run folder>/` (results are gitignored, so a new
+  session reruns the full set). Verification: `npm test` 386, lint, build.
+- Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
+  and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
+  framework preset None, `npm run build`, output `dist`, Node from
+  `.node-version`). The repository is private, so GitHub Pages is not used;
+  `.github/workflows/ci.yml` only runs unit, lint, build, and Chrome UI checks.
+  Verified live in Chromium: all 10 GLBs return 200, a saved template
+  survives a reload, no console errors. Not done yet: own domain (not
+  ICP-filed; mainland hosting on the owner's Aliyun Guangzhou VPS needs a
+  filing first), and a backend on the owner's Japan EC2 for future LLM calls.
+- Cloud sessions without Google Chrome: `npm run test:ui` needs a temporary
+  Playwright config outside the repo that imports `playwright.config.mjs`,
+  drops `use.channel`, sets `launchOptions.executablePath` to the installed
+  Chromium, and sets `webServer.cwd` to the frontend. Do not commit it.
 - Test notes: the Windows clipboard returns CRLF, so the shopping-list UI test
   normalizes line endings. Some source files are CRLF in the working tree;
   scripted edits must match the file's line endings.
@@ -2634,9 +3143,11 @@ y depth, z height; +y is the authored front / three.js +Z):
   outlet are yawed 180° (`WALL_OUTLET_MESH_YAW`) and the plate lands on the
   room-facing side. Do not flip the anchors to +Y; that would send the cable
   into the wall.
-- `withPortAnchors` keeps an anchor that is already stored. Saved projects
-  therefore keep their old anchors. Only missing anchors are filled from the
-  new defaults.
+- At the time of PR #1, `withPortAnchors` kept a stored anchor. Claude's
+  `c21c28e` later changed hydrate: catalog ports take `PORT_ANCHOR_BY_MODEL`
+  again, and a laptop-15 whose height is under 60% of the default is restored
+  to the open-lid height (bottom unchanged). Ports and models outside the
+  catalog still keep their stored anchors.
 
 Known gaps (seen while checking the 电竞桌 template in Chrome; not fixed):
 - Monitor and laptop screens are dark unlit panels, so they read as black.
@@ -2731,8 +3242,8 @@ Core modules:
 - `desk-templates.js` — built-in home-user templates on top of the scene builder
 - `shopping-list.js` — merges purchase suggestions into a copyable shopping list
 - `geometry.js` — 3D bounds, overlap detection, footprint rotation
-- `project-validation.js` — `isProjectEnvelope()` shared by draft.js and project-client.js
-- `project-client.js` — versioned load/save/validate/recovery HTTP client
+- `project-validation.js` — `isProjectEnvelope()` shared by draft.js and local-project-store.js
+- `local-project-store.js` — versioned load/save/validate/recovery in the visitor's browser (replaced the HTTP `project-client.js`)
 - `project-history.js` — undo/redo with grouping and camera awareness
 - `project-access.js` — editability gates for canvas interactions
 - `draft.js` / `draft-storage.js` — local draft persistence and recovery
@@ -2785,7 +3296,7 @@ All suggestion types are round-trip tested: applying the suggested patch clears 
 
 ### Key architectural patterns:
 - Nested `Map<string, Map<string, *>>` for port occupancy tracking (NOT string-key concatenation)
-- `isProjectEnvelope()` shared by draft.js and project-client.js for validation parity
+- `isProjectEnvelope()` shared by draft.js and local-project-store.js for validation parity
 - UI delegates to domain logic; no duplicated math in components
 - Cable types inferred via `inferCableType()`, not hardcoded
 
@@ -2822,10 +3333,10 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 306 domain tests
-npm run test:ui   # 26 Chrome UI cases; isolated fixtures, no real backend writes
+npm test          # 386 domain tests
+npm run test:ui   # 88 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
-npm run build     # vite build (known large chunk warning is OK)
+npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
 
 Backend:

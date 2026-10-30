@@ -259,3 +259,76 @@ test('default port anchors meet the connector on each GLB', () => {
     );
   }
 });
+
+test('legacy closed-lid laptop heights are restored and the laptop stays on the desk', () => {
+  const deskTop = 0.75;
+  const [thin, closed, custom] = hydrateProjectObjects([0.058, 0.105, 0.2].map((z, index) => ({
+    id: `laptop-${index}`,
+    type: 'laptop',
+    category: 'computer',
+    modelId: 'laptop-15',
+    position: { x: 0.1, y: -0.2, z: deskTop + z / 2 },
+    scale: { x: 0.34, y: 0.24, z },
+    rotation: { x: 0, y: 0, z: 0.5 },
+  })));
+
+  for (const laptop of [thin, closed]) {
+    assert.equal(laptop.scale.z, 0.22);
+    assert.deepEqual([laptop.scale.x, laptop.scale.y], [0.34, 0.24], 'footprint is kept');
+    assert.ok(Math.abs(laptop.position.z - laptop.scale.z / 2 - deskTop) < 1e-9, 'bottom stays on the desk top');
+    assert.deepEqual([laptop.position.x, laptop.position.y], [0.1, -0.2]);
+    assert.deepEqual(laptop.rotation, { x: 0, y: 0, z: 0.5 });
+  }
+  assert.equal(custom.scale.z, 0.2, 'heights close to the open-lid default are left alone');
+  assert.equal(custom.position.z, deskTop + 0.1);
+
+  const [again] = hydrateProjectObjects([thin]);
+  assert.deepEqual(again.scale, thin.scale, 'migration is idempotent');
+  assert.deepEqual(again.position, thin.position);
+});
+
+test('saved catalog ports move to the current GLB anchors while unknown ports keep theirs', () => {
+  const stale = { x: 0, y: 0.5, z: -0.25 };
+  const custom = { x: 0.3, y: 0.3, z: 0.3 };
+  const [laptop, legacy] = hydrateProjectObjects([
+    {
+      id: 'laptop',
+      type: 'laptop',
+      modelId: 'laptop-15',
+      ports: [
+        { id: 'dc-in', name: 'DC 输入', type: 'dc_input', direction: 'input', anchor: stale },
+        { id: 'usb-c', name: 'USB-C', type: 'usb_c', direction: 'bidirectional', anchor: { x: 0.5, y: 0, z: 0 } },
+        { id: 'extra', name: 'Extra', type: 'usb_c', direction: 'bidirectional', anchor: custom },
+      ],
+    },
+    {
+      id: 'aio',
+      type: 'all-in-one',
+      category: 'computer',
+      modelId: 'all-in-one',
+      ports: [{ id: 'dc-in', name: 'DC 输入', type: 'dc_input', direction: 'input', anchor: stale }],
+    },
+  ]);
+
+  const anchorOf = id => laptop.ports.find(port => port.id === id).anchor;
+  assert.deepEqual(anchorOf('dc-in'), { x: -0.5, y: -0.1, z: -0.45 });
+  assert.deepEqual(anchorOf('usb-c'), { x: 0.5, y: 0.2, z: -0.45 });
+  assert.deepEqual(anchorOf('extra'), custom);
+  assert.deepEqual(legacy.ports[0].anchor, stale, 'models outside the catalog keep stored anchors');
+});
+
+test('saved mini PCs and all-in-ones still hydrate without losing data', () => {
+  const objects = [
+    { id: 'mini', type: 'mini-pc', category: 'computer', modelId: 'mini-pc', assetUrl: null, position: { x: 0, y: 0, z: 0.8 }, scale: { x: 0.12, y: 0.12, z: 0.05 }, ports: [] },
+    { id: 'aio', type: 'all-in-one', category: 'computer', modelId: 'all-in-one', position: { x: 0.5, y: 0, z: 1 }, scale: { x: 0.6, y: 0.2, z: 0.45 } },
+  ];
+  const hydrated = hydrateProjectObjects(objects);
+  assert.equal(hydrated.length, 2);
+  for (const [index, object] of hydrated.entries()) {
+    assert.equal(object.id, objects[index].id);
+    assert.equal(object.modelId, objects[index].modelId);
+    assert.deepEqual(object.scale, objects[index].scale);
+    assert.deepEqual(object.position, objects[index].position);
+    assert.deepEqual(object.ports, []);
+  }
+});

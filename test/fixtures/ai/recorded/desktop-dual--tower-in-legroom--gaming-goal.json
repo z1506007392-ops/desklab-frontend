@@ -1,0 +1,87 @@
+{
+  "scene": "desktop-dual/tower-in-legroom",
+  "goal": "适合打游戏",
+  "recorded": "2026-10-30",
+  "model": "deepseek-flash",
+  "acceptedCount": 3,
+  "response": {
+    "version": 1,
+    "model": "deepseek-flash",
+    "suggestions": [
+      {
+        "id": "s1",
+        "title": "主机挪到桌侧地面",
+        "reason": "主机不再挡在腿前，坐姿更舒展，桌下也更通风。",
+        "category": "space",
+        "actions": [
+          {
+            "type": "move",
+            "objectId": "desktop-pc",
+            "x": 0.85,
+            "y": 1.25
+          }
+        ]
+      },
+      {
+        "id": "s2",
+        "title": "显示器摆正对座位",
+        "reason": "两块屏幕正对座位，打游戏时视线居中，不用歪头看。",
+        "category": "ergonomics",
+        "actions": [
+          {
+            "type": "move",
+            "objectId": "monitor-24-1",
+            "x": -0.29,
+            "y": 1.45
+          },
+          {
+            "type": "move",
+            "objectId": "monitor-24-2",
+            "x": 0.29,
+            "y": 1.45
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "title": "缩短主机电源线",
+        "reason": "电源线按实际长度收好，桌下不再拖着一大团线。",
+        "category": "space",
+        "actions": [
+          {
+            "type": "set_cable_length",
+            "connectionId": "c-power-strip-ac-out-1-desktop-pc-ac-in",
+            "length": 0.6
+          }
+        ]
+      },
+      {
+        "id": "s4",
+        "title": "缩短主机网线",
+        "reason": "网线长度合适后不会绕成一圈，桌下更清爽也更好打扫。",
+        "category": "space",
+        "actions": [
+          {
+            "type": "set_cable_length",
+            "connectionId": "c-router-lan-1-desktop-pc-eth-1",
+            "length": 1.3
+          }
+        ]
+      },
+      {
+        "id": "s5",
+        "title": "插排靠墙收好",
+        "reason": "插排贴到桌后墙边，脚不容易踢到，线也更整齐。",
+        "category": "safety",
+        "actions": [
+          {
+            "type": "move",
+            "objectId": "power-strip",
+            "x": 0,
+            "y": 1.6
+          }
+        ]
+      }
+    ]
+  }
+}
