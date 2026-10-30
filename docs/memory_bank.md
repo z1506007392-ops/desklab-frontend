@@ -2605,6 +2605,14 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   的备份文件，或者文件已损坏". Export file names keep the `desklab-project-`
   prefix. Verification: `npm test` 292, `npm run test:ui` 40, lint, build;
   menu screenshots at desktop and phone width checked.
+- `20a8fc8` A2 Hint bar under the toolbar: text comes from
+  `describeSelectionHint({ selectedName, isMobile })` (selection-hint.js);
+  phones get "点选设备即可编辑" / "拖动可移动，属性面板可精确调整", desktop keeps
+  the shortcuts; the selected device shows its user-given name, never the
+  type id. Styles moved to `.selection-hint` in App.css, which wraps instead
+  of clipping. `e2e/selection-hint.spec.mjs` asserts scrollWidth <=
+  clientWidth at both viewports. Verification: `npm test` 295,
+  `npm run test:ui` 42, lint, build; screenshots checked.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -2781,8 +2789,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 292 domain tests
-npm run test:ui   # 40 Chrome UI cases; storage seeded per test, no backend
+npm test          # 295 domain tests
+npm run test:ui   # 42 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (known large chunk warning is OK)
 ```
