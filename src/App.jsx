@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { describeCableType, evaluateConnectionLength } from './domain/connections.js';
 import { UNSAVED_PROJECT_VERSION, createLocalProjectClient } from './domain/local-project-store.js';
 import {
@@ -56,9 +56,9 @@ import { createStatusNotifier } from './domain/status-notifier.js';
 import PropertiesEditor from './components/PropertiesEditor.jsx';
 import ConnectionsEditor from './components/ConnectionsEditor.jsx';
 import DeskBuilderForm from './components/DeskBuilderForm.jsx';
+import LazyScene3D from './components/LazyScene3D.jsx';
 
-// three.js and the 3D view load after the rest of the page (see Scene3D.jsx).
-const Scene3D = lazy(() => import('./components/Scene3D.jsx'));
+
 import { SceneErrorBoundary, SceneUnavailable } from './components/SceneFallback.jsx';
 import { canUseWebGL } from './domain/webgl-support.js';
 
@@ -1500,8 +1500,7 @@ export default function App() {
           {!webglAvailable ? <SceneUnavailable reason="no-webgl" /> : (
           <SceneErrorBoundary>
           {reportSceneFailure => (
-          <Suspense fallback={<div className="scene-loading">正在加载 3D 画面…</div>}>
-          <Scene3D
+          <LazyScene3D
             reportFailure={reportSceneFailure}
             cameraConfig={cameraConfig}
             room={room}
@@ -1555,7 +1554,6 @@ export default function App() {
               if (projectEditable && connectionMode && hoveredDeviceId === obj.id) setHoveredDeviceId(null);
             }}
           />
-          </Suspense>
           )}
           </SceneErrorBoundary>
           )}
