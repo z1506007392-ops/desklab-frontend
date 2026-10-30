@@ -2852,6 +2852,15 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   limit never triggered (29 calls in an hour) → task E14 / H2. `ca62f5c` stores
   three answers in test/fixtures/ai/recorded/ with a replay test.
   Verification: `npm test` 382.
+- `66231cb` C8 Follow-up: request body may carry `followUp: { previousSuggestions,
+  feedback }`; the server re-filters the previous suggestions with
+  `sanitizeSuggestions` and `buildMessages` adds an assistant turn (previous
+  JSON) and a user turn (feedback quoted, ≤200 chars). The hook keeps the
+  last answer in a ref; the panel shows "不满意？告诉 AI 怎么改" + 按我的意见再来一次
+  after an answer. Live check with DeepSeek: first answer 5 suggestions (1
+  accepted); with "只调整显示器，别的都不要动" the second answer was only the
+  monitor move (accepted). Phase C complete. Verification: `npm test` 385,
+  `npm run test:ui` 88, lint, build.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
@@ -3028,8 +3037,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 382 domain tests
-npm run test:ui   # 86 Chrome UI cases; storage seeded per test, no backend
+npm test          # 385 domain tests
+npm run test:ui   # 88 Chrome UI cases; storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
