@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+领取 E2（把 `App.jsx` 里的对话框和横幅逐块抽到 `src/components/`，行为不变）。还剩：E2 本身。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 `4c71c1d` E7 测试稳定性。把 Playwright 全量连跑 3 遍（桌面 1440×900 和手机 390×844，`--repeat-each=3`，312 次执行）。309 通过，3 次跳过（手机工具栏用例在桌面项目里跳过）。没有失败，也没有重跑才过的用例。先前 CI 红的两处已经在 `b481b9e` 根治：拖动用 `holdGroup` 合成一步撤销；按钮条用 `scroll-padding-inline` 避免贴边裁切。这次重跑这两处仍然全绿。验证：`npm test` 391，`npm run lint`，`npm run build`，`npm run test:ui -- --repeat-each=3` 309 通过 + 3 跳过。已知限制：没有在更慢的 CI 机器上再复现历史失败，结论来自本机 Chrome 连跑。还剩：E2、E3、E6。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
