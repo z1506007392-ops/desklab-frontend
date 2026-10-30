@@ -368,7 +368,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 **D4 [x] 完成（claude，2026-10-30，0209fa0；Safari/Firefox 未实测） 必做 — 浏览器兼容自查**
 - 用 Playwright 的 chromium 跑全部测试（已有）；如环境里能装 webkit/firefox 就各跑一遍 UI 测试，记录结果；不能装就在 memory bank 记录"未验证 Safari/Firefox"。不要假装验证过。
 
-**D5 [~] 进行中（claude，2026-10-30） 可选 — SEO 与分享**
+**D5 [x] 完成（claude，2026-10-30，deaf439） 可选 — SEO 与分享**
 - `index.html`：中文 `title`、`description`、`og:title`、`og:description`、`og:image`（用一张模板场景截图，放 `public/`）。
 
 ### 阶段 E：持续改进（门槛达成后永远有事做）

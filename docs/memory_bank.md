@@ -2811,6 +2811,10 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   environment forbids installing other Playwright browsers; check on real
   devices when possible. Verification: `npm test` 377, `npm run test:ui` 84,
   lint, build.
+- `deaf439` D5 index.html: meta description, og:title / og:description /
+  og:image (`public/og-image.png`, 1200x630, rendered from the gaming
+  template with panels and axes hidden). og:image is an absolute
+  pages.dev URL: change it when a custom domain arrives.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from
