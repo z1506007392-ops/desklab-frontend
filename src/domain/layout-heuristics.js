@@ -23,7 +23,7 @@ export const HEURISTIC_LIMITS = Object.freeze({
 
 const MONITOR_MODELS = new Set(['monitor-24', 'monitor-27', 'ultrawide-monitor']);
 // Old saves have gaming-desk, standing-desk, l-desk; 'desktop-pc' is not a desk.
-const isDesk = object => object.modelId === 'office-desk' || /(^|[-_])desk$/.test(object.type ?? '');
+export const isDesk = object => object.modelId === 'office-desk' || /(^|[-_])desk$/.test(object.type ?? '');
 const isMonitor = object => MONITOR_MODELS.has(object.modelId) || object.type === 'monitor';
 const isLaptop = object => object.modelId === 'laptop-15' || object.type === 'laptop';
 const isTower = object => object.modelId === 'desktop-pc' || object.type === 'desktop-pc';
@@ -59,6 +59,16 @@ function facingAngleDegrees(object, direction) {
   const radians = ((object.rotation?.z ?? 0) * Math.PI) / 180;
   const cosine = -Math.sin(radians) * direction.x + Math.cos(radians) * direction.y;
   return (Math.acos(Math.max(-1, Math.min(1, cosine))) * 180) / Math.PI;
+}
+
+/** Where the person sits at a desk, in room coordinates. */
+export function getDeskSeat(desk) {
+  const radians = ((desk.rotation?.z ?? 0) * Math.PI) / 180;
+  const reach = desk.scale.y / 2 + HEURISTIC_LIMITS.seatDistance;
+  return {
+    x: desk.position.x + Math.sin(radians) * reach,
+    y: desk.position.y - Math.cos(radians) * reach,
+  };
 }
 
 const hint = (code, objectIds, message, extra = {}) => ({ code, severity: 'hint', objectIds, message, ...extra });

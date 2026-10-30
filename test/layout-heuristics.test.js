@@ -108,3 +108,13 @@ test('desks generated from a device list are good desks too', async () => {
     }
   }
 });
+
+test('the seat is in front of the desk, following its rotation', async () => {
+  const { getDeskSeat } = await import('../src/domain/layout-heuristics.js');
+  const desk = { position: { x: 0, y: 1, z: 0.375 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1.4, y: 0.7, z: 0.75 } };
+  const seat = getDeskSeat(desk);
+  assert.ok(Math.abs(seat.x) < 1e-9 && Math.abs(seat.y - (1 - 0.35 - 0.35)) < 1e-9);
+  const turned = getDeskSeat({ ...desk, rotation: { x: 0, y: 0, z: 90 } });
+  // Local -y turned by 90 degrees points along +x.
+  assert.ok(Math.abs(turned.x - 0.7) < 1e-9 && Math.abs(turned.y - 1) < 1e-9);
+});
