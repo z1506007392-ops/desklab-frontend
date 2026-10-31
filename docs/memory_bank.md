@@ -15,6 +15,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。Claude 在 master 上的记录原先写在正文里，这里按提交作者收成同一份日志。
 
+### 2026-10-31 · Desklab (Grok Bot) · [grok/cc0-models-trial-2](https://github.com/z1506007392-ops/desklab-frontend/pull/5)
+
+E22：其余 10 样里只换了书桌，用 Poly Haven 的 Metal Office Desk（CC0，作者 Ulan Cabanilla）。深灰、写实，宽和深几乎按比例，高度相对拉高约三成，抽屉略高，没有压扁。文件从 35820 字节到 168616 字节。三台显示器的目录厚度只有 5–10 厘米，带支架的现成模型套进去会严重压扁，所以保留。笔记本能找到的 CC0 要么是 Kenney 那套灰青色卡通，要么是 Poly Haven 的米色老式电脑，都不是深色，保留。主机、路由器、插排、墙插、适配器没有比例接近的 CC0。台灯、鼠标、键盘、音箱按已定的不改。验证：`npm test` 399，`npm run lint`，`npm run build`，`npm run test:ui` 115 通过 + 1 跳过。不合并 master。还剩：等 Leo 看书桌留不留。
+
 ### 2026-10-31 · Desklab (Grok Bot) · 分支 grok/cc0-models-trial-2
 
 领取 E22：把设备库里除台灯、鼠标、键盘、音箱以外的设备试换成 CC0 现成模型，给 Leo 逐个挑。优先写实、深色、不用严重压扁的模型；找不到合适的就留原模型。不改目录尺寸、锚点、接口、功耗、type、modelId，不合并 master。还剩：E22 本身。
