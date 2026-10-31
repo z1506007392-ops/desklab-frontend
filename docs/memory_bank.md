@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+领取 E20（添加设备时先选大类，再选小类，最后选型号。分类数据放在 catalog，旧存档的 type 和 modelId 不动）。还剩：E20 本身。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 E4 音箱：桌上放电脑声音用的，除了电源还要一根 3.5mm 音频线。主机和笔记本加了耳机孔。GLB 由 `tools/blender-models/speakers.py` 生成，接口在右音箱背面，功耗约 18W。要放在桌面上。第一批四样到此做完。验证：`npm test` 398，`npm run lint`，`npm run build`，`npm run test:ui` 111 通过 + 1 跳过。还剩：设备分类。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
