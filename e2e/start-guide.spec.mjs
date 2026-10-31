@@ -8,7 +8,7 @@ const guide = page => page.getByRole('dialog', { name: '新手引导', exact: tr
 // tests only care about the dialog, and the page already explains a failed download.
 function withoutSceneDownloadErrors(evidence) {
   return {
-    errors: evidence.errors.filter(error => !/dynamically imported module|Importing a module script failed/.test(error)),
+    errors: evidence.errors.filter(error => !/dynamically imported module|Importing a module script failed|TypeError: Load failed/.test(error)),
     writes: evidence.writes,
   };
 }

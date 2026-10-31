@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+新手引导的 iPhone 测试再忽略 WebKit 上「TypeError: Load failed」这种 3D 模块下载失败。引导本身的断言不变。还剩：无。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 手册 E4 里「显示器支架、游戏主机这次没做」改成指向 E28。没有改代码。还剩：无。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
