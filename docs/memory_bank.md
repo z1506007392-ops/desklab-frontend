@@ -15,6 +15,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。Claude 在 master 上的记录原先写在正文里，这里按提交作者收成同一份日志。
 
+### 2026-10-31 · Desklab (Grok Bot) · master
+
+E21：Leo 确认只把台灯和鼠标换成 Kenney Furniture Kit（CC0，`lampRoundTable`、`computerMouse`）。键盘和音箱恢复为 `tools/blender-models/` 生成的原模型，缩略图一并换回。目录尺寸、锚点、接口、功耗、type、modelId 本来就没改。来源写在 `public/models/CREDITS.md`。验证：`npm test` 399，`npm run lint`，`npm run build`，`npm run test:ui` 115 通过 + 1 跳过。还剩：无。
+
 ### 2026-10-31 · Desklab (Grok Bot) · [grok/cc0-models-trial](https://github.com/z1506007392-ops/desklab-frontend/pull/4)
 
 领取并完成 E21：键盘、鼠标、台灯、音箱试用 Kenney Furniture Kit（CC0，同一套低多边形风格）。来源、作者和许可证写在 `public/models/CREDITS.md`。网格缩进原来的米制包围盒，原点和正面约定不变，锚点、接口、功耗、type、modelId 没改。gltf-transform 优化没有把文件变小，所以留缩放后的网格；四个都远小于 200KB，没用 Draco / meshopt。验证：`npm test` 399，`npm run lint`，`npm run build`，`npm run test:ui` 115 通过 + 1 跳过。不推 master。还剩：等负责人看对比后决定要不要换回脚本模型。
