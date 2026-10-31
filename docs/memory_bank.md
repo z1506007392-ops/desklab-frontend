@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+`e4faa35` 领取 E19。上次结果目录不在仓库里，所以整套重跑 53 次，没有改每小时限额。第一次 19 次后 429，等到下一小时续跑；家庭办公「显示器太近」两次都没被接受，因为提示里的 `fix` 把显示器挪到 y=1.25，正好压在笔记本上，校验拒绝「显示器和笔记本要放在桌面上」。这是提示数据的问题，不是校验过严：把显示器挪回模板原来的位置是会被接受的。`clearMonitorSpot` 改成从桌子后沿往前找一块不压到别的东西、又离人够远的空位。修好后再续跑，这两次都接受了「显示器往后挪一点」（y=1.55）。第二次续跑又遇到 429，等到再下一小时跑完剩下的。完整 53 次：可解析 100%，乱桌面至少一条被接受 100%，接受建议平均改善 46.9，新增错误 0，英文或内部 id 0，原始建议 149 条、接受 91 条。门槛都过。验证：`npm test` 394，`npm run lint`，`npm run build`，`npm run test:ui` 107 通过 + 1 跳过。还剩：无。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 领取 E19（整套重跑 53 次线上评测，因为上次的结果目录不在了；查清家庭办公「显示器太近」没被接受的原因）。遇到 429 就停，不改每小时限额。还剩：E19 本身。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
@@ -3242,6 +3246,16 @@ verified (unit, UI, lint, build) and committed separately; nothing pushed.
   `--resume tools/ai-eval/results/2026-10-30T22-02-07-776Z/` after the hourly
   limit. Mock model on all 53: parse 100%, messy helped 19.1%, average
   improvement 16.1, new errors 0. Prompt unchanged.
+- E19 (2026-10-31, Desklab): the saved result folder was gone, so the 53
+  requests were run again, pausing on HTTP 429 until the next hour. The two
+  home-office/monitor-too-close misses copied `fix` (move the monitor to
+  y=1.25), which lands on the laptop; validation correctly refused it
+  ("显示器和笔记本要放在桌面上"). Moving it back to the template spot was
+  accepted, so the bug was the hint's fix, not the check. The fix now searches
+  from the back of the desk for an empty spot that is still far enough from
+  the seat. After that change both requests accepted "显示器往后挪一点"
+  (y=1.55). Full 53: parse 100%, messy helped 100%, average improvement 46.9,
+  new errors 0, jargon 0, accepted/raw 91/149. Hourly limit was not changed.
 - Deployment (2026-10-30): Cloudflare Pages builds `master` on every push
   and serves https://desklab-frontend.pages.dev (owner's Cloudflare account;
   framework preset None, `npm run build`, output `dist`, Node from

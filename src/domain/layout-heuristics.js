@@ -1,5 +1,5 @@
 import { evaluateConnectionLength, standardCableLength } from './connections.js';
-import { getRotatedFootprint } from './geometry.js';
+import { getRotatedFootprint, horizontalFootprintsOverlap } from './geometry.js';
 import { findSupportingObject } from './layout-analysis.js';
 import { getRecordItems } from './record-collections.js';
 
@@ -106,6 +106,26 @@ function floorSpotBesideDesk(room, frame, object, preferredSide) {
   return null;
 }
 
+// A spot on the desk far enough from the seat, preferring the back edge so the
+// monitor does not land on the laptop. The old target sat only 15 cm past the
+// minimum distance, which on a home desk is the laptop, and the move was then
+// rejected because a monitor has to stay on the desk.
+function clearMonitorSpot(frame, monitor, objects) {
+  const halfY = monitor.scale.y / 2;
+  const minY = frame.seatLocal.y + HEURISTIC_LIMITS.minViewingDistance + 0.02;
+  const maxY = frame.halfDepth - halfY - 0.02;
+  if (maxY < minY) return null;
+  const localX = frame.toLocal(monitor.position).x;
+  const blockers = objects.filter(object => object.id !== monitor.id && !isDesk(object));
+  for (let y = maxY; y >= minY - 1e-9; y -= 0.02) {
+    const world = frame.toWorld({ x: localX, y });
+    const candidate = { ...monitor, position: { ...monitor.position, x: world.x, y: world.y } };
+    if (blockers.some(other => horizontalFootprintsOverlap(candidate, other))) continue;
+    return world;
+  }
+  return null;
+}
+
 export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
   const objects = getRecordItems(rawObjects).filter(object => object?.position && object?.scale);
   const connections = getRecordItems(rawConnections);
@@ -135,10 +155,10 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
     monitorsByDesk.get(frame).push(monitor);
     const local = frame.toLocal(monitor.position);
     if (local.y - frame.seatLocal.y < HEURISTIC_LIMITS.minViewingDistance) {
-      const targetY = Math.min(frame.seatLocal.y + HEURISTIC_LIMITS.minViewingDistance + 0.15, frame.halfDepth - monitor.scale.y / 2);
-      hints.push(hint('monitor_too_close', [monitor.id], `${monitor.name}离人太近，看久了眼睛累`, {
-        fix: [move(monitor, frame.toWorld({ x: local.x, y: targetY }))],
-      }));
+      const spot = clearMonitorSpot(frame, monitor, objects);
+      hints.push(hint('monitor_too_close', [monitor.id], `${monitor.name}离人太近，看久了眼睛累`, spot ? {
+        fix: [move(monitor, spot)],
+      } : {}));
     }
     if (facingAngleDegrees(monitor, frame.towardSeat) > HEURISTIC_LIMITS.maxFacingAngle) {
       hints.push(hint('monitor_facing_away', [monitor.id], `${monitor.name}没有朝向座位`, {

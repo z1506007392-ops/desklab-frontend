@@ -126,6 +126,11 @@ test('every hint carries a fix that the AI checks would accept', async () => {
   const withObjects = (id, objects) => ({ ...scene(id), objects });
   const base = id => scene(id);
 
+  add('monitor too close', withObjects('home-office', moved(base('home-office').objects, 'monitor-27', m => {
+    const desk = byModel(base('home-office').objects, 'office-desk');
+    m.position.y = desk.position.y - desk.scale.y / 2 + m.scale.y / 2 + 0.01;
+    return m;
+  })));
   add('monitor off centre', withObjects('home-office', moved(base('home-office').objects, 'monitor-27', m => { m.position.x += 0.3; return m; })));
   add('monitor turned away', withObjects('gaming', moved(base('gaming').objects, 'ultrawide-monitor', m => { m.rotation.z = 90; return m; })));
   const homeDesk = byModel(base('home-office').objects, 'office-desk');
