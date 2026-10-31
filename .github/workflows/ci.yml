@@ -25,8 +25,12 @@ jobs:
       - run: npm test
       - run: npm run lint
       - run: npm run build
-      # Chrome is already on the runner. WebKit (iPhone) and Firefox are
-      # installed here. The whole UI run is about 7 minutes locally, so CI
-      # keeps every case instead of a shorter subset.
-      - run: npx playwright install --with-deps webkit firefox
+      # Chrome is already on the runner. iPhone WebKit is installed here.
+      # The four-browser run took 18 minutes on this runner, more than twice
+      # the previous job, and its Firefox build has no usable WebGL. CI keeps
+      # the full Chrome suite plus the WebKit cases that cover loading,
+      # saving, the phone toolbar, and the 3D view. Firefox stays a local run
+      # (`npm run test:ui:firefox`); `npx playwright test` still runs all four.
+      - run: npx playwright install --with-deps webkit
       - run: npm run test:ui
+      - run: npm run test:ui:webkit

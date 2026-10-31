@@ -17,7 +17,7 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
-E23：补上 D4 没做的 Safari / Firefox 实测。Playwright 加了 iPhone 13 WebKit（390×844，触控）和 Firefox 桌面，并跑完全部 UI。Chrome 桌面 57 通过 + 1 跳过，Chrome 手机 58 通过，iPhone WebKit 58 通过，Firefox 桌面 57 通过 + 1 跳过（手机专用的工具栏用例在宽屏跳过）。产品上两处根因：WebKit 允许 Troika 的空 blob 探测、却拦住后面的 blob `importScripts`，坐标字母和功耗数字因此报错，现改在主线程排字，字体改从本站提供，字形不变；WebKit 和 Firefox 在很快的刷新里偶发下载不到 3D 模块，失败后再试两次，仍失败才显示原来的说明。剪贴板权限只有 Chromium 能授予，测试改为在 WebKit 上核对按钮实际写入的文字。验证：`npm test` 399，`npm run lint`，`npm run build`，`npm run test:ui` 230 通过 + 2 跳过。还剩：无。
+E23：补上 D4 没做的 Safari / Firefox 实测。Playwright 加了 iPhone 13 WebKit（390×844，触控）和 Firefox 桌面。本地全量：Chrome 桌面 57 通过 + 1 跳过，Chrome 手机 58 通过，iPhone WebKit 58 通过，Firefox 桌面 57 通过 + 1 跳过。产品上两处根因：WebKit 允许 Troika 的空 blob 探测、却拦住后面的 blob `importScripts`，坐标字母和功耗数字因此报错，现改在主线程排字，字体改从本站提供，字形不变；WebKit 和 Firefox 在很快的刷新里偶发下载不到 3D 模块，失败后再试两次，仍失败才显示原来的说明。剪贴板权限只有 Chromium 能授予，测试改为在 WebKit 上核对按钮实际写入的文字。四个浏览器一起在 CI 上要 18 分钟，超过原先约 6 分钟的一倍，而且那里的 Firefox 没有可用的 WebGL，拖动和画面用例失败（本地同一套是通过的）。CI 因此只加 iPhone WebKit 的关键用例，Firefox 全量留在本地 `npm run test:ui:firefox`。验证：`npm test` 399，`npm run lint`，`npm run build`，四个浏览器 UI 230 通过 + 2 跳过。还剩：无。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
@@ -3577,7 +3577,7 @@ Frontend:
 ```bash
 cd D:\desklab\frontend
 npm test          # 399 domain tests
-npm run test:ui   # 232 UI cases: Chrome desktop 57 + 1 skipped, Chrome phone 58, iPhone WebKit 58, Firefox desktop 57 + 1 skipped
+npm run test:ui   # Chrome desktop + phone. Cross-browser: npx playwright test (232 cases: Chrome 57+1 skip, phone 58, iPhone WebKit 58, Firefox 57+1 skip). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
