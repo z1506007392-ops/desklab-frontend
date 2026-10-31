@@ -1,7 +1,13 @@
 // The one-line hint under the toolbar. Phones get short touch wording (no
 // keyboard shortcuts, no "right panel", which is a drawer there), and the
 // selected device is named the way the user named it, never by its type id.
-export function describeSelectionHint({ selectedName = null, isMobile = false } = {}) {
+export function describeSelectionHint({ selectedName = null, isMobile = false, viewOnly = false } = {}) {
+  if (viewOnly) {
+    return {
+      title: isMobile ? '只读分享，可以转视角查看' : '只读分享，可以转视角查看设备和连线',
+      tip: '',
+    };
+  }
   if (selectedName === null) {
     return isMobile
       ? { title: '点选设备即可编辑', tip: '' }

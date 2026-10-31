@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+领取并完成 E26（Leo 已批准，2026-10-31）：分享链接不经过服务器、也不需要账号。当前桌面用 gzip 再 base64url 放进网址的 `#desklab-share-1.` 片段。对方打开后只能转视角、看设备和连线、看购线清单，不能编辑；浏览器里原来的存档不会被写入，要点「复制一份到我的项目」并确认后才进到自己的画面，之后还要自己点保存才会替换存档。链接损坏或版本太新时有说明，并仍打开自己的桌面。超过 `SHARE_LINK_WARN_LENGTH`（2000 字符，微信和有的聊天软件大约到这里就打不开）会提示，链接仍可复制。关于与隐私里写明分享链接包含房间、设备和连线。验证：`npm test` 412，`npm run lint`，`npm run build`，四个浏览器 UI 258 通过 + 2 跳过。还剩：E27。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 领取并完成 E25（Leo 已批准，2026-10-31）：按当前项目里已经画好的连线，生成要买的线。线种用普通人的说法（HDMI 线、DP 线、USB-C 线、USB-A 线、网线、电源线、3.5mm 音频线），长度是两端插头的直线距离加上 `CABLE_SHOP_SLACK_METRES`（0.2 米，两端弯折），再向上取到 `CABLE_SHOP_LENGTHS`（0.5 / 1 / 1.5 / 2 / 3 / 5 米）；比 5 米更长的按 `CABLE_SHOP_LENGTH_STEP_METRES`（5 米一档）往上取。同类同长度合并数量。从「更多」或「所有连接」进入，一键复制成纯文本。不出现内部 id，不接商店，不写价格。这和原来的「购物清单」（改进建议里的加购）是两件事，也没有改连线校验用的标准线长。验证：`npm test` 405，`npm run lint`，`npm run build`，四个浏览器 UI 246 通过 + 2 跳过。还剩：E26。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
@@ -3584,8 +3588,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 405 domain tests
-npm run test:ui   # Chrome desktop + phone. Cross-browser: npx playwright test (248 cases: 246 passed + 2 skipped). CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 412 domain tests
+npm run test:ui   # Chrome desktop + phone. Cross-browser: npx playwright test (260 cases: 258 passed + 2 skipped). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

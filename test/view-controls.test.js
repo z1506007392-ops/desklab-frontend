@@ -16,3 +16,13 @@ test('zoom waits while connecting, dragging, or the project cannot be edited', (
   assert.equal(cameraZoomEnabled({ ...viewing, gizmoDragging: true }), false);
   assert.equal(cameraZoomEnabled({ ...viewing, editable: false }), false);
 });
+
+test('a read-only share can still zoom the view', () => {
+  assert.equal(cameraZoomEnabled({
+    editable: false,
+    viewOnly: true,
+    connectionMode: false,
+    dragging: false,
+    gizmoDragging: false,
+  }), true);
+});

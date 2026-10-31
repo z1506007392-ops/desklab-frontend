@@ -64,6 +64,8 @@ test('the about and privacy dialog says where the desk is kept and what AI sends
   await expect(dialog).toContainText('导出备份');
   await expect(dialog).toContainText('发送给 DeepSeek');
   await expect(dialog).toContainText('不使用统计或广告追踪');
+  await expect(dialog).toContainText('复制分享链接');
+  await expect(dialog).toContainText('包含当前的房间、设备和连线');
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   const again = await open();

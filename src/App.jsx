@@ -51,6 +51,7 @@ import { getPurchaseGuidance } from './domain/purchase-guidance.js';
 import { buildTemplateScene } from './domain/desk-templates.js';
 import { buildShoppingList } from './domain/shopping-list.js';
 import { buildCableShoppingList } from './domain/cable-shopping-list.js';
+import { SHARE_LINK_MESSAGES, decodeShareLink, encodeShareLink } from './domain/share-link.js';
 import { applyAllAvailableImprovements, applyAllImprovements, applyImprovement, buildConnectionCompletion, buildFreeImprovements, buildRecommendations } from './domain/recommendations.js';
 import { createProjectHistory } from './domain/project-history.js';
 import { createStatusNotifier } from './domain/status-notifier.js';
@@ -62,6 +63,8 @@ import LayoutReportDialog from './components/LayoutReportDialog.jsx';
 import WiringReportDialog from './components/WiringReportDialog.jsx';
 import ConnectionsListDialog from './components/ConnectionsListDialog.jsx';
 import CableShoppingDialog from './components/CableShoppingDialog.jsx';
+import ShareLinkDialog from './components/ShareLinkDialog.jsx';
+import ShareViewBanner from './components/ShareViewBanner.jsx';
 import ErrorNotice from './components/ErrorNotice.jsx';
 import DraftRecoveryBanner from './components/DraftRecoveryBanner.jsx';
 import BackupReminderBanner from './components/BackupReminderBanner.jsx';
@@ -148,7 +151,9 @@ export default function App() {
     projectLoadFailed,
     recoveryPending: Boolean(recoveryDraft),
   });
-  const projectEditable = projectBaseEditable && !aiPreview;
+  // A share link is viewed in memory only. It must not become the saved project.
+  const [shareView, setShareView] = useState(false);
+  const projectEditable = projectBaseEditable && !aiPreview && !shareView;
   
   const cameraRef = useRef(null);
   const controlsRef = useRef(null);
@@ -156,6 +161,8 @@ export default function App() {
   const importInputRef = useRef(null);
   const saveInFlightRef = useRef(false);
   const projectVersionRef = useRef(null);
+  const visitorLayoutRef = useRef(null);
+  const storedLoadFailedRef = useRef(false);
   const [cameraConfig, setCameraConfig] = useState(undefined);
   const getCurrentCamera = useCallback(() =>
     captureCameraSnapshot(cameraRef.current, controlsRef.current, cameraConfig),
@@ -201,6 +208,7 @@ export default function App() {
   const [connectionDraft, setConnectionDraft] = useState({});
   const [showGlobalConnections, setShowGlobalConnections] = useState(false);
   const [showCableShop, setShowCableShop] = useState(false);
+  const [shareLink, setShareLink] = useState(null);
   const [showWiringReport, setShowWiringReport] = useState(false);
   const [showLayoutReport, setShowLayoutReport] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
@@ -458,52 +466,91 @@ export default function App() {
 
   useEffect(() => {
     const controller = new AbortController();
-    projectClient.load({ signal: controller.signal })
-      .then(({ project: data, version }) => {
-        if (controller.signal.aborted) return;
-        projectVersionRef.current = version;
-        setHasSavedProject(version !== UNSAVED_PROJECT_VERSION);
-        setProjectLoadFailed(false);
+    const hash = window.location.hash;
+    Promise.all([
+      projectClient.load({ signal: controller.signal }).then(
+        result => ({ ok: true, result }),
+        error => ({ ok: false, error }),
+      ),
+      decodeShareLink(hash),
+    ]).then(([stored, shared]) => {
+      if (controller.signal.aborted) return;
+      if (stored.ok) {
+        const data = stored.result.project;
         const loadedRoom = data.room || { length: 10, width: 10, height: 3 };
         const hydratedObjects = hydrateProjectObjects(data.objects || []);
         const loadedConnections = data.connections || [];
+        projectVersionRef.current = stored.result.version;
+        setHasSavedProject(stored.result.version !== UNSAVED_PROJECT_VERSION);
+        storedLoadFailedRef.current = false;
+        visitorLayoutRef.current = serializeLayout(loadedRoom, hydratedObjects, loadedConnections);
+      } else {
+        storedLoadFailedRef.current = true;
+        visitorLayoutRef.current = null;
+      }
 
-        setRoom(loadedRoom);
-        setInputRoom(loadedRoom);
-        setObjects(hydratedObjects);
-        setConnections(loadedConnections);
-        setCameraConfig(data.camera || null);
-        setSavedLayout(serializeLayout(loadedRoom, hydratedObjects, loadedConnections));
+      // The shared desk replaces only what is on screen. Storage is not written.
+      if (shared.kind === 'ok') {
+        const sharedRoom = shared.project.room;
+        const sharedObjects = hydrateProjectObjects(shared.project.objects || []);
+        const sharedConnections = shared.project.connections || [];
+        setProjectLoadFailed(false);
+        setRoom(sharedRoom);
+        setInputRoom(sharedRoom);
+        setObjects(sharedObjects);
+        setConnections(sharedConnections);
+        setCameraConfig(shared.project.camera || null);
+        setSavedLayout(serializeLayout(sharedRoom, sharedObjects, sharedConnections));
         setCameraDirty(false);
-        const localDraft = readLocalDraft();
-        const loadedProject = {
-          room: loadedRoom,
-          objects: hydratedObjects,
-          connections: loadedConnections,
-          camera: data.camera || null,
-        };
-        if (localDraft && isDraftDifferent(localDraft, loadedProject)) {
-          setRecoveryDraft(localDraft);
-        } else {
-          clearLocalDraft();
-        }
+        setShareView(true);
         setProjectLoaded(true);
         resetHistory();
-      })
-      .catch(err => {
-        if (controller.signal.aborted) return;
+        return;
+      }
+
+      const shareNotice = shared.kind === 'absent' ? '' : SHARE_LINK_MESSAGES[shared.kind];
+      if (!stored.ok) {
+        const err = stored.error;
         console.error(err instanceof Error ? `${err.name}: ${err.message}` : err);
         setProjectLoadFailed(true);
-        showStatus({
-          text: err.code === 'storage_unavailable'
-            ? err.message
-            : '本机保存的项目无法读取，已锁定保存以保护原数据。可以尝试恢复上一版本。',
-          type: 'error',
-        });
+        const storedNotice = err.code === 'storage_unavailable'
+          ? err.message
+          : '本机保存的项目无法读取，已锁定保存以保护原数据。可以尝试恢复上一版本。';
+        showStatus({ text: shareNotice ? `${shareNotice} ${storedNotice}` : storedNotice, type: 'error' });
         const localDraft = readLocalDraft();
         if (localDraft) setRecoveryDraft(localDraft);
         setProjectLoaded(true);
-      });
+        return;
+      }
+
+      if (shareNotice) showStatus({ text: shareNotice, type: 'error' }, 6000);
+      const data = stored.result.project;
+      const loadedRoom = data.room || { length: 10, width: 10, height: 3 };
+      const hydratedObjects = hydrateProjectObjects(data.objects || []);
+      const loadedConnections = data.connections || [];
+      setProjectLoadFailed(false);
+      setRoom(loadedRoom);
+      setInputRoom(loadedRoom);
+      setObjects(hydratedObjects);
+      setConnections(loadedConnections);
+      setCameraConfig(data.camera || null);
+      setSavedLayout(visitorLayoutRef.current);
+      setCameraDirty(false);
+      const localDraft = readLocalDraft();
+      const loadedProject = {
+        room: loadedRoom,
+        objects: hydratedObjects,
+        connections: loadedConnections,
+        camera: data.camera || null,
+      };
+      if (localDraft && isDraftDifferent(localDraft, loadedProject)) {
+        setRecoveryDraft(localDraft);
+      } else {
+        clearLocalDraft();
+      }
+      setProjectLoaded(true);
+      resetHistory();
+    });
     return () => controller.abort();
   }, [clearLocalDraft, readLocalDraft, resetHistory, showStatus]);
 
@@ -530,6 +577,9 @@ export default function App() {
         if (showCableShop) {
           setShowCableShop(false);
         }
+        if (shareLink) {
+          setShareLink(null);
+        }
         if (showWiringReport) {
           setShowWiringReport(false);
         }
@@ -550,7 +600,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKeyDownEsc);
     return () => window.removeEventListener('keydown', handleKeyDownEsc);
-  }, [closeRecommendations, connectionMode, showAbout, showCableShop, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations, showTemplates]);
+  }, [closeRecommendations, connectionMode, shareLink, showAbout, showCableShop, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations, showTemplates]);
 
   useEffect(() => {
     const handleHistoryKeys = (e) => {
@@ -670,7 +720,7 @@ export default function App() {
     showStatus({ text: '已吸附到最近墙面', type: 'success' });
   }, [connectionMode, objects, projectEditable, room, selectedObjectId, showStatus, updateSelectedObject]);
 
-  const dialogOpen = showTemplates || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || showRecommendations || showAbout;
+  const dialogOpen = showTemplates || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || shareLink || showRecommendations || showAbout;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -701,12 +751,12 @@ export default function App() {
   }, [selectedObjectId, objects, connectionMode, dialogOpen, handleDeleteDevice, handleDuplicateDevice, projectEditable, updateSelectedObject]);
 
   const handleResetView = () => {
-    if (!projectEditable) return;
+    if (!projectEditable && !shareView) return;
     if (cameraRef.current && controlsRef.current) {
       cameraRef.current.position.set(0, room.height * 1.8, -room.width * 1.6);
       controlsRef.current.target.set(0, room.height / 2, 0);
       controlsRef.current.update();
-      setCameraDirty(true);
+      if (projectEditable) setCameraDirty(true);
     }
   };
 
@@ -715,7 +765,7 @@ export default function App() {
   }, [projectEditable]);
 
   useEffect(() => {
-    if (!projectLoaded || recoveryDraft) return undefined;
+    if (!projectLoaded || recoveryDraft || shareView) return undefined;
     if (!isDirty) {
       clearLocalDraft();
       return undefined;
@@ -739,7 +789,7 @@ export default function App() {
     }, 500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [clearLocalDraft, connections, getCurrentCamera, isDirty, objects, projectLoaded, recoveryDraft, room, showStatus]);
+  }, [clearLocalDraft, connections, getCurrentCamera, isDirty, objects, projectLoaded, recoveryDraft, room, shareView, showStatus]);
 
   const handleSave = async () => {
     if (!projectLoaded) {
@@ -756,6 +806,7 @@ export default function App() {
       });
       return;
     }
+    if (shareView) return;
     if (recoveryDraft) {
       showStatus({
         text: '请先恢复或放弃本地草稿，再保存项目。',
@@ -945,7 +996,7 @@ export default function App() {
     }
   };
 
-  const showStartGuide = projectLoaded && projectEditable && !hasSavedProject
+  const showStartGuide = projectLoaded && projectEditable && !shareView && !hasSavedProject
     && !startGuideDismissed && objects.length === 0;
 
   const handleStartGuideChoice = (choice) => {
@@ -1126,6 +1177,7 @@ export default function App() {
   const selectionHint = describeSelectionHint({
     selectedName: selectedObj ? selectedObj.name : null,
     isMobile,
+    viewOnly: shareView,
   });
   const wiringIssues = useMemo(
     () => analyzeProjectWiring(objects, connections),
@@ -1171,6 +1223,52 @@ export default function App() {
     } catch {
       showStatus({ text: '复制失败：浏览器没有允许使用剪贴板，可以手动选中清单文字复制', type: 'error' }, 4000);
     }
+  };
+  const handleOpenShareLink = async () => {
+    try {
+      const link = await encodeShareLink({
+        room,
+        objects,
+        connections,
+        camera: getCurrentCamera(),
+      }, window.location);
+      setShareLink(link);
+    } catch {
+      showStatus({ text: '当前桌面还不能生成分享链接', type: 'error' }, 4000);
+    }
+  };
+  const handleCopyShareLink = async () => {
+    if (!shareLink) return;
+    try {
+      await navigator.clipboard.writeText(shareLink.url);
+      showStatus({ text: '分享链接已复制', type: 'success' }, 3000);
+    } catch {
+      showStatus({ text: '复制失败：浏览器没有允许使用剪贴板，可以手动选中链接文字复制', type: 'error' }, 4000);
+    }
+  };
+  const handleAdoptShare = () => {
+    if (!shareView) return;
+    const confirmed = window.confirm(
+      '确定把这份分享复制到你的项目吗？\n画面上的桌面会换成链接里的内容。浏览器里已经保存的项目不会被改掉，除非你之后自己点“保存项目”。'
+    );
+    if (!confirmed) return;
+    const url = new URL(window.location.href);
+    url.hash = '';
+    window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+    setShareView(false);
+    if (storedLoadFailedRef.current) setProjectLoadFailed(true);
+    if (visitorLayoutRef.current !== null) setSavedLayout(visitorLayoutRef.current);
+    setSelectedObjectId(null);
+    const sameAsSaved = visitorLayoutRef.current !== null
+      && visitorLayoutRef.current === serializeLayout(room, objects, connections);
+    showStatus({
+      text: storedLoadFailedRef.current
+        ? '你原来的存档读不出来，这份分享只留在当前页面，没有写入浏览器。'
+        : sameAsSaved
+          ? '这份分享和你已保存的项目一样。'
+          : '已复制到当前项目，尚未保存。你原来的存档还在，要点“保存项目”才会替换。',
+      type: 'success',
+    }, 5000);
   };
   const handleCopyShoppingList = async () => {
     try {
@@ -1351,7 +1449,7 @@ export default function App() {
   const templatesButton = <button className="ui-button" onClick={() => { setScrollTemplatesToBuilder(false); setShowTemplates(true); }} disabled={!projectEditable}>桌面模板</button>;
   const undoButton = <button className="ui-button" onClick={handleUndo} disabled={!projectEditable || !historyStatus.canUndo} title="撤销 (Ctrl+Z)">撤销</button>;
   const redoButton = <button className="ui-button" onClick={handleRedo} disabled={!projectEditable || !historyStatus.canRedo} title="重做 (Ctrl+Y)">重做</button>;
-  const resetViewButton = <button className="ui-button" onClick={handleResetView} disabled={!projectEditable}>重置视角</button>;
+  const resetViewButton = <button className="ui-button" onClick={handleResetView} disabled={!projectEditable && !shareView}>重置视角</button>;
   const connectionsButton = <button className="ui-button" onClick={() => setShowGlobalConnections(true)}>所有连接</button>;
   const layoutButton = (
     <button className={`ui-button${actionableLayoutIssueCount > 0 ? ' ui-button-tag' : ''}`} onClick={() => setShowLayoutReport(true)} aria-label={countLabel('布局检查', actionableLayoutIssueCount)}>
@@ -1405,6 +1503,7 @@ export default function App() {
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleCopyProjectToClipboard)} disabled={!projectEditable} title="复制项目，可以粘贴给别人或另一台设备">复制项目</button>
       <div className="toolbar-menu-separator" role="separator" />
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowCableShop(true))}>购线清单</button>
+      <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleOpenShareLink)} disabled={!projectLoaded || projectLoadFailed}>复制分享链接</button>
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowAbout(true))}>关于与隐私</button>
     </div>
   );
@@ -1493,7 +1592,11 @@ export default function App() {
       <div className="app-top">
         {appToolbar}
 
-        {recoveryDraft && (
+        {shareView && (
+          <ShareViewBanner onCopyIn={handleAdoptShare} />
+        )}
+
+        {recoveryDraft && !shareView && (
           <DraftRecoveryBanner
             savedAt={recoveryDraft.savedAt}
             onRestore={handleRestoreDraft}
@@ -1601,6 +1704,7 @@ export default function App() {
             cameraRef={cameraRef}
             controlsEnabled={cameraZoomEnabled({
               editable: projectEditable,
+              viewOnly: shareView,
               connectionMode,
               dragging: Boolean(dragInfo),
               gizmoDragging,
@@ -1848,6 +1952,15 @@ export default function App() {
           items={cableShoppingList.items}
           onCopy={handleCopyCableList}
           onClose={() => setShowCableShop(false)}
+        />
+      )}
+
+      {shareLink && (
+        <ShareLinkDialog
+          url={shareLink.url}
+          tooLong={shareLink.tooLong}
+          onCopy={handleCopyShareLink}
+          onClose={() => setShareLink(null)}
         />
       )}
 

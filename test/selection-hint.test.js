@@ -15,6 +15,11 @@ test('a selected device is named the way the user named it', () => {
   assert.equal(describeSelectionHint({ selectedName: '' }).title, '已选中：未命名设备');
 });
 
+test('a read-only share does not invite the visitor to edit', () => {
+  assert.equal(describeSelectionHint({ viewOnly: true }).title, '只读分享，可以转视角查看设备和连线');
+  assert.equal(describeSelectionHint({ viewOnly: true, isMobile: true }).title, '只读分享，可以转视角查看');
+});
+
 test('phones get touch wording without keyboard shortcuts', () => {
   const { tip } = describeSelectionHint({ selectedName: '书桌', isMobile: true });
   assert.equal(tip, '拖控制柄移动或旋转，属性面板可精确调整');

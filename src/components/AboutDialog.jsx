@@ -25,6 +25,7 @@ export default function AboutDialog({ onClose }) {
           <ul>
             <li>项目只保存在你这台设备的浏览器里，不会上传到我们的服务器。</li>
             <li>清理浏览器数据、换浏览器或换设备后就找不到了。请用“更多 → 导出备份”保存一份文件，需要时用“导入备份”恢复。</li>
+            <li>“复制分享链接”生成的地址里包含当前的房间、设备和连线。请不要在设备名称里写个人信息。</li>
           </ul>
 
           <h4 className="template-section-title">使用 AI 建议时</h4>

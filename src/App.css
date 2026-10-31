@@ -1392,6 +1392,15 @@
   margin-left: auto;
 }
 
+.share-link-field {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.share-link-copy {
+  margin-top: 12px;
+}
+
 .modal-body {
   padding: 8px 24px 24px;
   overflow-y: auto;
