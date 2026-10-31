@@ -161,6 +161,11 @@ export default function App() {
   [cameraConfig]);
   
   const [dragInfo, setDragInfo] = useState(null);
+  const [gizmoMode, setGizmoMode] = useState('translate');
+  const [gizmoModeFor, setGizmoModeFor] = useState(null);
+  const activeGizmoMode = gizmoModeFor === selectedObjectId ? gizmoMode : 'translate';
+  const [gizmoDragging, setGizmoDragging] = useState(false);
+  const gizmoDragRef = useRef(null);
   const [inputRoom, setInputRoom] = useState({ length: 10, width: 10, height: 3 });
   const [showAxes, setShowAxes] = useState(true);
   // null while closed; otherwise the fixed-position anchor for the "更多" menu,
@@ -381,9 +386,9 @@ export default function App() {
   // `history` lets a caller choose the undo group, e.g. a drag keeps one held
   // group from pointer down to pointer up however long it takes.
   const updateSelectedObject = useCallback((newProps, history = {}) => {
-    if (!projectEditable || !selectedObjectId) return;
+    if (!projectEditable || !selectedObjectId) return null;
     const obj = objects.find(item => item.id === selectedObjectId);
-    if (!obj) return;
+    if (!obj) return null;
 
     const proposedObj = {
       ...obj,
@@ -404,14 +409,52 @@ export default function App() {
     const { valid, object: constrainedObj, reason } = validateAndConstrainObject(proposedObj, room);
     if (!valid) {
       showStatus({ text: reason || "操作后超出房间边界", type: 'error' }, 3000);
-      return;
+      return null;
     }
-    if (JSON.stringify(obj) === JSON.stringify(constrainedObj)) return;
+    if (JSON.stringify(obj) === JSON.stringify(constrainedObj)) return obj;
 
     const changedFields = Object.keys(newProps).sort().join(',');
     recordHistory(history.groupKey ?? `object:${selectedObjectId}:${changedFields}`, { holdGroup: Boolean(history.holdGroup) });
     setObjects(prev => prev.map(item => item.id === selectedObjectId ? constrainedObj : item));
+    return constrainedObj;
   }, [objects, projectEditable, recordHistory, room, selectedObjectId, showStatus]);
+
+  const chooseGizmoMode = (mode) => {
+    setGizmoMode(mode);
+    setGizmoModeFor(selectedObjectId);
+  };
+
+  const handleGizmoChange = useCallback((update) => {
+    if (!selectedObjectId) return null;
+    const patch = activeGizmoMode === 'rotate'
+      ? { rotation: { z: update.rotationZ } }
+      : { position: update.position };
+    return updateSelectedObject(patch, { groupKey: `drag:${selectedObjectId}`, holdGroup: true });
+  }, [activeGizmoMode, selectedObjectId, updateSelectedObject]);
+
+  const handleGizmoDragStart = useCallback(() => {
+    finishHistoryGroup();
+    const current = objects.find(item => item.id === selectedObjectId);
+    gizmoDragRef.current = {
+      id: selectedObjectId,
+      mode: activeGizmoMode,
+      startPosition: current ? { ...current.position } : null,
+    };
+    setGizmoDragging(true);
+  }, [activeGizmoMode, finishHistoryGroup, objects, selectedObjectId]);
+
+  const handleGizmoDragEnd = useCallback(() => {
+    const drag = gizmoDragRef.current;
+    gizmoDragRef.current = null;
+    if (drag?.startPosition && drag.mode !== 'rotate') {
+      const latest = projectStateRef.current;
+      const dragged = latest.objects.find(item => item.id === drag.id);
+      const settled = dragged && settleAfterDrag(latest.room, dragged, latest.objects, drag.startPosition);
+      if (settled) setObjects(current => current.map(item => item.id === settled.id ? settled : item));
+    }
+    finishHistoryGroup();
+    setGizmoDragging(false);
+  }, [finishHistoryGroup]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1483,6 +1526,28 @@ export default function App() {
           title={selectionHint.title}
           tip={selectionHint.tip}
         />
+        {selectedObj && projectEditable && !connectionMode && !aiPreview && (
+          <div className="gizmo-mode" role="group" aria-label="控制柄">
+            <button
+              type="button"
+              className="ui-button"
+              aria-pressed={activeGizmoMode === 'translate'}
+              disabled={gizmoDragging}
+              onClick={() => chooseGizmoMode('translate')}
+            >
+              移动
+            </button>
+            <button
+              type="button"
+              className="ui-button"
+              aria-pressed={activeGizmoMode === 'rotate'}
+              disabled={gizmoDragging}
+              onClick={() => chooseGizmoMode('rotate')}
+            >
+              旋转
+            </button>
+          </div>
+        )}
       </div>
 
         {/* 主体布局：左侧 3D Canvas + 右侧属性面板 */}
@@ -1594,7 +1659,7 @@ export default function App() {
             room={room}
             controlsRef={controlsRef}
             cameraRef={cameraRef}
-            controlsEnabled={projectEditable && !dragInfo && !connectionMode}
+            controlsEnabled={projectEditable && !dragInfo && !connectionMode && !gizmoDragging}
             zoomEnabled={!selectedObjectId && !connectionMode}
             onCameraInteractionEnd={handleCameraInteractionEnd}
             dragPlaneY={dragInfo ? dragInfo.planeY : null}
@@ -1651,6 +1716,12 @@ export default function App() {
             onObjectHoverEnd={obj => {
               if (projectEditable && connectionMode && hoveredDeviceId === obj.id) setHoveredDeviceId(null);
             }}
+            gizmoEnabled={Boolean(selectedObj) && projectEditable && !connectionMode && !aiPreview && !dragInfo}
+            gizmoMode={activeGizmoMode}
+            gizmoSize={isMobile ? 1.25 : 0.8}
+            onGizmoChange={handleGizmoChange}
+            onGizmoDragStart={handleGizmoDragStart}
+            onGizmoDragEnd={handleGizmoDragEnd}
           />
           )}
           </SceneErrorBoundary>

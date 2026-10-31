@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { WebGLRenderer } from 'three';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, Html } from '@react-three/drei';
+import SelectionGizmo from './SelectionGizmo.jsx';
 
 import { toThreePosition } from '../domain/coordinates.js';
 import { createRendererOrReport } from '../domain/webgl-support.js';
@@ -40,6 +41,12 @@ export default function Scene3D({
   onObjectPointerDown,
   onObjectHover,
   onObjectHoverEnd,
+  gizmoEnabled,
+  gizmoMode,
+  gizmoSize,
+  onGizmoChange,
+  onGizmoDragStart,
+  onGizmoDragEnd,
 }) {
   // drei's Html comes up empty when it mounts with the Canvas (fiber 9 /
   // React 19), so the selection tag is portalled into a plain layer laid
@@ -116,6 +123,18 @@ export default function Scene3D({
           handlersRef={handlersRef}
         />
       ))}
+
+      {selected && gizmoEnabled && (
+        <SelectionGizmo
+          object={selected}
+          mode={gizmoMode}
+          size={gizmoSize}
+          enabled
+          onChange={onGizmoChange}
+          onDragStart={onGizmoDragStart}
+          onDragEnd={onGizmoDragEnd}
+        />
+      )}
 
       {selected && overlay && <SelectionTag obj={selected} overlay={overlay} />}
     </Canvas>

@@ -10,7 +10,7 @@ export function describeSelectionHint({ selectedName = null, isMobile = false } 
   return {
     title: `已选中：${selectedName || '未命名设备'}`,
     tip: isMobile
-      ? '拖动可移动，属性面板可精确调整'
-      : '拖动或方向键移动，Q / E 旋转，空格 / Shift+空格 升降',
+      ? '拖控制柄移动或旋转，属性面板可精确调整'
+      : '拖控制柄或方向键移动，Q / E 旋转，空格 / Shift+空格 升降',
   };
 }

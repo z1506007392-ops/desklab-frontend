@@ -31,14 +31,19 @@ async function readPosition(page) {
   return position;
 }
 
-// The selected device's tag sits just above its top in the 3D view, so the
-// device itself is right under the tag.
+// The selected device's tag sits just above its top. The point is on the
+// body, off the center, so it misses the move handles that leave the middle.
 async function grabPoint(page) {
   const tag = page.locator('.scene-tag');
   await expect(tag).toBeVisible();
   await page.waitForTimeout(500); // let the tag's entrance settle
   const box = await tag.boundingBox();
-  return { x: box.x + box.width / 2, y: box.y + box.height + 24 };
+  const phone = page.viewportSize().width < 900;
+  // Desktop handles sit on the center line under the tag, so the grab steps
+  // sideways onto the screen. On a phone the same sideways step clips a handle.
+  return phone
+    ? { x: box.x + box.width / 2, y: box.y + box.height + 24 }
+    : { x: box.x + box.width / 2 + 36, y: box.y + box.height + 22 };
 }
 
 // Drags with a pause halfway, like a user who stops to look before letting

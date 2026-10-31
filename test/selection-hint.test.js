@@ -17,6 +17,6 @@ test('a selected device is named the way the user named it', () => {
 
 test('phones get touch wording without keyboard shortcuts', () => {
   const { tip } = describeSelectionHint({ selectedName: '书桌', isMobile: true });
-  assert.equal(tip, '拖动可移动，属性面板可精确调整');
+  assert.equal(tip, '拖控制柄移动或旋转，属性面板可精确调整');
   assert.doesNotMatch(tip, /Q|Shift|方向键|空格/);
 });

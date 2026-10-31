@@ -1577,6 +1577,18 @@
   color: var(--ink-2);
 }
 
+.gizmo-mode {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 8px;
+}
+
+.gizmo-mode .ui-button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--surface);
+  font-weight: 600;
+}
+
 /* 连线模式提示（3D 画面上方） */
 
 .connection-mode-banner {

@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+E9：选中且可编辑时，设备上出现移动/旋转控制柄（drei `TransformControls`，不缩放）。左右红、前后绿、上下蓝，和房间角落的坐标轴一致；旋转只留绕垂直轴的那一圈，一格 15°，和 Q / E 相同。拖控制柄走原来的 `updateSelectedObject`，撤销分组是 `drag:<id>` 并一直按住，松手后平移会像拖设备一样落到支撑面上，不另记一步。提示条下有「移动 / 旋转」胶囊，按下的是墨色底白字。连线、AI 预览、拖设备本体时控制柄让开。桌面和手机都能用。验证：`npm test` 398，`npm run lint`，`npm run build`，`npm run test:ui` 111 通过 + 1 跳过。还剩：E4 仍搁置，不加新设备。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 领取 E9（选中设备时显示移动/旋转控制柄，桌面和手机都能用，和拖动走同一套撤销）。负责人已允许改 3D 外观。还剩：E9 本身。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
@@ -3520,8 +3524,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 394 domain tests
-npm run test:ui   # 108 Chrome UI cases (107 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
+npm test          # 398 domain tests
+npm run test:ui   # 112 Chrome UI cases (111 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
