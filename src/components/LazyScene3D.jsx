@@ -15,11 +15,11 @@ const loadScene3D = () => {
 // Try again before telling the user the 3D code failed to download.
 function importSceneWithRetry(attempt = 0) {
   return import('./Scene3D.jsx').catch(error => {
-    if (attempt >= 2) {
+    if (attempt >= 4) {
       scene3DModule = null;
       throw error;
     }
-    return new Promise(resolve => { setTimeout(resolve, 40 * (attempt + 1)); })
+    return new Promise(resolve => { setTimeout(resolve, 80 * (attempt + 1)); })
       .then(() => importSceneWithRetry(attempt + 1));
   });
 }

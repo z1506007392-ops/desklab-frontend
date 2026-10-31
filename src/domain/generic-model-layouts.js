@@ -140,6 +140,8 @@ const GENERIC_MODEL_LAYOUT_BY_MODEL_ID = Object.freeze({
   mouse: GENERIC_BLOCK_LAYOUT,
   'desk-lamp': GENERIC_BLOCK_LAYOUT,
   speakers: GENERIC_BLOCK_LAYOUT,
+  'monitor-stand': GENERIC_BLOCK_LAYOUT,
+  'game-console': GENERIC_BLOCK_LAYOUT,
 });
 
 export function getGenericModelLayout(modelId) {

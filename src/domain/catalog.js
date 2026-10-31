@@ -38,6 +38,12 @@ export const DEVICE_CATALOG = [
     ],
   },
   {
+    category: 'entertainment', categoryName: '娱乐',
+    models: [
+      { type: 'game-console', modelId: 'game-console', displayName: '游戏主机', shape: 'rect', assetUrl: catalogModelUrl('game-console'), defaultScale: { x: 0.3, y: 0.24, z: 0.08 }, color: '#1c2127', wattage: 200, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }, { id: 'eth-1', name: '网口', type: 'ethernet', direction: 'bidirectional' }] },
+    ],
+  },
+  {
     category: 'display', categoryName: '显示器',
     models: [
       { type: 'monitor', modelId: 'monitor-24', displayName: '24 英寸显示器', shape: 'rect', assetUrl: catalogModelUrl('monitor-24'), defaultScale: { x: 0.54, y: 0.05, z: 0.32 }, color: '#212121', wattage: 30, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-in', name: 'HDMI 输入', type: 'hdmi', direction: 'input' }, { id: 'dp-in', name: 'DP 输入', type: 'displayport', direction: 'input' }] },
@@ -50,6 +56,12 @@ export const DEVICE_CATALOG = [
     models: [
       { type: 'keyboard', subcategory: 'keyboard', subcategoryName: '键盘', modelId: 'keyboard', displayName: '键盘', shape: 'rect', assetUrl: catalogModelUrl('keyboard'), defaultScale: { x: 0.44, y: 0.15, z: 0.032 }, color: '#2c333a', wattage: 2, ports: [{ id: 'usb-1', name: 'USB', type: 'usb', direction: 'bidirectional' }] },
       { type: 'mouse', subcategory: 'mouse', subcategoryName: '鼠标', modelId: 'mouse', displayName: '鼠标', shape: 'rect', assetUrl: catalogModelUrl('mouse'), defaultScale: { x: 0.062, y: 0.115, z: 0.038 }, color: '#3a4149', wattage: 1, ports: [{ id: 'usb-1', name: 'USB', type: 'usb', direction: 'bidirectional' }] },
+    ],
+  },
+  {
+    category: 'accessory', categoryName: '配件',
+    models: [
+      { type: 'monitor-stand', modelId: 'monitor-stand', displayName: '显示器支架', shape: 'rect', assetUrl: catalogModelUrl('monitor-stand'), defaultScale: { x: 0.18, y: 0.28, z: 0.45 }, color: '#2a3036' },
     ],
   },
   {
@@ -134,6 +146,7 @@ export function describeCatalogModel(model) {
   if (model.category === 'furniture' || model.type === 'office-desk') {
     parts.push(`${model.defaultScale.x} × ${model.defaultScale.y} m`, '尺寸可调');
   }
+  if (model.type === 'monitor-stand') parts.push('夹桌', '可放显示器');
   const acOutputs = ports.filter(port => port.type === 'ac_output').length;
   const hasDcOutput = ports.some(port => port.type === 'dc_output');
   const isPluggedPowerGear = (acOutputs > 0 || hasDcOutput)
@@ -234,6 +247,11 @@ const PORT_ANCHOR_BY_MODEL = {
   'power-adapter': {
     'ac-in': { x: 0, y: 0.5, z: 0 },
     'dc-out': { x: 0, y: -0.5, z: 0 },
+  },
+  'game-console': {
+    'hdmi-out': { x: -0.12, y: -0.5, z: 0.05 },
+    'eth-1': { x: 0.01, y: -0.5, z: 0.05 },
+    'ac-in': { x: 0.18, y: -0.5, z: -0.15 },
   },
 };
 

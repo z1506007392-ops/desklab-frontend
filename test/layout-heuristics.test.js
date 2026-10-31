@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { DESK_TEMPLATES, buildTemplateScene } from '../src/domain/desk-templates.js';
 import { analyzeLayoutHeuristics } from '../src/domain/layout-heuristics.js';
-import { findSupportingObject } from '../src/domain/layout-analysis.js';
+import { findSupportingObject, snapObjectToSupport } from '../src/domain/layout-analysis.js';
 
 const scene = id => buildTemplateScene(id);
 const codes = (room, objects, connections = []) => analyzeLayoutHeuristics(room, objects, connections).map(h => h.code).sort();
@@ -25,6 +25,32 @@ test('support finder tells desk, floor, wall, and floating apart', () => {
   assert.deepEqual(findSupportingObject(byModel(objects, 'wall-outlet'), objects), { kind: 'wall' });
   const floating = { ...byModel(objects, 'router'), position: { x: -0.93, y: 1.6, z: 1.5 } };
   assert.equal(findSupportingObject(floating, objects), null);
+});
+
+test('a monitor resting on a clamp stand is held up and still counts as on the desk', () => {
+  const { room, objects } = scene('home-office');
+  const desk = byModel(objects, 'office-desk');
+  const monitor = byModel(objects, 'monitor-27');
+  const deskTop = desk.position.z + desk.scale.z / 2;
+  const standHeight = 0.45;
+  const stand = {
+    ...monitor,
+    id: 'stand',
+    name: '显示器支架',
+    type: 'monitor-stand',
+    modelId: 'monitor-stand',
+    scale: { x: 0.18, y: 0.28, z: standHeight },
+    position: { x: monitor.position.x, y: monitor.position.y, z: deskTop + standHeight / 2 },
+    ports: [],
+  };
+  const raised = { ...monitor, position: { ...monitor.position, z: deskTop + standHeight + monitor.scale.z / 2 } };
+  const withStand = objects.map(object => (object.id === monitor.id ? raised : object)).concat(stand);
+  assert.deepEqual(findSupportingObject(raised, withStand), { kind: 'object', id: 'stand' });
+  assert.deepEqual(findSupportingObject(stand, withStand), { kind: 'object', id: desk.id });
+  assert.ok(!codes(room, withStand).includes('monitor_not_on_desk'));
+  const floating = { ...raised, position: { ...raised.position, z: 2 } };
+  const settled = snapObjectToSupport(room, floating, withStand.filter(object => object.id !== raised.id));
+  assert.ok(Math.abs(settled.position.z - raised.position.z) < 1e-6);
 });
 
 test('an off-centre single monitor, or a monitor group off to one side, is hinted', () => {

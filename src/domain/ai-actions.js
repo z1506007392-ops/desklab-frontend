@@ -20,7 +20,7 @@ import { getRecordItems } from './record-collections.js';
 // new problems. This is the safety boundary for everything the model says.
 
 const isWallOutlet = object => object.modelId === 'wall-outlet' || object.type === 'outlet';
-const DESK_DEVICE_MODELS = new Set(['monitor-24', 'monitor-27', 'ultrawide-monitor', 'laptop-15', 'keyboard', 'mouse', 'desk-lamp', 'speakers']);
+const DESK_DEVICE_MODELS = new Set(['monitor-24', 'monitor-27', 'ultrawide-monitor', 'laptop-15', 'keyboard', 'mouse', 'desk-lamp', 'speakers', 'monitor-stand', 'game-console']);
 const belongsOnDesk = object => DESK_DEVICE_MODELS.has(object.modelId) || object.type === 'monitor' || object.type === 'laptop';
 // Text that looks like an internal id (monitor-1, ac_input) must not reach
 // the user in a title or reason.
@@ -44,9 +44,26 @@ function hasLoad(project, desk) {
   });
 }
 
+function restsOnDesk(object, objects) {
+  const seen = new Set();
+  let current = object;
+  while (current && !seen.has(current.id)) {
+    seen.add(current.id);
+    const support = findSupportingObject(current, objects);
+    if (support?.kind !== 'object') return false;
+    const supporter = objects.find(item => item.id === support.id);
+    if (!supporter) return false;
+    if (isDesk(supporter)) return true;
+    current = supporter;
+  }
+  return false;
+}
+
 function assertMovable(project, object) {
   if (isWallOutlet(object)) refuse('墙壁插座不能移动');
-  if (isDesk(object) && hasLoad(project, object)) refuse('桌上有设备时不移动桌子');
+  if (hasLoad(project, object)) {
+    refuse(isDesk(object) ? '桌上有设备时不移动桌子' : '上面还有设备，先挪开再移动');
+  }
 }
 
 // Place an object at a new spot. With an explicit z it stays there (the
@@ -68,9 +85,7 @@ function placeObject(project, object, position, { keepFloor }) {
   const moved = ['x', 'y', 'z'].some(axis => Math.abs(constrained.object.position[axis] - candidate.position[axis]) > GEOMETRY_EPSILON);
   if (moved) refuse('位置超出房间');
   if (belongsOnDesk(object)) {
-    const support = findSupportingObject(constrained.object, others);
-    const onDesk = support?.kind === 'object' && isDesk(others.find(other => other.id === support.id));
-    if (!onDesk) {
+    if (!restsOnDesk(constrained.object, others)) {
       refuse(object.type === 'monitor' || object.type === 'laptop'
         ? '显示器和笔记本要放在桌面上'
         : `${object.name}要放在桌面上`);

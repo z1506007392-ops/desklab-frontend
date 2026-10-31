@@ -100,6 +100,31 @@ test('unknown devices, outside the room, outlets, and loaded desks are refused',
   }
 });
 
+test('a clamp stand holds the monitor, and cannot be pulled out from under it', () => {
+  const project = gaming();
+  const monitor = find(project, 'ultrawide-monitor');
+  const top = deskTop(project);
+  const standHeight = 0.45;
+  const stand = {
+    id: 'stand', name: '显示器支架', type: 'monitor-stand', modelId: 'monitor-stand',
+    shape: 'box', category: 'accessory',
+    position: { x: monitor.position.x, y: monitor.position.y, z: top + standHeight / 2 },
+    rotation: { x: 0, y: 0, z: 0 },
+    scale: { x: 0.18, y: 0.28, z: standHeight },
+    ports: [],
+  };
+  const raised = { ...monitor, position: { ...monitor.position, z: top + standHeight + monitor.scale.z / 2 } };
+  const withStand = {
+    ...project,
+    objects: project.objects.map(object => (object.id === monitor.id ? raised : object)).concat(stand),
+  };
+  const pulled = applyAiActions(withStand, [{ type: 'move', objectId: 'stand', x: stand.position.x + 0.4, y: stand.position.y }]);
+  assert.equal(pulled.project, null);
+  assert.equal(pulled.rejected[0].reason, '上面还有设备，先挪开再移动');
+  const stayed = applyAiActions(withStand, [{ type: 'move', objectId: monitor.id, x: monitor.position.x + 0.02, y: monitor.position.y, z: raised.position.z }]);
+  assert.notEqual(stayed.project, null, stayed.rejected.map(item => item.reason).join());
+});
+
 test('one refused action voids the whole suggestion', () => {
   const project = messyGaming();
   const monitor = find(project, 'ultrawide-monitor');

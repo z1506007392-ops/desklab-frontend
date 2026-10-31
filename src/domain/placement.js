@@ -10,7 +10,10 @@ const BEHIND_DESK_GAP = 0.01;
 const OUTLET_HEIGHT = 0.3;
 
 const isDeskTopDevice = (categoryId, modelTemplate) =>
-  categoryId === 'display' || modelTemplate.type === 'laptop';
+  categoryId === 'display'
+  || categoryId === 'accessory'
+  || categoryId === 'entertainment'
+  || modelTemplate.type === 'laptop';
 const isWallOutlet = modelTemplate => modelTemplate.modelId === 'wall-outlet' || modelTemplate.type === 'outlet';
 const isDesk = object => object.category === 'furniture';
 
@@ -176,10 +179,30 @@ function findOnWall(object, reference, room, objects) {
   return null;
 }
 
+function findOnStand(object, stand, room, objects) {
+  const standBounds = getObjectBounds(stand);
+  if (!standBounds) return null;
+  const candidate = {
+    ...object,
+    position: {
+      x: stand.position.x,
+      y: stand.position.y,
+      z: standBounds.maxZ + object.scale.z / 2,
+    },
+  };
+  return fitsFreely(candidate, room, objects) ? candidate : null;
+}
+
 function findFreePlacement(object, categoryId, modelTemplate, room, objects) {
   const desks = objects.filter(isDesk);
   const reference = desks[0]?.position ?? { x: 0, y: 0 };
 
+  if (categoryId === 'display') {
+    for (const stand of objects.filter(item => item.modelId === 'monitor-stand')) {
+      const onStand = findOnStand(object, stand, room, objects);
+      if (onStand) return onStand;
+    }
+  }
   if (isWallOutlet(modelTemplate)) {
     // Toward the wall behind the desk: start from the desk's far edge.
     const deskBounds = desks[0] ? getObjectBounds(desks[0]) : null;

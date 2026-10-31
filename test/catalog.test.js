@@ -117,7 +117,7 @@ test('categories with several kinds ask for a kind, and a single kind does not',
   assert.deepEqual(names('peripheral'), ['键盘', '鼠标']);
   assert.equal(catalogBranches(DEVICE_CATALOG.find(item => item.category === 'display')).length, 1);
   assert.equal(catalogBranches(DEVICE_CATALOG.find(item => item.category === 'power')).length, 1);
-  assert.deepEqual(DEVICE_CATALOG.map(item => item.categoryName), ['桌子', '电脑', '显示器', '外设', '灯', '音频', '网络', '供电']);
+  assert.deepEqual(DEVICE_CATALOG.map(item => item.categoryName), ['桌子', '电脑', '娱乐', '显示器', '外设', '配件', '灯', '音频', '网络', '供电']);
 });
 
 test('home catalog offers one adjustable desk and leaves out mini PCs and all-in-ones', () => {
@@ -156,6 +156,8 @@ test('catalog models have a short user-facing spec line instead of internal ids'
   assert.equal(describe('mouse'), '约 1W · USB');
   assert.equal(describe('desk-lamp'), '约 8W');
   assert.equal(describe('speakers'), '约 18W · 3.5mm');
+  assert.equal(describe('monitor-stand'), '夹桌 · 可放显示器');
+  assert.equal(describe('game-console'), '约 200W · HDMI · 网口');
 
   for (const category of DEVICE_CATALOG) {
     for (const model of category.models) {

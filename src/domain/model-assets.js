@@ -82,6 +82,20 @@ const GENERIC_SPEAKERS_ASSET = Object.freeze({
   license: 'DeskLab-owned',
 });
 
+const GENERIC_MONITOR_STAND_ASSET = Object.freeze({
+  id: 'generic-monitor-stand',
+  category: 'accessory',
+  source: 'in-house-generated',
+  license: 'DeskLab-owned',
+});
+
+const GENERIC_GAME_CONSOLE_ASSET = Object.freeze({
+  id: 'generic-game-console',
+  category: 'entertainment',
+  source: 'in-house-generated',
+  license: 'DeskLab-owned',
+});
+
 const GENERIC_MODEL_ASSET_BY_MODEL_ID = Object.freeze({
   'monitor-24': GENERIC_MONITOR_ASSET,
   'monitor-27': GENERIC_MONITOR_ASSET,
@@ -97,6 +111,8 @@ const GENERIC_MODEL_ASSET_BY_MODEL_ID = Object.freeze({
   mouse: GENERIC_MOUSE_ASSET,
   'desk-lamp': GENERIC_DESK_LAMP_ASSET,
   speakers: GENERIC_SPEAKERS_ASSET,
+  'monitor-stand': GENERIC_MONITOR_STAND_ASSET,
+  'game-console': GENERIC_GAME_CONSOLE_ASSET,
 });
 
 export function getGenericModelAsset(modelId) {

@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+领取并完成 E28（Leo 已批准，2026-10-31）。显示器支架：夹在桌沿，把屏幕抬到眼睛的高度，桌上留出放键盘的地方，自己不耗电，归在新大类「配件」。GLB 由 `tools/blender-models/monitor_stand.py` 生成。显示器放到支架上时，支架的顶面托住屏幕，支架自己落在桌上；上面还有东西时不能把支架抽走。游戏主机：接显示器的 HDMI、网线和电源，在这张桌子上玩游戏，大约 200W，归在新大类「娱乐」。GLB 由 `tools/blender-models/game_console.py` 生成。两样都是深色，和现有脚本模型一致。另外，E27 的 CI 在 iPhone WebKit 上因为很快的刷新没下载到 3D 模块而红了：下载再多试两次（一共 4 次），新手引导里会刷新页面的测试不再把这次下载失败当成引导坏了。验证：`npm test` 416，`npm run lint`，`npm run build`，四个浏览器 UI 270 通过 + 2 跳过。还剩：无。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 领取并完成 E27（Leo 已批准，2026-10-31）：第一次打开、还没有存档、也没看过引导时，出现 5 步说明：放桌子或加设备、拖动和控制柄、连线、改进建议、保存和导出备份。可以跳过，方向键和 Esc 都能用，读屏能读到第几步。看过之后记在浏览器里，刷新不再自动出现；「更多 → 新手引导」可以再打开。已经有存档的测试不会碰到它。分享链接打开时不出现，也不会把「已看过」写进去。验证：`npm test` 414，`npm run lint`，`npm run build`，四个浏览器 UI 266 通过 + 2 跳过。还剩：E28。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
@@ -3592,8 +3596,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 414 domain tests
-npm run test:ui   # Chrome desktop + phone. Cross-browser: npx playwright test (268 cases: 266 passed + 2 skipped). CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 416 domain tests
+npm run test:ui   # Chrome desktop + phone. Cross-browser: npx playwright test (272 cases: 270 passed + 2 skipped). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

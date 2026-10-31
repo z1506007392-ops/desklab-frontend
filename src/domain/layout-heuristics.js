@@ -132,8 +132,17 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
   const frames = new Map(objects.filter(isDesk).map(desk => [desk.id, deskFrame(desk)]));
   const supportOf = new Map(objects.map(object => [object.id, findSupportingObject(object, objects)]));
   const deskUnder = object => {
-    const support = supportOf.get(object.id);
-    return support?.kind === 'object' ? frames.get(support.id) ?? null : null;
+    const seen = new Set();
+    let currentId = object.id;
+    while (currentId && !seen.has(currentId)) {
+      seen.add(currentId);
+      const support = supportOf.get(currentId);
+      if (support?.kind !== 'object') return null;
+      const frame = frames.get(support.id);
+      if (frame) return frame;
+      currentId = support.id;
+    }
+    return null;
   };
   const onFloor = object => supportOf.get(object.id)?.kind === 'floor';
   const hints = [];
