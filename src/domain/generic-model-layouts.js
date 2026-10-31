@@ -138,6 +138,7 @@ const GENERIC_MODEL_LAYOUT_BY_MODEL_ID = Object.freeze({
   'laptop-15': GENERIC_LAPTOP_LAYOUT,
   keyboard: GENERIC_BLOCK_LAYOUT,
   mouse: GENERIC_BLOCK_LAYOUT,
+  'desk-lamp': GENERIC_BLOCK_LAYOUT,
 });
 
 export function getGenericModelLayout(modelId) {

@@ -30,6 +30,7 @@ $B -b --factory-startup --python tools/blender-models/wall_outlet.py
 $B -b --factory-startup --python tools/blender-models/power_adapter.py
 $B -b --factory-startup --python tools/blender-models/keyboard.py
 $B -b --factory-startup --python tools/blender-models/mouse.py
+$B -b --factory-startup --python tools/blender-models/desk_lamp.py
 # previews (Cycles CPU by default; BLENDER_EEVEE_NEXT also works headless)
 $B -b --factory-startup --python tools/blender-models/render_preview.py -- $OUT/router.glb preview_router.png
 python3 tools/blender-models/contact_sheet.py office-desk desktop-pc ...   # needs Pillow, reads preview_<id>.png in $DESKLAB_OUT

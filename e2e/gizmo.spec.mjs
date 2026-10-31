@@ -63,7 +63,8 @@ function findHandle(image, canvasBox, anchor, channel) {
       chosen = cluster;
     }
   }
-  if (!chosen) return null;
+  // The corner axes use the same colours and sit farther from the device.
+  if (!chosen || chosenDistance > 120 * Math.max(scaleX, scaleY)) return null;
   const tip = chosen.reduce((far, pixel) => (pixel.distance > far.distance ? pixel : far));
   return {
     pageX: canvasBox.x + (tip.x + 0.5) / scaleX,
@@ -74,13 +75,16 @@ function findHandle(image, canvasBox, anchor, channel) {
 async function handleNearTag(page, channel) {
   const tag = page.locator('.scene-tag');
   await expect(tag).toBeVisible();
-  await page.waitForTimeout(600);
-  const tagBox = await tag.boundingBox();
   const canvas = page.locator('canvas');
-  const canvasBox = await canvas.boundingBox();
-  const image = decodePng(await canvas.screenshot());
-  const anchor = { x: tagBox.x + tagBox.width / 2, y: tagBox.y + tagBox.height / 2 };
-  const hit = findHandle(image, canvasBox, anchor, channel);
+  let hit = null;
+  let anchor = null;
+  for (let attempt = 0; attempt < 6 && !hit; attempt += 1) {
+    await page.waitForTimeout(attempt === 0 ? 400 : 250);
+    const tagBox = await tag.boundingBox();
+    const canvasBox = await canvas.boundingBox();
+    anchor = { x: tagBox.x + tagBox.width / 2, y: tagBox.y + tagBox.height / 2 };
+    hit = findHandle(decodePng(await canvas.screenshot()), canvasBox, anchor, channel);
+  }
   expect(hit, `a ${channel} handle near the selected device`).not.toBeNull();
   return { hit, anchor };
 }

@@ -53,6 +53,12 @@ export const DEVICE_CATALOG = [
     ],
   },
   {
+    category: 'lighting', categoryName: '灯',
+    models: [
+      { type: 'desk-lamp', modelId: 'desk-lamp', displayName: '台灯', shape: 'rect', assetUrl: catalogModelUrl('desk-lamp'), defaultScale: { x: 0.16, y: 0.16, z: 0.42 }, color: '#2c3338', wattage: 8, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }] },
+    ],
+  },
+  {
     category: 'network', categoryName: '网络',
     models: [
       { type: 'router', modelId: 'router', displayName: '路由器', shape: 'rect', assetUrl: catalogModelUrl('router'), defaultScale: { x: 0.35, y: 0.25, z: 0.08 }, color: '#4caf50', wattage: 12, ports: [{ id: 'dc-in', name: 'DC 输入', type: 'dc_input', direction: 'input' }, { id: 'lan-1', name: '网口 1', type: 'ethernet', direction: 'bidirectional' }, { id: 'lan-2', name: '网口 2', type: 'ethernet', direction: 'bidirectional' }, { id: 'lan-3', name: '网口 3', type: 'ethernet', direction: 'bidirectional' }] },
@@ -154,6 +160,9 @@ const PORT_ANCHOR_BY_MODEL = {
   },
   mouse: {
     'usb-1': { x: 0, y: -0.5, z: 0 },
+  },
+  'desk-lamp': {
+    'ac-in': { x: 0, y: -0.5, z: -0.42 },
   },
   'monitor-24': {
     'ac-in': { x: -0.12, y: -0.16, z: 0.05 },

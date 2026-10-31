@@ -144,6 +144,7 @@ test('catalog models have a short user-facing spec line instead of internal ids'
   assert.equal(describe('power-adapter'), 'DC 输出 · 最大 150W');
   assert.equal(describe('keyboard'), '约 2W · USB');
   assert.equal(describe('mouse'), '约 1W · USB');
+  assert.equal(describe('desk-lamp'), '约 8W');
 
   for (const category of DEVICE_CATALOG) {
     for (const model of category.models) {

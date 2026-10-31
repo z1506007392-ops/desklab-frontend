@@ -5,7 +5,7 @@ const validator = require('gltf-validator');
 const CAT = { 'monitor-24': [0.54,0.05,0.32], 'laptop-15': [0.36,0.28,0.22], 'desktop-pc': [0.25,0.5,0.5],
   'monitor-27': [0.62,0.06,0.37], 'ultrawide-monitor': [0.82,0.1,0.36],
   'office-desk': [1.4,0.7,0.75], 'router': [0.35,0.25,0.08], 'power-strip': [0.8,0.08,0.05], 'wall-outlet': [0.08,0.02,0.08], 'power-adapter': [0.1,0.05,0.03],
-  keyboard: [0.44,0.15,0.032], mouse: [0.062,0.115,0.038] };
+  keyboard: [0.44,0.15,0.032], mouse: [0.062,0.115,0.038], 'desk-lamp': [0.16,0.16,0.42] };
 for (const f of process.argv.slice(2)) {
   const buf = new Uint8Array(fs.readFileSync(f));
   const r = await validator.validateBytes(buf);
