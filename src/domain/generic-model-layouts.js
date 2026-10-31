@@ -121,7 +121,7 @@ const GENERIC_LAPTOP_LAYOUT = Object.freeze({
   hinges: Object.freeze([Object.freeze({ x: 0, z: -0.36, width: 0.72, depth: 0.12 })]),
 });
 
-const GENERIC_KEYBOARD_LAYOUT = Object.freeze({
+const GENERIC_BLOCK_LAYOUT = Object.freeze({
   bodies: Object.freeze([Object.freeze({ x: 0, z: 0, width: 1, depth: 1 })]),
 });
 
@@ -136,7 +136,8 @@ const GENERIC_MODEL_LAYOUT_BY_MODEL_ID = Object.freeze({
   router: GENERIC_ROUTER_LAYOUT,
   'power-strip': GENERIC_POWER_STRIP_LAYOUT,
   'laptop-15': GENERIC_LAPTOP_LAYOUT,
-  keyboard: GENERIC_KEYBOARD_LAYOUT,
+  keyboard: GENERIC_BLOCK_LAYOUT,
+  mouse: GENERIC_BLOCK_LAYOUT,
 });
 
 export function getGenericModelLayout(modelId) {

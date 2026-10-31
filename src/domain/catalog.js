@@ -49,6 +49,7 @@ export const DEVICE_CATALOG = [
     category: 'peripheral', categoryName: '外设',
     models: [
       { type: 'keyboard', modelId: 'keyboard', displayName: '键盘', shape: 'rect', assetUrl: catalogModelUrl('keyboard'), defaultScale: { x: 0.44, y: 0.15, z: 0.032 }, color: '#2c333a', wattage: 2, ports: [{ id: 'usb-1', name: 'USB', type: 'usb', direction: 'bidirectional' }] },
+      { type: 'mouse', modelId: 'mouse', displayName: '鼠标', shape: 'rect', assetUrl: catalogModelUrl('mouse'), defaultScale: { x: 0.062, y: 0.115, z: 0.038 }, color: '#3a4149', wattage: 1, ports: [{ id: 'usb-1', name: 'USB', type: 'usb', direction: 'bidirectional' }] },
     ],
   },
   {
@@ -150,6 +151,9 @@ const PORT_ANCHOR_BY_MODEL = {
   },
   keyboard: {
     'usb-1': { x: 0, y: -0.5, z: -0.1 },
+  },
+  mouse: {
+    'usb-1': { x: 0, y: -0.5, z: 0 },
   },
   'monitor-24': {
     'ac-in': { x: -0.12, y: -0.16, z: 0.05 },

@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+E4 鼠标：家里点选用的，USB 接到主机或笔记本上剩下的那个口（无线的也是一个 USB 接收器）。GLB 由 `tools/blender-models/mouse.py` 生成，线从背面出来，功耗约 1W。和键盘一样要放在桌面上。验证：`npm test` 398，`npm run lint`，`npm run build`，`npm run test:ui` 111 通过 + 1 跳过。还剩：台灯、音箱，然后设备分类。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 E4 键盘：家里打字用的，线要能插到主机或笔记本。键盘是 USB；台式主机和 15 英寸笔记本各加了两个 USB 口（原来没有，键鼠接不上）。GLB 由 `tools/blender-models/keyboard.py` 生成，锚点在背面，功耗约 2W。AI 场景摘要的电竞桌快照跟着多出来的接口和目录更新。验证：`npm test` 398，`npm run lint`，`npm run build`，`npm run test:ui` 111 通过 + 1 跳过。还剩：鼠标、台灯、音箱，然后设备分类。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master

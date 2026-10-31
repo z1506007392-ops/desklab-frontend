@@ -61,6 +61,13 @@ const GENERIC_KEYBOARD_ASSET = Object.freeze({
   license: 'DeskLab-owned',
 });
 
+const GENERIC_MOUSE_ASSET = Object.freeze({
+  id: 'generic-mouse',
+  category: 'peripheral',
+  source: 'in-house-generated',
+  license: 'DeskLab-owned',
+});
+
 const GENERIC_MODEL_ASSET_BY_MODEL_ID = Object.freeze({
   'monitor-24': GENERIC_MONITOR_ASSET,
   'monitor-27': GENERIC_MONITOR_ASSET,
@@ -73,6 +80,7 @@ const GENERIC_MODEL_ASSET_BY_MODEL_ID = Object.freeze({
   'laptop-15': GENERIC_LAPTOP_ASSET,
   'office-desk': GENERIC_OFFICE_DESK_ASSET,
   keyboard: GENERIC_KEYBOARD_ASSET,
+  mouse: GENERIC_MOUSE_ASSET,
 });
 
 export function getGenericModelAsset(modelId) {
