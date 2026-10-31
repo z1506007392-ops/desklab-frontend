@@ -1,11 +1,12 @@
 import { getPortRecords } from './port-collections.js';
 
 export const CABLE_SERVICE_LOOP_FACTOR = 1.1;
-export const CABLE_TYPE_VALUES = ['power', 'hdmi', 'usb_c', 'ethernet', 'displayport', 'other'];
+export const CABLE_TYPE_VALUES = ['power', 'hdmi', 'usb_c', 'usb', 'ethernet', 'displayport', 'other'];
 export const CABLE_TYPE_NAMES = Object.freeze({
   power: '电源线',
   hdmi: 'HDMI 线',
   usb_c: 'USB-C 线',
+  usb: 'USB 线',
   ethernet: '网线',
   displayport: 'DP 线',
   other: '连接线',
@@ -21,6 +22,7 @@ export const PORT_TYPE_NAMES = Object.freeze({
   hdmi: 'HDMI',
   displayport: 'DP',
   usb_c: 'USB-C',
+  usb: 'USB',
   ethernet: '网口',
 });
 

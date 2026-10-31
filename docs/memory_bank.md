@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+E4 键盘：家里打字用的，线要能插到主机或笔记本。键盘是 USB；台式主机和 15 英寸笔记本各加了两个 USB 口（原来没有，键鼠接不上）。GLB 由 `tools/blender-models/keyboard.py` 生成，锚点在背面，功耗约 2W。AI 场景摘要的电竞桌快照跟着多出来的接口和目录更新。验证：`npm test` 398，`npm run lint`，`npm run build`，`npm run test:ui` 111 通过 + 1 跳过。还剩：鼠标、台灯、音箱，然后设备分类。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 领取 E4 第一批（键盘、鼠标、台灯、音箱）。家里用得上的原因：键盘和鼠标是坐在这张桌子前真正会碰到的东西，线要够到主机或笔记本，无线的也有一个 USB 接收器要插上去；台灯是晚上只照桌面、不想开顶灯时用的，得能接到插排或 USB 电源；音箱用来放电脑的声音，除了电源还要一根音频线。每样单独做 GLB、锚点和测试。还剩：这四样设备，然后是设备分类。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master

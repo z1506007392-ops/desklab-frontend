@@ -33,8 +33,8 @@ export const DEVICE_CATALOG = [
   {
     category: 'computer', categoryName: '电脑',
     models: [
-      { type: 'desktop-pc', modelId: 'desktop-pc', displayName: '台式主机', shape: 'rect', assetUrl: catalogModelUrl('desktop-pc'), defaultScale: { x: 0.25, y: 0.5, z: 0.5 }, color: '#424242', wattage: 350, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }, { id: 'dp-out', name: 'DP 输出', type: 'displayport', direction: 'output' }, { id: 'eth-1', name: '网口', type: 'ethernet', direction: 'bidirectional' }] },
-      { type: 'laptop', modelId: 'laptop-15', displayName: '15 英寸笔记本', shape: 'rect', assetUrl: catalogModelUrl('laptop-15'), defaultScale: { x: 0.36, y: 0.28, z: 0.22 }, color: '#607d8b', wattage: 65, ports: [{ id: 'dc-in', name: 'DC 输入', type: 'dc_input', direction: 'input' }, { id: 'usb-c', name: 'USB-C', type: 'usb_c', direction: 'bidirectional' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }] },
+      { type: 'desktop-pc', modelId: 'desktop-pc', displayName: '台式主机', shape: 'rect', assetUrl: catalogModelUrl('desktop-pc'), defaultScale: { x: 0.25, y: 0.5, z: 0.5 }, color: '#424242', wattage: 350, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }, { id: 'dp-out', name: 'DP 输出', type: 'displayport', direction: 'output' }, { id: 'usb-1', name: 'USB 1', type: 'usb', direction: 'bidirectional' }, { id: 'usb-2', name: 'USB 2', type: 'usb', direction: 'bidirectional' }, { id: 'eth-1', name: '网口', type: 'ethernet', direction: 'bidirectional' }] },
+      { type: 'laptop', modelId: 'laptop-15', displayName: '15 英寸笔记本', shape: 'rect', assetUrl: catalogModelUrl('laptop-15'), defaultScale: { x: 0.36, y: 0.28, z: 0.22 }, color: '#607d8b', wattage: 65, ports: [{ id: 'dc-in', name: 'DC 输入', type: 'dc_input', direction: 'input' }, { id: 'usb-c', name: 'USB-C', type: 'usb_c', direction: 'bidirectional' }, { id: 'usb-1', name: 'USB 1', type: 'usb', direction: 'bidirectional' }, { id: 'usb-2', name: 'USB 2', type: 'usb', direction: 'bidirectional' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }] },
     ],
   },
   {
@@ -43,6 +43,12 @@ export const DEVICE_CATALOG = [
       { type: 'monitor', modelId: 'monitor-24', displayName: '24 英寸显示器', shape: 'rect', assetUrl: catalogModelUrl('monitor-24'), defaultScale: { x: 0.54, y: 0.05, z: 0.32 }, color: '#212121', wattage: 30, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-in', name: 'HDMI 输入', type: 'hdmi', direction: 'input' }, { id: 'dp-in', name: 'DP 输入', type: 'displayport', direction: 'input' }] },
       { type: 'monitor', modelId: 'monitor-27', displayName: '27 英寸显示器', shape: 'rect', assetUrl: catalogModelUrl('monitor-27'), defaultScale: { x: 0.62, y: 0.06, z: 0.37 }, color: '#111111', wattage: 45, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-in', name: 'HDMI 输入', type: 'hdmi', direction: 'input' }, { id: 'dp-in', name: 'DP 输入', type: 'displayport', direction: 'input' }] },
       { type: 'monitor', modelId: 'ultrawide-monitor', displayName: '带鱼屏显示器', shape: 'rect', assetUrl: catalogModelUrl('ultrawide-monitor'), defaultScale: { x: 0.82, y: 0.1, z: 0.36 }, color: '#000000', wattage: 60, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-in', name: 'HDMI 输入', type: 'hdmi', direction: 'input' }, { id: 'dp-in', name: 'DP 输入', type: 'displayport', direction: 'input' }] },
+    ],
+  },
+  {
+    category: 'peripheral', categoryName: '外设',
+    models: [
+      { type: 'keyboard', modelId: 'keyboard', displayName: '键盘', shape: 'rect', assetUrl: catalogModelUrl('keyboard'), defaultScale: { x: 0.44, y: 0.15, z: 0.032 }, color: '#2c333a', wattage: 2, ports: [{ id: 'usb-1', name: 'USB', type: 'usb', direction: 'bidirectional' }] },
     ],
   },
   {
@@ -110,6 +116,10 @@ export function describeCatalogModel(model) {
   const ethernetPorts = ports.filter(port => port.type === 'ethernet').length;
   if (ethernetPorts > 1) parts.push(`${ethernetPorts} 个网口`);
   else if (ethernetPorts === 1) parts.push('网口');
+  const plainUsb = videoLabels.length === 0 && ports.some(port => port.type === 'usb');
+  if (plainUsb && model.wattage) parts.push(`约 ${model.wattage}W`);
+  if (plainUsb) parts.push('USB');
+  else if (parts.length === 0 && model.wattage) parts.push(`约 ${model.wattage}W`);
   return parts.join(' · ');
 }
 
@@ -127,12 +137,19 @@ const PORT_ANCHOR_BY_MODEL = {
     'ac-in': { x: 0.2, y: -0.5, z: -0.2 },
     'hdmi-out': { x: -0.22, y: -0.5, z: 0.22 },
     'dp-out': { x: 0, y: -0.5, z: 0.22 },
+    'usb-1': { x: -0.42, y: -0.5, z: 0.05 },
+    'usb-2': { x: -0.42, y: -0.5, z: -0.22 },
     'eth-1': { x: 0.22, y: -0.5, z: 0.22 },
   },
   'laptop-15': {
     'dc-in': { x: -0.5, y: -0.1, z: -0.45 },
     'usb-c': { x: 0.5, y: 0.2, z: -0.45 },
+    'usb-1': { x: 0.5, y: 0.05, z: -0.45 },
+    'usb-2': { x: -0.5, y: 0.15, z: -0.45 },
     'hdmi-out': { x: 0.5, y: -0.25, z: -0.45 },
+  },
+  keyboard: {
+    'usb-1': { x: 0, y: -0.5, z: -0.1 },
   },
   'monitor-24': {
     'ac-in': { x: -0.12, y: -0.16, z: 0.05 },

@@ -37,7 +37,9 @@ try {
   await page.goto(`${server.resolvedUrls.local[0]}tools/thumbnails/render.html`);
   await page.waitForFunction(() => window.thumbnailsReady === true);
   await mkdir(outDir, { recursive: true });
+  const only = new Set(process.argv.slice(2));
   for (const model of DEVICE_CATALOG.flatMap(category => category.models)) {
+    if (only.size > 0 && !only.has(model.modelId)) continue;
     const dataUrl = await page.evaluate(
       ([url, size, view]) => window.renderThumbnail(url, size, view),
       [`/models/${model.modelId}.glb`, THUMBNAIL_SIZE, VIEWS[model.modelId]],

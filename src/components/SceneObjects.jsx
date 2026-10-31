@@ -651,7 +651,32 @@ function GenericModel({ asset, obj, materialProps }) {
   if (asset?.id === 'generic-office-desk') {
     return <GenericOfficeDeskModel obj={obj} materialProps={materialProps} />;
   }
+  if (asset?.id === 'generic-keyboard') {
+    return <GenericBlockModel obj={obj} materialProps={materialProps} />;
+  }
   return <FallbackBox obj={obj} materialProps={materialProps} />;
+}
+
+function GenericBlockModel({ obj, materialProps }) {
+  const width = obj.scale.x;
+  const height = obj.scale.z;
+  const depth = obj.scale.y;
+  const layout = getGenericModelLayout(obj.modelId);
+  return (
+    <group>
+      {(layout?.bodies || []).map((body, index) => (
+        <mesh key={index} position={[width * body.x, 0, depth * body.z]}>
+          <boxGeometry args={[width * body.width, height, depth * body.depth]} />
+          <meshStandardMaterial
+            color={obj.color}
+            emissive={materialProps.emissiveColor}
+            emissiveIntensity={materialProps.emissiveIntensity}
+            roughness={0.55}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
 }
 
 export const DeviceMesh = React.memo(function DeviceMesh({

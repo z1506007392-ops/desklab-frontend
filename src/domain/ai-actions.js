@@ -20,7 +20,7 @@ import { getRecordItems } from './record-collections.js';
 // new problems. This is the safety boundary for everything the model says.
 
 const isWallOutlet = object => object.modelId === 'wall-outlet' || object.type === 'outlet';
-const DESK_DEVICE_MODELS = new Set(['monitor-24', 'monitor-27', 'ultrawide-monitor', 'laptop-15']);
+const DESK_DEVICE_MODELS = new Set(['monitor-24', 'monitor-27', 'ultrawide-monitor', 'laptop-15', 'keyboard']);
 const belongsOnDesk = object => DESK_DEVICE_MODELS.has(object.modelId) || object.type === 'monitor' || object.type === 'laptop';
 // Text that looks like an internal id (monitor-1, ac_input) must not reach
 // the user in a title or reason.
@@ -70,7 +70,11 @@ function placeObject(project, object, position, { keepFloor }) {
   if (belongsOnDesk(object)) {
     const support = findSupportingObject(constrained.object, others);
     const onDesk = support?.kind === 'object' && isDesk(others.find(other => other.id === support.id));
-    if (!onDesk) refuse('显示器和笔记本要放在桌面上');
+    if (!onDesk) {
+      refuse(object.type === 'monitor' || object.type === 'laptop'
+        ? '显示器和笔记本要放在桌面上'
+        : `${object.name}要放在桌面上`);
+    }
   }
   return constrained.object;
 }
