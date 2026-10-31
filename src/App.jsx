@@ -488,7 +488,7 @@ export default function App() {
       })
       .catch(err => {
         if (controller.signal.aborted) return;
-        console.error(err);
+        console.error(err instanceof Error ? `${err.name}: ${err.message}` : err);
         setProjectLoadFailed(true);
         showStatus({
           text: err.code === 'storage_unavailable'

@@ -109,8 +109,10 @@ test('purchase suggestions are summarized as a copyable shopping list', async ({
   const list = page.getByRole('dialog').getByRole('group', { name: '购物清单' });
   await expect(list.getByRole('listitem')).toHaveText(['3m HDMI 线×1', '插排×1']);
 
-  if (info.project.name === 'desktop') {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  if (info.project.use.viewport.width >= 900) {
+    if (info.project.use.browserName === 'chromium' || info.project.use.channel === 'chrome' || !info.project.use.browserName) {
+      await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    }
     await list.getByRole('button', { name: '复制清单', exact: true }).click();
     // The OS clipboard may store line breaks as CRLF.
     await expect.poll(() => page.evaluate(async () => (await navigator.clipboard.readText()).replace(/\r\n/g, '\n')))

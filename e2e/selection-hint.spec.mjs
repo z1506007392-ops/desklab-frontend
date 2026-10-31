@@ -9,7 +9,7 @@ async function expectFullyVisible(hint) {
 
 test('the hint under the toolbar fits the screen and names the selected device in plain words', async ({ page }, testInfo) => {
   const evidence = await openProject(page, []);
-  const mobile = testInfo.project.name === 'mobile';
+  const mobile = testInfo.project.use.viewport.width < 900;
   const hint = page.locator('.selection-hint');
 
   await expect(hint).toHaveText(mobile ? '点选设备即可编辑' : '点选 3D 画面中的设备，即可在右侧面板编辑');

@@ -25,5 +25,8 @@ jobs:
       - run: npm test
       - run: npm run lint
       - run: npm run build
-      # ubuntu-latest ships Google Chrome, which playwright.config.mjs uses.
+      # Chrome is already on the runner. WebKit (iPhone) and Firefox are
+      # installed here. The whole UI run is about 7 minutes locally, so CI
+      # keeps every case instead of a shorter subset.
+      - run: npx playwright install --with-deps webkit firefox
       - run: npm run test:ui

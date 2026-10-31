@@ -17,6 +17,14 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+E23：补上 D4 没做的 Safari / Firefox 实测。Playwright 加了 iPhone 13 WebKit（390×844，触控）和 Firefox 桌面，并跑完全部 UI。Chrome 桌面 57 通过 + 1 跳过，Chrome 手机 58 通过，iPhone WebKit 58 通过，Firefox 桌面 57 通过 + 1 跳过（手机专用的工具栏用例在宽屏跳过）。产品上两处根因：WebKit 允许 Troika 的空 blob 探测、却拦住后面的 blob `importScripts`，坐标字母和功耗数字因此报错，现改在主线程排字，字体改从本站提供，字形不变；WebKit 和 Firefox 在很快的刷新里偶发下载不到 3D 模块，失败后再试两次，仍失败才显示原来的说明。剪贴板权限只有 Chromium 能授予，测试改为在 WebKit 上核对按钮实际写入的文字。验证：`npm test` 399，`npm run lint`，`npm run build`，`npm run test:ui` 230 通过 + 2 跳过。还剩：无。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
+领取 E23（Safari / Firefox 兼容实测与修复。D4 记的是未实测。装 Playwright 的 WebKit 和 Firefox，iPhone 视口代表国内的 iPhone Safari。产品 bug 修根因，不改外观和 3D 画面。CI 至少加上 iPhone WebKit）。还剩：E23 本身。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 E22 结论：剩余 10 样试换 CC0 后全部保留原来的脚本模型，没有合并任何模型或缩略图。书桌试了 Poly Haven 的 Metal Office Desk（CC0，作者 Ulan Cabanilla），Leo 否决：深色桌面让黑色设备不显眼，桌型也不同，仍用原来的木色桌。24 英寸、27 英寸和带鱼屏的目录厚度只有 5–10 厘米，带支架的现成模型套进去会严重压扁。15 英寸笔记本能找到的 CC0 要么是 Kenney 那套灰青色卡通（和被否决的键盘同一套），要么是 Poly Haven 的米色老式电脑，都不是深色。台式主机、路由器、插排、墙壁插座、电源适配器没有比例接近的 CC0。台灯、鼠标、键盘、音箱按 E21 已定的不改。草稿 PR #5 已关闭，分支 `grok/cc0-models-trial-2` 已删。验证：`npm test` 399，`npm run lint`，`npm run build`。还剩：无。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
@@ -3569,7 +3577,7 @@ Frontend:
 ```bash
 cd D:\desklab\frontend
 npm test          # 399 domain tests
-npm run test:ui   # 116 Chrome UI cases (115 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
+npm run test:ui   # 232 UI cases: Chrome desktop 57 + 1 skipped, Chrome phone 58, iPhone WebKit 58, Firefox desktop 57 + 1 skipped
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

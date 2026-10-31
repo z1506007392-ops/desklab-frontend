@@ -1,3 +1,4 @@
+import '../domain/webkit-workers.js';
 import React, { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Billboard, Edges, Line, Text, useGLTF } from '@react-three/drei';
@@ -20,6 +21,11 @@ for (const model of DEVICE_CATALOG.flatMap(category => category.models)) {
   if (model.assetUrl) useGLTF.preload(model.assetUrl);
 }
 
+// Same sans file Troika would download from jsDelivr. WebKit blocks that
+// cross-origin font request, so the axis letters and power numbers are served
+// from this site instead. The glyphs do not change.
+const LABEL_FONT = `${import.meta.env.BASE_URL}fonts/axis-label.woff`;
+
 const CABLE_COLORS = {
   power: '#e53935',
   hdmi: '#1e88e5',
@@ -41,7 +47,7 @@ export function DeskLabAxes({ room }) {
         <meshBasicMaterial color="red" />
       </mesh>
       <Billboard position={[size + labelOffset, 0, 0]}>
-        <Text fontSize={0.3} color="red">X</Text>
+        <Text font={LABEL_FONT} fontSize={0.3} color="red">X</Text>
       </Billboard>
 
       <mesh position={[0, 0, size / 2]} rotation={[Math.PI / 2, 0, 0]}>
@@ -49,7 +55,7 @@ export function DeskLabAxes({ room }) {
         <meshBasicMaterial color="green" />
       </mesh>
       <Billboard position={[0, 0, size + labelOffset]}>
-        <Text fontSize={0.3} color="green">Y</Text>
+        <Text font={LABEL_FONT} fontSize={0.3} color="green">Y</Text>
       </Billboard>
 
       <mesh position={[0, size / 2, 0]}>
@@ -57,7 +63,7 @@ export function DeskLabAxes({ room }) {
         <meshBasicMaterial color="blue" />
       </mesh>
       <Billboard position={[0, size + labelOffset, 0]}>
-        <Text fontSize={0.3} color="blue">Z</Text>
+        <Text font={LABEL_FONT} fontSize={0.3} color="blue">Z</Text>
       </Billboard>
     </group>
   );
@@ -757,6 +763,7 @@ const PowerLabel = React.memo(function PowerLabel({ obj, currentLoad, maxLoad })
       ]}
     >
       <Text
+        font={LABEL_FONT}
         fontSize={0.08}
         color={color}
         anchorX="center"

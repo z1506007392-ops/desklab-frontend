@@ -5,7 +5,7 @@ import { box, openProject } from './project-fixture.mjs';
 const STRIP = ['展开资产库', /^改进建议/, /^布局检查/, /^布线检查/, '桌面模板', '房间尺寸', '所有连接', '重置视角', '展开属性面板', '更多'];
 
 test('on a phone the toolbar is two rows and every action can still be reached', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'mobile', 'the compact toolbar is the phone layout');
+  test.skip(testInfo.project.use.viewport.width >= 900, 'the compact toolbar is the phone layout');
   const evidence = await openProject(page, [box('桌子 A')]);
 
   const toolbar = await page.locator('.toolbar').boundingBox();

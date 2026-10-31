@@ -105,7 +105,7 @@ DeskLab 是给**普通家庭用户和电竞玩家**用的 3D 桌面搭建与布�
 npm test          # node --test，单元测试
 npm run lint      # eslint
 npm run build     # vite build（"chunk 大于 500kB" 警告是已知的，不算失败）
-npm run test:ui   # Playwright，桌面 + 手机两种视口
+npm run test:ui   # Playwright：Chrome 桌面、Chrome 手机、iPhone WebKit、Firefox 桌面
 ```
 后端仓库（只有改了后端才需要）：`npm test`、`npm run check:contracts`。
 
@@ -371,7 +371,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 **D3 [x] 完成（claude，2026-10-30，f3811c7） 必做 — 错误上报的最小方案（不引入第三方）**
 - 全局 `window.onerror` / `unhandledrejection` 时在界面显示"出了点问题，可以刷新页面；你的存档不受影响"，并提供"复制错误信息"按钮（方便用户反馈）。不向任何服务器发送数据。
 
-**D4 [x] 完成（claude，2026-10-30，0209fa0；Safari/Firefox 未实测） 必做 — 浏览器兼容自查**
+**D4 [x] 完成（claude，2026-10-30，0209fa0；Safari/Firefox 的实测和修复在 E23） 必做 — 浏览器兼容自查**
 - 用 Playwright 的 chromium 跑全部测试（已有）；如环境里能装 webkit/firefox 就各跑一遍 UI 测试，记录结果；不能装就在 memory bank 记录"未验证 Safari/Firefox"。不要假装验证过。
 
 **D5 [x] 完成（claude，2026-10-30，deaf439） 可选 — SEO 与分享**
@@ -387,6 +387,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E20 [x] 完成（Desklab，2026-10-31）** 添加设备时先选大类，再选小类，最后选型号（例如电脑 → 笔记本 → 15 英寸笔记本）。分类写在 catalog 里。只有一个小类的大类直接列出型号。不改已有设备的 type 和 modelId，旧存档照常加载。桌面和手机都能用，可以返回上一层，可以用键盘操作。大类：桌子、电脑、显示器、外设、灯、音频、网络、供电。
 - **E21 [x] 完成（Desklab，2026-10-31）** Leo 确认只把台灯和鼠标换成 Kenney Furniture Kit（CC0，`lampRoundTable`、`computerMouse`）。键盘和音箱仍用 `tools/blender-models/` 的脚本模型。来源记在 `public/models/CREDITS.md`。不改锚点、接口、功耗、type、modelId。
 - **E22 [x] 完成（Desklab，2026-10-31）** 剩余 10 样设备试换 CC0 后均保留原脚本模型，没有合并任何模型。书桌试了 Poly Haven 的 Metal Office Desk（CC0），Leo 否决：深色桌面让黑色设备不显眼，桌型也不同，仍用原来的木色桌。三台显示器的目录厚度只有 5–10 厘米，带支架的现成模型会严重压扁。笔记本没有深色 CC0（Kenney 是灰青色卡通，Poly Haven 的 Classic Laptop 是米色老式电脑）。台式主机、路由器、插排、墙插、电源适配器没有比例接近的 CC0。台灯、鼠标、键盘、音箱按 E21 不动。
+- **E23 [x] 完成（Desklab，2026-10-31）** Safari / Firefox 实测并修了根因，外观和 3D 画面没改。iPhone WebKit 上 Troika 的空 blob 探测会通过、随后的 blob `importScripts` 被拦，坐标字母和功耗数字改走主线程，字体改从本站提供（和原来同一套字形）。WebKit / Firefox 快速刷新时 3D 模块偶发下载失败，会再试两次。CI 跑全部 UI：Chrome 桌面、Chrome 手机、iPhone WebKit、Firefox 桌面。本地四个项目一共约 7 分钟，没有超过原先 CI 的一倍，所以没有裁成子集。
 - **E5 [x] 完成（Desklab，2026-10-31）** AI 建议质量：扩充评测集、加入更多目标句子、跟踪指标。30 个场景、53 次请求。线上先跑完 34 次（限额 429），门槛都过；余下 19 次等限额后 `--resume`。提示词未改。结果目录不进 git，换会话后要整套重跑，见 E19。
 - **E18 [x] 完成（Desklab，2026-10-31，18eceac）** 把 E2 留下的工具栏和横幅拆出 `App.jsx`：每次只抽一块，行为不变，测试全绿。不改外观。草稿、备份提醒、AI 预览、存档损坏、连线提示、选中提示、状态消息、工具栏（`04b1a27`、`b92a850`、`208141a`、`7c8507d`、`0a9fdc3`、`badea5e`、`920929f`、`18eceac`）。
 - **E19 [x] 完成（Desklab，2026-10-31）** 续跑 E5 的线上评测并查清家庭办公「显示器太近」为什么没被接受。53 次全部跑完，门槛都过。原因是提示里给出的挪动位置落在笔记本上，校验正确地拒绝了；已把目标位置改到桌子后沿的空位。

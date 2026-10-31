@@ -7,12 +7,22 @@ import { useEffect, useState } from 'react';
 // rethrown during render for SceneErrorBoundary to explain.
 let scene3DModule = null;
 const loadScene3D = () => {
-  scene3DModule ??= import('./Scene3D.jsx').catch(error => {
-    scene3DModule = null;
-    throw error;
-  });
+  scene3DModule ??= importSceneWithRetry();
   return scene3DModule;
 };
+
+// WebKit and Firefox sometimes abort the module request on a quick reload.
+// Try again before telling the user the 3D code failed to download.
+function importSceneWithRetry(attempt = 0) {
+  return import('./Scene3D.jsx').catch(error => {
+    if (attempt >= 2) {
+      scene3DModule = null;
+      throw error;
+    }
+    return new Promise(resolve => { setTimeout(resolve, 40 * (attempt + 1)); })
+      .then(() => importSceneWithRetry(attempt + 1));
+  });
+}
 
 export default function LazyScene3D(props) {
   const [loaded, setLoaded] = useState({ Scene3D: null, error: null });
