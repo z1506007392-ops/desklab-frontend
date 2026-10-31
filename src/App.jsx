@@ -51,6 +51,7 @@ import { getPurchaseGuidance } from './domain/purchase-guidance.js';
 import { buildTemplateScene } from './domain/desk-templates.js';
 import { buildShoppingList } from './domain/shopping-list.js';
 import { buildCableShoppingList } from './domain/cable-shopping-list.js';
+import { hasSeenGuide, markGuideSeen } from './domain/onboarding.js';
 import { SHARE_LINK_MESSAGES, decodeShareLink, encodeShareLink } from './domain/share-link.js';
 import { applyAllAvailableImprovements, applyAllImprovements, applyImprovement, buildConnectionCompletion, buildFreeImprovements, buildRecommendations } from './domain/recommendations.js';
 import { createProjectHistory } from './domain/project-history.js';
@@ -65,6 +66,7 @@ import ConnectionsListDialog from './components/ConnectionsListDialog.jsx';
 import CableShoppingDialog from './components/CableShoppingDialog.jsx';
 import ShareLinkDialog from './components/ShareLinkDialog.jsx';
 import ShareViewBanner from './components/ShareViewBanner.jsx';
+import OnboardingGuide from './components/OnboardingGuide.jsx';
 import ErrorNotice from './components/ErrorNotice.jsx';
 import DraftRecoveryBanner from './components/DraftRecoveryBanner.jsx';
 import BackupReminderBanner from './components/BackupReminderBanner.jsx';
@@ -218,7 +220,9 @@ export default function App() {
   // First-visit guide: only for a project that has never been saved, until
   // the user picks a way to start or something appears in the room.
   const [hasSavedProject, setHasSavedProject] = useState(true);
-  const [startGuideDismissed, setStartGuideDismissed] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [guideStep, setGuideStep] = useState(0);
+  const guideDismissedRef = useRef(false);
   const [scrollTemplatesToBuilder, setScrollTemplatesToBuilder] = useState(false);
   const [purchaseGuidance, setPurchaseGuidance] = useState(null);
   const [hoveredDeviceId, setHoveredDeviceId] = useState(null);
@@ -720,7 +724,7 @@ export default function App() {
     showStatus({ text: '已吸附到最近墙面', type: 'success' });
   }, [connectionMode, objects, projectEditable, room, selectedObjectId, showStatus, updateSelectedObject]);
 
-  const dialogOpen = showTemplates || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || shareLink || showRecommendations || showAbout;
+  const dialogOpen = showTemplates || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || shareLink || showRecommendations || showAbout || guideOpen;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -996,11 +1000,21 @@ export default function App() {
     }
   };
 
-  const showStartGuide = projectLoaded && projectEditable && !shareView && !hasSavedProject
-    && !startGuideDismissed && objects.length === 0;
+  useEffect(() => {
+    if (!projectLoaded || shareView || hasSavedProject || objects.length > 0) return;
+    if (guideDismissedRef.current || hasSeenGuide(getBrowserStorage())) return;
+    setGuideOpen(true);
+  }, [hasSavedProject, objects.length, projectLoaded, shareView]);
+
+  const closeGuide = () => {
+    guideDismissedRef.current = true;
+    markGuideSeen(getBrowserStorage());
+    setGuideOpen(false);
+    setGuideStep(0);
+  };
 
   const handleStartGuideChoice = (choice) => {
-    setStartGuideDismissed(true);
+    closeGuide();
     if (choice === 'template' || choice === 'builder') {
       setScrollTemplatesToBuilder(choice === 'builder');
       setShowTemplates(true);
@@ -1504,6 +1518,7 @@ export default function App() {
       <div className="toolbar-menu-separator" role="separator" />
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowCableShop(true))}>购线清单</button>
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleOpenShareLink)} disabled={!projectLoaded || projectLoadFailed}>复制分享链接</button>
+      <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => { setGuideStep(0); setGuideOpen(true); })}>新手引导</button>
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowAbout(true))}>关于与隐私</button>
     </div>
   );
@@ -1682,17 +1697,6 @@ export default function App() {
 
         {/* 左侧/中间：3D 视图 */}
         <div ref={canvasContainerRef} style={{ flex: 1, position: 'relative', cursor: dragInfo ? 'grabbing' : 'default', minWidth: 0, minHeight: 0 }}>
-          {showStartGuide && (
-            <div className="start-guide" role="region" aria-label="开始搭建">
-              <h2 className="start-guide-title">从这里开始搭建你的桌面</h2>
-              <p className="start-guide-text">选一种方式，几秒钟就能得到一张摆好设备、接好线的桌面，之后可以随意调整。</p>
-              <div className="start-guide-actions">
-                <button type="button" className="ui-button ui-button-primary" onClick={() => handleStartGuideChoice('template')}>从模板开始</button>
-                <button type="button" className="ui-button" onClick={() => handleStartGuideChoice('builder')}>按我的设备生成</button>
-                <button type="button" className="ui-button" onClick={() => handleStartGuideChoice('manual')}>自己摆</button>
-              </div>
-            </div>
-          )}
           {!webglAvailable ? <SceneUnavailable reason="no-webgl" /> : (
           <SceneErrorBoundary>
           {reportSceneFailure => (
@@ -1961,6 +1965,16 @@ export default function App() {
           tooLong={shareLink.tooLong}
           onCopy={handleCopyShareLink}
           onClose={() => setShareLink(null)}
+        />
+      )}
+
+      {guideOpen && (
+        <OnboardingGuide
+          stepIndex={guideStep}
+          canEdit={projectEditable}
+          onStep={setGuideStep}
+          onClose={closeGuide}
+          onStart={handleStartGuideChoice}
         />
       )}
 

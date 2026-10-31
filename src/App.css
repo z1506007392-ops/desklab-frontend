@@ -1730,6 +1730,45 @@
   gap: 8px;
 }
 
+.start-guide-step {
+  margin: 0 0 8px;
+  color: var(--ink-3);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.onboarding-overlay {
+  z-index: 10000;
+}
+
+.onboarding-card {
+  position: static;
+  transform: none;
+  width: min(420px, calc(100% - 32px));
+}
+
+.onboarding-card .start-guide-title:focus {
+  outline: none;
+}
+
+.onboarding-progress {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 16px 0;
+}
+
+.onboarding-progress span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.onboarding-progress span.is-current {
+  background: var(--ink);
+}
+
 .scene-fallback {
   display: flex;
   flex-direction: column;

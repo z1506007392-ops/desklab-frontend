@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+领取并完成 E27（Leo 已批准，2026-10-31）：第一次打开、还没有存档、也没看过引导时，出现 5 步说明：放桌子或加设备、拖动和控制柄、连线、改进建议、保存和导出备份。可以跳过，方向键和 Esc 都能用，读屏能读到第几步。看过之后记在浏览器里，刷新不再自动出现；「更多 → 新手引导」可以再打开。已经有存档的测试不会碰到它。分享链接打开时不出现，也不会把「已看过」写进去。验证：`npm test` 414，`npm run lint`，`npm run build`，四个浏览器 UI 266 通过 + 2 跳过。还剩：E28。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 领取并完成 E26（Leo 已批准，2026-10-31）：分享链接不经过服务器、也不需要账号。当前桌面用 gzip 再 base64url 放进网址的 `#desklab-share-1.` 片段。对方打开后只能转视角、看设备和连线、看购线清单，不能编辑；浏览器里原来的存档不会被写入，要点「复制一份到我的项目」并确认后才进到自己的画面，之后还要自己点保存才会替换存档。链接损坏或版本太新时有说明，并仍打开自己的桌面。超过 `SHARE_LINK_WARN_LENGTH`（2000 字符，微信和有的聊天软件大约到这里就打不开）会提示，链接仍可复制。关于与隐私里写明分享链接包含房间、设备和连线。验证：`npm test` 412，`npm run lint`，`npm run build`，四个浏览器 UI 258 通过 + 2 跳过。还剩：E27。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
@@ -3588,8 +3592,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 412 domain tests
-npm run test:ui   # Chrome desktop + phone. Cross-browser: npx playwright test (260 cases: 258 passed + 2 skipped). CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 414 domain tests
+npm run test:ui   # Chrome desktop + phone. Cross-browser: npx playwright test (268 cases: 266 passed + 2 skipped). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

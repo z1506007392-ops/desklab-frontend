@@ -1,12 +1,14 @@
 import { test, expect } from '@playwright/test';
+import { encodeShareLink } from '../src/domain/share-link.js';
 import { openProject } from './project-fixture.mjs';
 
-const guide = page => page.getByRole('region', { name: '开始搭建', exact: true });
+const guide = page => page.getByRole('dialog', { name: '新手引导', exact: true });
 
 test('a first-time visitor is offered three ways to start, and a template ends the guide', async ({ page }) => {
   const evidence = await openProject(page, [], [], { saved: false });
   await expect(guide(page)).toBeVisible();
   await expect(guide(page)).toBeInViewport({ ratio: 1 });
+  await expect(guide(page).getByText('第 1 步，共 5 步')).toBeVisible();
 
   await guide(page).getByRole('button', { name: '从模板开始', exact: true }).click();
   const picker = page.getByRole('dialog', { name: '桌面模板', exact: true });
@@ -40,5 +42,49 @@ test('a user who already saved an empty room is not shown the guide', async ({ p
   const evidence = await openProject(page, []);
   await expect(page.getByRole('button', { name: '桌面模板', exact: true })).toBeVisible();
   await expect(guide(page)).toHaveCount(0);
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
+
+test('the guide moves by keyboard, stays dismissed, and can be reopened', async ({ page }) => {
+  const evidence = await openProject(page, [], [], { saved: false });
+  const dialog = guide(page);
+  await expect(dialog.getByRole('heading', { name: '先放上一张桌子' })).toBeVisible();
+  await dialog.getByRole('heading', { name: '先放上一张桌子' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(dialog.getByRole('heading', { name: '拖动，或用控制柄' })).toBeVisible();
+  await page.keyboard.press('ArrowRight');
+  await expect(dialog.getByRole('heading', { name: '把线接上' })).toBeVisible();
+  await page.keyboard.press('ArrowLeft');
+  await expect(dialog.getByRole('heading', { name: '拖动，或用控制柄' })).toBeVisible();
+  await dialog.getByRole('button', { name: '下一步', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(dialog.getByRole('heading', { name: '把线接上' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.getByRole('button', { name: '桌面模板', exact: true })).toBeVisible();
+  await expect(dialog).toHaveCount(0);
+
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('menu', { name: '更多', exact: true }).getByRole('menuitem', { name: '新手引导', exact: true }).click();
+  await expect(dialog.getByRole('heading', { name: '先放上一张桌子' })).toBeVisible();
+  await dialog.getByRole('button', { name: '跳过', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
+
+test('opening a share link does not show the guide or mark it seen', async ({ page }) => {
+  const link = await encodeShareLink({
+    room: { length: 4, width: 3, height: 2.6 },
+    objects: [],
+    connections: [],
+  }, { origin: 'http://127.0.0.1:5174', pathname: '/', search: '' });
+  const evidence = await openProject(page, [], [], { saved: false });
+  await page.evaluate(nextHash => { window.location.hash = nextHash; }, link.hash);
+  await page.reload();
+  await expect(page.getByRole('region', { name: '只读分享', exact: true })).toBeVisible();
+  await expect(guide(page)).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('desklab.guide-seen.v1'))).toBeNull();
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
