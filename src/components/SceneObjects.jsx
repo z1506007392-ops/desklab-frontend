@@ -651,7 +651,7 @@ function GenericModel({ asset, obj, materialProps }) {
   if (asset?.id === 'generic-office-desk') {
     return <GenericOfficeDeskModel obj={obj} materialProps={materialProps} />;
   }
-  if (asset?.id === 'generic-keyboard' || asset?.id === 'generic-mouse' || asset?.id === 'generic-desk-lamp') {
+  if (asset?.id === 'generic-keyboard' || asset?.id === 'generic-mouse' || asset?.id === 'generic-desk-lamp' || asset?.id === 'generic-speakers') {
     return <GenericBlockModel obj={obj} materialProps={materialProps} />;
   }
   return <FallbackBox obj={obj} materialProps={materialProps} />;

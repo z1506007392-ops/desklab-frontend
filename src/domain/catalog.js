@@ -33,8 +33,8 @@ export const DEVICE_CATALOG = [
   {
     category: 'computer', categoryName: '电脑',
     models: [
-      { type: 'desktop-pc', modelId: 'desktop-pc', displayName: '台式主机', shape: 'rect', assetUrl: catalogModelUrl('desktop-pc'), defaultScale: { x: 0.25, y: 0.5, z: 0.5 }, color: '#424242', wattage: 350, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }, { id: 'dp-out', name: 'DP 输出', type: 'displayport', direction: 'output' }, { id: 'usb-1', name: 'USB 1', type: 'usb', direction: 'bidirectional' }, { id: 'usb-2', name: 'USB 2', type: 'usb', direction: 'bidirectional' }, { id: 'eth-1', name: '网口', type: 'ethernet', direction: 'bidirectional' }] },
-      { type: 'laptop', modelId: 'laptop-15', displayName: '15 英寸笔记本', shape: 'rect', assetUrl: catalogModelUrl('laptop-15'), defaultScale: { x: 0.36, y: 0.28, z: 0.22 }, color: '#607d8b', wattage: 65, ports: [{ id: 'dc-in', name: 'DC 输入', type: 'dc_input', direction: 'input' }, { id: 'usb-c', name: 'USB-C', type: 'usb_c', direction: 'bidirectional' }, { id: 'usb-1', name: 'USB 1', type: 'usb', direction: 'bidirectional' }, { id: 'usb-2', name: 'USB 2', type: 'usb', direction: 'bidirectional' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }] },
+      { type: 'desktop-pc', modelId: 'desktop-pc', displayName: '台式主机', shape: 'rect', assetUrl: catalogModelUrl('desktop-pc'), defaultScale: { x: 0.25, y: 0.5, z: 0.5 }, color: '#424242', wattage: 350, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }, { id: 'dp-out', name: 'DP 输出', type: 'displayport', direction: 'output' }, { id: 'usb-1', name: 'USB 1', type: 'usb', direction: 'bidirectional' }, { id: 'usb-2', name: 'USB 2', type: 'usb', direction: 'bidirectional' }, { id: 'audio-out', name: '耳机孔', type: 'audio', direction: 'output' }, { id: 'eth-1', name: '网口', type: 'ethernet', direction: 'bidirectional' }] },
+      { type: 'laptop', modelId: 'laptop-15', displayName: '15 英寸笔记本', shape: 'rect', assetUrl: catalogModelUrl('laptop-15'), defaultScale: { x: 0.36, y: 0.28, z: 0.22 }, color: '#607d8b', wattage: 65, ports: [{ id: 'dc-in', name: 'DC 输入', type: 'dc_input', direction: 'input' }, { id: 'usb-c', name: 'USB-C', type: 'usb_c', direction: 'bidirectional' }, { id: 'usb-1', name: 'USB 1', type: 'usb', direction: 'bidirectional' }, { id: 'usb-2', name: 'USB 2', type: 'usb', direction: 'bidirectional' }, { id: 'audio-out', name: '耳机孔', type: 'audio', direction: 'output' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }] },
     ],
   },
   {
@@ -56,6 +56,12 @@ export const DEVICE_CATALOG = [
     category: 'lighting', categoryName: '灯',
     models: [
       { type: 'desk-lamp', modelId: 'desk-lamp', displayName: '台灯', shape: 'rect', assetUrl: catalogModelUrl('desk-lamp'), defaultScale: { x: 0.16, y: 0.16, z: 0.42 }, color: '#2c3338', wattage: 8, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }] },
+    ],
+  },
+  {
+    category: 'audio', categoryName: '音频',
+    models: [
+      { type: 'speakers', modelId: 'speakers', displayName: '音箱', shape: 'rect', assetUrl: catalogModelUrl('speakers'), defaultScale: { x: 0.32, y: 0.12, z: 0.18 }, color: '#1f2428', wattage: 18, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'audio-in', name: '音频输入', type: 'audio', direction: 'input' }] },
     ],
   },
   {
@@ -127,6 +133,7 @@ export function describeCatalogModel(model) {
   if (plainUsb && model.wattage) parts.push(`约 ${model.wattage}W`);
   if (plainUsb) parts.push('USB');
   else if (parts.length === 0 && model.wattage) parts.push(`约 ${model.wattage}W`);
+  if (ports.some(port => port.type === 'audio') && videoLabels.length === 0) parts.push('3.5mm');
   return parts.join(' · ');
 }
 
@@ -146,6 +153,7 @@ const PORT_ANCHOR_BY_MODEL = {
     'dp-out': { x: 0, y: -0.5, z: 0.22 },
     'usb-1': { x: -0.42, y: -0.5, z: 0.05 },
     'usb-2': { x: -0.42, y: -0.5, z: -0.22 },
+    'audio-out': { x: 0.42, y: -0.5, z: 0.05 },
     'eth-1': { x: 0.22, y: -0.5, z: 0.22 },
   },
   'laptop-15': {
@@ -153,6 +161,7 @@ const PORT_ANCHOR_BY_MODEL = {
     'usb-c': { x: 0.5, y: 0.2, z: -0.45 },
     'usb-1': { x: 0.5, y: 0.05, z: -0.45 },
     'usb-2': { x: -0.5, y: 0.15, z: -0.45 },
+    'audio-out': { x: -0.5, y: 0.28, z: -0.45 },
     'hdmi-out': { x: 0.5, y: -0.25, z: -0.45 },
   },
   keyboard: {
@@ -163,6 +172,10 @@ const PORT_ANCHOR_BY_MODEL = {
   },
   'desk-lamp': {
     'ac-in': { x: 0, y: -0.5, z: -0.42 },
+  },
+  speakers: {
+    'audio-in': { x: 0.24, y: -0.5, z: 0.12 },
+    'ac-in': { x: 0.38, y: -0.5, z: -0.12 },
   },
   'monitor-24': {
     'ac-in': { x: -0.12, y: -0.16, z: 0.05 },

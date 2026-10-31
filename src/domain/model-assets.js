@@ -75,6 +75,13 @@ const GENERIC_DESK_LAMP_ASSET = Object.freeze({
   license: 'DeskLab-owned',
 });
 
+const GENERIC_SPEAKERS_ASSET = Object.freeze({
+  id: 'generic-speakers',
+  category: 'audio',
+  source: 'in-house-generated',
+  license: 'DeskLab-owned',
+});
+
 const GENERIC_MODEL_ASSET_BY_MODEL_ID = Object.freeze({
   'monitor-24': GENERIC_MONITOR_ASSET,
   'monitor-27': GENERIC_MONITOR_ASSET,
@@ -89,6 +96,7 @@ const GENERIC_MODEL_ASSET_BY_MODEL_ID = Object.freeze({
   keyboard: GENERIC_KEYBOARD_ASSET,
   mouse: GENERIC_MOUSE_ASSET,
   'desk-lamp': GENERIC_DESK_LAMP_ASSET,
+  speakers: GENERIC_SPEAKERS_ASSET,
 });
 
 export function getGenericModelAsset(modelId) {

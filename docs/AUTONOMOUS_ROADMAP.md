@@ -162,8 +162,8 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 接口锚点 `port.anchor` 是相对包围盒的归一化坐标，每个轴在 `[-0.5, 0.5]`。目录内模型的锚点以 `catalog.js` 的 `PORT_ANCHOR_BY_MODEL` 为准。
 
 ### 4.3 设备目录（`src/domain/catalog.js`）
-10 个模型，每个都有 `public/models/<modelId>.glb`，按目录 `defaultScale` 精确建模，渲染时按 `obj.scale / defaultScale` 缩放：
-`office-desk`（书桌）、`desktop-pc`、`laptop-15`、`monitor-24`、`monitor-27`、`ultrawide-monitor`、`router`、`power-strip`、`wall-outlet`、`power-adapter`。
+14 个模型，每个都有 `public/models/<modelId>.glb`，按目录 `defaultScale` 精确建模，渲染时按 `obj.scale / defaultScale` 缩放：
+`office-desk`（书桌）、`desktop-pc`、`laptop-15`、`monitor-24`、`monitor-27`、`ultrawide-monitor`、`keyboard`、`mouse`、`desk-lamp`、`speakers`、`router`、`power-strip`、`wall-outlet`、`power-adapter`。
 `hydrateProjectObjects()` 在加载、导入、恢复草稿时整理对象：补端口、用最新锚点、修正旧存档的压扁笔记本。
 
 ### 4.4 主要模块（`src/domain/`）
@@ -383,7 +383,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E1 [x] 完成（claude，2026-10-30）** 撤销/重做、拖动、连线的边界情况：写更多 UI 测试找 bug。探查了单击不动、拖动后撤销、删除带连线的设备后撤销/重做、撤销回已保存状态、输入框里的 Ctrl+Z、方向键合并、复制后撤销，这些都正常。找到并修了两个 bug：①选中设备时，焦点在按钮上按空格会抬高设备而不是按下按钮；弹窗打开时方向键和 Delete 会作用到弹窗后面的设备（`shouldIgnoreDeviceShortcut`）。②把显示器拖出桌面后它悬在半空（`settleAfterDrag`：拖动松手后没有支撑就落到下方表面，算在同一步撤销里）。测试 `e2e/edit-edge-cases.spec.mjs`。2026-10-31 补修 CI 上的 3 个失败：拖动用不限时的撤销分组（`holdGroup`），慢速拖动也是一步撤销；手机按钮条加 `scroll-padding-inline`，滚进来的按钮不再贴边被裁掉零点几像素。另记一个需要负责人定的交互问题：选中设备时滚轮会缩放设备而不是缩放视角，界面上没有提示。
 - **E2 [x] 完成（Desklab，2026-10-31，5db07ee）** `App.jsx` 拆分：每次只抽一块（工具栏、各对话框、横幅），行为不变，测试全绿。已抽出桌面模板、布局检查、布线检查、全部连接清单、自动检查与改进建议五个对话框（`9b4ca66`、`2e9341d`、`6aa4876`、`c2b67b7`、`5db07ee`）。工具栏和横幅留给 E18。
 - **E3 [x] 完成（Desklab，2026-10-31，46559aa）** 性能：大量设备（30+）时帧率、内存；`useMemo` 分析结果。布局报告传给改进建议，避免同一次更新再分析一遍；拖动时只有被拖的设备和连着它的线、功耗标签会重绘。36 个设备的分析有时间上限测试。
-- **E4 [~] 进行中（Desklab，2026-10-31）** 新的常见家用设备（必须是普通家庭会有的：显示器支架、台灯、音箱、游戏主机等），每个都要 GLB（用 `tools/blender-models/` 的脚本生成）、锚点、测试。**加之前在 memory bank 写明为什么家用用户需要它。** 负责人已批准第一批：键盘、鼠标、台灯、音箱。一样一个提交。
+- **E4 [x] 完成（Desklab，2026-10-31）** 新的常见家用设备。负责人批准的第一批：键盘、鼠标、台灯、音箱。每样一个 GLB（`tools/blender-models/`）、锚点、功耗和测试。键鼠走 USB（主机和笔记本各加了 USB 口），台灯接交流电，音箱是 3.5mm 加电源（主机和笔记本加了耳机孔）。显示器支架、游戏主机这次没做。
 - **E5 [x] 完成（Desklab，2026-10-31）** AI 建议质量：扩充评测集、加入更多目标句子、跟踪指标。30 个场景、53 次请求。线上先跑完 34 次（限额 429），门槛都过；余下 19 次等限额后 `--resume`。提示词未改。结果目录不进 git，换会话后要整套重跑，见 E19。
 - **E18 [x] 完成（Desklab，2026-10-31，18eceac）** 把 E2 留下的工具栏和横幅拆出 `App.jsx`：每次只抽一块，行为不变，测试全绿。不改外观。草稿、备份提醒、AI 预览、存档损坏、连线提示、选中提示、状态消息、工具栏（`04b1a27`、`b92a850`、`208141a`、`7c8507d`、`0a9fdc3`、`badea5e`、`920929f`、`18eceac`）。
 - **E19 [x] 完成（Desklab，2026-10-31）** 续跑 E5 的线上评测并查清家庭办公「显示器太近」为什么没被接受。53 次全部跑完，门槛都过。原因是提示里给出的挪动位置落在笔记本上，校验正确地拒绝了；已把目标位置改到桌子后沿的空位。
