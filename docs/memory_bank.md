@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+手册 E4 里「显示器支架、游戏主机这次没做」改成指向 E28。没有改代码。还剩：无。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 领取并完成 E28（Leo 已批准，2026-10-31）。显示器支架：夹在桌沿，把屏幕抬到眼睛的高度，桌上留出放键盘的地方，自己不耗电，归在新大类「配件」。GLB 由 `tools/blender-models/monitor_stand.py` 生成。显示器放到支架上时，支架的顶面托住屏幕，支架自己落在桌上；上面还有东西时不能把支架抽走。游戏主机：接显示器的 HDMI、网线和电源，在这张桌子上玩游戏，大约 200W，归在新大类「娱乐」。GLB 由 `tools/blender-models/game_console.py` 生成。两样都是深色，和现有脚本模型一致。另外，E27 的 CI 在 iPhone WebKit 上因为很快的刷新没下载到 3D 模块而红了：下载再多试两次（一共 4 次），新手引导里会刷新页面的测试不再把这次下载失败当成引导坏了。验证：`npm test` 416，`npm run lint`，`npm run build`，四个浏览器 UI 270 通过 + 2 跳过。还剩：无。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
