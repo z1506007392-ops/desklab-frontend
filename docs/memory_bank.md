@@ -15,6 +15,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。Claude 在 master 上的记录原先写在正文里，这里按提交作者收成同一份日志。
 
+### 2026-10-31 · Desklab (Grok Bot) · 分支 grok/cc0-models-trial-2
+
+领取 E22：把设备库里除台灯、鼠标、键盘、音箱以外的设备试换成 CC0 现成模型，给 Leo 逐个挑。优先写实、深色、不用严重压扁的模型；找不到合适的就留原模型。不改目录尺寸、锚点、接口、功耗、type、modelId，不合并 master。还剩：E22 本身。
+
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
 E21：Leo 确认只把台灯和鼠标换成 Kenney Furniture Kit（CC0，`lampRoundTable`、`computerMouse`）。键盘和音箱恢复为 `tools/blender-models/` 生成的原模型，缩略图一并换回。目录尺寸、锚点、接口、功耗、type、modelId 本来就没改。来源写在 `public/models/CREDITS.md`。验证：`npm test` 399，`npm run lint`，`npm run build`，`npm run test:ui` 115 通过 + 1 跳过。还剩：无。
