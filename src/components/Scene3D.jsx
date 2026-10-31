@@ -25,7 +25,6 @@ export default function Scene3D({
   controlsRef,
   cameraRef,
   controlsEnabled,
-  zoomEnabled,
   onCameraInteractionEnd,
   dragPlaneY,
   onDragMove,
@@ -83,7 +82,6 @@ export default function Scene3D({
         ref={controlsRef}
         makeDefault
         enabled={controlsEnabled}
-        enableZoom={zoomEnabled}
         onEnd={onCameraInteractionEnd}
       />
 

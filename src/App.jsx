@@ -28,6 +28,7 @@ import { captureCameraSnapshot } from './domain/camera-snapshot.js';
 import { placeCatalogObject } from './domain/placement.js';
 import { createEntityId } from './domain/identifiers.js';
 import { describeKeyTarget, getObjectKeyboardUpdate, shouldIgnoreDeviceShortcut } from './domain/keyboard-controls.js';
+import { cameraZoomEnabled } from './domain/view-controls.js';
 import {
   canEditProject,
   canStartObjectDrag,
@@ -562,22 +563,6 @@ export default function App() {
     window.addEventListener('keydown', handleHistoryKeys);
     return () => window.removeEventListener('keydown', handleHistoryKeys);
   }, [handleRedo, handleUndo]);
-
-  useEffect(() => {
-    const handleWheel = (e) => {
-      if (!projectEditable || !selectedObjectId || connectionMode) return;
-      if (!canvasContainerRef.current || !canvasContainerRef.current.contains(e.target)) return;
-      e.preventDefault(); 
-      const multiplier = e.deltaY < 0 ? 1.05 : 0.95;
-      
-      const obj = objects.find(o => o.id === selectedObjectId);
-      if (!obj) return;
-
-      updateSelectedObject({ scale: { x: obj.scale.x * multiplier, y: obj.scale.y * multiplier, z: obj.scale.z * multiplier } });
-    };
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    return () => window.removeEventListener('wheel', handleWheel);
-  }, [selectedObjectId, objects, connectionMode, projectEditable, updateSelectedObject]);
 
   const handleDeleteDevice = useCallback(() => {
     if (!projectEditable || !selectedObjectId || connectionMode) return;
@@ -1595,8 +1580,12 @@ export default function App() {
             room={room}
             controlsRef={controlsRef}
             cameraRef={cameraRef}
-            controlsEnabled={projectEditable && !dragInfo && !connectionMode && !gizmoDragging}
-            zoomEnabled={!selectedObjectId && !connectionMode}
+            controlsEnabled={cameraZoomEnabled({
+              editable: projectEditable,
+              connectionMode,
+              dragging: Boolean(dragInfo),
+              gizmoDragging,
+            })}
             onCameraInteractionEnd={handleCameraInteractionEnd}
             dragPlaneY={dragInfo ? dragInfo.planeY : null}
             onDragMove={point => {
