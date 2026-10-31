@@ -5,7 +5,7 @@ test('library cards show a picture of each device without changing their names',
   const evidence = await openProject(page, []);
   const openLibrary = page.getByRole('button', { name: '展开资产库', exact: true });
   if (await openLibrary.isVisible()) await openLibrary.click();
-  await page.getByRole('button', { name: '电源', exact: true }).click();
+  await page.getByRole('button', { name: '供电', exact: true }).click();
 
   const card = page.getByRole('button', { name: /^插排/ });
   await expect(card).toHaveAccessibleName('插排 6 孔 · 最大 2500W');

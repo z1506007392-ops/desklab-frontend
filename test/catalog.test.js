@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 
 import {
   DEVICE_CATALOG,
+  catalogBranches,
   catalogModelUrl,
   describeCatalogModel,
   findModelTemplate,
@@ -108,6 +109,15 @@ test('home catalog leaves out switch, NAS, and modem, and the router has no WAN 
   assert.ok(router, 'the router stays available for wired desktops');
   assert.equal(router.ports.some(port => /wan/i.test(port.id) || /wan/i.test(port.name)), false);
   assert.ok(router.ports.filter(port => port.type === 'ethernet').length >= 3);
+});
+
+test('categories with several kinds ask for a kind, and a single kind does not', () => {
+  const names = category => catalogBranches(DEVICE_CATALOG.find(item => item.category === category)).map(branch => branch.name);
+  assert.deepEqual(names('computer'), ['台式主机', '笔记本']);
+  assert.deepEqual(names('peripheral'), ['键盘', '鼠标']);
+  assert.equal(catalogBranches(DEVICE_CATALOG.find(item => item.category === 'display')).length, 1);
+  assert.equal(catalogBranches(DEVICE_CATALOG.find(item => item.category === 'power')).length, 1);
+  assert.deepEqual(DEVICE_CATALOG.map(item => item.categoryName), ['桌子', '电脑', '显示器', '外设', '灯', '音频', '网络', '供电']);
 });
 
 test('home catalog offers one adjustable desk and leaves out mini PCs and all-in-ones', () => {

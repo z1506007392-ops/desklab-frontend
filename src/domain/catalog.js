@@ -25,7 +25,7 @@ export function catalogThumbnailUrl(modelId) {
 
 export const DEVICE_CATALOG = [
   {
-    category: 'furniture', categoryName: '家具',
+    category: 'furniture', categoryName: '桌子',
     models: [
       { type: 'office-desk', modelId: 'office-desk', displayName: '书桌', shape: 'rect', assetUrl: catalogModelUrl('office-desk'), defaultScale: { x: 1.4, y: 0.7, z: 0.75 }, color: '#1e88e5' },
     ],
@@ -33,12 +33,12 @@ export const DEVICE_CATALOG = [
   {
     category: 'computer', categoryName: '电脑',
     models: [
-      { type: 'desktop-pc', modelId: 'desktop-pc', displayName: '台式主机', shape: 'rect', assetUrl: catalogModelUrl('desktop-pc'), defaultScale: { x: 0.25, y: 0.5, z: 0.5 }, color: '#424242', wattage: 350, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }, { id: 'dp-out', name: 'DP 输出', type: 'displayport', direction: 'output' }, { id: 'usb-1', name: 'USB 1', type: 'usb', direction: 'bidirectional' }, { id: 'usb-2', name: 'USB 2', type: 'usb', direction: 'bidirectional' }, { id: 'audio-out', name: '耳机孔', type: 'audio', direction: 'output' }, { id: 'eth-1', name: '网口', type: 'ethernet', direction: 'bidirectional' }] },
-      { type: 'laptop', modelId: 'laptop-15', displayName: '15 英寸笔记本', shape: 'rect', assetUrl: catalogModelUrl('laptop-15'), defaultScale: { x: 0.36, y: 0.28, z: 0.22 }, color: '#607d8b', wattage: 65, ports: [{ id: 'dc-in', name: 'DC 输入', type: 'dc_input', direction: 'input' }, { id: 'usb-c', name: 'USB-C', type: 'usb_c', direction: 'bidirectional' }, { id: 'usb-1', name: 'USB 1', type: 'usb', direction: 'bidirectional' }, { id: 'usb-2', name: 'USB 2', type: 'usb', direction: 'bidirectional' }, { id: 'audio-out', name: '耳机孔', type: 'audio', direction: 'output' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }] },
+      { type: 'desktop-pc', subcategory: 'desktop', subcategoryName: '台式主机', modelId: 'desktop-pc', displayName: '台式主机', shape: 'rect', assetUrl: catalogModelUrl('desktop-pc'), defaultScale: { x: 0.25, y: 0.5, z: 0.5 }, color: '#424242', wattage: 350, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }, { id: 'dp-out', name: 'DP 输出', type: 'displayport', direction: 'output' }, { id: 'usb-1', name: 'USB 1', type: 'usb', direction: 'bidirectional' }, { id: 'usb-2', name: 'USB 2', type: 'usb', direction: 'bidirectional' }, { id: 'audio-out', name: '耳机孔', type: 'audio', direction: 'output' }, { id: 'eth-1', name: '网口', type: 'ethernet', direction: 'bidirectional' }] },
+      { type: 'laptop', subcategory: 'laptop', subcategoryName: '笔记本', modelId: 'laptop-15', displayName: '15 英寸笔记本', shape: 'rect', assetUrl: catalogModelUrl('laptop-15'), defaultScale: { x: 0.36, y: 0.28, z: 0.22 }, color: '#607d8b', wattage: 65, ports: [{ id: 'dc-in', name: 'DC 输入', type: 'dc_input', direction: 'input' }, { id: 'usb-c', name: 'USB-C', type: 'usb_c', direction: 'bidirectional' }, { id: 'usb-1', name: 'USB 1', type: 'usb', direction: 'bidirectional' }, { id: 'usb-2', name: 'USB 2', type: 'usb', direction: 'bidirectional' }, { id: 'audio-out', name: '耳机孔', type: 'audio', direction: 'output' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }] },
     ],
   },
   {
-    category: 'display', categoryName: '显示设备',
+    category: 'display', categoryName: '显示器',
     models: [
       { type: 'monitor', modelId: 'monitor-24', displayName: '24 英寸显示器', shape: 'rect', assetUrl: catalogModelUrl('monitor-24'), defaultScale: { x: 0.54, y: 0.05, z: 0.32 }, color: '#212121', wattage: 30, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-in', name: 'HDMI 输入', type: 'hdmi', direction: 'input' }, { id: 'dp-in', name: 'DP 输入', type: 'displayport', direction: 'input' }] },
       { type: 'monitor', modelId: 'monitor-27', displayName: '27 英寸显示器', shape: 'rect', assetUrl: catalogModelUrl('monitor-27'), defaultScale: { x: 0.62, y: 0.06, z: 0.37 }, color: '#111111', wattage: 45, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-in', name: 'HDMI 输入', type: 'hdmi', direction: 'input' }, { id: 'dp-in', name: 'DP 输入', type: 'displayport', direction: 'input' }] },
@@ -48,8 +48,8 @@ export const DEVICE_CATALOG = [
   {
     category: 'peripheral', categoryName: '外设',
     models: [
-      { type: 'keyboard', modelId: 'keyboard', displayName: '键盘', shape: 'rect', assetUrl: catalogModelUrl('keyboard'), defaultScale: { x: 0.44, y: 0.15, z: 0.032 }, color: '#2c333a', wattage: 2, ports: [{ id: 'usb-1', name: 'USB', type: 'usb', direction: 'bidirectional' }] },
-      { type: 'mouse', modelId: 'mouse', displayName: '鼠标', shape: 'rect', assetUrl: catalogModelUrl('mouse'), defaultScale: { x: 0.062, y: 0.115, z: 0.038 }, color: '#3a4149', wattage: 1, ports: [{ id: 'usb-1', name: 'USB', type: 'usb', direction: 'bidirectional' }] },
+      { type: 'keyboard', subcategory: 'keyboard', subcategoryName: '键盘', modelId: 'keyboard', displayName: '键盘', shape: 'rect', assetUrl: catalogModelUrl('keyboard'), defaultScale: { x: 0.44, y: 0.15, z: 0.032 }, color: '#2c333a', wattage: 2, ports: [{ id: 'usb-1', name: 'USB', type: 'usb', direction: 'bidirectional' }] },
+      { type: 'mouse', subcategory: 'mouse', subcategoryName: '鼠标', modelId: 'mouse', displayName: '鼠标', shape: 'rect', assetUrl: catalogModelUrl('mouse'), defaultScale: { x: 0.062, y: 0.115, z: 0.038 }, color: '#3a4149', wattage: 1, ports: [{ id: 'usb-1', name: 'USB', type: 'usb', direction: 'bidirectional' }] },
     ],
   },
   {
@@ -71,7 +71,7 @@ export const DEVICE_CATALOG = [
     ],
   },
   {
-    category: 'power', categoryName: '电源',
+    category: 'power', categoryName: '供电',
     models: [
       { type: 'power_strip', modelId: 'power-strip', displayName: '插排', shape: 'rect', assetUrl: catalogModelUrl('power-strip'), defaultScale: { x: 0.8, y: 0.08, z: 0.05 }, color: '#f44336', maxLoad: 2500, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, ...Array(6).fill(0).map((_, i) => ({ id: `ac-out-${i + 1}`, name: `插孔 ${i + 1}`, type: 'ac_output', direction: 'output' }))] },
       { type: 'outlet', modelId: 'wall-outlet', displayName: '墙壁插座', shape: 'rect', assetUrl: catalogModelUrl('wall-outlet'), defaultScale: { x: 0.08, y: 0.02, z: 0.08 }, color: '#ffeb3b', maxLoad: 3500, ports: [{ id: 'ac-out-1', name: '插座 1', type: 'ac_output', direction: 'output' }, { id: 'ac-out-2', name: '插座 2', type: 'ac_output', direction: 'output' }] },
@@ -91,6 +91,26 @@ const LEGACY_MODEL_BY_TYPE = {
 
 export function getLegacyModelInfo(type) {
   return LEGACY_MODEL_BY_TYPE[type] || { category: 'unknown', modelId: 'unknown' };
+}
+
+// One entry per subcategory. A category whose models share a single branch
+// (or set none) is shown as models directly, without an extra tap.
+export function catalogBranches(category) {
+  const branches = [];
+  for (const model of category?.models || []) {
+    const id = model.subcategory || category.category;
+    let branch = branches.find(item => item.id === id);
+    if (!branch) {
+      branch = {
+        id,
+        name: model.subcategoryName || category.categoryName,
+        models: [],
+      };
+      branches.push(branch);
+    }
+    branch.models.push(model);
+  }
+  return branches;
 }
 
 export function findModelTemplate({ category, modelId, type } = {}) {

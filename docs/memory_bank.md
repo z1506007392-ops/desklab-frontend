@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+E20：资产库改成先选大类，再选小类，最后选型号。分类在 catalog 的 `subcategory` 上，以后加设备填这一项就行。电脑有「台式主机 / 笔记本」，外设有「键盘 / 鼠标」；桌子、显示器、灯、音频、网络、供电只有一层，点开就是型号。大类名字改成桌子、显示器、供电，设备自己的 type 和 modelId 没变，旧存档照常加载。返回上一层，方向键可以在列表里移动，Esc 退回。搜索还是按名字找型号。验证：`npm test` 399，`npm run lint`，`npm run build`，`npm run test:ui` 115 通过 + 1 跳过。还剩：无。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 领取 E20（添加设备时先选大类，再选小类，最后选型号。分类数据放在 catalog，旧存档的 type 和 modelId 不动）。还剩：E20 本身。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
@@ -3548,8 +3552,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 398 domain tests
-npm run test:ui   # 112 Chrome UI cases (111 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
+npm test          # 399 domain tests
+npm run test:ui   # 116 Chrome UI cases (115 run, 1 phone-only skipped on desktop); storage seeded per test, no backend
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

@@ -20,12 +20,10 @@ import {
 import { createProjectDraftStorage } from './domain/draft-storage.js';
 import './App.css';
 import {
-  DEVICE_CATALOG,
-  catalogThumbnailUrl,
-  describeCatalogModel,
   findModelTemplate,
   hydrateProjectObjects,
 } from './domain/catalog.js';
+import LibraryBrowser from './components/LibraryBrowser.jsx';
 import { captureCameraSnapshot } from './domain/camera-snapshot.js';
 import { placeCatalogObject } from './domain/placement.js';
 import { createEntityId } from './domain/identifiers.js';
@@ -173,13 +171,11 @@ export default function App() {
   const [moreMenuPosition, setMoreMenuPosition] = useState(null);
   const moreButtonRef = useRef(null);
   const moreMenuRef = useRef(null);
-  const [selectedCategory, setSelectedCategory] = useState(DEVICE_CATALOG[0].category);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
   const [isRoomEditorOpen, setIsRoomEditorOpen] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(window.innerWidth >= 900);
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(window.innerWidth >= 900);
-  const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('properties'); // 'properties' | 'connections'
 
   const handleToggleLeftPanel = () => {
@@ -1573,67 +1569,7 @@ export default function App() {
               <div className="left-panel-title">资产库</div>
               <button onClick={() => setIsLeftPanelOpen(false)} className="side-panel-close" aria-label="关闭资产库" title="关闭"><CloseIcon /></button>
             </div>
-            <div className="asset-search-container">
-              <input 
-                type="text" 
-                placeholder="搜索设备名称、类型、型号..." 
-                className="ui-input" 
-                style={{ width: '100%', boxSizing: 'border-box' }}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="asset-category-list">
-              {DEVICE_CATALOG.map(cat => (
-                <button 
-                  key={cat.category} 
-                  type="button"
-                  className={`asset-category-btn ${selectedCategory === cat.category ? 'asset-category-btn-active' : ''}`}
-                  onClick={() => { setSelectedCategory(cat.category); setSearchQuery(''); }}
-                >
-                  {cat.categoryName}
-                </button>
-              ))}
-            </div>
-            <div className="asset-list">
-              {(() => {
-                const query = searchQuery.trim().toLowerCase();
-                let matchedModels = [];
-                if (query) {
-                  DEVICE_CATALOG.forEach(cat => {
-                    cat.models.forEach(m => {
-                      if (
-                        m.displayName.toLowerCase().includes(query) ||
-                        m.type.toLowerCase().includes(query) ||
-                        m.modelId.toLowerCase().includes(query) ||
-                        describeCatalogModel(m).toLowerCase().includes(query)
-                      ) {
-                        matchedModels.push({ ...m, categoryId: cat.category });
-                      }
-                    });
-                  });
-                } else {
-                  const cat = DEVICE_CATALOG.find(c => c.category === selectedCategory);
-                  if (cat) {
-                    matchedModels = cat.models.map(m => ({ ...m, categoryId: cat.category }));
-                  }
-                }
-
-                if (matchedModels.length === 0) {
-                  return <div className="empty-state" style={{ marginTop: '20px' }}>未找到匹配的设备</div>;
-                }
-
-                return matchedModels.map((m, idx) => (
-                  <button type="button" key={`${m.modelId}-${idx}`} className="asset-item" onClick={() => handleAddDevice(m, m.categoryId)} disabled={!projectEditable}>
-                    <img className="asset-item-thumb" src={catalogThumbnailUrl(m.modelId)} alt="" width="56" height="56" loading="lazy" decoding="async" />
-                    <span className="asset-item-text">
-                      <span className="asset-item-title">{m.displayName}</span>
-                      <span className="asset-item-subtitle">{describeCatalogModel(m)}</span>
-                    </span>
-                  </button>
-                ));
-              })()}
-            </div>
+            <LibraryBrowser disabled={!projectEditable} onAdd={handleAddDevice} />
           </div>
         )}
 

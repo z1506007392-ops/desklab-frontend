@@ -59,7 +59,7 @@ async function drag(page, from, dx, dy) {
 
 test('a monitor dragged off the desk drops to the floor, and one undo puts it back', async ({ page }) => {
   const evidence = await startWithDesk(page);
-  await addDevice(page, '显示设备', '24 英寸显示器');
+  await addDevice(page, '显示器', '24 英寸显示器');
   const before = await readPosition(page);
   expect(before.z).toBeGreaterThan(0.7); // stands on the desk
 
@@ -76,7 +76,7 @@ test('a monitor dragged off the desk drops to the floor, and one undo puts it ba
 
 test('a monitor dragged a little along the desk stays on the desk', async ({ page }) => {
   const evidence = await startWithDesk(page);
-  await addDevice(page, '显示设备', '24 英寸显示器');
+  await addDevice(page, '显示器', '24 英寸显示器');
   const before = await readPosition(page);
   await drag(page, await grabPoint(page), 30, 0);
   const after = await readPosition(page);

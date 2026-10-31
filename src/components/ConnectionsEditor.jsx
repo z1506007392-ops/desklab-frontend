@@ -45,6 +45,8 @@ const ConnectionsEditor = ({
     { value: 'power', label: '电源线' },
     { value: 'hdmi', label: 'HDMI' },
     { value: 'usb_c', label: 'USB-C' },
+    { value: 'usb', label: 'USB 线' },
+    { value: 'audio', label: '音频线' },
     { value: 'ethernet', label: '网线' },
     { value: 'displayport', label: 'DisplayPort' },
     { value: 'other', label: '其他' }
