@@ -50,6 +50,7 @@ import {
 import { getPurchaseGuidance } from './domain/purchase-guidance.js';
 import { buildTemplateScene } from './domain/desk-templates.js';
 import { buildShoppingList } from './domain/shopping-list.js';
+import { buildCableShoppingList } from './domain/cable-shopping-list.js';
 import { applyAllAvailableImprovements, applyAllImprovements, applyImprovement, buildConnectionCompletion, buildFreeImprovements, buildRecommendations } from './domain/recommendations.js';
 import { createProjectHistory } from './domain/project-history.js';
 import { createStatusNotifier } from './domain/status-notifier.js';
@@ -60,6 +61,7 @@ import TemplateDialog from './components/TemplateDialog.jsx';
 import LayoutReportDialog from './components/LayoutReportDialog.jsx';
 import WiringReportDialog from './components/WiringReportDialog.jsx';
 import ConnectionsListDialog from './components/ConnectionsListDialog.jsx';
+import CableShoppingDialog from './components/CableShoppingDialog.jsx';
 import ErrorNotice from './components/ErrorNotice.jsx';
 import DraftRecoveryBanner from './components/DraftRecoveryBanner.jsx';
 import BackupReminderBanner from './components/BackupReminderBanner.jsx';
@@ -198,6 +200,7 @@ export default function App() {
   const [connectionMode, setConnectionMode] = useState(false);
   const [connectionDraft, setConnectionDraft] = useState({});
   const [showGlobalConnections, setShowGlobalConnections] = useState(false);
+  const [showCableShop, setShowCableShop] = useState(false);
   const [showWiringReport, setShowWiringReport] = useState(false);
   const [showLayoutReport, setShowLayoutReport] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
@@ -524,6 +527,9 @@ export default function App() {
         if (showGlobalConnections) {
           setShowGlobalConnections(false);
         }
+        if (showCableShop) {
+          setShowCableShop(false);
+        }
         if (showWiringReport) {
           setShowWiringReport(false);
         }
@@ -544,7 +550,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKeyDownEsc);
     return () => window.removeEventListener('keydown', handleKeyDownEsc);
-  }, [closeRecommendations, connectionMode, showAbout, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations, showTemplates]);
+  }, [closeRecommendations, connectionMode, showAbout, showCableShop, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations, showTemplates]);
 
   useEffect(() => {
     const handleHistoryKeys = (e) => {
@@ -664,7 +670,7 @@ export default function App() {
     showStatus({ text: '已吸附到最近墙面', type: 'success' });
   }, [connectionMode, objects, projectEditable, room, selectedObjectId, showStatus, updateSelectedObject]);
 
-  const dialogOpen = showTemplates || showLayoutReport || showWiringReport || showGlobalConnections || showRecommendations || showAbout;
+  const dialogOpen = showTemplates || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || showRecommendations || showAbout;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -1154,6 +1160,18 @@ export default function App() {
     [recommendations.purchases]
   );
 
+  const cableShoppingList = useMemo(
+    () => buildCableShoppingList(connections, objects),
+    [connections, objects],
+  );
+  const handleCopyCableList = async () => {
+    try {
+      await navigator.clipboard.writeText(cableShoppingList.text);
+      showStatus({ text: '购线清单已复制', type: 'success' }, 3000);
+    } catch {
+      showStatus({ text: '复制失败：浏览器没有允许使用剪贴板，可以手动选中清单文字复制', type: 'error' }, 4000);
+    }
+  };
   const handleCopyShoppingList = async () => {
     try {
       await navigator.clipboard.writeText(shoppingList.text);
@@ -1386,6 +1404,7 @@ export default function App() {
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handlePasteProjectFromClipboard)} disabled={!projectEditable} title="粘贴别人分享或从另一台设备复制的项目">粘贴项目</button>
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleCopyProjectToClipboard)} disabled={!projectEditable} title="复制项目，可以粘贴给别人或另一台设备">复制项目</button>
       <div className="toolbar-menu-separator" role="separator" />
+      <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowCableShop(true))}>购线清单</button>
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowAbout(true))}>关于与隐私</button>
     </div>
   );
@@ -1817,6 +1836,18 @@ export default function App() {
           objects={objects}
           onClose={() => setShowGlobalConnections(false)}
           onDelete={(connectionId) => updateConnectionsWithHistory(prev => prev.filter(connection => connection.id !== connectionId))}
+          onOpenCableShop={() => {
+            setShowGlobalConnections(false);
+            setShowCableShop(true);
+          }}
+        />
+      )}
+
+      {showCableShop && (
+        <CableShoppingDialog
+          items={cableShoppingList.items}
+          onCopy={handleCopyCableList}
+          onClose={() => setShowCableShop(false)}
         />
       )}
 

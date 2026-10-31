@@ -3,7 +3,7 @@ import { CloseIcon } from './Icons.jsx';
 import { useDialogFocus } from './useDialogFocus.js';
 
 // The "全部连接清单" dialog. Deleting a cable stays in App so it can be undone.
-export default function ConnectionsListDialog({ connections, objects, onClose, onDelete }) {
+export default function ConnectionsListDialog({ connections, objects, onClose, onDelete, onOpenCableShop }) {
   const dialogRef = useDialogFocus();
   return (
     <div
@@ -22,15 +22,18 @@ export default function ConnectionsListDialog({ connections, objects, onClose, o
       >
         <div className="modal-header">
           <h3 id="global-connections-title" className="modal-title">全部连接清单</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="side-panel-close"
-            aria-label="关闭全部连接清单"
-            title="关闭"
-          >
-            <CloseIcon />
-          </button>
+          <div className="modal-header-actions">
+            <button type="button" className="ui-button" onClick={onOpenCableShop}>购线清单</button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="side-panel-close"
+              aria-label="关闭全部连接清单"
+              title="关闭"
+            >
+              <CloseIcon />
+            </button>
+          </div>
         </div>
         <div className="modal-body">
           {connections.length === 0 ? (

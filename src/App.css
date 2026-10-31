@@ -1385,6 +1385,13 @@
   font-weight: 800;
 }
 
+.modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .modal-body {
   padding: 8px 24px 24px;
   overflow-y: auto;
