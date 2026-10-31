@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+E22 结论：剩余 10 样试换 CC0 后全部保留原来的脚本模型，没有合并任何模型或缩略图。书桌试了 Poly Haven 的 Metal Office Desk（CC0，作者 Ulan Cabanilla），Leo 否决：深色桌面让黑色设备不显眼，桌型也不同，仍用原来的木色桌。24 英寸、27 英寸和带鱼屏的目录厚度只有 5–10 厘米，带支架的现成模型套进去会严重压扁。15 英寸笔记本能找到的 CC0 要么是 Kenney 那套灰青色卡通（和被否决的键盘同一套），要么是 Poly Haven 的米色老式电脑，都不是深色。台式主机、路由器、插排、墙壁插座、电源适配器没有比例接近的 CC0。台灯、鼠标、键盘、音箱按 E21 已定的不改。草稿 PR #5 已关闭，分支 `grok/cc0-models-trial-2` 已删。验证：`npm test` 399，`npm run lint`，`npm run build`。还剩：无。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 E21：Leo 确认只把台灯和鼠标换成 Kenney Furniture Kit（CC0，`lampRoundTable`、`computerMouse`）。键盘和音箱恢复为 `tools/blender-models/` 生成的原模型，缩略图一并换回。目录尺寸、锚点、接口、功耗、type、modelId 本来就没改。来源写在 `public/models/CREDITS.md`。验证：`npm test` 399，`npm run lint`，`npm run build`，`npm run test:ui` 115 通过 + 1 跳过。还剩：无。
 
 ### 2026-10-31 · Desklab (Grok Bot) · [grok/cc0-models-trial](https://github.com/z1506007392-ops/desklab-frontend/pull/4)
