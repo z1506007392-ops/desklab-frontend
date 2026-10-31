@@ -105,7 +105,7 @@ DeskLab 是给**普通家庭用户和电竞玩家**用的 3D 桌面搭建与布�
 npm test          # node --test，单元测试
 npm run lint      # eslint
 npm run build     # vite build（"chunk 大于 500kB" 警告是已知的，不算失败）
-npm run test:ui   # Playwright：Chrome 桌面、Chrome 手机、iPhone WebKit、Firefox 桌面
+npm run test:ui   # Playwright：Chrome 桌面 + Chrome 手机。四个浏览器全量是 `npx playwright test`（含 iPhone WebKit 和 Firefox）；CI 另跑 `npm run test:ui:webkit` 的关键用例，见 E23
 ```
 后端仓库（只有改了后端才需要）：`npm test`、`npm run check:contracts`。
 
