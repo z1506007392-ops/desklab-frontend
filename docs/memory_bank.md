@@ -17,6 +17,14 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+E21：Leo 确认只把台灯和鼠标换成 Kenney Furniture Kit（CC0，`lampRoundTable`、`computerMouse`）。键盘和音箱恢复为 `tools/blender-models/` 生成的原模型，缩略图一并换回。目录尺寸、锚点、接口、功耗、type、modelId 本来就没改。来源写在 `public/models/CREDITS.md`。验证：`npm test` 399，`npm run lint`，`npm run build`，`npm run test:ui` 115 通过 + 1 跳过。还剩：无。
+
+### 2026-10-31 · Desklab (Grok Bot) · [grok/cc0-models-trial](https://github.com/z1506007392-ops/desklab-frontend/pull/4)
+
+领取并完成 E21：键盘、鼠标、台灯、音箱试用 Kenney Furniture Kit（CC0，同一套低多边形风格）。来源、作者和许可证写在 `public/models/CREDITS.md`。网格缩进原来的米制包围盒，原点和正面约定不变，锚点、接口、功耗、type、modelId 没改。gltf-transform 优化没有把文件变小，所以留缩放后的网格；四个都远小于 200KB，没用 Draco / meshopt。验证：`npm test` 399，`npm run lint`，`npm run build`，`npm run test:ui` 115 通过 + 1 跳过。不推 master。还剩：等负责人看对比后决定要不要换回脚本模型。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 手机上拖移动控制柄的 Playwright 偶发没抓住箭头，左右位置不变，CI 因此红了三次（领取 E4、音箱、领取 E20）。测试改为从箭头端点拖，没动到就再找一次箭头重拖。验证：`npm test` 399，`npm run lint`，`npm run build`，`npm run test:ui` 115 通过 + 1 跳过。还剩：无。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
