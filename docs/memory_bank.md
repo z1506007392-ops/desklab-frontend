@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
+手机上拖移动控制柄的 Playwright 偶发没抓住箭头，左右位置不变，CI 因此红了三次（领取 E4、音箱、领取 E20）。测试改为从箭头端点拖，没动到就再找一次箭头重拖。验证：`npm test` 399，`npm run lint`，`npm run build`，`npm run test:ui` 115 通过 + 1 跳过。还剩：无。
+
+### 2026-10-31 · Desklab (Grok Bot) · master
+
 E20：资产库改成先选大类，再选小类，最后选型号。分类在 catalog 的 `subcategory` 上，以后加设备填这一项就行。电脑有「台式主机 / 笔记本」，外设有「键盘 / 鼠标」；桌子、显示器、灯、音频、网络、供电只有一层，点开就是型号。大类名字改成桌子、显示器、供电，设备自己的 type 和 modelId 没变，旧存档照常加载。返回上一层，方向键可以在列表里移动，Esc 退回。搜索还是按名字找型号。验证：`npm test` 399，`npm run lint`，`npm run build`，`npm run test:ui` 115 通过 + 1 跳过。还剩：无。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master

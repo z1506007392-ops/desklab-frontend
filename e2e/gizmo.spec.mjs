@@ -96,13 +96,6 @@ async function drag(page, from, to) {
   await page.mouse.up();
 }
 
-function along(anchor, hit, fraction) {
-  return {
-    pageX: anchor.x + (hit.pageX - anchor.x) * fraction,
-    pageY: anchor.y + (hit.pageY - anchor.y) * fraction,
-  };
-}
-
 function extendPast(anchor, hit, distance) {
   const dx = hit.pageX - anchor.x;
   const dy = hit.pageY - anchor.y;
@@ -150,9 +143,12 @@ test('dragging a handle moves or turns the device, and one undo puts it back', a
 
   const beforeX = await readField(page, '左右 X');
   const beforeY = await readField(page, '前后 Y');
-  const move = await handleNearTag(page, 'red');
-  await drag(page, along(move.anchor, move.hit, 0.65), extendPast(move.anchor, move.hit, 90));
-  const movedX = await readField(page, '左右 X');
+  let movedX = beforeX;
+  for (let attempt = 0; attempt < 2 && Math.abs(movedX - beforeX) < 0.01; attempt += 1) {
+    const move = await handleNearTag(page, 'red');
+    await drag(page, move.hit, extendPast(move.anchor, move.hit, attempt === 0 ? 110 : 160));
+    movedX = await readField(page, '左右 X');
+  }
   expect(movedX).not.toBeCloseTo(beforeX, 2);
   expect(await readField(page, '前后 Y')).toBeCloseTo(beforeY, 2);
   await page.getByRole('button', { name: '撤销', exact: true }).click();
