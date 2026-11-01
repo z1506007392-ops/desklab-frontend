@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test';
+import { DEVICE_CATALOG } from '../src/domain/catalog.js';
 import { isProjectEnvelope } from '../src/domain/project-validation.js';
 import { PROJECT_STORAGE_KEY } from '../src/domain/local-project-store.js';
 
@@ -63,9 +64,29 @@ export async function openProject(page, objects, connections = [], { saved = tru
       return route.fulfill({ status, json });
     });
   }
+  // Room for every request in the resource timing list (Vite's dev server
+  // loads hundreds of modules), so waitForModelDownloads can see the models.
+  await page.addInitScript(() => performance.setResourceTimingBufferSize(5000));
   await page.goto('/');
   await expect(page).toHaveTitle('DeskLab');
   await expect(page.getByRole('button', { name: '保存项目', exact: true })).toBeEnabled();
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
   return ai ? { errors, writes, aiRequests } : { errors, writes };
+}
+
+const MODEL_FILES = [...new Set(DEVICE_CATALOG.flatMap(({ models }) => models)
+  .map(model => model.assetUrl).filter(Boolean))];
+
+/**
+ * Waits until this page has finished downloading every catalog model (the 3D
+ * view fetches all of them once it loads). Call it before a reload: iPhone
+ * WebKit reports each download a reload cancels as a page error. Waiting
+ * for 'networkidle' is not enough, since Playwright marks it once per page
+ * load, possibly before the models are requested.
+ */
+export async function waitForModelDownloads(page) {
+  await page.waitForFunction(files => {
+    const done = new Set(performance.getEntriesByType('resource').map(entry => new URL(entry.name).pathname));
+    return files.every(file => done.has(file));
+  }, MODEL_FILES);
 }

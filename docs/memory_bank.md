@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-01 · Claude · master
 
+修 iPhone WebKit 上 `local-save`"保存损坏后锁定"偶发失败的根因。纯文档提交 `8511a31`（领取 E35）的 CI 又在这条上失败，和 `b4143d8` 一样：刷新页面时 16 个模型文件还在下载，WebKit 把每个被取消的下载报成页面错误。`d38279e` 当时改成刷新前先等 `networkidle`，没修住：Playwright 每次页面加载只标一次"网络空闲"，标过之后再等会立刻返回；WebKit 上 3D 代码加载慢时，这一刻可能在模型开始下载之前。现在 `e2e/project-fixture.mjs` 加了 `waitForModelDownloads(page)`：等这一页的资源计时列表里 16 个目录模型（从 `DEVICE_CATALOG` 取）都下载完；因为开发服务器一次加载几百个模块，超过浏览器资源计时默认的 250 条，`openProject` 先把上限调到 5000。`local-save` 的三处刷新和 `start-guide` 的两处刷新都改用它，测试的判断条件没改。本地没有 WebKit：Chrome 桌面和手机上这两个文件连跑 3 遍 54 次全过，全量 149 通过 + 1 跳过；WebKit 看 CI。还剩：E36 的 CI 和线上核对。
+
+### 2026-11-01 · Claude · master
+
 E35 线上核对过（`8fcd27a` 已部署）：桌面和手机上，电竞桌加 27 寸显示器、删掉自动补的 HDMI 后，从显示器这头"新建连接"，第一步有"HDMI 输入""DP 输入"，选台式主机后自动选中"HDMI 输出"，默认线长 1.8 米、提示绿色，确认后列表"接收自 台式主机 HDMI (1.8m)"；没有错误。E34 的 CI 已通过（`d41992d`）。
 
 E36 完成：自动补线和"延长线材"的线长改成能买到的长度。`recommendations.js` 的自动接电源（`auto_power_device`）、自动接网络（`auto_network_device`）、自动接显示器（`auto_connect_display`）以前按两台设备中心的直线距离 ×1.1+0.3、最少 1 或 1.5 米、进到厘米，既不看走线（E33）、也不是能买到的长度；"延长线材"（`extend_cable`）也进到厘米。新函数 `autoCableLength` 和模板（`scene-builder.js`）一样：用两头接口算 `evaluateConnectionLength` 的建议长度（走线 ×1.1），再 `standardCableLength` 取最短的常见长度；接口没有位置算不出时才用旧估算，也取常见长度。"加购一根线"建议里的"至少需要约 X 米"仍是厘米（那是最低需要），买的长度本来就是常见长度。
