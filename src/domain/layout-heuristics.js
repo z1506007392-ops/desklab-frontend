@@ -31,6 +31,7 @@ const MONITOR_MODELS = new Set(['monitor-24', 'monitor-27', 'ultrawide-monitor']
 export { isDesk };
 const isMonitor = object => MONITOR_MODELS.has(object.modelId) || object.type === 'monitor';
 const isLaptop = object => object.modelId === 'laptop-15' || object.type === 'laptop';
+const isKeyboard = object => object.modelId === 'keyboard' || object.type === 'keyboard';
 const isTower = object => object.modelId === 'desktop-pc' || object.type === 'desktop-pc';
 const isStrip = object => object.modelId === 'power-strip' || object.type === 'power_strip';
 const isRouter = object => object.modelId === 'router' || object.type === 'router';
@@ -189,10 +190,13 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
     }
   }
 
+  // With a keyboard on the same desk the laptop is a screen, not something
+  // to type on, so the back of the desk is fine.
+  const keyboardDesks = new Set(objects.filter(isKeyboard).map(keyboard => deskUnder(keyboard)?.desk.id));
   for (const laptop of objects.filter(isLaptop)) {
     const frame = deskUnder(laptop);
     const local = frame?.toLocal(laptop.position);
-    if (frame && local.y > 0) {
+    if (frame && local.y > 0 && !keyboardDesks.has(frame.desk.id)) {
       hints.push(hint('laptop_at_back', [laptop.id], `${laptop.name}放在桌子后面，打字够不着`, {
         fix: [move(laptop, frame.toWorld({ x: local.x, y: -frame.halfDepth + laptop.scale.y / 2 + 0.05 }))],
       }));

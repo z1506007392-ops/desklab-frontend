@@ -79,6 +79,20 @@ test('a laptop at the back of the desk is hinted', () => {
   assert.deepEqual(codes(room, moved(objects, 'laptop-15', l => { l.position.x = 0.4; l.position.y = desk.position.y + 0.15; return l; })), ['laptop_at_back']);
 });
 
+test('a laptop at the back is fine when a keyboard on the same desk does the typing', async () => {
+  const { buildDeskScene } = await import('../src/domain/scene-builder.js');
+  const built = buildDeskScene({
+    devices: [{ modelId: 'laptop-15', count: 1 }, { modelId: 'keyboard', count: 1 }],
+    desk: { length: 1.2, depth: 0.7 },
+  });
+  const laptop = byModel(built.objects, 'laptop-15');
+  const desk = byModel(built.objects, 'office-desk');
+  assert.ok(laptop.position.y > desk.position.y, 'the builder put the laptop at the back');
+  assert.deepEqual(codes(built.room, built.objects), []);
+  const withoutKeyboard = built.objects.filter(object => object.modelId !== 'keyboard');
+  assert.deepEqual(codes(built.room, withoutKeyboard), ['laptop_at_back']);
+});
+
 test('a tower in the middle of the desk, or under it where the legs go, is hinted', () => {
   const { room, objects } = scene('desktop-dual');
   const desk = byModel(objects, 'office-desk');

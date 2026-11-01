@@ -1,5 +1,7 @@
 import { DEVICE_CATALOG, findModelTemplate, withPortAnchors } from './catalog.js';
 import { evaluateConnectionLength, inferCableType, standardCableLength } from './connections.js';
+import { objectsOverlap } from './geometry.js';
+import { placeCatalogObject } from './placement.js';
 
 // Turns a short device list ("a desktop, two 27-inch monitors, a router") into
 // a placed and fully wired desk. Templates use it today; an LLM that turns a
@@ -24,7 +26,18 @@ export const DESK_SCENE_DEVICE_LIMITS = Object.freeze({
   'monitor-27': MAX_MONITORS,
   'ultrawide-monitor': 2,
   router: 1,
+  keyboard: 1,
+  mouse: 1,
 });
+const PERIPHERAL_MODEL_IDS = ['keyboard', 'mouse'];
+// The front row of the desk: keyboard in front of the seat, mouse to its
+// right, a laptop beside external screens to the keyboard's left. Right and
+// left as the person at the seat sees them in the 3D view: project x maps to
+// three.js x and project y to three.js z, a mirror image, so from the seat
+// (the desk's -y side) the right hand is -x.
+const FRONT_MARGIN = 0.06;
+const ROW_GAP = 0.06;
+const SEAT_RIGHT = -1;
 const MONITOR_MODEL_IDS = new Set(['monitor-24', 'monitor-27', 'ultrawide-monitor']);
 
 // Desk sizes a home user plausibly has, in metres.
@@ -85,6 +98,50 @@ function resolveDeskSize(requested, fallback, limits, label, notes) {
     notes.push(`书桌${label}按 ${clamped}m 生成（支持 ${limits.min}–${limits.max}m）。`);
   }
   return clamped;
+}
+
+// Where the keyboard, the mouse and (beside external screens) the laptop go
+// along the front edge, as { keyboard, mouse, laptop } centres; a missing
+// entry means "place it the usual way". The keyboard sits in front of the
+// seat (x = 0) unless the row has to slide to stay on the desk. With no
+// screens the laptop is the screen, so it moves back for the keyboard.
+function planFrontRow({ counts, deskScale, deskFrontY, deskBackY, hasMonitors }) {
+  const size = modelId => findModelTemplate({ modelId }).defaultScale;
+  const wantsKeyboard = Boolean(counts.get('keyboard'));
+  const wantsMouse = Boolean(counts.get('mouse'));
+  const hasLaptop = Boolean(counts.get('laptop-15'));
+  if (!wantsKeyboard && !wantsMouse) return {};
+
+  // With no screens the laptop is the screen: behind the keyboard if the desk
+  // is deep enough, otherwise in the row like a laptop beside screens.
+  let laptopBehind = null;
+  if (hasLaptop && !hasMonitors && wantsKeyboard) {
+    const laptopDepth = size('laptop-15').y;
+    const laptopY = deskBackY - FRONT_MARGIN - laptopDepth / 2;
+    const keyboardBack = deskFrontY + FRONT_MARGIN + size('keyboard').y;
+    if (laptopY - laptopDepth / 2 >= keyboardBack + ROW_GAP / 2) laptopBehind = { x: 0, y: laptopY };
+  }
+
+  const row = [];
+  const keyboardWidth = wantsKeyboard ? size('keyboard').x : 0;
+  if (wantsKeyboard) row.push({ modelId: 'keyboard', x: 0 });
+  if (wantsMouse) row.push({ modelId: 'mouse', x: SEAT_RIGHT * (keyboardWidth / 2 + ROW_GAP + size('mouse').x / 2) });
+  if (hasLaptop && !laptopBehind && (hasMonitors || wantsKeyboard)) {
+    row.push({ modelId: 'laptop-15', x: -SEAT_RIGHT * (keyboardWidth / 2 + ROW_GAP + size('laptop-15').x / 2) });
+  }
+
+  const left = Math.min(...row.map(item => item.x - size(item.modelId).x / 2));
+  const right = Math.max(...row.map(item => item.x + size(item.modelId).x / 2));
+  const limit = deskScale.x / 2 - FRONT_MARGIN;
+  if (right - left > 2 * limit) return {};
+  const shift = left < -limit ? -limit - left : right > limit ? limit - right : 0;
+
+  const plan = laptopBehind ? { laptop: laptopBehind } : {};
+  for (const item of row) {
+    const key = item.modelId === 'laptop-15' ? 'laptop' : item.modelId;
+    plan[key] = { x: item.x + shift, y: deskFrontY + FRONT_MARGIN + size(item.modelId).y / 2 };
+  }
+  return plan;
 }
 
 function numberedName(displayName, index, total) {
@@ -157,13 +214,16 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
   });
   objects.push(...monitorObjects);
 
+  const frontRow = planFrontRow({ counts, deskScale, deskFrontY, deskBackY, hasMonitors: monitorObjects.length > 0 });
+
   let laptop = null;
   if (counts.get('laptop-15')) {
     const template = findModelTemplate({ modelId: 'laptop-15' });
     const size = template.defaultScale;
-    const position = monitorObjects.length > 0
-      ? { x: deskScale.x / 2 - size.x / 2 - 0.08, y: deskFrontY + size.y / 2 + 0.08 }
-      : { x: 0, y: deskY };
+    const position = frontRow.laptop
+      ?? (monitorObjects.length > 0
+        ? { x: deskScale.x / 2 - size.x / 2 - 0.08, y: deskFrontY + size.y / 2 + 0.08 }
+        : { x: 0, y: deskY });
     laptop = createObject('laptop-15', 'laptop', template.displayName,
       { ...position, z: deskTop + size.z / 2 }, 180);
     objects.push(laptop);
@@ -183,6 +243,31 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
     router = createObject('router', 'router', routerTemplate.displayName,
       { x: -(deskScale.x / 2 + SIDE_GAP + size.x / 2), y: room.width / 2 - 0.02 - size.y / 2, z: size.z / 2 });
     objects.push(router);
+  }
+
+  for (const modelId of PERIPHERAL_MODEL_IDS) {
+    if (!counts.get(modelId)) continue;
+    const template = findModelTemplate({ modelId });
+    const planned = frontRow[modelId] && createObject(modelId, modelId, template.displayName,
+      { ...frontRow[modelId], z: deskTop + template.defaultScale.z / 2 }, 180);
+    if (planned && !objects.some(object => objectsOverlap(planned, object))) {
+      objects.push(planned);
+      continue;
+    }
+    // Anywhere else free on the desk, the way the asset library places it.
+    const placed = placeCatalogObject({
+      modelTemplate: template, categoryId: findCategory(modelId), room, id: modelId, objects,
+    });
+    // Only on the desk and on the half nearest the seat: a keyboard behind
+    // the screens is no use, so it is left out with a note instead.
+    const onDesk = placed.valid
+      && Math.abs(placed.object.position.z - placed.object.scale.z / 2 - deskTop) < 0.005
+      && placed.object.position.y <= deskY + 1e-6;
+    if (!onDesk) {
+      notes.push(`桌面上放不下${template.displayName}，已跳过。`);
+      continue;
+    }
+    objects.push(placed.object);
   }
 
   // Power: wall outlet -> strip behind the desk -> every AC device; one adapter per DC device.

@@ -99,3 +99,23 @@ test('the template picker closes with Escape like the other dialogs', async ({ p
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
+
+test('a generated desk comes with a keyboard and mouse by default', async ({ page }) => {
+  const evidence = await openProject(page, []);
+  await page.getByRole('button', { name: '桌面模板', exact: true }).click();
+  const picker = page.getByRole('dialog', { name: '桌面模板', exact: true });
+  for (const name of ['键盘', '鼠标']) {
+    await expect(picker.getByRole('group', { name }).getByLabel(`${name}数量`)).toHaveText('1');
+  }
+  await picker.getByRole('button', { name: '生成桌面', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
+  if (await openPanel.isVisible()) await openPanel.click();
+  const devices = page.getByLabel('设备', { exact: true });
+  await expect(devices.locator('option', { hasText: '键盘' })).toHaveCount(1);
+  await expect(devices.locator('option', { hasText: '鼠标' })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: /^布局检查/ })).toHaveAccessibleName('布局检查');
+  await expect(page.getByRole('button', { name: /^布线检查/ })).toHaveAccessibleName('布线检查');
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});

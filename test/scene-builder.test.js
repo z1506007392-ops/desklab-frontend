@@ -189,3 +189,67 @@ test('the room grows to fit a long desk with side devices', () => {
   assertReadyToUse(scene, 'long desk');
   assert.ok(scene.room.length >= 3 + 1);
 });
+
+const withPeripherals = (devices, desk) => buildDeskScene({
+  devices: [...devices, { modelId: 'keyboard', count: 1 }, { modelId: 'mouse', count: 1 }],
+  desk,
+});
+// From the seat the right hand is -x: the 3D view maps project y to three.js
+// z, a mirror image (see planFrontRow in scene-builder.js).
+const seatRightOf = (a, b) => a.x < b.x;
+const relativeToDesk = (scene, object) => {
+  const desk = byModel(scene, 'office-desk')[0];
+  return { x: object.position.x - desk.position.x, y: object.position.y - desk.position.y, z: object.position.z - object.scale.z / 2 - desk.scale.z };
+};
+
+test('a keyboard sits in front of the seat with the mouse to its right, a laptop beside screens to its left', () => {
+  const scene = withPeripherals([{ modelId: 'monitor-27', count: 1 }, { modelId: 'laptop-15', count: 1 }], { length: 1.4, depth: 0.7 });
+  const [keyboard] = byModel(scene, 'keyboard');
+  const [mouse] = byModel(scene, 'mouse');
+  const [laptop] = byModel(scene, 'laptop-15');
+  const at = object => relativeToDesk(scene, object);
+  assert.ok(Math.abs(at(keyboard).x) < 1e-9, 'the keyboard is in front of the seat');
+  assert.ok(at(keyboard).y < -0.2 && at(mouse).y < -0.2, 'both near the front edge');
+  assert.ok(Math.abs(at(keyboard).z) < 1e-9 && Math.abs(at(mouse).z) < 1e-9, 'both on the desktop');
+  assert.ok(seatRightOf(at(mouse), at(keyboard)) && seatRightOf(at(keyboard), at(laptop)));
+  assert.equal(keyboard.rotation.z, 180);
+  assert.equal(mouse.rotation.z, 180);
+  assertReadyToUse(scene, 'laptop, screen, keyboard and mouse');
+  assert.deepEqual(scene.notes, []);
+});
+
+test('with no screens the laptop moves behind the keyboard when the desk is deep enough', () => {
+  const scene = withPeripherals([{ modelId: 'laptop-15', count: 1 }], { length: 1.2, depth: 0.7 });
+  const at = modelId => relativeToDesk(scene, byModel(scene, modelId)[0]);
+  assert.ok(Math.abs(at('laptop-15').x) < 1e-9);
+  assert.ok(at('laptop-15').y > at('keyboard').y + 0.2, 'the laptop is the screen, behind the keyboard');
+  assertReadyToUse(scene, 'laptop with keyboard and mouse');
+});
+
+test('every device combination on an ordinary desk takes a keyboard and mouse cleanly', () => {
+  const ids = Object.keys(DESK_SCENE_DEVICE_LIMITS).filter(modelId => !['keyboard', 'mouse'].includes(modelId));
+  const combos = [[]];
+  for (const modelId of ids) {
+    const next = [];
+    for (const combo of combos) {
+      for (let count = 0; count <= DESK_SCENE_DEVICE_LIMITS[modelId]; count += 1) next.push(count ? [...combo, { modelId, count }] : combo);
+    }
+    combos.splice(0, combos.length, ...next);
+  }
+  for (const devices of combos) {
+    const scene = withPeripherals(devices, { length: 1.4, depth: 0.7 });
+    const label = devices.map(({ modelId, count }) => `${modelId}×${count}`).join(' ') || 'nothing else';
+    const keyboard = byModel(scene, 'keyboard')[0];
+    const mouse = byModel(scene, 'mouse')[0];
+    assert.ok(keyboard && mouse, `${label}: both placed`);
+    assert.ok(seatRightOf(relativeToDesk(scene, mouse), relativeToDesk(scene, keyboard)), `${label}: mouse on the right`);
+    assert.deepEqual(actionable(analyzeProjectLayout(scene.room, scene.objects)).map(issue => issue.title), [], `${label}: layout`);
+  }
+});
+
+test('a desk too small for the keyboard leaves it out with a note instead of putting it behind the screen', () => {
+  const scene = withPeripherals([{ modelId: 'monitor-27', count: 1 }, { modelId: 'laptop-15', count: 1 }], { length: 0.8, depth: 0.6 });
+  assert.equal(byModel(scene, 'keyboard').length, 0);
+  assert.ok(scene.notes.includes('桌面上放不下键盘，已跳过。'));
+  for (const object of [...byModel(scene, 'mouse')]) assert.ok(relativeToDesk(scene, object).y <= 0, 'anything placed is on the seat half');
+});

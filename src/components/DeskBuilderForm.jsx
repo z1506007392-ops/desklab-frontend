@@ -3,7 +3,7 @@ import { findModelTemplate } from '../domain/catalog.js';
 import { buildDeskScene, DESK_SCENE_DEVICE_LIMITS, DESK_SIZE_LIMITS } from '../domain/scene-builder.js';
 import { MinusIcon, PlusIcon } from './Icons.jsx';
 
-const DEFAULT_COUNTS = Object.freeze({ 'laptop-15': 1, 'monitor-27': 1 });
+const DEFAULT_COUNTS = Object.freeze({ 'laptop-15': 1, 'monitor-27': 1, keyboard: 1, mouse: 1 });
 const DEFAULT_DESK = Object.freeze({ length: '1.4', depth: '0.7' });
 
 // "按我的设备生成": pick devices and a desk size, preview what will be built
