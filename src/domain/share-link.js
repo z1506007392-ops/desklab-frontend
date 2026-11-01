@@ -1,10 +1,14 @@
+import { DEVICE_CATALOG, hydrateProjectObjects } from './catalog.js';
 import { normalizeProject } from './local-project-store.js';
 import { MAX_PROJECT_IMPORT_BYTES } from './project-import-limits.js';
 
-// The hash is `#desklab-share-<version>.<payload>`. Version 1 is gzip, then
-// base64url, of the same project JSON an imported backup has to pass.
-export const SHARE_LINK_VERSION = 1;
+// The hash is `#desklab-share-<version>.<payload>`, the payload gzipped, then
+// base64url. Version 1 is the same project JSON an imported backup has to
+// pass. Version 2 packs it first (packProject) so an ordinary desk fits in a
+// WeChat-sized link; version 1 links still open.
+export const SHARE_LINK_VERSION = 2;
 export const SHARE_LINK_PREFIX = `#desklab-share-${SHARE_LINK_VERSION}.`;
+const READABLE_VERSIONS = new Set([1, 2]);
 
 // WeChat's in-app browser, and some chat apps, drop or refuse a link longer
 // than about 2000 characters. Desktop browsers allow much more. Past this
@@ -20,8 +24,7 @@ export const SHARE_LINK_MESSAGES = Object.freeze({
 const HASH_PATTERN = /^#desklab-share-(\d+)\.([A-Za-z0-9_-]*)$/;
 
 export async function encodeShareLink(project, locationLike) {
-  const clean = normalizeProject(project);
-  const bytes = new TextEncoder().encode(JSON.stringify(clean));
+  const bytes = new TextEncoder().encode(JSON.stringify(packProject(project)));
   const compressed = await gzip(bytes);
   const hash = `${SHARE_LINK_PREFIX}${bytesToBase64Url(compressed)}`;
   const url = sharePageUrl(locationLike, hash);
@@ -33,17 +36,123 @@ export async function decodeShareLink(hash, { maxBytes = MAX_PROJECT_IMPORT_BYTE
   if (!hash.startsWith('#desklab-share-')) return { kind: 'absent' };
   const match = HASH_PATTERN.exec(hash);
   if (!match || match[2].length === 0) return { kind: 'damaged' };
-  if (Number(match[1]) !== SHARE_LINK_VERSION) return { kind: 'unsupported' };
+  const version = Number(match[1]);
+  if (!READABLE_VERSIONS.has(version)) return { kind: 'unsupported' };
   try {
     const compressed = base64UrlToBytes(match[2]);
     if (compressed.byteLength > maxBytes) return { kind: 'tooBig' };
     const jsonBytes = await gunzip(compressed, maxBytes);
-    const project = normalizeProject(JSON.parse(new TextDecoder().decode(jsonBytes)));
+    const payload = JSON.parse(new TextDecoder().decode(jsonBytes));
+    const project = normalizeProject(version === 1 ? payload : unpackProject(payload));
     return { kind: 'ok', project };
   } catch (error) {
     if (error?.message === 'too big') return { kind: 'tooBig' };
     return { kind: 'damaged' };
   }
+}
+
+// Version 2 payload. A catalog device keeps only what the catalog cannot
+// give back: model, place, turn, and anything the user changed (name, size,
+// other fields, edited ports). Opening the link rebuilds the rest exactly as
+// a fresh device of that model, ports and anchors included, the same ones
+// the app's hydrateProjectObjects gives a saved device. Connections point at devices by list position,
+// and ids are given anew. Lengths are kept to the millimetre.
+const CATALOG = new Map(DEVICE_CATALOG.flatMap(({ category, models }) =>
+  models.map(model => [model.modelId, { model, category }])));
+const RESTORED_FIELDS = ['type', 'category', 'shape', 'color', 'assetUrl'];
+
+const round = (value, places = 3) => Number(value.toFixed(places)) || 0;
+const packVector = ({ x, y, z }) => [round(x), round(y), round(z)];
+const unpackVector = ([x, y, z]) => ({ x, y, z });
+const sameVector = (vector, other) => ['x', 'y', 'z'].every(axis => round(vector[axis]) === round(other[axis]));
+
+function catalogBase({ model, category }) {
+  return {
+    type: model.type,
+    category,
+    modelId: model.modelId,
+    shape: model.shape,
+    color: model.color,
+    assetUrl: model.assetUrl,
+  };
+}
+
+function restoredPorts(base) {
+  return hydrateProjectObjects([{ ...base, ports: [] }])[0].ports;
+}
+
+function packObject(object) {
+  const entry = CATALOG.get(object.modelId);
+  if (!entry) return { f: object };
+  const { model } = entry;
+  const base = catalogBase(entry);
+  const packed = { m: model.modelId, p: packVector(object.position) };
+  if (object.name !== model.displayName) packed.n = object.name;
+  if (object.rotation.x || object.rotation.y) packed.r = packVector(object.rotation);
+  else if (round(object.rotation.z, 2)) packed.a = round(object.rotation.z, 2);
+  if (!sameVector(object.scale, model.defaultScale)) packed.s = packVector(object.scale);
+  const changed = {};
+  for (const field of [...RESTORED_FIELDS, 'wattage', 'maxLoad']) {
+    if (object[field] !== undefined && object[field] !== base[field]) changed[field] = object[field];
+  }
+  if (Array.isArray(object.ports) && JSON.stringify(object.ports) !== JSON.stringify(restoredPorts(base))) {
+    changed.ports = object.ports;
+  }
+  if (Object.keys(changed).length > 0) packed.x = changed;
+  return packed;
+}
+
+function unpackObject(packed, index) {
+  const id = `shared-${index + 1}`;
+  if (packed.f) return { ...packed.f, id };
+  const entry = CATALOG.get(packed.m);
+  if (!entry) throw new Error('unknown device');
+  const { model } = entry;
+  const base = catalogBase(entry);
+  return {
+    ...base,
+    ports: restoredPorts(base),
+    id,
+    name: packed.n ?? model.displayName,
+    position: unpackVector(packed.p),
+    rotation: packed.r ? unpackVector(packed.r) : { x: 0, y: 0, z: packed.a ?? 0 },
+    scale: packed.s ? unpackVector(packed.s) : { ...model.defaultScale },
+    ...packed.x,
+  };
+}
+
+export function packProject(project) {
+  const clean = normalizeProject(project);
+  const position = new Map(clean.objects.map((object, index) => [object.id, index]));
+  const packed = {
+    r: [clean.room.length, clean.room.width, clean.room.height],
+    o: clean.objects.map(packObject),
+    c: (clean.connections ?? []).map(connection => [
+      position.get(connection.fromObjectId) ?? -1, connection.fromPortId ?? null,
+      position.get(connection.toObjectId) ?? -1, connection.toPortId ?? null,
+      connection.cableType, round(connection.length), connection.name,
+    ]),
+  };
+  if (clean.camera) packed.v = [...packVector(clean.camera.position), ...packVector(clean.camera.target)];
+  return packed;
+}
+
+export function unpackProject(packed) {
+  const [length, width, height] = packed.r;
+  const objects = packed.o.map(unpackObject);
+  const project = {
+    room: { length, width, height },
+    objects,
+    connections: packed.c.map(([from, fromPortId, to, toPortId, cableType, cableLength, name], index) => {
+      if (!objects[from] || !objects[to]) throw new Error('connection to a missing device');
+      const connection = { id: `shared-cable-${index + 1}`, fromObjectId: objects[from].id, toObjectId: objects[to].id, cableType, length: cableLength, name };
+      if (fromPortId !== null) connection.fromPortId = fromPortId;
+      if (toPortId !== null) connection.toPortId = toPortId;
+      return connection;
+    }),
+  };
+  if (packed.v) project.camera = { position: unpackVector(packed.v.slice(0, 3)), target: unpackVector(packed.v.slice(3, 6)) };
+  return project;
 }
 
 export function sharePageUrl(locationLike, hash) {

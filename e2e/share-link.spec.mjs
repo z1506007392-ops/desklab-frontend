@@ -66,7 +66,7 @@ test('a share link is read-only and does not replace the saved desk', async ({ p
     try { return await navigator.clipboard.readText(); }
     catch { return window.__deskLabCopied || ''; }
   });
-  expect(url).toContain('#desklab-share-1.');
+  expect(url).toContain('#desklab-share-2.');
 
   const mine = mineProject();
   await page.evaluate(({ key, raw }) => localStorage.setItem(key, raw), { key: PROJECT_STORAGE_KEY, raw: mine });
@@ -122,7 +122,7 @@ test('a very long share link warns before it is copied', async ({ page }) => {
   await page.getByRole('menu', { name: '更多', exact: true }).getByRole('menuitem', { name: '复制分享链接', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '分享链接', exact: true });
   await expect(dialog).toContainText('可能打不开');
-  expect(await dialog.getByLabel('分享链接', { exact: true }).inputValue()).toContain('#desklab-share-1.');
+  expect(await dialog.getByLabel('分享链接', { exact: true }).inputValue()).toContain('#desklab-share-2.');
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
 
