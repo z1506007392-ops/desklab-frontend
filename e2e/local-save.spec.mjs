@@ -27,6 +27,9 @@ test('a saved desk stays in this browser after a reload, with no server involved
   await expect(page.getByText(/^已保存$/)).toBeVisible();
   await expect(unsaved).toHaveCount(0);
 
+  // Reload only once the 3D models have finished downloading: iPhone WebKit
+  // reports each download a reload cancels as a page error.
+  await page.waitForLoadState('networkidle');
   await page.reload();
   await expect(page.getByRole('button', { name: '保存项目', exact: true })).toBeEnabled();
   await expectTemplateCables(page);
@@ -46,6 +49,7 @@ test('a second tab cannot overwrite a newer save', async ({ page, context }) => 
 
   await other.getByRole('button', { name: '保存项目', exact: true }).click();
   await expect(other.getByText(/项目已在另一个页面中更新/)).toBeVisible();
+  await page.waitForLoadState('networkidle'); // see the first test
   await page.reload();
   await expectTemplateCables(page);
   expect(evidence.errors).toEqual([]);
@@ -61,6 +65,7 @@ test('a damaged save locks saving until the previous version is restored', async
   await expect(page.getByText(/^已保存$/)).toBeVisible();
 
   await page.evaluate(key => localStorage.setItem(key, '{"room":'), PROJECT_STORAGE_KEY);
+  await page.waitForLoadState('networkidle'); // see the first test
   await page.reload();
   const banner = page.getByRole('alert').filter({ hasText: '本机保存的项目无法读取，保存已锁定' });
   await expect(banner).toBeVisible();
