@@ -1,17 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { WebGLRenderer } from 'three';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, Html } from '@react-three/drei';
 import SelectionGizmo from './SelectionGizmo.jsx';
 
 import { toThreePosition } from '../domain/coordinates.js';
+import { findPowerTags } from '../domain/power-tags.js';
 import { createRendererOrReport } from '../domain/webgl-support.js';
 import {
   CameraSetup,
   ConnectionsRenderer,
   DeskLabAxes,
   DeviceMesh,
-  PowerStatusOverlay,
   RoomWalls,
 } from './SceneObjects.jsx';
 
@@ -52,6 +52,9 @@ export default function Scene3D({
   // over the canvas instead (threejs-react-three-fiber skill).
   const [overlay, setOverlay] = useState(null);
   const selected = objects.find(obj => obj.id === selectedObjectId);
+  // Power sources near or over their limit get a tag; the selected one shows
+  // its load in the properties panel instead, under the selection tag.
+  const powerTags = useMemo(() => findPowerTags(objects, connections), [objects, connections]);
   // Stable for React.memo: only the device whose object, selection, or hover
   // changed re-renders. Handlers stay current without new function props.
   const handlersRef = useRef({
@@ -109,7 +112,6 @@ export default function Scene3D({
       <ConnectionsRenderer connections={connections} objects={objects} />
 
       {/* 电力状态浮标 */}
-      <PowerStatusOverlay objects={objects} connections={connections} />
 
       {objects.map(obj => (
         <DeviceMesh
@@ -135,6 +137,10 @@ export default function Scene3D({
       )}
 
       {selected && overlay && <SelectionTag obj={selected} overlay={overlay} />}
+      {overlay && powerTags.map(tag => {
+        const obj = tag.objectId === selectedObjectId ? null : objects.find(candidate => candidate.id === tag.objectId);
+        return obj ? <PowerTag key={tag.objectId} obj={obj} text={tag.text} overlay={overlay} /> : null;
+      })}
     </Canvas>
     <div ref={setOverlay} className="scene-overlay" />
     </>
@@ -144,6 +150,17 @@ export default function Scene3D({
 // The 桌搭 tag pinned above the selected device, the way a desk-setup post
 // tags items on the photo. The selection hint under the toolbar already
 // announces the selection, so this copy is hidden from screen readers.
+// Same white tag as the selection tag, without its entrance motion: it marks
+// a power source that is near or over its limit.
+function PowerTag({ obj, text, overlay }) {
+  const top = toThreePosition({ ...obj.position, z: obj.position.z + obj.scale.z / 2 + 0.03 });
+  return (
+    <Html position={top} portal={{ current: overlay }} zIndexRange={[1, 0]} pointerEvents="none">
+      <div className="power-tag" aria-hidden="true">{text}</div>
+    </Html>
+  );
+}
+
 function SelectionTag({ obj, overlay }) {
   const top = toThreePosition({ ...obj.position, z: obj.position.z + obj.scale.z / 2 + 0.03 });
   return (

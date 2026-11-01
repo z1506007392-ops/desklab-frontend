@@ -1665,7 +1665,8 @@
   pointer-events: none;
 }
 
-.scene-tag {
+.scene-tag,
+.power-tag {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1681,7 +1682,8 @@
   animation: scene-tag-in var(--dur) var(--ease-out);
 }
 
-.scene-tag::before {
+.scene-tag::before,
+.power-tag::before {
   content: '';
   flex-shrink: 0;
   width: 8px;
@@ -1690,6 +1692,12 @@
   background: var(--dot);
   box-shadow: 0 0 0 3px var(--dot-ring);
   animation: dot-settle 600ms var(--ease-out);
+}
+
+/* 功耗标签：插排、墙插、适配器接近上限或超载时才出现，不做弹入 */
+.power-tag,
+.power-tag::before {
+  animation: none;
 }
 
 /* 空场景的开始引导 */

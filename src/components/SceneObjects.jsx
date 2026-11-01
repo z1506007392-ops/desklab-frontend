@@ -1,12 +1,11 @@
 import '../domain/webkit-workers.js';
-import React, { Suspense, useEffect, useMemo, useRef } from 'react';
+import React, { Suspense, useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Billboard, Edges, Line, Text, useGLTF } from '@react-three/drei';
 
 import { createCameraPoseSynchronizer } from '../domain/camera-snapshot.js';
 import { DEVICE_CATALOG, getModelDefaultScale } from '../domain/catalog.js';
 import { evaluateConnectionLength, getConnectionEndpoints, getConnectionRoute } from '../domain/connections.js';
-import { buildPowerGraph, computeDevicePowerLoad, classifyPowerLoad, getEffectiveMaxLoad } from '../domain/analysis.js';
 import { toThreePosition, toThreeZRotation } from '../domain/coordinates.js';
 import { applyGlbHighlight } from '../domain/glb-highlight.js';
 import { getGenericModelAsset } from '../domain/model-assets.js';
@@ -755,66 +754,3 @@ export const DeviceMesh = React.memo(function DeviceMesh({
   );
 });
 
-const POWER_OUTPUT_TYPES = new Set(['ac_output', 'dc_output']);
-
-// Load numbers stay the same while a device is dragged, so unchanged labels
-// skip the text layout. The dragged device's object identity changes, so its
-// label moves with it.
-const PowerLabel = React.memo(function PowerLabel({ obj, currentLoad, maxLoad }) {
-  const loadStatus = classifyPowerLoad(currentLoad, maxLoad);
-  const color = loadStatus === 'overload' ? '#f44336' : loadStatus === 'warning' ? '#ff9800' : '#4caf50';
-  const label = `⚡${currentLoad}W/${maxLoad}W`;
-  return (
-    <Billboard
-      position={[
-        obj.position.x,
-        obj.position.z + obj.scale.z + 0.15,
-        obj.position.y,
-      ]}
-    >
-      <Text
-        font={LABEL_FONT}
-        fontSize={0.08}
-        color={color}
-        anchorX="center"
-        anchorY="bottom"
-        outlineWidth={0.004}
-        outlineColor="#000000"
-        raycast={() => null}
-      >
-        {label}
-      </Text>
-    </Billboard>
-  );
-});
-
-export function PowerStatusOverlay({ objects, connections }) {
-  const powerGraph = useMemo(
-    () => buildPowerGraph(objects, connections),
-    [objects, connections]
-  );
-
-  return (
-    <group>
-      {objects.map(obj => {
-        const hasPowerOutput = obj.ports?.some(p => POWER_OUTPUT_TYPES.has(p.type));
-        if (!hasPowerOutput) return null;
-
-        const maxLoad = getEffectiveMaxLoad(obj);
-        if (maxLoad <= 0) return null;
-
-        const currentLoad = computeDevicePowerLoad(obj.id, objects, connections, powerGraph);
-        if (currentLoad <= 0) return null;
-
-        return (
-          <PowerLabel
-            key={`power-${obj.id}`}
-            obj={obj}
-            currentLoad={currentLoad}
-            maxLoad={maxLoad}
-          />
-        );
-      })}
-    </group>
-  );
-}
