@@ -15,6 +15,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。Claude 在 master 上的记录原先写在正文里，这里按提交作者收成同一份日志。
 
+### 2026-11-01 · Claude · master
+
+E1 后续：拖动设备时如果在 3D 画面外面松开鼠标（比如拖到工具栏上才松手），设备不会落下，悬在原来的高度。原因是落下只写在 3D 画面里隐形拖动平面的 pointerup 上，在画面外松手只走 window 的 pointerup，那里只清掉拖动状态、结束撤销分组。先加了会失败的 UI 测试（桌面、手机都是 z 0.91，应为 0.16），再把两条路都改成同一个 `endObjectDrag`：从 `dragInfoRef` 读当前拖动、立刻清空，没有支撑就 `settleAfterDrag`，然后结束撤销分组；画布上松手时 window 也会收到同一次 pointerup，第二次调用什么都不做。一次撤销仍回到拖动前。控制柄拖动本来就走 `handleGizmoDragEnd`，没改。新增 `e2e/edit-edge-cases.spec.mjs` 的「在 3D 画面外松手也会落下」。验证：`npm test` 416，`npm run lint`，`npm run build`，Chrome 桌面和手机 UI 137 通过 + 1 跳过；本机没有 WebKit，iPhone WebKit 和 Firefox 靠 CI / 本地另跑。还剩：无。
+
 ### 2026-10-31 · Desklab (Grok Bot) · master
 
 新手引导的 iPhone 测试再忽略 WebKit 上「TypeError: Load failed」这种 3D 模块下载失败。引导本身的断言不变。还剩：无。

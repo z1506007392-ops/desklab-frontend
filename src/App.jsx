@@ -176,6 +176,9 @@ export default function App() {
   const activeGizmoMode = gizmoModeFor === selectedObjectId ? gizmoMode : 'translate';
   const [gizmoDragging, setGizmoDragging] = useState(false);
   const gizmoDragRef = useRef(null);
+  // The device drag in progress, readable from the window-level pointerup that
+  // ends a drag released outside the 3D view.
+  const dragInfoRef = useRef(null);
   const [inputRoom, setInputRoom] = useState({ length: 10, width: 10, height: 3 });
   const [showAxes, setShowAxes] = useState(true);
   // null while closed; otherwise the fixed-position anchor for the "更多" menu,
@@ -559,13 +562,32 @@ export default function App() {
   }, [clearLocalDraft, readLocalDraft, resetHistory, showStatus]);
 
   useEffect(() => {
-    const handleGlobalPointerUp = () => {
-      setDragInfo(null);
-      finishHistoryGroup();
-    };
-    window.addEventListener('pointerup', handleGlobalPointerUp);
-    return () => window.removeEventListener('pointerup', handleGlobalPointerUp);
+    dragInfoRef.current = dragInfo;
+  }, [dragInfo]);
+
+  // Ends a device drag wherever the pointer is let go: on the 3D view (the
+  // drag plane's pointerup) or outside it (the window's). A device dragged off
+  // its support drops instead of hanging in the air; the drag's held history
+  // group already has the undo step. The window also hears pointerups that
+  // end on the canvas, so the second call finds no drag and only closes the
+  // group again.
+  const endObjectDrag = useCallback(() => {
+    const drag = dragInfoRef.current;
+    dragInfoRef.current = null;
+    if (drag) {
+      const latest = projectStateRef.current;
+      const dragged = latest.objects.find(item => item.id === drag.objId);
+      const settled = dragged && settleAfterDrag(latest.room, dragged, latest.objects, drag.startPosition);
+      if (settled) setObjects(current => current.map(item => (item.id === settled.id ? settled : item)));
+    }
+    setDragInfo(null);
+    finishHistoryGroup();
   }, [finishHistoryGroup]);
+
+  useEffect(() => {
+    window.addEventListener('pointerup', endObjectDrag);
+    return () => window.removeEventListener('pointerup', endObjectDrag);
+  }, [endObjectDrag]);
 
   useEffect(() => {
     const handleKeyDownEsc = (e) => {
@@ -1723,14 +1745,7 @@ export default function App() {
                 { groupKey: `drag:${obj.id}`, holdGroup: true },
               );
             }}
-            onDragEnd={() => {
-              // A device dragged off its support drops instead of hanging in the air.
-              const dragged = objects.find(o => o.id === dragInfo?.objId);
-              const settled = dragged && settleAfterDrag(room, dragged, objects, dragInfo.startPosition);
-              if (settled) setObjects(current => current.map(o => (o.id === settled.id ? settled : o)));
-              setDragInfo(null);
-              finishHistoryGroup();
-            }}
+            onDragEnd={endObjectDrag}
             showAxes={showAxes}
             objects={aiPreview ? aiPreview.nextProject.objects : objects}
             connections={aiPreview ? aiPreview.nextProject.connections : connections}

@@ -48,12 +48,14 @@ async function grabPoint(page) {
 
 // Drags with a pause halfway, like a user who stops to look before letting
 // go (and like a slow CI machine): the drag must still be one undo step.
-async function drag(page, from, dx, dy) {
+// `releaseAt` lets go somewhere else, e.g. after sliding off the 3D view.
+async function drag(page, from, dx, dy, { releaseAt = null } = {}) {
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   await page.mouse.move(from.x + dx / 2, from.y + dy / 2, { steps: 8 });
   await page.waitForTimeout(700);
   await page.mouse.move(from.x + dx, from.y + dy, { steps: 8 });
+  if (releaseAt) await page.mouse.move(releaseAt.x, releaseAt.y, { steps: 4 });
   await page.mouse.up();
 }
 
@@ -68,6 +70,23 @@ test('a monitor dragged off the desk drops to the floor, and one undo puts it ba
   expect(after.x).not.toBeCloseTo(before.x, 2);
   expect(after.z, 'it rests on the floor instead of hanging in the air').toBeCloseTo(0.16, 2);
   await expect(page.getByRole('button', { name: /^布局检查/ })).toHaveAccessibleName('布局检查');
+
+  await page.getByRole('button', { name: '撤销', exact: true }).click();
+  expect(await readPosition(page)).toEqual(before);
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
+
+test('a monitor let go outside the 3D view still drops, and one undo puts it back', async ({ page }) => {
+  const evidence = await startWithDesk(page);
+  await addDevice(page, '显示器', '24 英寸显示器');
+  const before = await readPosition(page);
+
+  // Off the desk, then up onto the toolbar before letting go.
+  const from = await grabPoint(page);
+  await drag(page, from, testIsPhone(page) ? -150 : -250, 40, { releaseAt: { x: from.x, y: 20 } });
+  const after = await readPosition(page);
+  expect(after.x).not.toBeCloseTo(before.x, 2);
+  expect(after.z, 'it rests on the floor instead of hanging in the air').toBeCloseTo(0.16, 2);
 
   await page.getByRole('button', { name: '撤销', exact: true }).click();
   expect(await readPosition(page)).toEqual(before);
