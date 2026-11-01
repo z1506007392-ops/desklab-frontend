@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-01 · Claude · master
 
+`b01b001` 推送后 CI 红在 iPhone WebKit 的 `start-guide.spec.mjs:57`（Chrome 桌面和手机都绿）：测试中途刷新页面时，16 个设备模型的预加载还在下载，WebKit 把被刷新取消的每个下载都报成页面错误（「…/models/*.glb due to access control checks」）。本地用 Chromium 拦掉全部 GLB 下载不会产生页面错误，说明应用本身已处理下载失败，这是 WebKit 在刷新时的行为，和拖动改动无关（上一次提交同一条测试是绿的）。没有扩大忽略的错误类型，而是去掉竞争：引导测试里两处刷新前先 `waitForLoadState('networkidle')`，等下载完再刷新。Chrome 桌面和手机 `start-guide` 连跑 3 遍 36 通过；全量 137 通过 + 1 跳过。本机没有 WebKit，iPhone 结果看 CI。还剩：确认 CI 绿。
+
+### 2026-11-01 · Claude · master
+
 E1 后续：拖动设备时如果在 3D 画面外面松开鼠标（比如拖到工具栏上才松手），设备不会落下，悬在原来的高度。原因是落下只写在 3D 画面里隐形拖动平面的 pointerup 上，在画面外松手只走 window 的 pointerup，那里只清掉拖动状态、结束撤销分组。先加了会失败的 UI 测试（桌面、手机都是 z 0.91，应为 0.16），再把两条路都改成同一个 `endObjectDrag`：从 `dragInfoRef` 读当前拖动、立刻清空，没有支撑就 `settleAfterDrag`，然后结束撤销分组；画布上松手时 window 也会收到同一次 pointerup，第二次调用什么都不做。一次撤销仍回到拖动前。控制柄拖动本来就走 `handleGizmoDragEnd`，没改。新增 `e2e/edit-edge-cases.spec.mjs` 的「在 3D 画面外松手也会落下」。验证：`npm test` 416，`npm run lint`，`npm run build`，Chrome 桌面和手机 UI 137 通过 + 1 跳过；本机没有 WebKit，iPhone WebKit 和 Firefox 靠 CI / 本地另跑。还剩：无。
 
 ### 2026-10-31 · Desklab (Grok Bot) · master

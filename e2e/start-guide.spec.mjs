@@ -71,6 +71,9 @@ test('the guide moves by keyboard, stays dismissed, and can be reopened', async 
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
 
+  // Reload only once the 3D models have finished downloading: iPhone WebKit
+  // reports each download a reload cancels as a page error.
+  await page.waitForLoadState('networkidle');
   await page.reload();
   await expect(page.getByRole('button', { name: '桌面模板', exact: true })).toBeVisible();
   await expect(dialog).toHaveCount(0);
@@ -91,6 +94,7 @@ test('opening a share link does not show the guide or mark it seen', async ({ pa
   }, { origin: 'http://127.0.0.1:5174', pathname: '/', search: '' });
   const evidence = await openProject(page, [], [], { saved: false });
   await page.evaluate(nextHash => { window.location.hash = nextHash; }, link.hash);
+  await page.waitForLoadState('networkidle'); // see the reload above
   await page.reload();
   await expect(page.getByRole('region', { name: '只读分享', exact: true })).toBeVisible();
   await expect(guide(page)).toHaveCount(0);
