@@ -125,3 +125,24 @@ test('a very long share link warns before it is copied', async ({ page }) => {
   expect(await dialog.getByLabel('分享链接', { exact: true }).inputValue()).toContain('#desklab-share-1.');
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
+
+// The share dialog opens after an await (the link is compressed first), so
+// React updates the Escape listener only after the dialog is already on the
+// page. An Escape pressed in that moment used to reach the old listener.
+test('Escape closes the share dialog even when pressed the moment it appears', async ({ page }) => {
+  const evidence = await openProject(page, [box('桌子 A')]);
+  await page.evaluate(() => {
+    new MutationObserver((records, observer) => {
+      const dialog = document.querySelector('[role="dialog"][aria-label="分享链接"], [role="dialog"][aria-labelledby]');
+      if (!dialog || !/分享链接/.test(dialog.textContent)) return;
+      observer.disconnect();
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      window.escapeSentAsDialogAppeared = true;
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('menu', { name: '更多', exact: true }).getByRole('menuitem', { name: '复制分享链接', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.escapeSentAsDialogAppeared)).toBe(true);
+  await expect(page.getByRole('dialog', { name: '分享链接', exact: true })).toHaveCount(0);
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});

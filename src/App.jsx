@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { UNSAVED_PROJECT_VERSION, createLocalProjectClient } from './domain/local-project-store.js';
 import {
   analyzeProjectWiring,
@@ -589,7 +589,11 @@ export default function App() {
     return () => window.removeEventListener('pointerup', endObjectDrag);
   }, [endObjectDrag]);
 
-  useEffect(() => {
+  // Layout effects, not passive ones: the share dialog opens after an await,
+  // and a passive effect would re-subscribe only after the dialog is already
+  // on screen, so an Escape (or a device key) pressed in that moment reached
+  // the old listener and was missed (E32).
+  useLayoutEffect(() => {
     const handleKeyDownEsc = (e) => {
       if (e.key === 'Escape') {
         if (connectionMode) {
@@ -748,7 +752,7 @@ export default function App() {
 
   const dialogOpen = showTemplates || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || shareLink || showRecommendations || showAbout || guideOpen;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const handleKeyDown = (e) => {
       if (!projectEditable || !selectedObjectId || connectionMode) return;
       if (shouldIgnoreDeviceShortcut(e, describeKeyTarget(e.target), { dialogOpen })) return;
