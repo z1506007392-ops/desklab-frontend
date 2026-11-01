@@ -82,6 +82,7 @@ export default function LibraryBrowser({ disabled, onAdd }) {
       <div className="asset-search-container">
         <input
           type="text"
+          aria-label="搜索设备"
           placeholder="搜索设备名称、类型、型号..."
           className="ui-input"
           style={{ width: '100%', boxSizing: 'border-box' }}

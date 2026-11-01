@@ -287,7 +287,7 @@ const ConnectionsEditor = ({
           <div className="connection-draft-steps">
             <div className="connection-step">
               <div className="connection-step-label">1. 当前设备的接口</div>
-              <select className="ui-select ui-full-width" value={connectionDraft.fromPortId || ''} onChange={e => setConnectionDraft({ fromObjectId: selectedObj.id, fromPortId: e.target.value })}>
+              <select className="ui-select ui-full-width" aria-label="当前设备的接口" value={connectionDraft.fromPortId || ''} onChange={e => setConnectionDraft({ fromObjectId: selectedObj.id, fromPortId: e.target.value })}>
                 {renderPortOptions(selectedObj, 'from')}
               </select>
             </div>
@@ -305,6 +305,7 @@ const ConnectionsEditor = ({
                         <div className="connection-or">─ 或在下拉列表中选择 ─</div>
                         <select
                           className="ui-select ui-full-width"
+                          aria-label="目标设备"
                           value={connectionDraft.toObjectId || ''}
                           onChange={e => {
                             const { value } = e.target;
@@ -346,7 +347,7 @@ const ConnectionsEditor = ({
                 {!hasCompatibleToPorts ? (
                   <div className="field-error">目标设备没有兼容端口</div>
                 ) : (
-                  <select className="ui-select ui-full-width" value={connectionDraft.toPortId || ''} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, toPortId: value })); }}>
+                  <select className="ui-select ui-full-width" aria-label="目标端口" value={connectionDraft.toPortId || ''} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, toPortId: value })); }}>
                     {renderPortOptions(toObj, 'to')}
                   </select>
                 )}
@@ -364,12 +365,12 @@ const ConnectionsEditor = ({
                   </div>
                   <div>
                     <div className="connection-step-label">长度(m)</div>
-                    <input className="ui-input ui-full-width" type="number" step="0.1" min="0.1" value={draftLength} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, length: value })); }} />
+                    <input className="ui-input ui-full-width" type="number" step="0.1" min="0.1" aria-label="长度(m)" value={draftLength} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, length: value })); }} />
                   </div>
                 </div>
                 <div>
                   <div className="connection-step-label">连接名称 (可选)</div>
-                  <input className="ui-input ui-full-width" type="text" placeholder="留空默认使用线材名" value={connectionDraft.name || ''} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, name: value })); }} />
+                  <input className="ui-input ui-full-width" type="text" aria-label="连接名称" placeholder="留空默认使用线材名" value={connectionDraft.name || ''} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, name: value })); }} />
                 </div>
                 {draftLengthStatus && (
                   <div className={`cable-distance ${draftLengthStatus.hasRecommendedSlack ? 'cable-distance-ok' : 'cable-distance-warning'}`}>

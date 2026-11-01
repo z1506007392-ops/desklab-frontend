@@ -35,14 +35,14 @@ test('a screen can be wired by hand from the screen end, with a cable long enoug
   await page.getByRole('button', { name: '新建连接', exact: true }).click();
   const draft = page.locator('.connection-draft');
   await expect(draft).toContainText('1. 当前设备的接口');
-  const [ownPort, target] = [draft.locator('select').nth(0), draft.locator('select').nth(1)];
+  const [ownPort, target] = [draft.getByLabel('当前设备的接口', { exact: true }), draft.getByLabel('目标设备', { exact: true })];
   await expect(ownPort.locator('option')).toContainText(['HDMI 输入']);
   await ownPort.selectOption({ label: 'HDMI 输入' });
   await target.selectOption({ label: '台式主机' });
 
   // The computer's only free HDMI port is chosen, and the length covers the route.
-  await expect(draft).toContainText('HDMI 输出');
-  const length = Number(await draft.getByRole('spinbutton').inputValue());
+  await expect(draft.getByLabel('目标端口', { exact: true })).toHaveValue('hdmi-out');
+  const length = Number(await draft.getByLabel('长度(m)', { exact: true }).inputValue());
   expect([1, 1.5, 1.8, 2, 3]).toContain(length);
   await expect(draft.locator('.cable-distance')).toHaveClass(/cable-distance-ok/);
   await draft.getByRole('button', { name: '确认连接', exact: true }).click();
