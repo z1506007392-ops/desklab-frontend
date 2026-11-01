@@ -5,11 +5,13 @@ import {
   arePortsCompatible,
   arePortTypesCompatible,
   calculatePositionDistance,
+  canJoinPorts,
   evaluateConnectionLength,
   getConnectionEndpoints,
   getPortWorldPosition,
   inferCableType,
   isPortDirectionConsistent,
+  orientPortPair,
   parsePositiveCableLength,
   requiredPowerPortDirection,
   shouldResetConnectionDraftForSelection,
@@ -203,4 +205,24 @@ test('port types, directions, and cable types have plain names for messages', as
   assert.equal(describePortDirection('sideways'), '未知（sideways）');
   assert.equal(describeCableType('hdmi'), 'HDMI 线');
   assert.equal(describeCableType('mystery'), '连接线');
+});
+
+test('a cable can be started from either end and is stored sending end first', () => {
+  const pcOut = { id: 'hdmi-out', type: 'hdmi', direction: 'output' };
+  const screenIn = { id: 'hdmi-in', type: 'hdmi', direction: 'input' };
+  const pc = { objectId: 'pc', port: pcOut };
+  const screen = { objectId: 'screen', port: screenIn };
+  assert.deepEqual(orientPortPair(screen, pc), { from: pc, to: screen });
+  assert.deepEqual(orientPortPair(pc, screen), { from: pc, to: screen });
+
+  const outlet = { id: 'socket', type: 'ac_output', direction: 'output' };
+  const plug = { id: 'ac-in', type: 'ac_input', direction: 'input' };
+  assert.equal(canJoinPorts(plug, outlet), true);
+  assert.equal(canJoinPorts(screenIn, { ...screenIn, id: 'other-in' }), false, 'two inputs');
+  assert.equal(canJoinPorts(screenIn, plug), false, 'different kinds');
+
+  const lanA = { id: 'lan', type: 'ethernet', direction: 'bidirectional' };
+  const lanB = { id: 'lan-2', type: 'ethernet', direction: 'bidirectional' };
+  assert.deepEqual(orientPortPair({ objectId: 'a', port: lanA }, { objectId: 'b', port: lanB }).from.objectId, 'a');
+  assert.equal(orientPortPair(null, pc), null);
 });

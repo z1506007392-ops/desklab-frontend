@@ -98,6 +98,23 @@ export function arePortsCompatible(fromPort, toPort) {
     && arePortTypesCompatible(fromPort.type, toPort.type);
 }
 
+/**
+ * Two ports a cable can join, given in either order (the user may start
+ * from the screen or from the computer). A stored connection always runs
+ * from the sending end to the receiving end, so this returns
+ * { from, to } in that order, each the end that was passed in, or null
+ * when the ports cannot be joined either way.
+ */
+export function orientPortPair(first, second) {
+  if (arePortsCompatible(first?.port, second?.port)) return { from: first, to: second };
+  if (arePortsCompatible(second?.port, first?.port)) return { from: second, to: first };
+  return null;
+}
+
+export function canJoinPorts(firstPort, secondPort) {
+  return orientPortPair({ port: firstPort }, { port: secondPort }) !== null;
+}
+
 export function inferCableType(fromPort, toPort) {
   if (!fromPort || !toPort) return 'other';
   if (POWER_PORT_TYPES.has(fromPort.type) && POWER_PORT_TYPES.has(toPort.type)) return 'power';

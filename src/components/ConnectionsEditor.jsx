@@ -1,20 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  arePortsCompatible,
+  canJoinPorts,
   evaluateConnectionLength,
   inferCableType,
   isPortDirectionConsistent,
+  orientPortPair,
   parsePositiveCableLength,
   shouldResetConnectionDraftForSelection,
+  standardCableLength,
 } from '../domain/connections.js';
 import { createEntityId } from '../domain/identifiers.js';
 import { labelObjectsForPicker } from '../domain/object-labels.js';
 import { CloseIcon } from './Icons.jsx';
 
 // --- Connections MVP 组件 ---
-const getCompatibleTargetPorts = (fromPort, targetObject) => {
-  if (!fromPort || !targetObject || !targetObject.ports) return [];
-  return targetObject.ports.filter(toPort => arePortsCompatible(fromPort, toPort));
+// The draft starts on the selected device, whichever end it is: its port may
+// send or receive. The other device's ports that fit either way are offered,
+// and the saved connection runs from the sending end (orientPortPair).
+const getCompatibleTargetPorts = (localPort, targetObject) => {
+  if (!localPort || !targetObject || !targetObject.ports) return [];
+  return targetObject.ports.filter(port => canJoinPorts(localPort, port));
 };
 
 const ConnectionsEditor = ({ 
@@ -82,7 +87,6 @@ const ConnectionsEditor = ({
     let filteredPorts = [];
     if (role === 'from') {
       filteredPorts = obj.ports.filter(p =>
-        (p.direction === 'output' || p.direction === 'bidirectional') &&
         isPortDirectionConsistent(p) &&
         !isPortOccupied(obj.id, p.id)
       );
@@ -111,6 +115,30 @@ const ConnectionsEditor = ({
   };
 
   const toObj = connectionDraft.toObjectId ? objects.find(o => o.id === connectionDraft.toObjectId) : null;
+
+  // Both ends of the draft as they will be saved (sending end first), or null
+  // until both ports are chosen.
+  const draftEnds = () => {
+    const localPort = selectedObj?.ports?.find(p => p.id === connectionDraft.fromPortId);
+    const otherPort = toObj?.ports?.find(p => p.id === connectionDraft.toPortId);
+    if (!localPort || !otherPort) return null;
+    return orientPortPair({ objectId: selectedObj.id, port: localPort }, { objectId: toObj.id, port: otherPort });
+  };
+  const draftConnection = length => {
+    const ends = draftEnds();
+    return ends && {
+      fromObjectId: ends.from.objectId,
+      fromPortId: ends.from.port.id,
+      toObjectId: ends.to.objectId,
+      toPortId: ends.to.port.id,
+      length,
+    };
+  };
+  // Until the user types a length, offer the size auto-wiring would pick:
+  // the shortest common length that covers the route plus 10%.
+  const routeStatus = draftConnection(1) && evaluateConnectionLength(draftConnection(1), objects);
+  const suggestedLength = routeStatus ? standardCableLength(routeStatus.recommendedLength) : 1;
+  const draftLength = connectionDraft.length ?? suggestedLength;
 
   useEffect(() => {
     if (toObj && toObj.ports && connectionDraft.fromPortId) {
@@ -149,34 +177,35 @@ const ConnectionsEditor = ({
     if (!connectionDraft.toObjectId) return alert('请先选择目标设备');
     if (!connectionDraft.fromPortId || !connectionDraft.toPortId) return alert('必须选择起点和终点的具体端口');
     
-    const length = parsePositiveCableLength(connectionDraft.length || 1);
+    const length = parsePositiveCableLength(draftLength);
     if (length === null) return alert('长度必须是有限且大于 0 的数字');
     
-    const fromPort = selectedObj.ports?.find(p => p.id === connectionDraft.fromPortId);
-    const toPort = toObj?.ports?.find(p => p.id === connectionDraft.toPortId);
+    const localPort = selectedObj.ports?.find(p => p.id === connectionDraft.fromPortId);
+    const otherPort = toObj?.ports?.find(p => p.id === connectionDraft.toPortId);
 
-    if (!fromPort || !toPort) return alert('端口不存在（可能是旧数据），无法连接');
+    if (!localPort || !otherPort) return alert('端口不存在（可能是旧数据），无法连接');
 
-    if (isPortOccupied(selectedObj.id, fromPort.id) || isPortOccupied(toObj.id, toPort.id)) {
+    if (isPortOccupied(selectedObj.id, localPort.id) || isPortOccupied(toObj.id, otherPort.id)) {
       return alert('所选端口已被其它连接占用，请选择空闲端口');
     }
 
-    const compPorts = getAvailableTargetPorts(fromPort, toObj);
-    if (!compPorts.some(p => p.id === toPort.id)) {
+    const compPorts = getAvailableTargetPorts(localPort, toObj);
+    const ends = draftEnds();
+    if (!compPorts.some(p => p.id === otherPort.id) || !ends) {
        return alert(`端口类型不兼容或方向错误`);
     }
 
-    const cableType = inferCableType(fromPort, toPort);
+    const cableType = inferCableType(ends.from.port, ends.to.port);
     const typeLabel = cableTypes.find(c => c.value === cableType)?.label || '线材';
     const name = connectionDraft.name || '';
     const finalName = name.trim() ? name.trim() : typeLabel;
 
     const newConn = {
       id: createEntityId('connection'),
-      fromObjectId: selectedObj.id,
-      fromPortId: connectionDraft.fromPortId,
-      toObjectId: connectionDraft.toObjectId,
-      toPortId: connectionDraft.toPortId,
+      fromObjectId: ends.from.objectId,
+      fromPortId: ends.from.port.id,
+      toObjectId: ends.to.objectId,
+      toPortId: ends.to.port.id,
       cableType,
       length,
       name: finalName
@@ -228,12 +257,8 @@ const ConnectionsEditor = ({
      }
   }
 
-  const draftLengthStatus = toObj
-    ? evaluateConnectionLength({
-        fromObjectId: selectedObj.id,
-        toObjectId: toObj.id,
-        length: Number(connectionDraft.length || 1),
-      }, objects)
+  const draftLengthStatus = draftConnection(Number(draftLength))
+    ? evaluateConnectionLength(draftConnection(Number(draftLength)), objects)
     : null;
 
   return (
@@ -261,7 +286,7 @@ const ConnectionsEditor = ({
           
           <div className="connection-draft-steps">
             <div className="connection-step">
-              <div className="connection-step-label">1. 当前设备输出端口</div>
+              <div className="connection-step-label">1. 当前设备的接口</div>
               <select className="ui-select ui-full-width" value={connectionDraft.fromPortId || ''} onChange={e => setConnectionDraft({ fromObjectId: selectedObj.id, fromPortId: e.target.value })}>
                 {renderPortOptions(selectedObj, 'from')}
               </select>
@@ -339,7 +364,7 @@ const ConnectionsEditor = ({
                   </div>
                   <div>
                     <div className="connection-step-label">长度(m)</div>
-                    <input className="ui-input ui-full-width" type="number" step="0.1" min="0.1" value={connectionDraft.length || 1} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, length: value })); }} />
+                    <input className="ui-input ui-full-width" type="number" step="0.1" min="0.1" value={draftLength} onChange={e => { const { value } = e.target; setConnectionDraft(prev => ({ ...prev, length: value })); }} />
                   </div>
                 </div>
                 <div>
