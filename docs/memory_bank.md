@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-01 · Claude · master
 
+任务板上能直接做的都做完了：A8 等 H3（Cloudflare API Token），E14 等 H2（负责人暂缓）。按手册"线上验收，有问题开新任务"，领取 E29：Grok 的 50 个提交之后的线上全面验收复跑。另：上一条记录的"还剩：确认 CI 绿"已确认，`700a612` 的 CI（含 iPhone WebKit）是绿的。还剩：E29 本身。
+
+### 2026-11-01 · Claude · master
+
 `b01b001` 推送后 CI 红在 iPhone WebKit 的 `start-guide.spec.mjs:57`（Chrome 桌面和手机都绿）：测试中途刷新页面时，16 个设备模型的预加载还在下载，WebKit 把被刷新取消的每个下载都报成页面错误（「…/models/*.glb due to access control checks」）。本地用 Chromium 拦掉全部 GLB 下载不会产生页面错误，说明应用本身已处理下载失败，这是 WebKit 在刷新时的行为，和拖动改动无关（上一次提交同一条测试是绿的）。没有扩大忽略的错误类型，而是去掉竞争：引导测试里两处刷新前先 `waitForLoadState('networkidle')`，等下载完再刷新。Chrome 桌面和手机 `start-guide` 连跑 3 遍 36 通过；全量 137 通过 + 1 跳过。本机没有 WebKit，iPhone 结果看 CI。还剩：确认 CI 绿。
 
 ### 2026-11-01 · Claude · master
