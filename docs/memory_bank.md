@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-01 · Claude · master
 
+领取 E31（分享链接压缩到微信能打开的长度，旧链接照样能打开）。E30、E32 的 CI 都是绿的，E30 线上已核对（键盘在桌面上、显示器 180°）。还剩：E31 本身。
+
+### 2026-11-01 · Claude · master
+
 E32 完成：E29 在线上看到分享链接弹窗刚打开时按 Esc 偶尔关不掉。原因：其他弹窗都在点击事件里同步打开，React 会在下一次输入前跑完 effect；分享链接要先 gzip 压缩，弹窗在 `await` 之后才打开，被动 effect 等画面画出来之后才重新订阅 window 上的 Esc 监听，这一瞬间按下的 Esc 被旧监听（以为没有弹窗）吃掉。本地普通按键很难碰上（直接试 60 次都没漏），所以测试用 MutationObserver 在弹窗插入页面的那一刻派发 Esc：不修时 6 次里失败 5 次（桌面每次都失败），修后 6/6 通过。修法：Esc 监听和设备快捷键监听从 `useEffect` 改成 `useLayoutEffect`，在同一次提交里就换成新状态。验证：`npm test` 419，lint，build，Chrome 桌面和手机 UI 141 通过 + 1 跳过。还剩：E31。
 
 ### 2026-11-01 · Claude · master
