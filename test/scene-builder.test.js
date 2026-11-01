@@ -324,3 +324,20 @@ test('common setups with every extra stay clean on ordinary desks', () => {
     }
   }
 });
+
+test('on the shallowest desk a laptop in front and the screens behind it do not overlap', () => {
+  for (const monitorId of ['monitor-24', 'monitor-27', 'ultrawide-monitor']) {
+    for (const extras of [[], [{ modelId: 'keyboard', count: 1 }, { modelId: 'mouse', count: 1 }]]) {
+      const scene = buildDeskScene({
+        devices: [{ modelId: 'laptop-15', count: 1 }, { modelId: monitorId, count: 1 }, ...extras],
+        desk: { length: 1.4, depth: DESK_SIZE_LIMITS.depth.min },
+      });
+      assertReadyToUse(scene, `${monitorId}${extras.length ? ' with keyboard and mouse' : ''}`);
+    }
+  }
+  // Deeper desks keep the screens 15 cm in from the back edge.
+  const deep = buildDeskScene({ devices: [{ modelId: 'laptop-15', count: 1 }, { modelId: 'monitor-27', count: 1 }], desk: { length: 1.4, depth: 0.7 } });
+  const desk = byModel(deep, 'office-desk')[0];
+  const monitor = byModel(deep, 'monitor-27')[0];
+  assert.ok(Math.abs(desk.position.y + desk.scale.y / 2 - 0.15 - monitor.position.y) < 1e-9);
+});

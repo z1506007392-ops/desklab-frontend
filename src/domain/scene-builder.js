@@ -46,6 +46,9 @@ const SEAT_RIGHT = -1;
 // corner, then the middle of either side edge, if the screens are in the way.
 const BACK_CORNER_ITEMS = [['desk-lamp', -SEAT_RIGHT], ['speakers', SEAT_RIGHT]];
 const CORNER_MARGIN = 0.05;
+// A laptop beside screens, when not in a planned front row, sits this far in
+// from the front edge.
+const LAPTOP_FRONT_MARGIN = 0.08;
 const MONITOR_MODEL_IDS = new Set(['monitor-24', 'monitor-27', 'ultrawide-monitor']);
 
 // Desk sizes a home user plausibly has, in metres.
@@ -212,6 +215,13 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
   if (placedMonitors.length < monitorLimited.length) {
     notes.push(`桌面宽度 ${deskScale.x}m 放不下 ${monitorLimited.length} 台显示器，已放入 ${placedMonitors.length} 台。`);
   }
+  // Screens sit 15 cm in from the back edge. On a shallow desk with a
+  // laptop at the front they move back just far enough to clear it (never
+  // closer than 2 cm to the edge); deeper desks are unchanged.
+  const laptopFront = counts.get('laptop-15')
+    ? deskFrontY + LAPTOP_FRONT_MARGIN + findModelTemplate({ modelId: 'laptop-15' }).defaultScale.y + 0.02
+    : -Infinity;
+  const monitorY = depth => Math.min(deskBackY - 0.02 - depth / 2, Math.max(deskBackY - 0.15, laptopFront + depth / 2));
   let cursorX = -usedWidth / 2;
   const monitorObjects = placedMonitors.map(monitor => {
     const template = findModelTemplate({ modelId: monitor.modelId });
@@ -219,7 +229,7 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
     cursorX += monitor.width + MONITOR_GAP;
     return createObject(monitor.modelId, `${monitor.modelId}-${monitor.index + 1}`,
       numberedName(template.displayName, monitor.index, monitor.total),
-      { x, y: deskBackY - 0.15, z: deskTop + template.defaultScale.z / 2 }, 180);
+      { x, y: monitorY(template.defaultScale.y), z: deskTop + template.defaultScale.z / 2 }, 180);
   });
   objects.push(...monitorObjects);
 
@@ -231,7 +241,7 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
     const size = template.defaultScale;
     const position = frontRow.laptop
       ?? (monitorObjects.length > 0
-        ? { x: deskScale.x / 2 - size.x / 2 - 0.08, y: deskFrontY + size.y / 2 + 0.08 }
+        ? { x: deskScale.x / 2 - size.x / 2 - 0.08, y: deskFrontY + size.y / 2 + LAPTOP_FRONT_MARGIN }
         : { x: 0, y: deskY });
     laptop = createObject('laptop-15', 'laptop', template.displayName,
       { ...position, z: deskTop + size.z / 2 }, 180);
