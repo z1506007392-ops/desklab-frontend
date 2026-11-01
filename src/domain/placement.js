@@ -13,15 +13,31 @@ const isDeskTopDevice = (categoryId, modelTemplate) =>
   categoryId === 'display'
   || categoryId === 'accessory'
   || categoryId === 'entertainment'
+  || categoryId === 'peripheral'
+  || categoryId === 'audio'
+  || categoryId === 'lighting'
   || modelTemplate.type === 'laptop';
+// Keyboard, mouse and laptop go where the hands are: the half nearer the seat.
+const prefersDeskFront = (categoryId, modelTemplate) =>
+  categoryId === 'peripheral' || modelTemplate.type === 'laptop';
+// Devices people look at or reach for face the seat, as the templates build
+// them (scene-builder turns screens, the laptop and the PC by 180°). A
+// device's front is its local +y; the seat is on the desk's -y side.
+const FACES_SEAT = new Set(['display', 'computer', 'entertainment', 'peripheral', 'audio', 'lighting']);
 const isWallOutlet = modelTemplate => modelTemplate.modelId === 'wall-outlet' || modelTemplate.type === 'outlet';
 const isDesk = object => object.category === 'furniture';
 
+function seatFacingRotation(objects) {
+  const desk = Array.isArray(objects) ? objects.find(isDesk) : null;
+  return (((desk?.rotation?.z ?? 0) + 180) % 360 + 360) % 360;
+}
+
 /**
  * Create a catalog object. With no existing objects it goes to the room
- * center. Otherwise it gets a free spot: monitors and laptops on a desk top,
- * wall outlets on the wall nearest the desk, everything else on the floor
- * spiralling out from the desk (or the room center).
+ * center. Otherwise it gets a free spot: monitors, laptops, keyboards, mice,
+ * lamps and speakers on a desk top, wall outlets on the wall nearest the
+ * desk, everything else on the floor spiralling out from the desk (or the
+ * room center). Devices with a front face the desk's seat.
  */
 export function placeCatalogObject({ modelTemplate, categoryId, room, id, objects = [] }) {
   const proposedObject = {
@@ -33,7 +49,7 @@ export function placeCatalogObject({ modelTemplate, categoryId, room, id, object
     shape: modelTemplate.shape,
     assetUrl: modelTemplate.assetUrl,
     position: { x: 0, y: 0, z: modelTemplate.defaultScale.z / 2 },
-    rotation: { x: 0, y: 0, z: 0 },
+    rotation: { x: 0, y: 0, z: FACES_SEAT.has(categoryId) ? seatFacingRotation(objects) : 0 },
     scale: { ...modelTemplate.defaultScale },
     color: modelTemplate.color,
     ports: withPortAnchors(
@@ -212,7 +228,7 @@ function findFreePlacement(object, categoryId, modelTemplate, room, objects) {
   if (isDeskTopDevice(categoryId, modelTemplate)) {
     for (const desk of desks) {
       const onDesk = findOnDesk(object, desk, room, objects, {
-        preferFront: modelTemplate.type === 'laptop',
+        preferFront: prefersDeskFront(categoryId, modelTemplate),
         isScreen: categoryId === 'display',
       });
       if (onDesk) return onDesk;

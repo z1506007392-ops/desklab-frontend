@@ -5,6 +5,7 @@ import { placeCatalogObject } from '../src/domain/placement.js';
 import { DEVICE_CATALOG } from '../src/domain/catalog.js';
 import { isPortDirectionConsistent } from '../src/domain/connections.js';
 import { analyzeProjectLayout } from '../src/domain/layout-analysis.js';
+import { analyzeLayoutHeuristics } from '../src/domain/layout-heuristics.js';
 
 const isNonBlankString = (value) => typeof value === 'string' && value.trim().length > 0;
 const VALID_PORT_DIRECTIONS = new Set(['input', 'output', 'bidirectional']);
@@ -203,3 +204,42 @@ test('floor devices stay out of the space in front of the desk', () => {
   const strip = objects.find(object => object.modelId === 'power-strip');
   assert.ok(boundsOf(strip).minY >= boundsOf(desk).maxY - 1e-9, 'a small strip tucks in behind the desk');
 });
+
+test('keyboards, mice, lamps and speakers are added on the desk top', () => {
+  const [desk, ...devices] = addInOrder(['office-desk', 'keyboard', 'mouse', 'desk-lamp', 'speakers']);
+  const deskTop = desk.position.z + desk.scale.z / 2;
+  for (const device of devices) {
+    assert.ok(Math.abs(device.position.z - device.scale.z / 2 - deskTop) < 1e-9, `${device.modelId} sits on the desk`);
+  }
+  for (const device of devices.filter(item => ['keyboard', 'mouse'].includes(item.modelId))) {
+    assert.ok(device.position.y < desk.position.y, `${device.modelId} is on the half nearer the seat`);
+  }
+});
+
+test('devices with a front are added facing the seat, like the templates build them', () => {
+  const objects = addInOrder([
+    'office-desk', 'monitor-27', 'laptop-15', 'desktop-pc', 'game-console',
+    'keyboard', 'mouse', 'speakers', 'desk-lamp', 'router', 'power-strip',
+  ]);
+  const rotation = Object.fromEntries(objects.map(object => [object.modelId, object.rotation.z]));
+  for (const modelId of ['monitor-27', 'laptop-15', 'desktop-pc', 'game-console', 'keyboard', 'mouse', 'speakers', 'desk-lamp']) {
+    assert.equal(rotation[modelId], 180, `${modelId} faces the seat`);
+  }
+  for (const modelId of ['office-desk', 'router', 'power-strip']) {
+    assert.equal(rotation[modelId], 0, `${modelId} keeps its own orientation`);
+  }
+  const hints = analyzeLayoutHeuristics(homeRoom, objects, []).map(hint => hint.code);
+  assert.equal(hints.includes('monitor_facing_away'), false);
+});
+
+test('on a turned desk, added devices face that desk\'s seat', () => {
+  const { model, categoryId } = templateFor('office-desk');
+  const desk = placeCatalogObject({ modelTemplate: model, categoryId, room: homeRoom, id: 'desk' }).object;
+  const turnedDesk = { ...desk, rotation: { ...desk.rotation, z: 90 } };
+  const entry = templateFor('monitor-27');
+  const monitor = placeCatalogObject({ modelTemplate: entry.model, categoryId: entry.categoryId, room: homeRoom, id: 'monitor', objects: [turnedDesk] }).object;
+  assert.equal(monitor.rotation.z, 270);
+  const hints = analyzeLayoutHeuristics(homeRoom, [turnedDesk, monitor], []).map(hint => hint.code);
+  assert.equal(hints.includes('monitor_facing_away'), false);
+});
+

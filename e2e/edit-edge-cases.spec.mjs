@@ -39,10 +39,11 @@ async function grabPoint(page) {
   await page.waitForTimeout(500); // let the tag's entrance settle
   const box = await tag.boundingBox();
   const phone = page.viewportSize().width < 900;
-  // Desktop handles sit on the center line under the tag, so the grab steps
-  // sideways onto the screen. On a phone the same sideways step clips a handle.
+  // The move handles' vertical arrow runs down the center line under the tag,
+  // so the grab steps sideways onto the screen. On a phone the screen is
+  // smaller and the red arrow points left, so a shorter step to the right.
   return phone
-    ? { x: box.x + box.width / 2, y: box.y + box.height + 24 }
+    ? { x: box.x + box.width / 2 + 18, y: box.y + box.height + 24 }
     : { x: box.x + box.width / 2 + 36, y: box.y + box.height + 22 };
 }
 
