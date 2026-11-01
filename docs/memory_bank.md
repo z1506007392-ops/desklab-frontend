@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-01 · Claude · master
 
+`DESIGN.md` 补上 E34 的功耗标签（"选中标签"后面新一节）：什么时候出现、为什么用粉点不用状态色、不做弹入、选中的设备不挂。以前 DESIGN.md 只写了选中标签，后来的贡献者照着它做 3D 标签会漏掉这一种。另外在线上跑了一次真实 AI（验收脚本第 5 条，桌面和手机各一次）：桌面上 DeepSeek 回答"这次没有找到能让布局更好的改动"，手机上脚本截到的是"AI 正在看你的桌面…"（还没回来就记录了，不算对回答的核对），都没有错误。只改文档。还剩：E38 那几次的 CI。
+
+### 2026-11-01 · Claude · master
+
 CI 的 iPhone WebKit 子集（`npm run test:ui:webkit`）加上 E38 的 `e2e/offline-fonts.spec.mjs`。iPhone 上的 Safari 和微信内置浏览器都是 WebKit，E23 在这里改过 Troika 的字体加载方式（不走 worker），国内用户又多是这类浏览器，所以"拦掉 jsdelivr 照常画出、不访问外部地址"最该在 WebKit 上验。本地没有 WebKit，没跑过，看 CI；Chrome 桌面和手机上这个文件已通过。另外查了页面和样式里有没有别的外部地址：字体用系统字体，`index.html` 里只有本站的 `og-image.png`，代码里没有别的外部域名。还剩：E38 和这次的 CI。
 
 ### 2026-11-01 · Claude · master
