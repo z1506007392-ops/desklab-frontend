@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-01 · Claude · master
 
+`44aacf2` 的 CI 在 iPhone WebKit 上又红了，这次 `local-save` 过了，`start-guide` 的"分享链接不出引导"失败：刷新取消了坐标轴字体 `fonts/axis-label.woff` 的下载（Troika 在 worker 里下，不进页面的资源计时，所以只等模型文件不够）。`waitForModelDownloads` 改为 `waitForSceneDownloads`：先等 16 个模型下载完，再等这一页（含 worker）没有任何进行中的请求满 0.5 秒；`openProject` 用 Playwright 的 request / requestfinished / requestfailed 记录进行中的请求。验证：`local-save` 和 `start-guide` 在 Chrome 桌面和手机上连跑 3 遍 54 次全过；本地没有 WebKit，看 CI。查这个问题时发现更严重的：`axis-label.woff` 是 Noto Emoji，没有 X/Y/Z，Troika 每次都去 cdn.jsdelivr.net 下载后备字体，拦掉 jsdelivr 时整个 3D 画面是空的。已领取为 E38。还剩：E38。
+
+### 2026-11-01 · Claude · master
+
 E36 线上核对过（`21faa8d` 已部署）：桌面和手机上电竞桌加 27 寸显示器，自动补的是"27 英寸显示器电源线 (1.5m)"和"台式主机HDMI线 (1.8m)"，以前 HDMI 是 1.63 米；没有错误。
 
 E37 完成：新建连接表单的控件有了可读名称。E35 写 UI 测试时只能按位置（第几个 `select`）找控件，因为步骤说明是普通 `div`，没和控件关联；在线上用脚本扫描主要编辑界面（属性页、连接页、编辑连线、新建连接），新建连接里"当前设备的接口"下拉框没有名称，资产库搜索框只有占位文字（目标设备、目标端口下拉框和线长、连接名称输入框同样没有，扫描时它们还没出现）。现在 `ConnectionsEditor.jsx` 的三个下拉框加了 `aria-label`"当前设备的接口""目标设备""目标端口"，两个输入框"长度(m)""连接名称"，和可见说明一致（去掉"1. ""2. "这类编号）；`LibraryBrowser.jsx` 搜索框"搜索设备"。外观不变，所以没有截图对比。`e2e/manual-connection.spec.mjs` 改用这些名称找控件。本地 build 上同一个扫描（新建连接选到第 4 步）四个界面都是 0 个无名控件。`npm test` 441，lint，build，Chrome 桌面和手机 UI 全量 149 通过 + 1 跳过。还剩：推送后看 CI。

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { encodeShareLink } from '../src/domain/share-link.js';
-import { openProject, waitForModelDownloads } from './project-fixture.mjs';
+import { openProject, waitForSceneDownloads } from './project-fixture.mjs';
 
 const guide = page => page.getByRole('dialog', { name: '新手引导', exact: true });
 
@@ -73,7 +73,7 @@ test('the guide moves by keyboard, stays dismissed, and can be reopened', async 
 
   // Reload only once the 3D models have finished downloading: iPhone WebKit
   // reports each download a reload cancels as a page error.
-  await waitForModelDownloads(page);
+  await waitForSceneDownloads(page);
   await page.reload();
   await expect(page.getByRole('button', { name: '桌面模板', exact: true })).toBeVisible();
   await expect(dialog).toHaveCount(0);
@@ -94,7 +94,7 @@ test('opening a share link does not show the guide or mark it seen', async ({ pa
   }, { origin: 'http://127.0.0.1:5174', pathname: '/', search: '' });
   const evidence = await openProject(page, [], [], { saved: false });
   await page.evaluate(nextHash => { window.location.hash = nextHash; }, link.hash);
-  await waitForModelDownloads(page); // see the reload above
+  await waitForSceneDownloads(page); // see the reload above
   await page.reload();
   await expect(page.getByRole('region', { name: '只读分享', exact: true })).toBeVisible();
   await expect(guide(page)).toHaveCount(0);

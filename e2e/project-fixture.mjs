@@ -38,6 +38,7 @@ export async function openProject(page, objects, connections = [], { saved = tru
   page.on('console', message => {
     if (message.type() === 'error') errors.push(message.text());
   });
+  trackDownloads(page);
   // The project is seeded into this browser's storage once per tab (a reload
   // must show what the user saved, not the seed). Projects never go to a
   // server, so any API request is recorded as unexpected.
@@ -65,7 +66,7 @@ export async function openProject(page, objects, connections = [], { saved = tru
     });
   }
   // Room for every request in the resource timing list (Vite's dev server
-  // loads hundreds of modules), so waitForModelDownloads can see the models.
+  // loads hundreds of modules), so waitForSceneDownloads can see the models.
   await page.addInitScript(() => performance.setResourceTimingBufferSize(5000));
   await page.goto('/');
   await expect(page).toHaveTitle('DeskLab');
@@ -77,16 +78,36 @@ export async function openProject(page, objects, connections = [], { saved = tru
 const MODEL_FILES = [...new Set(DEVICE_CATALOG.flatMap(({ models }) => models)
   .map(model => model.assetUrl).filter(Boolean))];
 
+// Requests each page has started and not yet finished or failed.
+const downloadsInFlight = new WeakMap();
+
+function trackDownloads(page) {
+  if (downloadsInFlight.has(page)) return;
+  const inFlight = new Set();
+  downloadsInFlight.set(page, inFlight);
+  page.on('request', request => inFlight.add(request));
+  page.on('requestfinished', request => inFlight.delete(request));
+  page.on('requestfailed', request => inFlight.delete(request));
+}
+
 /**
- * Waits until this page has finished downloading every catalog model (the 3D
- * view fetches all of them once it loads). Call it before a reload: iPhone
- * WebKit reports each download a reload cancels as a page error. Waiting
- * for 'networkidle' is not enough, since Playwright marks it once per page
- * load, possibly before the models are requested.
+ * Waits until the 3D view has finished downloading: every catalog model (it
+ * fetches all of them once it loads), then nothing in flight for half a
+ * second (the axis label font, anything else it loads). Call it before a
+ * reload: iPhone WebKit reports each download a reload cancels as a page
+ * error. 'networkidle' is not enough, since Playwright marks it once per page
+ * load, possibly before the 3D view starts its downloads. Pages must have
+ * been opened with openProject.
  */
-export async function waitForModelDownloads(page) {
+export async function waitForSceneDownloads(page) {
   await page.waitForFunction(files => {
     const done = new Set(performance.getEntriesByType('resource').map(entry => new URL(entry.name).pathname));
     return files.every(file => done.has(file));
   }, MODEL_FILES);
+  const inFlight = downloadsInFlight.get(page);
+  let quietSince = Date.now();
+  while (Date.now() - quietSince < 500) {
+    if (inFlight.size > 0) quietSince = Date.now();
+    await page.waitForTimeout(50);
+  }
 }
