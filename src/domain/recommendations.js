@@ -17,6 +17,15 @@ function ceilLength(value) {
   return Math.ceil(value * 100) / 100;
 }
 
+// A cable that auto-wiring adds, or that a free fix lengthens, is sized like
+// a template's (scene-builder.js): the shortest common length that covers
+// its route between the two ports plus 10%. `fallback` (metres) is used when
+// a port has no position to measure from.
+function autoCableLength(ends, objects, fallback) {
+  const status = evaluateConnectionLength({ ...ends, length: 1 }, objects);
+  return standardCableLength(status ? status.recommendedLength : fallback);
+}
+
 function hasSameOwnValues(current, next) {
   const currentKeys = Object.keys(current || {});
   const nextKeys = Object.keys(next || {});
@@ -267,7 +276,9 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
         const bestSource = findNearestFreePowerSource(object, port, actionableObjects, occupiedPorts, poweredObjectIds);
 
         if (bestSource) {
-          const length = ceilLength(Math.max(1.5, bestSource.distance * 1.1 + 0.3));
+          const length = autoCableLength({
+            fromObjectId: bestSource.device.id, fromPortId: bestSource.port.id, toObjectId: object.id, toPortId: port.id,
+          }, actionableObjects, Math.max(1.5, bestSource.distance * 1.1 + 0.3));
           const cableType = inferCableType(bestSource.port, port);
           const sourceNeedsPower = requiresPowerButIsUnpowered(bestSource.device, poweredObjectIds);
           suggestions.push({
@@ -303,7 +314,7 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
       const connection = actionableConnections.find(candidate => candidate.id === connectionId);
       const status = connection && evaluateConnectionLength(connection, objects);
       if (!status) continue;
-      const length = ceilLength(status.recommendedLength);
+      const length = standardCableLength(status.recommendedLength);
       if (length <= connection.length) continue;
       suggestions.push({
         id: `extend-cable:${connectionId}`,
@@ -353,7 +364,9 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
       }
 
       if (bestDistributor) {
-        const length = ceilLength(Math.max(1.0, bestDistributor.distance * 1.1 + 0.3));
+        const length = autoCableLength({
+          fromObjectId: bestDistributor.device.id, fromPortId: bestDistributor.port.id, toObjectId: object.id, toPortId: port.id,
+        }, actionableObjects, Math.max(1.0, bestDistributor.distance * 1.1 + 0.3));
         suggestions.push({
           id: `auto-network:${object.id}:${port.id}`,
           code: 'auto_network_device',
@@ -431,7 +444,9 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
       if (bestDisplay) {
         const cableType = inferCableType(port, bestDisplay.port);
         const typeLabel = { hdmi: 'HDMI', displayport: 'DP', usb_c: 'USB-C' }[port.type] || port.type;
-        const length = ceilLength(Math.max(1.0, bestDisplay.distance * 1.1 + 0.3));
+        const length = autoCableLength({
+          fromObjectId: object.id, fromPortId: port.id, toObjectId: bestDisplay.device.id, toPortId: bestDisplay.port.id,
+        }, actionableObjects, Math.max(1.0, bestDisplay.distance * 1.1 + 0.3));
         suggestions.push({
           id: `auto-display:${object.id}:${port.id}`,
           code: 'auto_connect_display',
