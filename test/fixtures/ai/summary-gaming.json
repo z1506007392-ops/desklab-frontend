@@ -406,7 +406,7 @@
       "to": "ultrawide-monitor-1:ac-in",
       "type": "power",
       "length": 1.5,
-      "needed": 1.04
+      "needed": 1.18
     },
     {
       "id": "c-power-strip-ac-out-3-power-adapter-laptop-ac-in",
@@ -430,7 +430,7 @@
       "to": "laptop:dc-in",
       "type": "power",
       "length": 1.5,
-      "needed": 1.1
+      "needed": 1.25
     },
     {
       "id": "c-power-adapter-router-dc-out-router-dc-in",
@@ -445,8 +445,8 @@
       "from": "desktop-pc:dp-out",
       "to": "ultrawide-monitor-1:dp-in",
       "type": "displayport",
-      "length": 1.5,
-      "needed": 1.33
+      "length": 1.8,
+      "needed": 1.58
     },
     {
       "id": "c-laptop-hdmi-out-ultrawide-monitor-1-hdmi-in",
@@ -454,7 +454,7 @@
       "to": "ultrawide-monitor-1:hdmi-in",
       "type": "hdmi",
       "length": 1,
-      "needed": 0.63
+      "needed": 0.82
     },
     {
       "id": "c-router-lan-1-desktop-pc-eth-1",

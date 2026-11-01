@@ -91,3 +91,18 @@ test('a project with no cables says there is nothing to buy', async ({ page }) =
   await expect(dialog.getByRole('button', { name: '复制清单', exact: true })).toHaveCount(0);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
+
+test('a cable from the floor to the desk is bought long enough to go over the desk edge', async ({ page }) => {
+  const evidence = await openProject(page, [], [], { room: { length: 4, width: 3.5, height: 2.7 } });
+  await page.getByRole('button', { name: '桌面模板', exact: true }).click();
+  await page.getByRole('dialog', { name: '桌面模板', exact: true })
+    .getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('menu', { name: '更多', exact: true }).getByRole('menuitem', { name: '购线清单', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '购线清单', exact: true });
+  // Tower on the floor to the screen on the desk: 1.21 m in a straight line
+  // through the desktop (1.5 m to buy), 1.44 m over the back edge.
+  await expect(dialog.getByRole('listitem').filter({ hasText: 'DP 线' })).toHaveText(['2 米 DP 线×1']);
+  await expect(dialog).toContainText('不穿过桌面');
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});

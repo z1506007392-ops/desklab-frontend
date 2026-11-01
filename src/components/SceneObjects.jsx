@@ -5,7 +5,7 @@ import { Billboard, Edges, Line, Text, useGLTF } from '@react-three/drei';
 
 import { createCameraPoseSynchronizer } from '../domain/camera-snapshot.js';
 import { DEVICE_CATALOG, getModelDefaultScale } from '../domain/catalog.js';
-import { evaluateConnectionLength, getConnectionEndpoints } from '../domain/connections.js';
+import { evaluateConnectionLength, getConnectionEndpoints, getConnectionRoute } from '../domain/connections.js';
 import { buildPowerGraph, computeDevicePowerLoad, classifyPowerLoad, getEffectiveMaxLoad } from '../domain/analysis.js';
 import { toThreePosition, toThreeZRotation } from '../domain/coordinates.js';
 import { applyGlbHighlight } from '../domain/glb-highlight.js';
@@ -85,22 +85,27 @@ export function RoomWalls({ room }) {
   );
 }
 
-const CableLine = React.memo(function CableLine({ connection, fromObject, toObject }) {
-  const endpoints = getConnectionEndpoints(connection, [fromObject, toObject]);
-  if (!endpoints) return null;
-  const lengthStatus = evaluateConnectionLength(connection, [fromObject, toObject], endpoints);
+// Lifts the drawn cable a little off the desktop it lies on, so the line is
+// not hidden in the board's surface.
+const CABLE_DRAW_LIFT = 0.006;
+
+// A cable is drawn along its route (over the desk edge, not through the
+// desktop). Only cables whose route or data changed redraw during a drag.
+const CableLine = React.memo(function CableLine({ connection, points, dashed }) {
   return (
     <Line
-      points={[toThreePosition(endpoints.from), toThreePosition(endpoints.to)]}
+      points={points.map(point => toThreePosition({ ...point, z: point.z + CABLE_DRAW_LIFT }))}
       color={CABLE_COLORS[connection.cableType] || CABLE_COLORS.other}
       lineWidth={3}
-      dashed={Boolean(lengthStatus && !lengthStatus.sufficient)}
+      dashed={dashed}
       dashSize={0.15}
       gapSize={0.1}
       raycast={() => null}
     />
   );
-});
+}, (previous, next) => previous.connection === next.connection
+  && previous.dashed === next.dashed
+  && previous.routeKey === next.routeKey);
 
 export function ConnectionsRenderer({ connections, objects }) {
   const objectById = new Map(objects.map(object => [object.id, object]));
@@ -110,12 +115,17 @@ export function ConnectionsRenderer({ connections, objects }) {
         const fromObject = objectById.get(connection.fromObjectId);
         const toObject = objectById.get(connection.toObjectId);
         if (!fromObject || !toObject) return null;
+        const endpoints = getConnectionEndpoints(connection, objects, objectById);
+        const route = endpoints && getConnectionRoute(connection, objects, endpoints);
+        if (!route) return null;
+        const lengthStatus = evaluateConnectionLength(connection, objects, endpoints);
         return (
           <CableLine
             key={connection.id}
             connection={connection}
-            fromObject={fromObject}
-            toObject={toObject}
+            points={route.points}
+            routeKey={route.points.map(point => `${point.x.toFixed(4)},${point.y.toFixed(4)},${point.z.toFixed(4)}`).join(' ')}
+            dashed={Boolean(lengthStatus && !lengthStatus.sufficient)}
           />
         );
       })}

@@ -130,7 +130,7 @@ function appendLengthIssues(issues, connection, objects) {
       code: 'short_cable',
       severity: 'warning',
       title: `线材“${connection.name}”可能过短`,
-      description: `线长 ${lengthStatus.cableLength.toFixed(2)}m，接口端点估算距离 ${lengthStatus.distance.toFixed(2)}m，差 ${Math.abs(lengthStatus.slack).toFixed(2)}m。`,
+      description: `线长 ${lengthStatus.cableLength.toFixed(2)}m，估算走线长度 ${lengthStatus.distance.toFixed(2)}m，差 ${Math.abs(lengthStatus.slack).toFixed(2)}m。`,
       connectionIds: [connection.id],
       objectIds: [connection.fromObjectId, connection.toObjectId],
     });

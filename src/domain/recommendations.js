@@ -671,7 +671,7 @@ export function applyImprovement(project, suggestion) {
       || patch.newConnection.cableType !== inferCableType(fromPort, toPort)) {
       return project;
     }
-    const lengthStatus = evaluateConnectionLength(patch.newConnection, [fromObject, toObject]);
+    const lengthStatus = evaluateConnectionLength(patch.newConnection, [...objectsById.values()]);
     if (!lengthStatus?.hasRecommendedSlack) return project;
     if (connections.some(connection => connection.id === patch.newConnection.id)) {
       return project;

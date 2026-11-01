@@ -1,3 +1,4 @@
+import { routeCable } from './cable-route.js';
 import { getPortRecords } from './port-collections.js';
 
 export const CABLE_SERVICE_LOOP_FACTOR = 1.1;
@@ -154,9 +155,23 @@ export function getConnectionEndpoints(connection, objects, objectById = null) {
   return from && to ? { from, to } : null;
 }
 
-export function evaluateConnectionLength(connection, objects, knownEndpoints = null) {
+/**
+ * The way the cable runs between its two ports (cable-route.js): the points
+ * and the length. `objects` should be the whole room, so the desks the
+ * devices stand on are known. Null when an end or its position is missing.
+ */
+export function getConnectionRoute(connection, objects, knownEndpoints = null) {
   const endpoints = knownEndpoints || getConnectionEndpoints(connection, objects);
-  const distance = calculatePositionDistance(endpoints?.from, endpoints?.to);
+  if (!isFinitePosition(endpoints?.from) || !isFinitePosition(endpoints?.to)) return null;
+  const fromObject = objects.find(object => object.id === connection.fromObjectId);
+  const toObject = objects.find(object => object.id === connection.toObjectId);
+  return routeCable(endpoints.from, endpoints.to, fromObject, toObject, objects);
+}
+
+// `distance` is how far the cable has to run (the route above), not the
+// straight line between the plugs.
+export function evaluateConnectionLength(connection, objects, knownEndpoints = null) {
+  const distance = getConnectionRoute(connection, objects, knownEndpoints)?.length ?? null;
   const cableLength = Number(connection.length);
 
   if (distance === null || !Number.isFinite(cableLength) || cableLength <= 0) {

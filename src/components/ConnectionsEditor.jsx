@@ -185,7 +185,7 @@ const ConnectionsEditor = ({
     const lengthStatus = evaluateConnectionLength(newConn, objects);
     if (lengthStatus && !lengthStatus.sufficient) {
       const shouldCreate = window.confirm(
-        `当前线长 ${lengthStatus.cableLength.toFixed(2)}m，小于接口端点估算距离 ${lengthStatus.distance.toFixed(2)}m。\n仍要创建这条连接吗？`
+        `当前线长 ${lengthStatus.cableLength.toFixed(2)}m，比估算的走线长度 ${lengthStatus.distance.toFixed(2)}m 短。\n仍要创建这条连接吗？`
       );
       if (!shouldCreate) return;
     }
@@ -348,7 +348,7 @@ const ConnectionsEditor = ({
                 </div>
                 {draftLengthStatus && (
                   <div className={`cable-distance ${draftLengthStatus.hasRecommendedSlack ? 'cable-distance-ok' : 'cable-distance-warning'}`}>
-                    端点距离 {draftLengthStatus.distance.toFixed(2)}m，建议至少 {draftLengthStatus.recommendedLength.toFixed(2)}m；
+                    走线长度约 {draftLengthStatus.distance.toFixed(2)}m，建议至少 {draftLengthStatus.recommendedLength.toFixed(2)}m；
                     {draftLengthStatus.hasRecommendedSlack
                       ? `建议余量 ${draftLengthStatus.recommendedSlack.toFixed(2)}m`
                       : draftLengthStatus.sufficient

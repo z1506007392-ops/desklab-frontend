@@ -1,7 +1,8 @@
-import { getConnectionEndpoints, calculatePositionDistance } from './connections.js';
+import { getConnectionRoute } from './connections.js';
 
-// Straight-line distance between the two plugs is tight. This extra length
-// covers the bend at each end. The shop size is then the next common length.
+// The cable's route (over the desk edge, not through the desktop) is tight.
+// This extra length covers the bend at each end. The shop size is then the
+// next common length.
 export const CABLE_SHOP_SLACK_METRES = 0.2;
 
 // Lengths a home user can usually buy, in metres. Anything longer steps up
@@ -47,9 +48,8 @@ export function buildCableShoppingList(connections, objects) {
   const items = [];
   const byKey = new Map();
   for (const connection of Array.isArray(connections) ? connections : []) {
-    const endpoints = getConnectionEndpoints(connection, objects || []);
-    const distance = calculatePositionDistance(endpoints?.from, endpoints?.to);
-    const length = shopCableLength(distance);
+    const route = getConnectionRoute(connection, objects || []);
+    const length = shopCableLength(route?.length ?? NaN);
     if (length === null) continue;
     const name = `${formatMetres(length)} ${shopCableName(connection.cableType)}`;
     const existing = byKey.get(name);

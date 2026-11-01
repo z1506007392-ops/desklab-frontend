@@ -1,5 +1,6 @@
 import { evaluateConnectionLength, standardCableLength } from './connections.js';
 import { getRotatedFootprint, horizontalFootprintsOverlap } from './geometry.js';
+import { isDesk } from './desks.js';
 import { findSupportingObject } from './layout-analysis.js';
 import { getRecordItems } from './record-collections.js';
 
@@ -27,8 +28,7 @@ export const HEURISTIC_LIMITS = Object.freeze({
 });
 
 const MONITOR_MODELS = new Set(['monitor-24', 'monitor-27', 'ultrawide-monitor']);
-// Old saves have gaming-desk, standing-desk, l-desk; 'desktop-pc' is not a desk.
-export const isDesk = object => object.modelId === 'office-desk' || /(^|[-_])desk$/.test(object.type ?? '');
+export { isDesk };
 const isMonitor = object => MONITOR_MODELS.has(object.modelId) || object.type === 'monitor';
 const isLaptop = object => object.modelId === 'laptop-15' || object.type === 'laptop';
 const isTower = object => object.modelId === 'desktop-pc' || object.type === 'desktop-pc';

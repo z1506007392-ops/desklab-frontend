@@ -25,7 +25,7 @@ export default function CableShoppingDialog({ items, onCopy, onClose }) {
           </button>
         </div>
         <div className="modal-body">
-          <p className="panel-note">按两端插头之间的直线距离，加上弯折余量，再向上取到常见的线长。这里不标价格，也不链接商店。</p>
+          <p className="panel-note">按线实际要走的路（桌上的设备先落到桌面，再从桌子后边或侧边绕下去，不穿过桌面），加上弯折余量，再向上取到常见的线长。这里不标价格，也不链接商店。</p>
           {items.length === 0 ? (
             <div className="empty-state">当前没有需要买的线</div>
           ) : (
