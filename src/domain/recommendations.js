@@ -309,7 +309,7 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
         id: `extend-cable:${connectionId}`,
         code: 'extend_cable',
         title: `线材“${connection.name}”延长到约 ${length}m`,
-        description: '增加线材长度以满足直连距离与 10% 插拔/绕行余量，属于免费布线调整建议。',
+        description: '让线长够走线长度，再留 10% 插拔余量，属于免费布线调整建议。',
         connectionIds: [connectionId],
         patch: { connectionId, length },
       });

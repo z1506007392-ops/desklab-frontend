@@ -70,9 +70,9 @@ export default function ConnectionsListDialog({ connections, objects, onClose, o
                         <span className="panel-note">{describeCableType(connection.cableType)}（{connection.length}m）</span>
                         {lengthStatus && (
                           <div className={`cable-distance ${lengthStatus.hasRecommendedSlack ? 'cable-distance-ok' : 'cable-distance-warning'}`}>
-                            端点 {lengthStatus.distance.toFixed(2)}m / 建议 {lengthStatus.recommendedLength.toFixed(2)}m
+                            走线 {lengthStatus.distance.toFixed(2)}m / 建议 {lengthStatus.recommendedLength.toFixed(2)}m
                             {!lengthStatus.hasRecommendedSlack && (
-                              lengthStatus.sufficient ? '，维护余量不足' : `，直连不足 ${Math.abs(lengthStatus.slack).toFixed(2)}m`
+                              lengthStatus.sufficient ? '，维护余量不足' : `，还差 ${Math.abs(lengthStatus.slack).toFixed(2)}m`
                             )}
                           </div>
                         )}

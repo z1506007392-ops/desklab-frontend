@@ -353,7 +353,7 @@ const ConnectionsEditor = ({
                       ? `建议余量 ${draftLengthStatus.recommendedSlack.toFixed(2)}m`
                       : draftLengthStatus.sufficient
                         ? `维护余量不足 ${Math.abs(draftLengthStatus.recommendedSlack).toFixed(2)}m`
-                        : `直连不足 ${Math.abs(draftLengthStatus.slack).toFixed(2)}m`}
+                        : `还差 ${Math.abs(draftLengthStatus.slack).toFixed(2)}m`}
                   </div>
                 )}
                 <button onClick={handleAdd} className="ui-button ui-button-primary connection-confirm">
@@ -433,11 +433,11 @@ const ConnectionsEditor = ({
                 </div>
                 {lengthStatus && (
                   <div className={`cable-distance ${lengthStatus.hasRecommendedSlack ? 'cable-distance-ok' : 'cable-distance-warning'}`}>
-                    端点 {lengthStatus.distance.toFixed(2)}m / 建议 {lengthStatus.recommendedLength.toFixed(2)}m / 线长 {lengthStatus.cableLength.toFixed(2)}m
+                    走线 {lengthStatus.distance.toFixed(2)}m / 建议 {lengthStatus.recommendedLength.toFixed(2)}m / 线长 {lengthStatus.cableLength.toFixed(2)}m
                     {!lengthStatus.hasRecommendedSlack && (
                       lengthStatus.sufficient
                         ? `（维护余量不足 ${Math.abs(lengthStatus.recommendedSlack).toFixed(2)}m）`
-                        : `（直连不足 ${Math.abs(lengthStatus.slack).toFixed(2)}m）`
+                        : `（还差 ${Math.abs(lengthStatus.slack).toFixed(2)}m）`
                     )}
                   </div>
                 )}
