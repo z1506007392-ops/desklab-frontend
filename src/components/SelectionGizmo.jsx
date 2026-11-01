@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useThree } from '@react-three/fiber';
 import { TransformControls } from '@react-three/drei';
 
@@ -65,6 +65,16 @@ export default function SelectionGizmo({
 }) {
   const group = useRef(null);
   const controlsRef = useRef(null);
+  // The handles are painted on the controls instance actually drawn. Under
+  // React's StrictMode double mount, a ref read once at mount can be a copy
+  // that never reaches the scene, so the instance arrives through a callback
+  // ref and is painted whenever it changes.
+  const [controlsVersion, setControlsVersion] = useState(0);
+  const attachControls = useCallback(instance => {
+    if (controlsRef.current === instance) return;
+    controlsRef.current = instance;
+    setControlsVersion(version => version + 1);
+  }, []);
   const dragging = useRef(false);
   const objectRef = useRef(object);
   const onChangeRef = useRef(onChange);
@@ -81,7 +91,7 @@ export default function SelectionGizmo({
 
   useLayoutEffect(() => {
     const controls = controlsRef.current;
-    if (!controls?.updateMatrixWorld) return;
+    if (!controls?.updateMatrixWorld) return undefined;
     paintHandleColors(controls.gizmo?.gizmo?.translate);
     paintHandleColors(controls.gizmo?.gizmo?.rotate);
     const original = controls.updateMatrixWorld;
@@ -92,7 +102,7 @@ export default function SelectionGizmo({
     return () => {
       controls.updateMatrixWorld = original;
     };
-  }, []);
+  }, [controlsVersion]);
 
   useLayoutEffect(() => {
     if (!group.current || dragging.current) return;
@@ -136,7 +146,7 @@ export default function SelectionGizmo({
     <>
       <group ref={group} />
       <TransformControls
-        ref={controlsRef}
+        ref={attachControls}
         object={group}
         enabled={enabled}
         mode={mode === 'rotate' ? 'rotate' : 'translate'}
