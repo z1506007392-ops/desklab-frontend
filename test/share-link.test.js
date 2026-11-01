@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { Buffer } from 'node:buffer';
 import { randomBytes } from 'node:crypto';
 
 import {
@@ -93,9 +94,10 @@ function asOpened(project) {
     objects: hydrateProjectObjects(clean.objects).map(({ id, position, rotation, scale, ...rest }) => ({
       ...rest, at: ids.get(id), position: vector(position), rotation: vector(rotation), scale: vector(scale),
     })),
-    connections: (clean.connections ?? []).map(({ id, fromObjectId, toObjectId, length, ...rest }) => ({
-      ...rest, from: ids.get(fromObjectId), to: ids.get(toObjectId), length: mm(length),
-    })),
+    connections: (clean.connections ?? []).map(connection => {
+      const { id: _id, fromObjectId, toObjectId, length, ...rest } = connection;
+      return { ...rest, from: ids.get(fromObjectId), to: ids.get(toObjectId), length: mm(length) };
+    }),
     camera: clean.camera && { position: vector(clean.camera.position), target: vector(clean.camera.target) },
   };
 }
