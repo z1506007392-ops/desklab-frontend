@@ -264,15 +264,6 @@ const ConnectionsEditor = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="panel-section">
-        <div className="panel-field">
-          <span className="panel-field-label">当前设备</span>
-          <div className="panel-field-content">
-            <div className="panel-text-readonly panel-text-strong">{selectedObj.name}</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="panel-section">
       {!isDraftActive && Object.keys(connectionDraft).length === 0 ? (
         <button onClick={handleStartConnection} className="ui-button ui-button-primary ui-full-width">
           新建连接

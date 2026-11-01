@@ -625,6 +625,11 @@
   padding: 16px;
 }
 
+.side-panel-picker {
+  margin: 0;
+  padding: 12px 16px 0;
+}
+
 .panel-section {
   margin-bottom: 20px;
   padding-bottom: 20px;

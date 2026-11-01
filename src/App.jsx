@@ -51,6 +51,7 @@ import { getPurchaseGuidance } from './domain/purchase-guidance.js';
 import { buildTemplateScene } from './domain/desk-templates.js';
 import { buildShoppingList } from './domain/shopping-list.js';
 import { buildCableShoppingList } from './domain/cable-shopping-list.js';
+import { labelObjectsForPicker } from './domain/object-labels.js';
 import { hasSeenGuide, markGuideSeen } from './domain/onboarding.js';
 import { SHARE_LINK_MESSAGES, decodeShareLink, encodeShareLink } from './domain/share-link.js';
 import { applyAllAvailableImprovements, applyAllImprovements, applyImprovement, buildConnectionCompletion, buildFreeImprovements, buildRecommendations } from './domain/recommendations.js';
@@ -1191,6 +1192,7 @@ export default function App() {
   };
 
   const selectedObj = objects.find(o => o.id === selectedObjectId);
+  const devicePickerLabels = useMemo(() => labelObjectsForPicker(objects), [objects]);
   const handleApplyAiProject = (nextProject, label) => {
     if (!projectBaseEditable) return;
     recordHistory();
@@ -1832,6 +1834,25 @@ export default function App() {
               <button onClick={() => setIsPanelOpen(false)} className="side-panel-close" aria-label="关闭面板" title="关闭面板"><CloseIcon /></button>
             </div>
 
+            {/* Picking a device here works without the 3D view: for the keyboard,
+                and for small things under or behind others. */}
+            <div className="panel-field side-panel-picker">
+              <label className="panel-field-label" htmlFor="panel-device-picker">设备</label>
+              <div className="panel-field-content">
+                <select
+                  id="panel-device-picker"
+                  className="ui-select ui-full-width"
+                  value={selectedObj ? selectedObj.id : ''}
+                  onChange={event => setSelectedObjectId(event.target.value || null)}
+                >
+                  <option value="">-- 选择设备 --</option>
+                  {objects.map(object => (
+                    <option key={object.id} value={object.id}>{devicePickerLabels.get(object.id)}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div
               className="side-panel-content"
               role="tabpanel"
@@ -1851,7 +1872,7 @@ export default function App() {
                 ) : (
                   <div className="empty-state">
                     <strong>未选中设备</strong><br />
-                    在 3D 画面里点选一个设备，<br />就可以在这里编辑它。
+                    在 3D 画面里点选一个设备，<br />或从上面的列表里选，<br />就可以在这里编辑它。
                   </div>
                 )
               )}
