@@ -253,3 +253,74 @@ test('a desk too small for the keyboard leaves it out with a note instead of put
   assert.ok(scene.notes.includes('桌面上放不下键盘，已跳过。'));
   for (const object of [...byModel(scene, 'mouse')]) assert.ok(relativeToDesk(scene, object).y <= 0, 'anything placed is on the seat half');
 });
+
+const allExtras = ['keyboard', 'mouse', 'desk-lamp', 'speakers', 'game-console'].map(modelId => ({ modelId, count: 1 }));
+
+test('the lamp takes the back corner on the seat\'s left and the speakers the one on its right', () => {
+  const scene = buildDeskScene({ devices: [{ modelId: 'monitor-27', count: 1 }, { modelId: 'desk-lamp', count: 1 }, { modelId: 'speakers', count: 1 }], desk: { length: 1.4, depth: 0.7 } });
+  const at = modelId => relativeToDesk(scene, byModel(scene, modelId)[0]);
+  assert.ok(seatRightOf(at('speakers'), at('desk-lamp')), 'speakers on the right, lamp on the left');
+  for (const modelId of ['desk-lamp', 'speakers']) {
+    assert.ok(at(modelId).y > 0.2, `${modelId} at the back`);
+    assert.ok(Math.abs(at(modelId).z) < 1e-9, `${modelId} on the desktop`);
+    assert.equal(byModel(scene, modelId)[0].rotation.z, 180);
+  }
+  assertReadyToUse(scene, 'monitor, lamp and speakers');
+});
+
+test('when screens fill the back edge the lamp and speakers move to the sides', () => {
+  const scene = buildDeskScene({ devices: [{ modelId: 'monitor-24', count: 3 }, { modelId: 'desktop-pc', count: 1 }, ...allExtras], desk: { length: 1.8, depth: 0.7 } });
+  for (const modelId of ['desk-lamp', 'speakers']) {
+    assert.equal(byModel(scene, modelId).length, 1, `${modelId} placed`);
+    assert.ok(Math.abs(relativeToDesk(scene, byModel(scene, modelId)[0]).y) < 1e-9, `${modelId} halfway along a side`);
+  }
+  assertReadyToUse(scene, 'three screens and every extra');
+});
+
+test('a console sits on the floor on the seat\'s right and is powered, wired to a screen and to the router', () => {
+  const scene = buildDeskScene({ devices: [{ modelId: 'monitor-27', count: 1 }, { modelId: 'router', count: 1 }, { modelId: 'game-console', count: 1 }], desk: { length: 1.4, depth: 0.7 } });
+  const [gameConsole] = byModel(scene, 'game-console');
+  const desk = byModel(scene, 'office-desk')[0];
+  assert.ok(gameConsole.position.x < desk.position.x - desk.scale.x / 2, 'beside the desk on the seat\'s right');
+  assert.ok(Math.abs(gameConsole.position.z - gameConsole.scale.z / 2) < 1e-9, 'on the floor');
+  const types = connectionsTo(scene, gameConsole.id).map(connection => connection.cableType)
+    .concat(scene.connections.filter(connection => connection.fromObjectId === gameConsole.id).map(connection => connection.cableType));
+  assert.deepEqual(types.sort(), ['ethernet', 'hdmi', 'power']);
+  assertReadyToUse(scene, 'screen, router and console');
+  assert.deepEqual(scene.notes, []);
+});
+
+test('a console without a free screen input is noted only when there are screens', () => {
+  const noScreens = buildDeskScene({ devices: [{ modelId: 'game-console', count: 1 }] });
+  assert.deepEqual(noScreens.notes, [], 'it goes to a TV the desk does not model');
+  const busy = buildDeskScene({ devices: [{ modelId: 'monitor-27', count: 1 }, { modelId: 'desktop-pc', count: 1 }, { modelId: 'laptop-15', count: 1 }, { modelId: 'game-console', count: 1 }], desk: { length: 1.6, depth: 0.8 } });
+  assert.ok(busy.notes.some(note => note.includes('游戏主机') && note.includes('HDMI')));
+});
+
+test('a desk with everything gets a second strip on the wall outlet, never a strip on a strip', () => {
+  const scene = buildDeskScene({
+    devices: [{ modelId: 'desktop-pc', count: 1 }, { modelId: 'laptop-15', count: 1 }, { modelId: 'monitor-24', count: 3 }, { modelId: 'router', count: 1 }, ...allExtras],
+    desk: { length: 2, depth: 0.8 },
+  });
+  const strips = byModel(scene, 'power-strip');
+  assert.equal(strips.length, 2);
+  for (const strip of strips) {
+    const [feed] = connectionsTo(scene, strip.id);
+    assert.equal(byModel(scene, 'wall-outlet')[0].id, feed.fromObjectId, `${strip.name} is fed by the wall outlet`);
+  }
+  assertReadyToUse(scene, 'everything');
+});
+
+test('common setups with every extra stay clean on ordinary desks', () => {
+  const computers = [[{ modelId: 'desktop-pc', count: 1 }], [{ modelId: 'laptop-15', count: 1 }], [{ modelId: 'desktop-pc', count: 1 }, { modelId: 'laptop-15', count: 1 }]];
+  const screens = [[], [{ modelId: 'monitor-27', count: 1 }], [{ modelId: 'monitor-24', count: 2 }], [{ modelId: 'ultrawide-monitor', count: 1 }]];
+  for (const desk of [{ length: 1.4, depth: 0.7 }, { length: 1.6, depth: 0.8 }]) {
+    for (const computer of computers) {
+      for (const screen of screens) {
+        const scene = buildDeskScene({ devices: [...computer, ...screen, { modelId: 'router', count: 1 }, ...allExtras], desk });
+        const label = `${desk.length}m ${[...computer, ...screen].map(({ modelId, count }) => `${modelId}×${count}`).join(' ')}`;
+        assertReadyToUse(scene, label);
+      }
+    }
+  }
+});

@@ -28,6 +28,9 @@ export const DESK_SCENE_DEVICE_LIMITS = Object.freeze({
   router: 1,
   keyboard: 1,
   mouse: 1,
+  'desk-lamp': 1,
+  speakers: 1,
+  'game-console': 1,
 });
 const PERIPHERAL_MODEL_IDS = ['keyboard', 'mouse'];
 // The front row of the desk: keyboard in front of the seat, mouse to its
@@ -38,6 +41,11 @@ const PERIPHERAL_MODEL_IDS = ['keyboard', 'mouse'];
 const FRONT_MARGIN = 0.06;
 const ROW_GAP = 0.06;
 const SEAT_RIGHT = -1;
+// The back corners: the lamp on the seat's left (a right hand writing does
+// not shade the page), the speakers on its right; each tries the other
+// corner, then the middle of either side edge, if the screens are in the way.
+const BACK_CORNER_ITEMS = [['desk-lamp', -SEAT_RIGHT], ['speakers', SEAT_RIGHT]];
+const CORNER_MARGIN = 0.05;
 const MONITOR_MODEL_IDS = new Set(['monitor-24', 'monitor-27', 'ultrawide-monitor']);
 
 // Desk sizes a home user plausibly has, in metres.
@@ -168,10 +176,11 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
 
   const pcTemplate = findModelTemplate({ modelId: 'desktop-pc' });
   const routerTemplate = findModelTemplate({ modelId: 'router' });
+  const consoleTemplate = findModelTemplate({ modelId: 'game-console' });
+  const sideWidth = Math.max(pcTemplate.defaultScale.x, routerTemplate.defaultScale.x, consoleTemplate.defaultScale.x);
   const room = {
     ...DEFAULT_ROOM,
-    length: Math.max(DEFAULT_ROOM.length,
-      deskScale.x + 2 * (SIDE_GAP + Math.max(pcTemplate.defaultScale.x, routerTemplate.defaultScale.x)) + 0.4),
+    length: Math.max(DEFAULT_ROOM.length, deskScale.x + 2 * (SIDE_GAP + sideWidth) + 0.4),
   };
 
   const deskBackY = room.width / 2 - WALL_GAP;
@@ -270,6 +279,44 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
     objects.push(placed.object);
   }
 
+  const cornerItems = [];
+  for (const [modelId, preferredSide] of BACK_CORNER_ITEMS) {
+    if (!counts.get(modelId)) continue;
+    const template = findModelTemplate({ modelId });
+    const size = template.defaultScale;
+    // Back corners first; when screens fill the back edge, the middle of a
+    // side edge, between the keyboard row and the screens.
+    const spots = [preferredSide, -preferredSide].flatMap(side => [
+      { side, y: deskBackY - CORNER_MARGIN - size.y / 2 },
+    ]).concat([preferredSide, -preferredSide].map(side => ({ side, y: deskY })));
+    const fits = spots
+      .map(({ side, y }) => createObject(modelId, modelId, template.displayName, {
+        x: side * (deskScale.x / 2 - CORNER_MARGIN - size.x / 2),
+        y,
+        z: deskTop + size.z / 2,
+      }, 180))
+      .find(candidate => !objects.some(object => objectsOverlap(candidate, object)));
+    if (!fits) {
+      notes.push(`桌面上放不下${template.displayName}，已跳过。`);
+      continue;
+    }
+    objects.push(fits);
+    cornerItems.push(fits);
+  }
+
+  // A console on the floor beside the desk, on the seat's right, the
+  // other side from the tower.
+  let gameConsole = null;
+  if (counts.get('game-console')) {
+    const size = consoleTemplate.defaultScale;
+    gameConsole = createObject('game-console', 'game-console', consoleTemplate.displayName, {
+      x: SEAT_RIGHT * (deskScale.x / 2 + SIDE_GAP + size.x / 2),
+      y: deskY,
+      z: size.z / 2,
+    }, 180);
+    objects.push(gameConsole);
+  }
+
   // Power: wall outlet -> strip behind the desk -> every AC device; one adapter per DC device.
   const stripTemplate = findModelTemplate({ modelId: 'power-strip' });
   const strip = createObject('power-strip', 'power-strip', stripTemplate.displayName, {
@@ -316,11 +363,22 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
   };
 
   connect(outlet, 'ac-out-1', strip, 'ac-in', `${strip.name}电源线`);
-  const acLoads = [pc, ...monitorObjects, ...adapters.map(entry => entry.adapter)].filter(Boolean);
-  const freeAcOutputs = [
-    ...strip.ports.filter(port => port.type === 'ac_output').map(port => [strip, port.id]),
-    [outlet, 'ac-out-2'],
-  ];
+  const acLoads = [pc, ...monitorObjects, gameConsole, ...cornerItems, ...adapters.map(entry => entry.adapter)].filter(Boolean);
+  const stripOutputs = target => target.ports.filter(port => port.type === 'ac_output').map(port => [target, port.id]);
+  let freeAcOutputs = [...stripOutputs(strip), [outlet, 'ac-out-2']];
+  if (acLoads.length > freeAcOutputs.length) {
+    // A second strip on the outlet's other socket, along the back wall past
+    // the adapters (under the desk would read as inside it); strips are
+    // never plugged into each other.
+    const adapterSlots = 2 * (adapterTemplate.defaultScale.x + 0.05);
+    const secondStrip = createObject('power-strip', 'power-strip-2', `${stripTemplate.displayName} 2`, {
+      ...strip.position,
+      x: stripTemplate.defaultScale.x / 2 + 0.08 + adapterSlots + 0.05 + stripTemplate.defaultScale.x / 2,
+    });
+    objects.push(secondStrip);
+    connect(outlet, 'ac-out-2', secondStrip, 'ac-in', `${secondStrip.name}电源线`);
+    freeAcOutputs = [...stripOutputs(strip), ...stripOutputs(secondStrip)];
+  }
   for (const load of acLoads) {
     const next = freeAcOutputs.shift();
     if (!next) {
@@ -340,6 +398,7 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
   const videoOutputs = [
     ...(pc ? [[pc, 'dp-out', 'displayport'], [pc, 'hdmi-out', 'hdmi']] : []),
     ...(laptop ? [[laptop, 'hdmi-out', 'hdmi']] : []),
+    ...(gameConsole ? [[gameConsole, 'hdmi-out', 'hdmi']] : []),
   ];
   for (const [source, outputId, portType] of videoOutputs) {
     const candidates = monitorObjects
@@ -353,6 +412,12 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
     const label = portType === 'displayport' ? 'DP' : 'HDMI';
     connect(source, outputId, choice.monitor, choice.input.id, `${source.name}到${choice.monitor.name}的${label}线`);
   }
+  // Only worth a note when there are screens and none is free: with none,
+  // the console goes to a TV the desk does not model.
+  if (gameConsole && monitorObjects.length > 0
+    && !connections.some(connection => connection.fromObjectId === gameConsole.id && connection.cableType === 'hdmi')) {
+    notes.push(`“${gameConsole.name}”没有空着的显示器 HDMI 输入，HDMI 线暂未画。`);
+  }
   if (videoOutputs.length > 0) {
     for (const monitor of monitorObjects.filter(candidate => !fedMonitors.has(candidate.id))) {
       notes.push(`“${monitor.name}”暂时没有可用的视频输出，可能需要显卡上更多的接口。`);
@@ -361,6 +426,9 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
 
   if (router && pc) {
     connect(router, 'lan-1', pc, 'eth-1', `${pc.name}网线`);
+  }
+  if (router && gameConsole) {
+    connect(router, 'lan-2', gameConsole, 'eth-1', `${gameConsole.name}网线`);
   }
 
   // Frame the desk from the user's side. Camera poses use Three.js axes

@@ -119,3 +119,28 @@ test('a generated desk comes with a keyboard and mouse by default', async ({ pag
   await expect(page.getByRole('button', { name: /^布线检查/ })).toHaveAccessibleName('布线检查');
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
+
+test('a generated desk can include a lamp, speakers and a console', async ({ page }) => {
+  const evidence = await openProject(page, []);
+  await page.getByRole('button', { name: '桌面模板', exact: true }).click();
+  const picker = page.getByRole('dialog', { name: '桌面模板', exact: true });
+  // A desktop instead of the laptop: it feeds the screen through DP, which
+  // leaves the screen's HDMI input for the console.
+  await picker.getByRole('button', { name: '减少15 英寸笔记本', exact: true }).click();
+  await picker.getByRole('button', { name: '增加台式主机', exact: true }).click();
+  for (const name of ['台灯', '音箱', '游戏主机']) {
+    await picker.getByRole('button', { name: `增加${name}`, exact: true }).click();
+    await expect(picker.getByRole('group', { name }).getByLabel(`${name}数量`)).toHaveText('1');
+  }
+  await expect(picker.getByRole('list', { name: '生成提示' })).toHaveCount(0);
+  await picker.getByRole('button', { name: '生成桌面', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
+  if (await openPanel.isVisible()) await openPanel.click();
+  const devices = page.getByLabel('设备', { exact: true });
+  for (const name of ['台灯', '音箱', '游戏主机']) await expect(devices.locator('option', { hasText: name })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: /^布局检查/ })).toHaveAccessibleName('布局检查');
+  await expect(page.getByRole('button', { name: /^布线检查/ })).toHaveAccessibleName('布线检查');
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
