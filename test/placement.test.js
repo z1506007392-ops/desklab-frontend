@@ -243,3 +243,53 @@ test('on a turned desk, added devices face that desk\'s seat', () => {
   assert.equal(hints.includes('monitor_facing_away'), false);
 });
 
+
+// In the desk's own frame. From the seat the right hand is the desk's -x:
+// the 3D view mirrors project x (see placement.js).
+function localTo(desk, object) {
+  const radians = ((desk.rotation?.z ?? 0) * Math.PI) / 180;
+  const dx = object.position.x - desk.position.x;
+  const dy = object.position.y - desk.position.y;
+  return { x: dx * Math.cos(radians) + dy * Math.sin(radians), y: -dx * Math.sin(radians) + dy * Math.cos(radians) };
+}
+
+function addTo(objects, modelId, room = homeRoom) {
+  const { model, categoryId } = templateFor(modelId);
+  const result = placeCatalogObject({ modelTemplate: model, categoryId, room, id: modelId, objects });
+  assert.equal(result.valid, true, `${modelId} should find a place`);
+  return [...objects, result.object];
+}
+
+for (const turn of [0, 90]) {
+  test(`added peripherals go where the generator puts them, on a desk turned ${turn}°`, () => {
+    const { model, categoryId } = templateFor('office-desk');
+    const placedDesk = placeCatalogObject({ modelTemplate: model, categoryId, room: homeRoom, id: 'desk' }).object;
+    const desk = { ...placedDesk, rotation: { ...placedDesk.rotation, z: turn } };
+    let objects = addTo([desk], 'monitor-27');
+    for (const modelId of ['keyboard', 'mouse', 'desk-lamp', 'speakers', 'game-console']) objects = addTo(objects, modelId);
+    const at = modelId => localTo(desk, objects.find(object => object.modelId === modelId));
+    const halfX = desk.scale.x / 2;
+    const halfY = desk.scale.y / 2;
+
+    assert.ok(Math.abs(at('keyboard').x) < 1e-6, 'keyboard in front of the seat');
+    assert.ok(at('keyboard').y < -halfY + 0.2, 'keyboard near the front edge');
+    assert.ok(at('mouse').x < at('keyboard').x && Math.abs(at('mouse').y - at('keyboard').y) < 1e-6, 'mouse to the keyboard\'s right');
+    assert.ok(at('desk-lamp').x > halfX / 2 && at('desk-lamp').y > halfY / 2, 'lamp in the back corner on the left');
+    assert.ok(at('speakers').x < -halfX / 2 && at('speakers').y > halfY / 2, 'speakers in the back corner on the right');
+    const console_ = objects.find(object => object.modelId === 'game-console');
+    assert.ok(at('game-console').x < -halfX, 'console beside the desk on the right');
+    assert.ok(Math.abs(console_.position.z - console_.scale.z / 2) < 1e-9, 'console on the floor');
+    for (const object of objects.slice(1)) assert.equal(object.rotation.z, (turn + 180) % 360, `${object.modelId} faces the seat`);
+    const problems = analyzeProjectLayout(homeRoom, objects).filter(issue => issue.severity !== 'info').map(issue => issue.title);
+    assert.deepEqual(problems, []);
+  });
+}
+
+test('when the usual spot is taken an added device still finds a free place on the desk', () => {
+  const objects = addInOrder(['office-desk', 'keyboard', 'keyboard', 'desk-lamp', 'desk-lamp']);
+  const desk = objects[0];
+  const deskTop = desk.position.z + desk.scale.z / 2;
+  for (const device of objects.slice(1)) {
+    assert.ok(Math.abs(device.position.z - device.scale.z / 2 - deskTop) < 1e-9, `${device.id} sits on the desk`);
+  }
+});

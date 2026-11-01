@@ -209,9 +209,84 @@ function findOnStand(object, stand, room, objects) {
   return fitsFreely(candidate, room, objects) ? candidate : null;
 }
 
+// Where these go on (or beside) the first desk, in the desk's own frame, the
+// way the desk generator lays them out (scene-builder.js): the keyboard in
+// front of the seat, the mouse to the keyboard's right, the lamp in the back
+// corner on the seat's left and the speakers in the one on its right (then
+// the other corner, then halfway along a side), a console on the floor on
+// the seat's right. Right is as seen from the seat in the 3D view, which
+// mirrors project x, so the right hand is the desk's local -x.
+const SEAT_RIGHT = -1;
+const FRONT_MARGIN = 0.06;
+const ROW_GAP = 0.06;
+const CORNER_MARGIN = 0.05;
+
+function deskFrame(desk) {
+  const radians = ((desk.rotation?.z ?? 0) * Math.PI) / 180;
+  const axisX = { x: Math.cos(radians), y: Math.sin(radians) };
+  const axisY = { x: -Math.sin(radians), y: Math.cos(radians) };
+  return {
+    halfX: desk.scale.x / 2,
+    halfY: desk.scale.y / 2,
+    top: desk.position.z + desk.scale.z / 2,
+    toWorld: (x, y) => ({ x: desk.position.x + axisX.x * x + axisY.x * y, y: desk.position.y + axisX.y * x + axisY.y * y }),
+    toLocal: point => {
+      const dx = point.x - desk.position.x;
+      const dy = point.y - desk.position.y;
+      return { x: dx * axisX.x + dy * axisX.y, y: dx * axisY.x + dy * axisY.y };
+    },
+  };
+}
+
+function preferredSpots(modelTemplate, frame, objects) {
+  const { x: width, y: depth } = modelTemplate.defaultScale;
+  const front = -frame.halfY + FRONT_MARGIN + depth / 2;
+  const back = frame.halfY - CORNER_MARGIN - depth / 2;
+  const side = sign => sign * (frame.halfX - CORNER_MARGIN - width / 2);
+  const corners = first => [[side(first), back], [side(-first), back], [side(first), 0], [side(-first), 0]];
+  switch (modelTemplate.modelId) {
+    case 'keyboard':
+      return [[0, front, 'desk']];
+    case 'mouse': {
+      const keyboard = objects.find(object => object.modelId === 'keyboard');
+      const local = keyboard && frame.toLocal(keyboard.position);
+      const nextTo = keyboard && Math.abs(local.x) <= frame.halfX && Math.abs(local.y) <= frame.halfY
+        ? { x: local.x, y: local.y, half: keyboard.scale.x / 2 }
+        : { x: 0, y: front, half: 0.22 };
+      return [[nextTo.x + SEAT_RIGHT * (nextTo.half + ROW_GAP + width / 2), nextTo.y, 'desk']];
+    }
+    case 'desk-lamp':
+      return corners(-SEAT_RIGHT).map(([x, y]) => [x, y, 'desk']);
+    case 'speakers':
+      return corners(SEAT_RIGHT).map(([x, y]) => [x, y, 'desk']);
+    case 'game-console':
+      return [SEAT_RIGHT, -SEAT_RIGHT].map(sign => [sign * (frame.halfX + DESK_SIDE_GAP + width / 2), 0, 'floor']);
+    default:
+      return [];
+  }
+}
+
+function findPreferredSpot(object, modelTemplate, desk, room, objects) {
+  const frame = deskFrame(desk);
+  const { x: width, y: depth } = modelTemplate.defaultScale;
+  for (const [x, y, level] of preferredSpots(modelTemplate, frame, objects)) {
+    // On the desk means wholly on its top, not hanging over an edge.
+    if (level === 'desk' && (Math.abs(x) + width / 2 > frame.halfX + 1e-9 || Math.abs(y) + depth / 2 > frame.halfY + 1e-9)) continue;
+    const z = level === 'desk' ? frame.top + object.scale.z / 2 : object.scale.z / 2;
+    const candidate = { ...object, position: { ...frame.toWorld(x, y), z } };
+    if (fitsFreely(candidate, room, objects)) return candidate;
+  }
+  return null;
+}
+
 function findFreePlacement(object, categoryId, modelTemplate, room, objects) {
   const desks = objects.filter(isDesk);
   const reference = desks[0]?.position ?? { x: 0, y: 0 };
+
+  if (desks[0]) {
+    const preferred = findPreferredSpot(object, modelTemplate, desks[0], room, objects);
+    if (preferred) return preferred;
+  }
 
   if (categoryId === 'display') {
     for (const stand of objects.filter(item => item.modelId === 'monitor-stand')) {
