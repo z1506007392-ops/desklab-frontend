@@ -17,6 +17,16 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-01 · Claude · master
 
+E38 完成：连不上 jsdelivr 时 3D 画面不再是空的。用 fontTools 看 `public/fonts/axis-label.woff`：字体名"Noto Emoji Regular"，225 个字符里没有 X、Y、Z，也没有拉丁字母（E23 时注释写的是"Troika 会去 jsDelivr 下载的那个 sans 文件"，实际放成了表情字体，大概是为了以前功耗标签里的 ⚡）。所以坐标轴字母每次都让 Troika 去 cdn.jsdelivr.net 下载 unicode-font-resolver 的码表和两个拉丁字体（drei 的 `<Text>` 不给 `characters` 时会预排字符串"undefined"，字重 100，所以有两个）。drei 的 `<Text>` 在字体就绪前挂起它所在的 Suspense，也就是整个场景：在 Playwright 里拦掉 jsdelivr，房间、网格、桌子、设备全都不显示，只有一条"Failed to fetch"。国内经常连不上 jsdelivr。
+
+修法：`axis-label.woff` 换成 unicode-font-resolver v1.0.1 的 `latin/sans-serif.normal.400.woff`（Noto Sans Regular 拉丁子集，18 KB，未改动；就是 Troika 原来下载的那个，所以字母外观不变），`public/fonts/LICENSE.txt` 换成它的 SIL OFL 1.1（版权行没有保留字体名）并写明来源。`SceneObjects.jsx` 的坐标轴字母改成 `AxisLabel`：`characters="XYZ"`，每个字母包在自己的 `<Suspense fallback={null}>` 里，字体没好或下载失败时只少字母。
+
+顺带：这样改之后场景不再在启动时挂起一次，`gizmo.spec` 的"拖控制柄转动"在桌面和手机上稳定失败（4/4）：旋转圈是绿色，测试找蓝色。原因在 `SelectionGizmo.jsx`：控制柄配色在挂载时的 layout effect 里做一次，读的是 ref；开发模式下 StrictMode 会挂载两次，ref 里可能是一个没进场景的 TransformControls 副本（浏览器里看到它的颜色是蓝的、但没有 parent），画出来的那个没上色。以前能过，是因为字体加载让场景挂起又显示，effect 碰巧又跑了一次。现在用回调 ref，实例变了就重新上色。生产环境没有双重挂载，用户大概率一直是蓝色。单独提交。
+
+验证：新增 UI 测试 2 个（`e2e/offline-fonts.spec.mjs`：拦掉 jsdelivr 时电竞桌画面照常画出、整个过程没有访问本站以外的地址；拦掉本站字体文件时也照常画出、只有字体下载失败的报错）。修之前第一条失败（画面截图 13 KB，空白），只换字体不改代码时第二条失败。`gizmo.spec` 桌面和手机连跑 3 遍 12 次全过，只有控制柄修复、没有 E38 时也过。`npm test` 441，lint，build，Chrome 桌面和手机 UI 全量 153 通过 + 1 跳过。截图看过（本地 build）：空房间角落 X/Y/Z 正常；电竞桌加 27 寸显示器后旋转圈是蓝色；手机上电竞桌正常；桌面和手机都没有外部请求、没有错误。还剩：推送后看 CI（含 iPhone WebKit）、线上核对外部请求。
+
+### 2026-11-01 · Claude · master
+
 `44aacf2` 的 CI 在 iPhone WebKit 上又红了，这次 `local-save` 过了，`start-guide` 的"分享链接不出引导"失败：刷新取消了坐标轴字体 `fonts/axis-label.woff` 的下载（Troika 在 worker 里下，不进页面的资源计时，所以只等模型文件不够）。`waitForModelDownloads` 改为 `waitForSceneDownloads`：先等 16 个模型下载完，再等这一页（含 worker）没有任何进行中的请求满 0.5 秒；`openProject` 用 Playwright 的 request / requestfinished / requestfailed 记录进行中的请求。验证：`local-save` 和 `start-guide` 在 Chrome 桌面和手机上连跑 3 遍 54 次全过；本地没有 WebKit，看 CI。查这个问题时发现更严重的：`axis-label.woff` 是 Noto Emoji，没有 X/Y/Z，Troika 每次都去 cdn.jsdelivr.net 下载后备字体，拦掉 jsdelivr 时整个 3D 画面是空的。已领取为 E38。还剩：E38。
 
 ### 2026-11-01 · Claude · master

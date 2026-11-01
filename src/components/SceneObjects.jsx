@@ -20,10 +20,25 @@ for (const model of DEVICE_CATALOG.flatMap(category => category.models)) {
   if (model.assetUrl) useGLTF.preload(model.assetUrl);
 }
 
-// Same sans file Troika would download from jsDelivr. WebKit blocks that
-// cross-origin font request, so the axis letters and power numbers are served
-// from this site instead. The glyphs do not change.
+// Noto Sans (Latin), the file Troika would otherwise download from jsDelivr,
+// served from this site: WebKit blocks that cross-origin request, and
+// jsDelivr is often unreachable from mainland China. Troika only goes to
+// jsDelivr for a character the font lacks, so the labels name their
+// characters (drei would otherwise preload the text "undefined").
 const LABEL_FONT = `${import.meta.env.BASE_URL}fonts/axis-label.woff`;
+const AXIS_LETTERS = 'XYZ';
+
+// The letter loads on its own: while its font is not ready, or if it never
+// is, only the letter is missing, not the room and the devices.
+function AxisLabel({ position, color, children }) {
+  return (
+    <Suspense fallback={null}>
+      <Billboard position={position}>
+        <Text font={LABEL_FONT} characters={AXIS_LETTERS} fontSize={0.3} color={color}>{children}</Text>
+      </Billboard>
+    </Suspense>
+  );
+}
 
 const CABLE_COLORS = {
   power: '#e53935',
@@ -45,25 +60,19 @@ export function DeskLabAxes({ room }) {
         <cylinderGeometry args={[thickness, thickness, size, 8]} />
         <meshBasicMaterial color="red" />
       </mesh>
-      <Billboard position={[size + labelOffset, 0, 0]}>
-        <Text font={LABEL_FONT} fontSize={0.3} color="red">X</Text>
-      </Billboard>
+      <AxisLabel position={[size + labelOffset, 0, 0]} color="red">X</AxisLabel>
 
       <mesh position={[0, 0, size / 2]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[thickness, thickness, size, 8]} />
         <meshBasicMaterial color="green" />
       </mesh>
-      <Billboard position={[0, 0, size + labelOffset]}>
-        <Text font={LABEL_FONT} fontSize={0.3} color="green">Y</Text>
-      </Billboard>
+      <AxisLabel position={[0, 0, size + labelOffset]} color="green">Y</AxisLabel>
 
       <mesh position={[0, size / 2, 0]}>
         <cylinderGeometry args={[thickness, thickness, size, 8]} />
         <meshBasicMaterial color="blue" />
       </mesh>
-      <Billboard position={[0, size + labelOffset, 0]}>
-        <Text font={LABEL_FONT} fontSize={0.3} color="blue">Z</Text>
-      </Billboard>
+      <AxisLabel position={[0, size + labelOffset, 0]} color="blue">Z</AxisLabel>
     </group>
   );
 }
