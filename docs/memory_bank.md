@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-01 · Claude · master
 
+CI 的 iPhone WebKit 子集（`npm run test:ui:webkit`）加上 E38 的 `e2e/offline-fonts.spec.mjs`。iPhone 上的 Safari 和微信内置浏览器都是 WebKit，E23 在这里改过 Troika 的字体加载方式（不走 worker），国内用户又多是这类浏览器，所以"拦掉 jsdelivr 照常画出、不访问外部地址"最该在 WebKit 上验。本地没有 WebKit，没跑过，看 CI；Chrome 桌面和手机上这个文件已通过。另外查了页面和样式里有没有别的外部地址：字体用系统字体，`index.html` 里只有本站的 `og-image.png`，代码里没有别的外部域名。还剩：E38 和这次的 CI。
+
+### 2026-11-01 · Claude · master
+
 E38 线上核对过（`100b3f1` 已部署）：桌面和手机打开、套电竞桌、加显示器、切到旋转，全程没有访问本站以外的地址、没有错误；手机上拦掉 cdn.jsdelivr.net 后电竞桌照常画出。`8d74505`（等到没有进行中的请求再刷新）的 CI 已全绿，包括 iPhone WebKit。
 
 E37（`d15d515`）那次 CI 在 Chrome 手机上失败过一次：`edit-edge-cases`"显示器沿桌面小幅拖动"等资产库里"24 英寸显示器"按钮 30 秒没等到；那次整轮跑了 12.4 分钟（平时 7–10 分钟），本地这条 8.5 秒。下一个提交 `8d74505` 代码相同（加上测试工具改动），这条通过；本地全量跑了很多遍都过。CI 没留下当时的画面，查不出根因，不硬下结论。为了下次能查：`playwright.config.mjs` 改为失败时截图（`screenshot: 'only-on-failure'`，通过的测试不留东西），CI 在任何一步失败时把 `test-results/`（截图和 `error-context.md` 页面快照）作为 artifact 上传，保留 14 天。本地故意写一个失败测试确认会生成 `test-failed-1.png` 和 `error-context.md`。还剩：E38 的 CI；这条如果再出现，下载 artifact 看画面。
