@@ -19,7 +19,9 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:5174',
     headless: true,
-    screenshot: 'off',
+    // A failing test keeps a screenshot next to its error-context.md (CI
+    // uploads test-results/ when a step fails); passing tests keep nothing.
+    screenshot: 'only-on-failure',
     trace: 'off',
     video: 'off',
   },

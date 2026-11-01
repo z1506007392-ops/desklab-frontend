@@ -17,6 +17,12 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-01 · Claude · master
 
+E38 线上核对过（`100b3f1` 已部署）：桌面和手机打开、套电竞桌、加显示器、切到旋转，全程没有访问本站以外的地址、没有错误；手机上拦掉 cdn.jsdelivr.net 后电竞桌照常画出。`8d74505`（等到没有进行中的请求再刷新）的 CI 已全绿，包括 iPhone WebKit。
+
+E37（`d15d515`）那次 CI 在 Chrome 手机上失败过一次：`edit-edge-cases`"显示器沿桌面小幅拖动"等资产库里"24 英寸显示器"按钮 30 秒没等到；那次整轮跑了 12.4 分钟（平时 7–10 分钟），本地这条 8.5 秒。下一个提交 `8d74505` 代码相同（加上测试工具改动），这条通过；本地全量跑了很多遍都过。CI 没留下当时的画面，查不出根因，不硬下结论。为了下次能查：`playwright.config.mjs` 改为失败时截图（`screenshot: 'only-on-failure'`，通过的测试不留东西），CI 在任何一步失败时把 `test-results/`（截图和 `error-context.md` 页面快照）作为 artifact 上传，保留 14 天。本地故意写一个失败测试确认会生成 `test-failed-1.png` 和 `error-context.md`。还剩：E38 的 CI；这条如果再出现，下载 artifact 看画面。
+
+### 2026-11-01 · Claude · master
+
 E38 完成：连不上 jsdelivr 时 3D 画面不再是空的。用 fontTools 看 `public/fonts/axis-label.woff`：字体名"Noto Emoji Regular"，225 个字符里没有 X、Y、Z，也没有拉丁字母（E23 时注释写的是"Troika 会去 jsDelivr 下载的那个 sans 文件"，实际放成了表情字体，大概是为了以前功耗标签里的 ⚡）。所以坐标轴字母每次都让 Troika 去 cdn.jsdelivr.net 下载 unicode-font-resolver 的码表和两个拉丁字体（drei 的 `<Text>` 不给 `characters` 时会预排字符串"undefined"，字重 100，所以有两个）。drei 的 `<Text>` 在字体就绪前挂起它所在的 Suspense，也就是整个场景：在 Playwright 里拦掉 jsdelivr，房间、网格、桌子、设备全都不显示，只有一条"Failed to fetch"。国内经常连不上 jsdelivr。
 
 修法：`axis-label.woff` 换成 unicode-font-resolver v1.0.1 的 `latin/sans-serif.normal.400.woff`（Noto Sans Regular 拉丁子集，18 KB，未改动；就是 Troika 原来下载的那个，所以字母外观不变），`public/fonts/LICENSE.txt` 换成它的 SIL OFL 1.1（版权行没有保留字体名）并写明来源。`SceneObjects.jsx` 的坐标轴字母改成 `AxisLabel`：`characters="XYZ"`，每个字母包在自己的 `<Suspense fallback={null}>` 里，字体没好或下载失败时只少字母。

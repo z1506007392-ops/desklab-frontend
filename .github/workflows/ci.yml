@@ -34,3 +34,12 @@ jobs:
       - run: npx playwright install --with-deps webkit
       - run: npm run test:ui
       - run: npm run test:ui:webkit
+      # A one-off UI failure is otherwise gone with the runner: keep the
+      # screenshots and page snapshots Playwright wrote for it.
+      - name: Keep the UI test failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: test-results/
+          retention-days: 14
