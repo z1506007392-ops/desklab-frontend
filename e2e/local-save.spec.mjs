@@ -71,6 +71,9 @@ test('a damaged save locks saving until the previous version is restored', async
   await expect(banner).toBeVisible();
   await expect(page.getByRole('button', { name: '保存项目', exact: true })).toBeDisabled();
 
+  // Restoring reloads the page itself, so let this load finish its
+  // downloads first (see the first test).
+  await waitForSceneDownloads(page);
   page.once('dialog', dialog => dialog.accept());
   await banner.getByRole('button', { name: '恢复上一版本', exact: true }).click();
   await expect(page.getByRole('button', { name: '保存项目', exact: true })).toBeEnabled();
