@@ -141,7 +141,7 @@ export function ConnectionsRenderer({ connections, objects }) {
   );
 }
 
-export function CameraSetup({ cameraConfig, room, controlsRef, cameraRef }) {
+export function CameraSetup({ cameraConfig, room, objects, controlsRef, cameraRef }) {
   const { camera } = useThree();
   const poseSynchronizerRef = useRef(null);
   if (poseSynchronizerRef.current === null) {
@@ -156,10 +156,11 @@ export function CameraSetup({ cameraConfig, room, controlsRef, cameraRef }) {
     poseSynchronizerRef.current.sync({
       cameraConfig,
       room,
+      objects,
       camera,
       controls: controlsRef.current,
     });
-  }, [cameraConfig, camera, controlsRef, room]);
+  }, [cameraConfig, camera, controlsRef, objects, room]);
 
   return null;
 }

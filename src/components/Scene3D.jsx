@@ -80,7 +80,7 @@ export default function Scene3D({
     >
       <ambientLight intensity={0.5} />
       <directionalLight position={[10, 10, 5]} intensity={1} />
-      <CameraSetup cameraConfig={cameraConfig} room={room} controlsRef={controlsRef} cameraRef={cameraRef} />
+      <CameraSetup cameraConfig={cameraConfig} room={room} objects={objects} controlsRef={controlsRef} cameraRef={cameraRef} />
       <OrbitControls
         ref={controlsRef}
         makeDefault

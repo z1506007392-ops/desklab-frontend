@@ -25,7 +25,7 @@ import {
   hydrateProjectObjects,
 } from './domain/catalog.js';
 import LibraryBrowser from './components/LibraryBrowser.jsx';
-import { captureCameraSnapshot } from './domain/camera-snapshot.js';
+import { captureCameraSnapshot, defaultCameraPose } from './domain/camera-snapshot.js';
 import { hidesAnotherScreen, lineUpScreens, placeCatalogObject, placeCopy } from './domain/placement.js';
 import { lengthenCablesFor } from './domain/connections.js';
 import { findRiders, removeAndDropRiders, updateWithRiders } from './domain/riders.js';
@@ -812,8 +812,10 @@ export default function App() {
   const handleResetView = () => {
     if (!projectEditable && !shareView) return;
     if (cameraRef.current && controlsRef.current) {
-      cameraRef.current.position.set(0, room.height * 1.8, -room.width * 1.6);
-      controlsRef.current.target.set(0, room.height / 2, 0);
+      // From behind the seat of the first desk, however it is turned (E54).
+      const pose = defaultCameraPose(room, objects);
+      cameraRef.current.position.set(pose.position.x, pose.position.y, pose.position.z);
+      controlsRef.current.target.set(pose.target.x, pose.target.y, pose.target.z);
       controlsRef.current.update();
       if (projectEditable) setCameraDirty(true);
     }

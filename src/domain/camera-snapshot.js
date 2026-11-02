@@ -1,3 +1,5 @@
+import { isDesk } from './desks.js';
+
 export function captureCameraSnapshot(camera, controls, fallback = null) {
   const live = camera && controls
     ? {
@@ -18,23 +20,41 @@ export function captureCameraSnapshot(camera, controls, fallback = null) {
   return isValidCamera(fallback) ? cloneCamera(fallback) : null;
 }
 
+/**
+ * The overview the view starts from and returns to ("重置视角"): the whole
+ * room from high above the wall behind the seat of the first desk, so its
+ * screens face the viewer and left and right are the seat's, whichever way
+ * the desk is turned (to the nearest wall). With no desk, or an unturned
+ * one, that is the -y wall. Camera poses use three.js axes: y is up and z
+ * is the room's y.
+ */
+export function defaultCameraPose(room, objects = []) {
+  const desk = Array.isArray(objects) ? objects.find(isDesk) : null;
+  const radians = ((desk?.rotation?.z ?? 0) * Math.PI) / 180;
+  // The seat is on the desk's own -y side.
+  const seat = { x: Math.sin(radians), y: -Math.cos(radians) };
+  const height = room.height * 1.8;
+  const target = { x: 0, y: room.height / 2, z: 0 };
+  if (Math.abs(seat.x) > Math.abs(seat.y) + 1e-9) {
+    return { position: { x: Math.sign(seat.x) * room.length * 1.6, y: height, z: 0 }, target };
+  }
+  return { position: { x: 0, y: height, z: (seat.y > 0 ? 1 : -1) * room.width * 1.6 }, target };
+}
+
 export function createCameraPoseSynchronizer() {
   let lastCameraConfig = Symbol('unapplied-camera-config');
   let lastCamera = null;
   let lastControls = null;
 
   return {
-    sync({ cameraConfig, room, camera, controls }) {
+    sync({ cameraConfig, room, objects, camera, controls }) {
       if (cameraConfig === undefined || !camera || !controls) return false;
       if (cameraConfig === lastCameraConfig
         && camera === lastCamera
         && controls === lastControls) {
         return false;
       }
-      const pose = cameraConfig || {
-        position: { x: 0, y: room.height * 1.8, z: -room.width * 1.6 },
-        target: { x: 0, y: room.height / 2, z: 0 },
-      };
+      const pose = cameraConfig || defaultCameraPose(room, objects);
       camera.position.set(pose.position.x, pose.position.y, pose.position.z);
       controls.target.set(pose.target.x, pose.target.y, pose.target.z);
       controls.update();

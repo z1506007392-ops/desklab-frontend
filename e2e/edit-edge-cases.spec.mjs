@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openProject } from './project-fixture.mjs';
+import { openProject, waitForSceneDownloads } from './project-fixture.mjs';
 import { DEVICE_CATALOG } from '../src/domain/catalog.js';
 import { placeCatalogObject } from '../src/domain/placement.js';
 
@@ -326,4 +326,39 @@ test('deleting the desk drops what stood on it instead of leaving it in the air'
   await picker.selectOption({ label: '15 英寸笔记本' });
   expect(Number(await page.getByLabel('上下 Z', { exact: true }).inputValue())).toBeCloseTo(laptopZ, 3);
   expect(evidence).toEqual({ errors: [], writes: [] });
+});
+
+// With the desk turned round, "重置视角" looks from behind its seat, so the
+// screens face the viewer; the view is what gets saved with the project.
+test('reset view looks from the seat side of a turned desk', async ({ page }) => {
+  const { PROJECT_STORAGE_KEY } = await import('../src/domain/local-project-store.js');
+  const models = DEVICE_CATALOG.flatMap(category => category.models.map(model => ({ model, categoryId: category.category })));
+  const make = (modelId, objects) => {
+    const { model, categoryId } = models.find(entry => entry.model.modelId === modelId);
+    return placeCatalogObject({ modelTemplate: model, categoryId, room: ROOM, id: modelId, objects }).object;
+  };
+  const placedDesk = make('office-desk', []);
+  const desk = { ...placedDesk, rotation: { x: 0, y: 0, z: 180 } };
+  const screen = make('monitor-27', [desk]);
+  const evidence = await openProject(page, [desk, screen], [], { room: ROOM });
+  // The view has to be up before it can be turned or reset.
+  await waitForSceneDownloads(page);
+  const canvas = await page.locator('canvas').first().boundingBox();
+  // Turn the view away first, so the reset has something to undo.
+  await page.mouse.move(canvas.x + canvas.width * 0.5, canvas.y + canvas.height * 0.2);
+  await page.mouse.down();
+  await page.mouse.move(canvas.x + canvas.width * 0.8, canvas.y + canvas.height * 0.2, { steps: 10 });
+  await page.mouse.up();
+  await page.waitForTimeout(1500); // let the view's damping run out
+  await page.getByRole('button', { name: '重置视角', exact: true }).click();
+  await page.getByRole('button', { name: '保存项目', exact: true }).click();
+  const savedCamera = () => page.evaluate(key => JSON.parse(localStorage.getItem(key))?.camera ?? null, PROJECT_STORAGE_KEY);
+  await expect.poll(savedCamera, { message: 'the view is saved with the project' }).not.toBeNull();
+  const camera = await savedCamera();
+  // The seat of a desk turned 180° faces the +y wall; three.js z is the
+  // room's y. Without the turn the view comes from the -y wall (z = -5.6).
+  // The view's damping can carry it a few centimetres after the reset.
+  expect(camera.position.z, 'from the +y wall').toBeGreaterThan(ROOM.width * 1.6 - 0.5);
+  expect(Math.abs(camera.position.x), 'straight on').toBeLessThan(0.5);
+  expect(evidence.errors).toEqual([]);
 });
