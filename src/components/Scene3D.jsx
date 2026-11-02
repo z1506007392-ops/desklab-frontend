@@ -74,7 +74,11 @@ export default function Scene3D({
 
   return (
     <>
+    {/* Draw only when something changes (E62): props, pointer events, and
+        the orbit and handle controls all ask for a frame. Drawing 60 times a
+        second while the desk sits still only burns the battery. */}
     <Canvas
+      frameloop="demand"
       gl={defaults => createRendererOrReport(props => new WebGLRenderer(props), defaults, reportFailure)}
       onPointerMissed={onBackgroundClick}
     >
