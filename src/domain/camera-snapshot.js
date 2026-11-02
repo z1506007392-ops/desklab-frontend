@@ -41,6 +41,22 @@ export function defaultCameraPose(room, objects = []) {
   return { position: { x: 0, y: height, z: (seat.y > 0 ? 1 : -1) * room.width * 1.6 }, target };
 }
 
+/**
+ * Puts the camera at `pose` with nothing left over from an earlier drag. The
+ * orbit controls keep easing the last spin or pan for a while (damping); set
+ * on top of that, a reset would drift off its pose. Without damping one
+ * update spends whatever is left and clears it, so that comes first.
+ */
+export function applyCameraPose(camera, controls, pose) {
+  const damping = controls.enableDamping;
+  controls.enableDamping = false;
+  controls.update();
+  camera.position.set(pose.position.x, pose.position.y, pose.position.z);
+  controls.target.set(pose.target.x, pose.target.y, pose.target.z);
+  controls.update();
+  controls.enableDamping = damping;
+}
+
 export function createCameraPoseSynchronizer() {
   let lastCameraConfig = Symbol('unapplied-camera-config');
   let lastCamera = null;
@@ -54,10 +70,7 @@ export function createCameraPoseSynchronizer() {
         && controls === lastControls) {
         return false;
       }
-      const pose = cameraConfig || defaultCameraPose(room, objects);
-      camera.position.set(pose.position.x, pose.position.y, pose.position.z);
-      controls.target.set(pose.target.x, pose.target.y, pose.target.z);
-      controls.update();
+      applyCameraPose(camera, controls, cameraConfig || defaultCameraPose(room, objects));
       lastCameraConfig = cameraConfig;
       lastCamera = camera;
       lastControls = controls;

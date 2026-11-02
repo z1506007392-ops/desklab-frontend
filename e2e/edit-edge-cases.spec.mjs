@@ -354,16 +354,17 @@ test('reset view looks from the seat side of a turned desk', async ({ page }) =>
   await page.mouse.down();
   await page.mouse.move(canvas.x + canvas.width * 0.8, canvas.y + canvas.height * 0.2, { steps: 10 });
   await page.mouse.up();
-  await page.waitForTimeout(1500); // let the view's damping run out
+  // Reset while the spin is still easing out, then give any leftover a
+  // second to show: the view used to drift off the reset pose (E62 CI).
   await page.getByRole('button', { name: '重置视角', exact: true }).click();
+  await page.waitForTimeout(1000);
   await page.getByRole('button', { name: '保存项目', exact: true }).click();
   const savedCamera = () => page.evaluate(key => JSON.parse(localStorage.getItem(key))?.camera ?? null, PROJECT_STORAGE_KEY);
   await expect.poll(savedCamera, { message: 'the view is saved with the project' }).not.toBeNull();
   const camera = await savedCamera();
   // The seat of a desk turned 180° faces the +y wall; three.js z is the
   // room's y. Without the turn the view comes from the -y wall (z = -5.6).
-  // The view's damping can carry it a few centimetres after the reset.
-  expect(camera.position.z, 'from the +y wall').toBeGreaterThan(ROOM.width * 1.6 - 0.5);
-  expect(Math.abs(camera.position.x), 'straight on').toBeLessThan(0.5);
+  expect(camera.position.z, 'from the +y wall').toBeCloseTo(ROOM.width * 1.6, 2);
+  expect(camera.position.x, 'straight on').toBeCloseTo(0, 2);
   expect(evidence.errors).toEqual([]);
 });

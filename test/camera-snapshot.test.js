@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { PerspectiveCamera } from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import {
+  applyCameraPose,
   captureCameraSnapshot,
   createCameraPoseSynchronizer,
   defaultCameraPose,
@@ -114,4 +117,36 @@ test('a project without a saved view opens on the overview from the seat side', 
   });
   assert.deepEqual(vectorValues(cameraPosition), defaultCameraPose(room, [deskTurned(180)]).position);
   assert.deepEqual(vectorValues(controlsTarget), { x: 0, y: room.height / 2, z: 0 });
+});
+
+// E62 CI: "重置视角" right after a spin drifted 0.55 m sideways, because the
+// orbit controls kept easing the spin on top of the new pose.
+test('a pose set right after a spin stays put while the controls ease', () => {
+  const pose = { position: { x: 0, y: 4.9, z: 5.6 }, target: { x: 0, y: 1.35, z: 0 } };
+  const spunThenSet = apply => {
+    const camera = new PerspectiveCamera();
+    const controls = new OrbitControls(camera);
+    controls.enableDamping = true;
+    camera.position.set(3, 3, -5);
+    controls.update();
+    controls._rotateLeft(0.8); // what a quick drag leaves behind
+    controls.update();
+    apply(camera, controls);
+    for (let frame = 0; frame < 120; frame += 1) controls.update();
+    return { camera, controls };
+  };
+
+  const naive = spunThenSet((camera, controls) => {
+    camera.position.set(pose.position.x, pose.position.y, pose.position.z);
+    controls.target.set(pose.target.x, pose.target.y, pose.target.z);
+    controls.update();
+  });
+  assert.ok(Math.abs(naive.camera.position.x) > 0.5, 'without clearing the spin the view drifts');
+
+  const { camera, controls } = spunThenSet((cam, ctl) => applyCameraPose(cam, ctl, pose));
+  for (const axis of ['x', 'y', 'z']) {
+    assert.ok(Math.abs(camera.position[axis] - pose.position[axis]) < 1e-6, `position ${axis}`);
+    assert.ok(Math.abs(controls.target[axis] - pose.target[axis]) < 1e-6, `target ${axis}`);
+  }
+  assert.equal(controls.enableDamping, true, 'easing stays on for the user\'s next drag');
 });
