@@ -786,12 +786,24 @@ export default function App() {
       const update = getObjectKeyboardUpdate(obj, e);
       if (!update) return;
       e.preventDefault();
+      // Arrows slide it the way a drag does, so keyboard users get the same
+      // landing: off the desk it drops, inside a desk it stands on top (E52).
+      // Space still lifts and lowers it as asked.
+      if (e.key.startsWith('Arrow')) {
+        const moved = validateAndConstrainObject({ ...obj, position: update.position }, room);
+        const settled = moved.valid
+          && settleAfterDrag(room, moved.object, objects.map(item => (item.id === obj.id ? moved.object : item)), obj.position);
+        if (settled) {
+          updateSelectedObject({ position: settled.position });
+          return;
+        }
+      }
       updateSelectedObject(update);
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedObjectId, objects, connectionMode, dialogOpen, handleDeleteDevice, handleDuplicateDevice, projectEditable, updateSelectedObject]);
+  }, [selectedObjectId, objects, room, connectionMode, dialogOpen, handleDeleteDevice, handleDuplicateDevice, projectEditable, updateSelectedObject]);
 
   const handleResetView = () => {
     if (!projectEditable && !shareView) return;

@@ -257,3 +257,44 @@ test('a monitor dragged from the floor onto the desk stands on the desktop, and 
   expect(await readPosition(page)).toEqual(before);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
+
+// Someone using only the keyboard cannot drag; the arrows land the monitor
+// the same way: onto the desk from the floor, and down again past its end.
+test('arrow keys move a monitor onto the desk and off its far end like a drag would', async ({ page }) => {
+  test.setTimeout(60_000);
+  const models = DEVICE_CATALOG.flatMap(category => category.models.map(model => ({ model, categoryId: category.category })));
+  const make = (modelId, objects) => {
+    const { model, categoryId } = models.find(entry => entry.model.modelId === modelId);
+    return placeCatalogObject({ modelTemplate: model, categoryId, room: ROOM, id: modelId, objects }).object;
+  };
+  const desk = make('office-desk', []);
+  const placed = make('monitor-24', [desk]);
+  const onFloor = { ...placed, position: { x: 1.25, y: 0, z: placed.scale.z / 2 } };
+  const evidence = await openProject(page, [desk, onFloor], [], { room: ROOM });
+  const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
+  if (await openPanel.isVisible()) await openPanel.click();
+  await page.getByLabel('设备', { exact: true }).selectOption({ label: '24 英寸显示器' });
+  const closePanel = page.getByRole('button', { name: '收起属性面板', exact: true });
+  if (testIsPhone(page) && await closePanel.isVisible()) await closePanel.click();
+  const press = async (key, times) => {
+    await page.locator('.selection-hint').click();
+    for (let step = 0; step < times; step += 1) await page.keyboard.press(key);
+  };
+  const deskTopZ = desk.scale.z + onFloor.scale.z / 2;
+
+  // Five steps: its middle is still past the desk's end, so it stays down.
+  await press('ArrowRight', 5);
+  expect(await readPosition(page)).toEqual({ x: 0.75, y: 0, z: onFloor.position.z });
+  // The sixth puts its middle over the desk: it stands on top.
+  await press('ArrowRight', 1);
+  expect(await readPosition(page)).toEqual({ x: 0.65, y: 0, z: deskTopZ });
+  await expect(page.getByRole('button', { name: /^布局检查/ })).toHaveAccessibleName('布局检查');
+
+  // Across the desk and off the other end: it drops to the floor.
+  await press('ArrowRight', 17);
+  const past = await readPosition(page);
+  expect(past.x).toBeCloseTo(-1.05, 3);
+  expect(past.z).toBeCloseTo(onFloor.position.z, 3);
+  await expect(page.getByRole('button', { name: /^布局检查/ })).toHaveAccessibleName('布局检查');
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
