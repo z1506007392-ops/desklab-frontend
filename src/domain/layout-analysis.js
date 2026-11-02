@@ -7,6 +7,7 @@ import {
   safeClamp,
   validateAndConstrainObject,
 } from './geometry.js';
+import { isDesk } from './desks.js';
 import { getRecordItems } from './record-collections.js';
 
 const isWallOutlet = (object) => object.modelId === 'wall-outlet' || object.type === 'outlet';
@@ -105,10 +106,44 @@ export function pushOntoSupport(room, object, objects) {
   return candidate;
 }
 
+// What a device can be set down on: a desk, or a monitor stand.
+const isSurface = object => object.category === 'furniture' || isDesk(object) || object.modelId === 'monitor-stand';
+
+// A device let go inside a desk or stand, with its middle over the top,
+// stands on that top: dragged at floor height onto the desk it would
+// otherwise sit inside it. Lifted onto the desk it may now be inside a
+// stand on it, so it keeps climbing to the highest such top; then the spot
+// must be clear (what stands on the device itself comes along with it).
+function liftOntoSurface(room, object, objects) {
+  if (isWallOutlet(object) || isSurface(object)) return null;
+  const size = getObjectBounds(object)?.sizeZ;
+  if (!size) return null;
+  const surfaces = objects.filter(other => other.id !== object.id && isSurface(other));
+  let current = object;
+  for (let step = 0; step < surfaces.length; step += 1) {
+    const bottom = current.position.z - size / 2;
+    const tops = surfaces
+      .filter(other => objectsOverlap(current, other) && isOverTopOf(current.position, other))
+      .map(other => getObjectBounds(other)?.maxZ)
+      .filter(top => Number.isFinite(top) && top > bottom + GEOMETRY_EPSILON);
+    if (tops.length === 0) break;
+    current = { ...current, position: { ...current.position, z: Math.max(...tops) + size / 2 } };
+  }
+  if (current === object) return null;
+  const constrained = validateAndConstrainObject(current, room);
+  if (!constrained.valid || Math.abs(constrained.object.position.z - current.position.z) > GEOMETRY_EPSILON) return null;
+  const others = objects.filter(other => other.id !== object.id
+    && findSupportingObject(other, objects)?.id !== object.id);
+  return others.some(other => objectsOverlap(current, other)) ? null : current;
+}
+
 export function settleAfterDrag(room, object, objects, startPosition) {
   if (!object?.position || !startPosition) return null;
   const moved = ['x', 'y', 'z'].some(axis => Math.abs(object.position[axis] - startPosition[axis]) > GEOMETRY_EPSILON);
-  if (!moved || findSupportingObject(object, objects) !== null) return null;
+  if (!moved) return null;
+  const lifted = liftOntoSurface(room, object, objects);
+  if (lifted) return lifted;
+  if (findSupportingObject(object, objects) !== null) return null;
   return snapObjectToSupport(room, object, objects);
 }
 

@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { openProject } from './project-fixture.mjs';
+import { DEVICE_CATALOG } from '../src/domain/catalog.js';
+import { placeCatalogObject } from '../src/domain/placement.js';
 
 const ROOM = { length: 4, width: 3.5, height: 2.7 };
 
@@ -220,5 +222,38 @@ test('a screen pushed mostly off the desk edge is reported and can be pushed bac
 
   await page.getByRole('button', { name: '撤销', exact: true }).click();
   expect((await readPosition(page)).x).toBeCloseTo(0.9, 3);
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
+
+// A monitor added before the desk stands on the floor. Dragged onto the
+// desk, it is let go standing on the desktop instead of inside the desk.
+test('a monitor dragged from the floor onto the desk stands on the desktop, and one undo puts it back', async ({ page }) => {
+  const models = DEVICE_CATALOG.flatMap(category => category.models.map(model => ({ model, categoryId: category.category })));
+  const make = (modelId, objects) => {
+    const { model, categoryId } = models.find(entry => entry.model.modelId === modelId);
+    return placeCatalogObject({ modelTemplate: model, categoryId, room: ROOM, id: modelId, objects }).object;
+  };
+  const desk = make('office-desk', []);
+  const placed = make('monitor-24', [desk]);
+  const onFloor = { ...placed, position: { x: 1.25, y: 0, z: placed.scale.z / 2 } };
+  // Framed like a generated desk, so the monitor is big enough to grab.
+  const camera = { position: { x: 0, y: 2.15, z: -2.8 }, target: { x: 0, y: 0.75, z: 0 } };
+  const evidence = await openProject(page, [desk, onFloor], [], { room: ROOM, camera });
+  const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
+  if (await openPanel.isVisible()) await openPanel.click();
+  await page.getByLabel('设备', { exact: true }).selectOption({ label: '24 英寸显示器' });
+  const closePanel = page.getByRole('button', { name: '收起属性面板', exact: true });
+  if (testIsPhone(page) && await closePanel.isVisible()) await closePanel.click();
+  const before = await readPosition(page);
+
+  // Sideways onto the desk, letting go with its middle over the desktop.
+  await drag(page, await grabPoint(page), testIsPhone(page) ? 120 : 150, 0);
+  const after = await readPosition(page);
+  expect(Math.abs(after.x), 'over the 1.4 m desk').toBeLessThan(0.7);
+  expect(after.z).toBeCloseTo(desk.scale.z + onFloor.scale.z / 2, 3);
+  await expect(page.getByRole('button', { name: /^布局检查/ }), 'standing on the desk, not inside it').toHaveAccessibleName('布局检查');
+
+  await page.getByRole('button', { name: '撤销', exact: true }).click();
+  expect(await readPosition(page)).toEqual(before);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });

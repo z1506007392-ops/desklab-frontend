@@ -238,3 +238,32 @@ test('a dragged object that ends up in the air drops to what is below it', () =>
   assert.equal(settleAfterDrag(room, outlet, [outlet], { x: 2.48, y: 0.5, z: 0.3 }), null, 'wall outlets stay on the wall');
 });
 
+
+test('a device dragged at floor height onto a desk or stand is let go standing on its top', () => {
+  const desk = object('desk', { category: 'furniture', modelId: 'office-desk', position: { x: 0, y: 0, z: 0.375 }, scale: { x: 1.4, y: 0.7, z: 0.75 } });
+  const onFloor = (x, y = 0) => object('monitor', { category: 'display', position: { x, y, z: 0.16 }, scale: { x: 0.54, y: 0.05, z: 0.32 } });
+  const start = { x: 2, y: 0, z: 0.16 };
+
+  const lifted = settleAfterDrag(room, onFloor(0.2), [desk, onFloor(0.2)], start);
+  assert.equal(lifted.position.z, 0.75 + 0.16, 'onto the desk top');
+  assert.equal(lifted.position.x, 0.2);
+  assert.deepEqual(analyzeProjectLayout(room, [desk, lifted]), []);
+
+  // Only its edge inside the desk, the middle outside: left where it is.
+  assert.equal(settleAfterDrag(room, onFloor(0.9), [desk, onFloor(0.9)], start), null);
+
+  // The spot on the desk is taken: left where it is.
+  const lamp = object('lamp', { category: 'lighting', position: { x: 0.2, y: 0, z: 0.95 }, scale: { x: 0.2, y: 0.2, z: 0.4 } });
+  assert.equal(settleAfterDrag(room, onFloor(0.2), [desk, lamp, onFloor(0.2)], start), null);
+
+  // Onto a stand on the desk: the higher top wins.
+  const stand = object('stand', { category: 'accessory', modelId: 'monitor-stand', position: { x: -0.3, y: 0.2, z: 0.8 }, scale: { x: 0.3, y: 0.2, z: 0.1 } });
+  const onStand = settleAfterDrag(room, onFloor(-0.3, 0.2), [desk, stand, onFloor(-0.3, 0.2)], start);
+  assert.ok(Math.abs(onStand.position.z - (0.85 + 0.16)) < 1e-9, 'onto the stand top');
+
+  // A tower is not a surface, and a desk does not climb onto a desk.
+  const tower = object('tower', { category: 'computer', modelId: 'desktop-pc', position: { x: 1.5, y: 0, z: 0.25 }, scale: { x: 0.2, y: 0.45, z: 0.5 } });
+  assert.equal(settleAfterDrag(room, onFloor(1.5), [tower, onFloor(1.5)], start), null);
+  const secondDesk = object('desk-2', { category: 'furniture', modelId: 'office-desk', position: { x: 0.5, y: 0, z: 0.375 }, scale: { x: 1.4, y: 0.7, z: 0.75 } });
+  assert.equal(settleAfterDrag(room, secondDesk, [desk, secondDesk], { x: 2, y: 0, z: 0.375 }), null);
+});

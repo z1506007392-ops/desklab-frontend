@@ -18,15 +18,18 @@ export function box(id, x = 0) {
  * Options:
  * - saved: false opens it as a first-time visitor with nothing stored.
  * - room: the stored room size (default 10 x 10 x 3 m).
+ * - camera: a stored view ({ position, target } in three.js axes), e.g. to
+ *   frame the desk the way a generated desk does.
  * - ai: (requestBody) => responseJson | { status, json } answers
  *   POST /api/ai/layout; each request body is collected in
  *   evidence.aiRequests. Without it, an AI request fails the test like any
  *   other /api call.
  */
-export async function openProject(page, objects, connections = [], { saved = true, ai = null, room = { length: 10, width: 10, height: 3 } } = {}) {
+export async function openProject(page, objects, connections = [], { saved = true, ai = null, room = { length: 10, width: 10, height: 3 }, camera = null } = {}) {
   const project = {
     id: 'default', updatedAt: '2026-09-09T00:00:00.000Z',
     room, objects, connections,
+    ...(camera ? { camera } : {}),
   };
   expect(isProjectEnvelope(project, { requireStoredFields: true })).toBe(true);
   const errors = [];
