@@ -38,6 +38,8 @@ test('a saved desk stays in this browser after a reload, with no server involved
 });
 
 test('a second tab cannot overwrite a newer save', async ({ page, context }) => {
+  // Two tabs each draw the scene: 14-16 s locally, about twice that on CI.
+  test.setTimeout(60_000);
   const evidence = await openProject(page, []);
   const other = await context.newPage();
   await other.goto('/');

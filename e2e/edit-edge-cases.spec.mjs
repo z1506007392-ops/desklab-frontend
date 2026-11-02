@@ -5,6 +5,11 @@ import { placeCatalogObject } from '../src/domain/placement.js';
 
 const ROOM = { length: 4, width: 3.5, height: 2.7 };
 
+// Every test here loads the gaming desk and drags in the 3D view, which
+// takes 12-17 s locally with software rendering and about twice that on CI
+// since the SimReady models (E58); the default 30 s is too tight.
+test.describe.configure({ timeout: 60_000 });
+
 async function startWithDesk(page) {
   const evidence = await openProject(page, [], [], { room: ROOM });
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
