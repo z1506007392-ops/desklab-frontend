@@ -120,3 +120,40 @@ test('purchase suggestions are summarized as a copyable shopping list', async ({
   }
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
+
+// The comfort tips the AI gets are offered to everyone, as optional ones:
+// they are not counted on the toolbar, and one click applies the fix.
+test('a screen off to one side gets an optional tip that centres it with one click', async ({ page }) => {
+  const { buildTemplateScene } = await import('../src/domain/desk-templates.js');
+  const scene = buildTemplateScene('gaming');
+  const objects = scene.objects.map(object => (object.modelId === 'ultrawide-monitor'
+    ? { ...object, position: { ...object.position, x: 0.4 } }
+    : object));
+  const evidence = await openProject(page, objects, scene.connections, { room: scene.room });
+  // Nothing is wrong with the desk, so the toolbar shows no count.
+  const suggestions = page.getByRole('button', { name: '改进建议', exact: true });
+  await expect(suggestions).toBeVisible();
+  await suggestions.click();
+  const dialog = page.getByRole('dialog', { name: '自动检查与改进建议', exact: true });
+  await expect(dialog.getByRole('heading', { name: '摆放小建议（可选）', exact: true })).toBeVisible();
+  const tip = dialog.getByRole('group', { name: '带鱼屏显示器挪到座位正前方', exact: true });
+  await expect(tip).toContainText('带鱼屏显示器偏离了座位正前方。');
+  await tip.getByRole('button', { name: '照做', exact: true }).click();
+  await expect(page.getByText('已调整：带鱼屏显示器挪到座位正前方', { exact: true })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: '摆放小建议（可选）', exact: true })).toHaveCount(0);
+
+  const xOf = async () => {
+    await dialog.getByRole('button', { name: '关闭改进建议' }).click();
+    const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
+    if (await openPanel.isVisible()) await openPanel.click();
+    await page.getByLabel('设备', { exact: true }).selectOption({ label: '带鱼屏显示器' });
+    return Number(await page.getByLabel('左右 X', { exact: true }).inputValue());
+  };
+  expect(await xOf()).toBe(0);
+  await page.getByRole('button', { name: '撤销', exact: true }).click();
+  const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
+  if (await openPanel.isVisible()) await openPanel.click();
+  await page.getByLabel('设备', { exact: true }).selectOption({ label: '带鱼屏显示器' });
+  expect(Number(await page.getByLabel('左右 X', { exact: true }).inputValue())).toBe(0.4);
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});

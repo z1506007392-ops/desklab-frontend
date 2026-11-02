@@ -174,6 +174,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 | `recommendations.js` | 免费修复 + 购买建议；补线 | `buildRecommendations(project)`、`buildFreeImprovements`、`buildPurchaseSuggestions`、`applyImprovement(project, suggestion)`、`buildConnectionCompletion(project, objectId)` |
 | `placement.js` | 新设备找空位 | `placeCatalogObject({ modelTemplate, categoryId, room, id, objects })` |
 | `room-resize.js` | 改房间尺寸时整套布局跟着它靠着的墙走，墙插留在自己的墙上 | `refitLayoutToRoom(oldRoom, newRoom, objects)` |
+| `layout-tips.js` | 把 C1 的人体工学/整洁提示变成可选的一键小建议（改进建议弹窗里） | `buildLayoutTips(project)`、`applyLayoutTip(project, tip)` |
 | `riders.js` | 挪动、转动、升降一个物体时，放在它上面的东西跟着走（桌上的显示器、支架上的显示器） | `findRiders(base, objects)`、`moveWithRiders(objects, before, after, room)`、`updateWithRiders(objects, next, room)` |
 | `scene-builder.js` / `desk-templates.js` | 按设备清单生成桌面 / 内置模板 | `buildDeskScene`、`DESK_TEMPLATES`、`buildTemplateScene(id)` |
 | `connections.js` | 端口兼容、线型推断、线长评估 | `arePortsCompatible`、`inferCableType`、`evaluateConnectionLength`、`getPortWorldPosition` |
@@ -433,7 +434,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E53 [x] 完成（claude，2026-11-02）** 删掉桌子（或支架）时，上面的东西落下来（E52 后发现）：以前删掉桌子，显示器、笔记本停在原来的高度悬在半空，布局检查报几条"悬空"。现在删除时，直接放在它上面的东西按高度从低到高落到下面（通常是地上，下面有别的东西就落在那上面），各自上面的东西跟着一起落，位置的左右前后不变；删除前的确认会写"上面放着的 N 件设备会落到下面"。一次撤销全部复原。`riders.js` 的 `removeAndDropRiders`。
 - **E54 [x] 完成（claude，2026-11-02）** "重置视角"和第一次打开（没有存过视角）时的视角，从第一张桌子座位那一侧的墙上方看整个房间（E53 后发现）：以前总是从 -y 那面墙看，桌子转 180° 时看到的是显示器背面，左右和坐在座位上相反；转 90° 时从侧面看。现在取离座位方向最近的那面墙（转 15° 仍是原来那面），高度、距离和以前一样；没有桌子或桌子没转时和以前完全一样。存过视角的项目、模板和生成的桌子照旧用自己的视角。`camera-snapshot.js` 的 `defaultCameraPose`。
 - **E55 [x] 完成（claude，2026-11-02）** AI 建议挪动、转动桌子时，桌上的东西一起走（E48 之后可以做了）：以前 AI 的 move/rotate 碰到桌上有东西的桌子（或上面有显示器的支架）一律拒绝（"桌上有设备时不移动桌子"），用户说"把桌子靠墙""桌子转个方向"时这类建议全被丢掉。现在和用户自己挪桌子一样（`updateWithRiders`）：桌上的显示器、笔记本等跟着平移、跟着转，支架上的显示器跟着支架；算落点时不把它自己上面的东西当成障碍。建议卡片的"会调整"会列出跟着走的设备。是否接受仍由原来的评分决定（布局必须严格变好、不能出新问题）；墙插仍不能动，交换（swap）不变；提示词没改。
-- **E56 [~] 进行中（claude，2026-11-02）** 不用 AI 也能看到摆放小建议（E55 时发现）：C1 的人体工学/整洁规则（显示器太近、偏离正前方、没朝向座位、不在桌上，笔记本在桌子后面，主机占桌面中间或挡腿，插排在桌面上，路由器被桌子挡住）都算好了一键改法，但只发给 AI；不用 AI、AI 没开或限额用完的人看不到。阶段 C 的设计说这些规则"不依赖模型就有价值"，6.6.1 的表也有"说明给用户"一栏。
+- **E56 [x] 完成（claude，2026-11-02）** 不用 AI 也能看到摆放小建议（E55 时发现）：C1 的人体工学/整洁规则以前只发给 AI。现在"改进建议"弹窗里多了"摆放小建议（可选）"：每条规则用一句动作当标题（例如"带鱼屏显示器挪到座位正前方""台式主机挪出放腿的地方"），下面是规则原来的说明，"照做"一键用规则算好的改法，"定位"选中设备。只列出改法单独用得上、能让布局严格变好且不出新问题的（和 AI 建议同一道检查），点"照做"时按当时的桌面再检查一次。线太长那条不列（要换线，用户的桌面没有问题）。工具栏"改进建议"的数字不算这些（它们是可选的，不是问题），只在弹窗打开时计算。`src/domain/layout-tips.js`。
 - E14 线上限流目前只在单个 Cloudflare 实例内存里计数（首轮评测 29 次请求一次都没被拦），想要真正生效需要人做 H2（绑定 KV `AI_LIMITS`）；做完后用 30 次连续请求验证会出现 429。
 - **E15 [x] 完成（claude，2026-10-30）** 界面视觉重做，按 `.claude/skills/impeccable` 的流程：负责人确认 `PRODUCT.md`，从四个真页面预览里选了"桌搭标签"（方向合同 `.impeccable/surfaces/src-app-jsx.md`）。按钮和菜单文字、整体布局、3D 场景、DeskLab 名字都没改。做了：颜色/字体/控件统一变量、行内样式搬进 CSS（E11）、emoji 换成圆点和画出来的图标、手机两行工具栏（E10）、44px 触控（E12）、桌面分组（E8）、状态动效、底部浮起的消息标签。impeccable 检查器无发现；全新子代理按 impeccable 终审，第一轮六条全部修完，复审 ship。设计规则写在根目录 `DESIGN.md` 和 `.impeccable/design.json`，以后改界面先读它。可选的后续（审查提的，没做）：把选中标签钉在 3D 画面里设备旁边（要先问负责人，因为 3D 外观冻结）；资产库卡片加设备缩略图。
 - **E16 [x] 完成（claude，2026-10-30）** 负责人同意后，把选中标签钉进 3D 画面：选中设备时，设备正上方出现白色圆点标签（drei `Html`，画在盖在画布上的一层里，不挡操作、不盖弹窗，读屏跳过）。3D 场景本身的背景、网格、灯光、模型不变。测试 `e2e/scene-tag.spec.mjs`。

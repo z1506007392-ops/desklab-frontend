@@ -30,6 +30,7 @@ import { hidesAnotherScreen, lineUpScreens, placeCatalogObject, placeCopy } from
 import { lengthenCablesFor } from './domain/connections.js';
 import { findRiders, removeAndDropRiders, updateWithRiders } from './domain/riders.js';
 import { refitLayoutToRoom } from './domain/room-resize.js';
+import { applyLayoutTip, buildLayoutTips } from './domain/layout-tips.js';
 import { createEntityId } from './domain/identifiers.js';
 import { describeKeyTarget, getObjectKeyboardUpdate, shouldIgnoreDeviceShortcut } from './domain/keyboard-controls.js';
 import { cameraZoomEnabled } from './domain/view-controls.js';
@@ -1283,6 +1284,12 @@ export default function App() {
     () => buildShoppingList(recommendations.purchases),
     [recommendations.purchases]
   );
+  // Comfort and tidiness tips, only worked out while the dialog is open
+  // (E56): they are optional and not counted on the toolbar.
+  const layoutTips = useMemo(
+    () => (showRecommendations ? buildLayoutTips({ room, objects, connections }) : []),
+    [showRecommendations, room, objects, connections]
+  );
 
   const cableShoppingList = useMemo(
     () => buildCableShoppingList(connections, objects),
@@ -1448,6 +1455,19 @@ export default function App() {
     setObjects(current => updateWithRiders(current, pushed, room));
     setSelectedObjectId(objectId);
     showStatus({ text: '已推回去，放稳了', type: 'success' });
+  };
+
+  const handleApplyLayoutTip = (tip) => {
+    if (!projectEditable) return;
+    const result = applyLayoutTip({ room, objects, connections }, tip);
+    if (!result.project) {
+      showStatus({ text: `这条建议现在做不了：${result.reasons.join('，')}`, type: 'error' });
+      return;
+    }
+    recordHistory();
+    setObjects(result.project.objects);
+    setConnections(result.project.connections);
+    showStatus({ text: `已调整：${tip.title}`, type: 'success' }, 3000);
   };
 
   const handleMoveObjectInsideRoom = (objectId) => {
@@ -2112,6 +2132,8 @@ export default function App() {
           onMoveInsideRoom={handleMoveObjectInsideRoom}
           onSnapOutletToWall={handleSnapOutletToWall}
           onPushOntoSupport={handlePushOntoSupport}
+          tips={layoutTips}
+          onApplyTip={handleApplyLayoutTip}
           onExtendCable={handleExtendCableToRecommended}
           onAutoConnectNetwork={handleAutoConnectNetwork}
           onAutoConnectDisplay={handleAutoConnectDisplay}

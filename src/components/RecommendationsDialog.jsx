@@ -27,6 +27,8 @@ export default function RecommendationsDialog({
   onMoveInsideRoom,
   onSnapOutletToWall,
   onPushOntoSupport,
+  tips = [],
+  onApplyTip,
   onExtendCable,
   onAutoConnectNetwork,
   onAutoConnectDisplay,
@@ -326,6 +328,36 @@ export default function RecommendationsDialog({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {tips.length > 0 && (
+            <div className="recommendation-group" style={{ marginTop: '24px' }}>
+              <h4>摆放小建议（可选）</h4>
+              <p className="wiring-issue-description">按常见的人体工学和整洁习惯给出，不改也能正常使用。</p>
+              <div className="wiring-issue-list">
+                {tips.map(tip => (
+                  <div key={tip.id} className="wiring-issue wiring-issue-info" role="group" aria-label={tip.title}>
+                    <div className="wiring-issue-content">
+                      <div className="wiring-issue-title">{tip.title}</div>
+                      <div className="wiring-issue-description">{tip.description}</div>
+                    </div>
+                    <div className="connection-item-actions">
+                      <button
+                        type="button"
+                        className="ui-button ui-button-primary"
+                        onClick={() => onApplyTip(tip)}
+                        disabled={!editable}
+                      >
+                        照做
+                      </button>
+                      <button type="button" className="ui-button" onClick={() => onLocate(tip.objectIds[0])}>
+                        定位
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
