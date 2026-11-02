@@ -35,6 +35,20 @@ export default function AboutDialog({ onClose }) {
             <li>AI 给出的建议都会先经过 DeskLab 的规则检查，只显示不会让布局变差的改动，应用前可以先预览，应用后可以撤销。</li>
           </ul>
 
+          <h4 className="template-section-title">3D 模型</h4>
+          <ul>
+            <li>
+              书桌、台式主机、显示器、键盘和鼠标的模型来自 NVIDIA SimReady（
+              <a href="https://huggingface.co/datasets/nvidia/simready-assets" target="_blank" rel="noopener noreferrer">原始资产</a>
+              ，网页版由
+              <a href="https://huggingface.co/datasets/codepawl/simready-glb" target="_blank" rel="noopener noreferrer"> codepawl/simready-glb </a>
+              转换），使用
+              <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>
+              许可；为了在网页上使用，我们缩放、减面并改了颜色。
+            </li>
+            <li>台灯模型来自 Kenney（CC0），其余设备的模型由 DeskLab 自己制作。</li>
+          </ul>
+
           <h4 className="template-section-title">我们不做的事</h4>
           <ul>
             <li>不收集姓名、手机号等个人信息，不使用统计或广告追踪。</li>

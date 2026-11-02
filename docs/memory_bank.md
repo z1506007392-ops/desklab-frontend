@@ -17,6 +17,22 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-02 · Claude · master
 
+E58 完成：换上 SimReady 模型。负责人 Leo 看了 E57 减面后的对比图，回复"换 我就是Leo"。书桌、台式主机、24/27 寸显示器、键盘、鼠标换成 NVIDIA SimReady（CC BY 4.0）减面后的版本；其余 10 个（笔记本、带鱼屏、支架、路由器、插排、适配器、墙插、音箱、游戏主机、台灯）不变。
+
+做法：
+- `tools/simready/`（`package.json` 自带依赖：@gltf-transform 4.5.1、meshoptimizer 1.3.0、sharp 0.35.5，和应用分开，不进 CI；`build.mjs`；`README.md`）。下载 `codepawl/simready-glb` 的 5 个源文件（缓存在 `.cache/`，不进 git；Node 的 fetch 要 `NODE_USE_ENV_PROXY=1` 才走代理），去掉鼠标垫，改颜色，转向，按 `src/domain/catalog.js` 的 `defaultScale` 对齐尺寸（three.js X 宽、Y 高、Z 深，原点在中心），减面（主机 6 千、显示器和键盘 3 千、鼠标 2 千；书桌先改纯色再用 meshoptimizer 带 `Prune` 减到约 1.1 万），贴图 256 像素 WebP，减面后再对齐一次尺寸，meshopt 压缩。
+- 改色：显示器屏幕材质 `opaque__plastic__unique_decal_screen_a` 原来是一张紫蓝壁纸，改成接近黑色的光滑面（黑屏）；书桌纯色后金属件 `m_opaque__metal__glossy_a01` 平均出来偏亮，改成和桌腿一样的黑。
+- 书桌转向：原文件长边在 Z、走线孔在 -X。第一次按"设备正面朝 +Z"转了 -90°，截图发现走线孔跑到了靠座位的前沿：书桌的座位在它自己的 -y 一侧（three.js -Z），和设备的约定相反。改成转 +90°，走线孔到 +Z（背面），截图确认在显示器旁边。
+- 资产库小图：`tools/thumbnails/render.html` 的 GLTFLoader 加了 `MeshoptDecoder`，重新渲染这 6 张（`render-thumbnails.mjs` 带 id 参数只渲染这几张）。
+- 署名：`public/models/CREDITS.md` 按来源重写（SimReady 表、链接、改动说明；Kenney 只剩台灯；脚本模型清单，并写明书桌、主机、显示器、键盘的 Blender 脚本不要再对这几个 id 运行）；"关于与隐私"加"3D 模型"一段，链接原始资产、转换版和 CC BY 4.0。`tools/blender-models/README.md`、`.claude/skills/blender-gltf-export/SKILL.md`（本仓库自己写的）、`docs/skills.md` 注明这 6 个现在来自 `tools/simready`、是 meshopt 压缩的，`validate.mjs` 的包围盒检查不适用于它们。
+- 接口锚点（`PORT_ANCHOR_BY_MODEL`）不变：主机接口都在背面，显示器在面板后面中下部，和新模型的接口位置大致一致。
+
+结果：6 个文件 37 + 137 + 52 + 52 + 41 + 57 KB，16 个模型合计约 630 KB；尺寸逐个对上目录（打印的包围盒 = defaultScale）；手机视口、节流约 9 Mbps 时下载完全部模型 1.3 秒（换之前 1.2 秒）；无头 Chrome 软件渲染帧率桌面 9–13、手机约 7.8（换之前 13–18 / 约 10.5，只看相对快慢）。截图看过（本地 build，桌面近景两张、手机一张，资产库小图 6 张）：显示器黑屏，桌腿和金属件黑色，走线孔在背面，布局检查没有问题数，没有控制台错误。
+
+测试：`e2e/toolbar.spec.mjs` 的"关于与隐私"测试加了两条断言（写着 NVIDIA SimReady，"CC BY 4.0"链接指向 https://creativecommons.org/licenses/by/4.0/）。`npm test` 497（没有新增单元测试），lint（0 问题），build，Chrome 桌面和手机 UI 全量 185 通过 + 1 跳过。还剩：推送后看 CI、线上核对。另外负责人同时提了 E59（手机访问时提醒用电脑网页版，手机端不再做太多优化），接着做。
+
+### 2026-11-02 · Claude · master
+
 E57 续：负责人要求"先减面压到 1 MB 再对比一次"。仍只在本地做，没有合并，等负责人决定。
 
 做法（scratchpad 里的 gltf-transform 4.5.1 + meshoptimizer 1.3.0 + sharp，脚本没进仓库）：在上次对齐好尺寸的 6 个文件上，先解量化；主机、显示器、键盘、鼠标用 gltf-transform 的 `weld` + `simplify`（误差上限 0.02）减到 3–6 千面，贴图缩到 256×256 WebP（质量 80）；书桌的问题是大量独立小块和贴图接缝，普通减面卡在 4.6–4.8 万面，误差放到 1 也不动，所以书桌改成纯色：每种材质的底色、粗糙度、金属度取它贴图的平均值，去掉贴图、贴图坐标和法线（three.js 没有法线时按平面着色），按位置合并顶点后用 meshoptimizer 的 `simplify`（带 `Prune`，去掉细小独立块），达不到再用 `simplifySloppy`，减到 1.1 万面、37 KB；最后统一去重、清理、meshopt 压缩。尺寸仍是目录尺寸、居中。

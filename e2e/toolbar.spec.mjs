@@ -66,6 +66,10 @@ test('the about and privacy dialog says where the desk is kept and what AI sends
   await expect(dialog).toContainText('不使用统计或广告追踪');
   await expect(dialog).toContainText('复制分享链接');
   await expect(dialog).toContainText('包含当前的房间、设备和连线');
+  // CC BY 4.0 asks for credit where the models are used.
+  await expect(dialog).toContainText('NVIDIA SimReady');
+  await expect(dialog.getByRole('link', { name: 'CC BY 4.0', exact: true }))
+    .toHaveAttribute('href', 'https://creativecommons.org/licenses/by/4.0/');
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   const again = await open();

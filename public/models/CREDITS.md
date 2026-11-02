@@ -1,16 +1,32 @@
 # 模型来源
 
-桌面上大多数设备由 `tools/blender-models/` 里的脚本生成，归本仓库所有。键盘和音箱也是这批脚本模型。
+## NVIDIA SimReady（CC BY 4.0）
 
-台灯和鼠标换成了 Kenney Furniture Kit 里的现成模型。接口、锚点、功耗、`type`、`modelId` 都没改。网格已按目录里的米制尺寸缩放到包围盒，原点在包围盒中心，正面朝 three.js 的 +Z。
+书桌、台式主机、24/27 寸显示器、键盘、鼠标这 6 个模型来自 NVIDIA 的 SimReady 资产。负责人在 2026-11-02 看过对比图后决定换上（E57、E58）。
 
-这两件来自同一套、同一种低多边形风格。许可证是 CC0 1.0（不必署名，可以商用）。包内 `License.txt` 写明 Creative Commons Zero。
+| 设备 | modelId | SimReady 资产 | 作者 | 许可证 |
+| --- | --- | --- | --- | --- |
+| 书桌 | `office-desk` | `desk_a01` | NVIDIA | CC BY 4.0 |
+| 台式主机 | `desktop-pc` | `computer_desktop_tower_a01` | NVIDIA | CC BY 4.0 |
+| 24 英寸显示器 | `monitor-24` | `computer_monitor_office_a01` | NVIDIA | CC BY 4.0 |
+| 27 英寸显示器 | `monitor-27` | `computer_monitor_office_a01` | NVIDIA | CC BY 4.0 |
+| 键盘 | `keyboard` | `computer_keyboard_a01` | NVIDIA | CC BY 4.0 |
+| 鼠标 | `mouse` | `computer_mouse_office_b01` | NVIDIA | CC BY 4.0 |
 
-| 设备 | modelId | 套件里的文件 | 作者 | 许可证 | 来源 |
-| --- | --- | --- | --- | --- | --- |
-| 鼠标 | `mouse` | `computerMouse.glb` | Kenney | CC0 1.0 | https://kenney.nl/assets/furniture-kit |
-| 台灯 | `desk-lamp` | `lampRoundTable.glb` | Kenney | CC0 1.0 | https://kenney.nl/assets/furniture-kit |
+- 原始资产：https://huggingface.co/datasets/nvidia/simready-assets
+- 网页用 GLB 转换版（我们下载的文件）：https://huggingface.co/datasets/codepawl/simready-glb
+- 许可证全文：https://creativecommons.org/licenses/by/4.0/
 
-许可证全文：https://creativecommons.org/publicdomain/zero/1.0/
+我们做的改动：按目录的米制尺寸缩放（书桌转了 90°，让长边和正面对上），减面（每个 3–1.1 万个三角面），贴图缩到 256 像素；书桌改成纯色、金属件改成黑色；显示器屏幕改成黑屏；鼠标去掉了鼠标垫。接口、锚点、功耗、`type`、`modelId` 都没改。重新生成用 `tools/simready/build.mjs`（见 `tools/simready/README.md`）。
 
-两个文件都远小于 200KB，没有使用 Draco 或 meshopt，加载器不需要额外的解码器。
+这 6 个文件用 meshopt 压缩（`EXT_meshopt_compression`），贴图是 WebP。`@react-three/drei` 的 `useGLTF` 默认带 meshopt 解码器；资产库小图的渲染页（`tools/thumbnails/render.html`）也设置了解码器。
+
+"关于与隐私"里写明了这些模型的来源和许可证。
+
+## Kenney Furniture Kit（CC0）
+
+台灯来自 Kenney Furniture Kit 的 `lampRoundTable.glb`，CC0 1.0（不必署名，可以商用），https://kenney.nl/assets/furniture-kit 。鼠标以前也用这套里的 `computerMouse.glb`，E58 换成了 SimReady。
+
+## 本仓库的脚本模型
+
+其余设备（笔记本、带鱼屏、显示器支架、路由器、插排、电源适配器、墙插、音箱、游戏主机）由 `tools/blender-models/` 里的脚本生成，归本仓库所有。那里也还留着书桌、主机、显示器、键盘的脚本，重新运行会覆盖上面的 SimReady 模型，不要对这几个 modelId 运行。

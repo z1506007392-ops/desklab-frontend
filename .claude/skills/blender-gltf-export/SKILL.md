@@ -41,7 +41,9 @@ These GLBs have no normal maps. Recalculated face normals are enough. A normal m
 
 ## Compression
 
-Ship the GLB uncompressed. The files are flat colour and stay under about 5k triangles. `@react-three/drei`'s `useGLTF` can decode Draco and meshopt when a file contains them, but this pipeline never runs gltf-transform and never sets a compression export flag. `tools/blender-models/validate.mjs` reads the JSON chunk and the POSITION accessor min/max directly. Leave that path intact.
+Exception (E58, 2026-11-02): `office-desk`, `desktop-pc`, `monitor-24`, `monitor-27`, `keyboard` and `mouse` are no longer Blender exports. They come from NVIDIA SimReady (CC BY 4.0) through `tools/simready/build.mjs`, which writes meshopt-compressed GLBs with quantized positions and WebP textures. Do not run the Blender scripts for those ids; they would overwrite the SimReady models. `validate.mjs` reads raw accessor min/max and does not dequantize, so its bbox check does not apply to those six; `tools/simready/build.mjs` prints the fitted size instead.
+
+For everything else, ship the GLB uncompressed. The files are flat colour and stay under about 5k triangles. `@react-three/drei`'s `useGLTF` can decode Draco and meshopt when a file contains them, but this pipeline never runs gltf-transform and never sets a compression export flag. `tools/blender-models/validate.mjs` reads the JSON chunk and the POSITION accessor min/max directly. Leave that path intact.
 
 ## Check
 

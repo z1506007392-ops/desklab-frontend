@@ -8,6 +8,7 @@
     Scene, SRGBColorSpace, Vector3, WebGLRenderer,
   } from 'three';
   import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+  import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
   import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
   const renderer = new WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
@@ -16,7 +17,8 @@
   renderer.toneMapping = ACESFilmicToneMapping;
   document.body.append(renderer.domElement);
   const environment = new PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
-  const loader = new GLTFLoader();
+  // The SimReady-based models (tools/simready) are meshopt-compressed.
+  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 
   // Front faces three.js +Z (tools/blender-models/README.md); the camera
   // looks from the front, a little to the right and above, like a product shot.

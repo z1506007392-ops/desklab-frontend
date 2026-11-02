@@ -20,3 +20,6 @@ tools/ai-eval/results/
 
 # impeccable review captures (regenerated for each finish review)
 .impeccable/review/
+
+# SimReady source downloads (tools/simready/build.mjs)
+tools/simready/.cache/

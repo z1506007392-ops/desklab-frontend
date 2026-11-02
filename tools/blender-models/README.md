@@ -14,6 +14,8 @@ Generates `public/models/<modelId>.glb` for every item in `src/domain/catalog.js
   dims, centres it, and exports. Flat PBR colours only (no textures / UVs), < 5k tris each.
 
 ## Usage
+
+> Since E58 (2026-11-02) `office-desk`, `desktop-pc`, `monitor-24`, `monitor-27`, `keyboard` and `mouse` come from NVIDIA SimReady via `tools/simready/` (see `public/models/CREDITS.md`). Running `office_desk.py`, `desktop_pc.py`, `monitor.py -- monitor-24|monitor-27`, `keyboard.py` into `public/models` would overwrite them. `monitor.py -- ultrawide-monitor` is still in use.
 ```sh
 B=/path/to/blender   # 4.2.x; https://download.blender.org/release/Blender4.2/
 OUT=public/models    # or any dir; scripts read $DESKLAB_OUT (default /workspace/desklab-models)
