@@ -2465,3 +2465,53 @@ test('analysing thirty-plus devices stays well under a frame', () => {
   assert.equal(Number.isInteger(recommendations.total), true);
   assert.ok(elapsed < 200, `analysis took ${elapsed.toFixed(1)}ms`);
 });
+
+// E60: a keyboard, mouse or speakers added from the library get their cable too.
+const addFromLibrary = async (project, modelId, categoryId) => {
+  const { withPortAnchors } = await import('../src/domain/catalog.js');
+  const template = findModelTemplate({ modelId });
+  const placed = placeCatalogObject({
+    modelTemplate: { ...template, ports: withPortAnchors(template.ports, modelId) },
+    categoryId, room: project.room, id: `${modelId}-${project.objects.length}`, objects: project.objects,
+  });
+  assert.equal(placed.valid, true, `${modelId} is placed`);
+  const objects = [...project.objects, placed.object];
+  const lines = buildConnectionCompletion({ ...project, objects }, placed.object.id);
+  return { project: { ...project, objects, connections: [...project.connections, ...lines] }, lines, id: placed.object.id };
+};
+
+test('a keyboard, mouse and speakers added from the library are cabled to the tower before a laptop', async () => {
+  const { buildTemplateScene } = await import('../src/domain/desk-templates.js');
+  for (const templateId of ['desktop-dual', 'gaming', 'home-office']) {
+    let project = buildTemplateScene(templateId);
+    const computer = project.objects.find(object => object.modelId === 'desktop-pc')
+      || project.objects.find(object => object.modelId === 'laptop-15');
+    const usedPorts = new Set();
+    for (const [modelId, categoryId, cableType] of [['keyboard', 'peripheral', 'usb'], ['mouse', 'peripheral', 'usb'], ['speakers', 'audio', 'audio']]) {
+      const added = await addFromLibrary(project, modelId, categoryId);
+      project = added.project;
+      const cable = added.lines.filter(line => line.toObjectId === added.id && line.cableType === cableType);
+      assert.equal(cable.length, 1, `${templateId}: ${modelId} gets one ${cableType} cable`);
+      assert.equal(cable[0].fromObjectId, computer.id, `${templateId}: ${modelId} on ${computer.modelId}`);
+      assert.equal(usedPorts.has(cable[0].fromPortId), false, `${templateId}: ${modelId} on a free port`);
+      usedPorts.add(cable[0].fromPortId);
+    }
+    assert.deepEqual(analyzeProjectWiring(project.objects, project.connections)
+      .filter(issue => issue.severity !== 'info').map(issue => issue.title), [], `${templateId}: wiring stays clean`);
+    assert.equal(buildRecommendations(project).total, 0, `${templateId}: these lines are drawn, never offered as fixes`);
+  }
+});
+
+test('with the tower\'s USB ports taken, another keyboard goes to the laptop, or stays unplugged', async () => {
+  const { buildTemplateScene } = await import('../src/domain/desk-templates.js');
+  let gaming = buildTemplateScene('gaming');
+  for (const modelId of ['keyboard', 'mouse']) gaming = (await addFromLibrary(gaming, modelId, 'peripheral')).project;
+  const second = await addFromLibrary(gaming, 'keyboard', 'peripheral');
+  assert.deepEqual(second.lines.map(line => [line.fromObjectId, line.cableType]), [['laptop', 'usb']]);
+
+  let dual = buildTemplateScene('desktop-dual');
+  for (const modelId of ['keyboard', 'mouse']) dual = (await addFromLibrary(dual, modelId, 'peripheral')).project;
+  const spare = await addFromLibrary(dual, 'keyboard', 'peripheral');
+  assert.deepEqual(spare.lines, [], 'no free USB port, so no line and no complaint');
+  assert.equal(buildRecommendations(spare.project).total, 0);
+});

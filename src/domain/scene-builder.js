@@ -441,6 +441,36 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
     connect(router, 'lan-2', gameConsole, 'eth-1', `${gameConsole.name}网线`);
   }
 
+  // Keyboard, mouse and speakers go on the computer at this desk: the tower
+  // when there is one, else the laptop (E60).
+  const computer = pc || laptop;
+  if (computer) {
+    // Each on the USB port that makes the cables shortest in total (a
+    // laptop has one on each side).
+    const devices = PERIPHERAL_MODEL_IDS
+      .map(modelId => objects.find(object => object.modelId === modelId))
+      .filter(Boolean);
+    const usbPorts = computer.ports.filter(port => port.type === 'usb').map(port => port.id);
+    const route = (portId, device) => evaluateConnectionLength({
+      fromObjectId: computer.id, fromPortId: portId, toObjectId: device.id, toPortId: 'usb-1', length: 1,
+    }, objects)?.distance ?? Infinity;
+    let best = null;
+    for (const first of usbPorts) {
+      for (const second of devices.length > 1 ? usbPorts.filter(portId => portId !== first) : [null]) {
+        const ports = [first, second].slice(0, devices.length);
+        const total = devices.reduce((sum, device, index) => sum + route(ports[index], device), 0);
+        if (!best || total < best.total) best = { ports, total };
+      }
+    }
+    devices.forEach((device, index) => {
+      if (best?.ports[index]) connect(computer, best.ports[index], device, 'usb-1', `${device.name} USB 线`);
+    });
+    const speakers = cornerItems.find(item => item.modelId === 'speakers');
+    if (speakers && computer.ports.some(port => port.id === 'audio-out')) {
+      connect(computer, 'audio-out', speakers, 'audio-in', `${speakers.name}音频线`);
+    }
+  }
+
   // Frame the desk from the user's side. Camera poses use Three.js axes
   // (y is height, z is the room's y axis), matching saved project cameras.
   const camera = {

@@ -64,3 +64,17 @@ test('usb, audio, and power use everyday names', () => {
 test('an empty project says there is nothing to buy', () => {
   assert.equal(buildCableShoppingList([], []).text, '当前没有需要买的线');
 });
+
+test('a keyboard or mouse cable is built in, so it is not on the list', () => {
+  const usb = { id: 'usb', name: 'USB', type: 'usb', direction: 'bidirectional', anchor: { x: 0, y: 0, z: 0 } };
+  const objects = [
+    { ...device('pc', { x: 0, y: 0, z: 0 }), ports: [{ ...usb, id: 'usb-1' }, { ...usb, id: 'usb-2' }, { ...usb, id: 'usb-3' }] },
+    { ...device('keyboard', { x: 0.5, y: 0, z: 0 }), type: 'keyboard', modelId: 'keyboard', ports: [{ ...usb, id: 'usb-1' }] },
+    { ...device('mouse', { x: 0.6, y: 0, z: 0 }), type: 'mouse', modelId: 'mouse', ports: [{ ...usb, id: 'usb-1' }] },
+    { ...device('drive', { x: 0.4, y: 0, z: 0 }), type: 'storage', ports: [{ ...usb, id: 'usb-1' }] },
+  ];
+  const line = (id, to, fromPortId) => ({ id, cableType: 'usb', fromObjectId: 'pc', fromPortId, toObjectId: to, toPortId: 'usb-1' });
+  const { items, text } = buildCableShoppingList([line('k', 'keyboard', 'usb-1'), line('m', 'mouse', 'usb-2'), line('d', 'drive', 'usb-3')], objects);
+  assert.deepEqual(items.map(item => [item.name, item.quantity]), [['1 米 USB-A 线', 1]], 'only the drive needs a cable');
+  assert.equal(text, '要买的线\n- 1 米 USB-A 线 ×1');
+});

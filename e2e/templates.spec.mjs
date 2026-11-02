@@ -117,6 +117,16 @@ test('a generated desk comes with a keyboard and mouse by default', async ({ pag
   await expect(devices.locator('option', { hasText: '鼠标' })).toHaveCount(1);
   await expect(page.getByRole('button', { name: /^布局检查/ })).toHaveAccessibleName('布局检查');
   await expect(page.getByRole('button', { name: /^布线检查/ })).toHaveAccessibleName('布线检查');
+  // Both are on the laptop's USB ports (E60); their cables come with them.
+  await page.getByRole('button', { name: '所有连接', exact: true }).click();
+  const connections = page.getByRole('dialog', { name: '全部连接清单', exact: true });
+  for (const name of ['键盘 USB 线', '鼠标 USB 线']) {
+    await expect(connections.getByRole('row').filter({ hasText: name })).toContainText('15 英寸笔记本');
+  }
+  await connections.getByRole('button', { name: '购线清单', exact: true }).click();
+  const shop = page.getByRole('dialog', { name: '购线清单', exact: true });
+  await expect(shop).toContainText('键盘、鼠标的线是自带的，不算在里面');
+  await expect(shop.getByRole('group', { name: '要买的线' })).not.toContainText('USB');
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
 

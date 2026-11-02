@@ -44,6 +44,10 @@ const CABLE_COLORS = {
   power: '#e53935',
   hdmi: '#1e88e5',
   usb_c: '#43a047',
+  // USB-A and audio had the grey of "other", which disappears on the grey desk
+  // top; keyboards, mice and speakers are cabled now (E60).
+  usb: '#00897b',
+  audio: '#6d4c41',
   ethernet: '#fb8c00',
   displayport: '#8e24aa',
   other: '#757575',
@@ -192,6 +196,8 @@ const PORT_MARKER_COLORS = {
   hdmi: '#1e88e5',
   displayport: '#8e24aa',
   usb_c: '#43a047',
+  usb: '#00897b',
+  audio: '#6d4c41',
   ethernet: '#fb8c00',
   other: '#757575',
 };

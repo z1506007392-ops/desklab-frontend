@@ -39,15 +39,28 @@ function shopCableName(cableType) {
   return SHOP_CABLE_NAMES[cableType] || SHOP_CABLE_NAMES.other;
 }
 
+// A wired keyboard or mouse has its cable built in (E60): nothing to buy.
+const BUILT_IN_CABLE_DEVICES = new Set(['keyboard', 'mouse']);
+
+function hasBuiltInCable(connection, objectsById) {
+  return [connection.fromObjectId, connection.toObjectId].some(id => {
+    const object = objectsById.get(id);
+    return object && (BUILT_IN_CABLE_DEVICES.has(object.type) || BUILT_IN_CABLE_DEVICES.has(object.modelId));
+  });
+}
+
 /**
- * Cables to buy for the connections already drawn. Same kind and same shop
+ * Cables to buy for the connections already drawn, leaving out the ones a
+ * keyboard or mouse comes with. Same kind and same shop
  * length are merged. Names are plain words; object and port ids are not shown.
  * Returns { items: [{ name, length, quantity }], text }.
  */
 export function buildCableShoppingList(connections, objects) {
   const items = [];
   const byKey = new Map();
+  const objectsById = new Map((objects || []).map(object => [object.id, object]));
   for (const connection of Array.isArray(connections) ? connections : []) {
+    if (hasBuiltInCable(connection, objectsById)) continue;
     const route = getConnectionRoute(connection, objects || []);
     const length = shopCableLength(route?.length ?? NaN);
     if (length === null) continue;

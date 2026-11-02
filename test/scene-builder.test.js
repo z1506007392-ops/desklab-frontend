@@ -12,6 +12,8 @@ import { analyzeProjectLayout } from '../src/domain/layout-analysis.js';
 import { analyzeProjectWiring } from '../src/domain/analysis.js';
 import { buildRecommendations } from '../src/domain/recommendations.js';
 import { isProjectEnvelope } from '../src/domain/project-validation.js';
+import { buildCableShoppingList } from '../src/domain/cable-shopping-list.js';
+import { evaluateConnectionLength } from '../src/domain/connections.js';
 
 const actionable = issues => issues.filter(issue => issue.severity === 'error' || issue.severity === 'warning');
 
@@ -340,4 +342,66 @@ test('on the shallowest desk a laptop in front and the screens behind it do not 
   const desk = byModel(deep, 'office-desk')[0];
   const monitor = byModel(deep, 'monitor-27')[0];
   assert.ok(Math.abs(desk.position.y + desk.scale.y / 2 - 0.15 - monitor.position.y) < 1e-9);
+});
+
+// E60: the keyboard, mouse and speakers are on the computer like everything else.
+const linesBetween = (scene, fromId, toId) => scene.connections.filter(connection =>
+  connection.fromObjectId === fromId && connection.toObjectId === toId);
+
+test('the keyboard and mouse go on the tower when there is one, else the laptop, each on its own USB port', () => {
+  const ids = Object.keys(DESK_SCENE_DEVICE_LIMITS).filter(modelId => !['keyboard', 'mouse'].includes(modelId));
+  const combos = [[]];
+  for (const modelId of ids) {
+    const next = [];
+    for (const combo of combos) {
+      for (let count = 0; count <= DESK_SCENE_DEVICE_LIMITS[modelId]; count += 1) next.push(count ? [...combo, { modelId, count }] : combo);
+    }
+    combos.splice(0, combos.length, ...next);
+  }
+  for (const devices of combos) {
+    const scene = withPeripherals(devices, { length: 1.4, depth: 0.7 });
+    const label = devices.map(({ modelId, count }) => `${modelId}×${count}`).join(' ') || 'nothing else';
+    const computer = byModel(scene, 'desktop-pc')[0] || byModel(scene, 'laptop-15')[0];
+    const peripherals = ['keyboard', 'mouse'].map(modelId => byModel(scene, modelId)[0]);
+    const lines = peripherals.flatMap(device => scene.connections.filter(connection => connection.toObjectId === device.id));
+    if (!computer) {
+      assert.deepEqual(lines, [], `${label}: nothing to plug into`);
+      continue;
+    }
+    assert.deepEqual(lines.map(line => [line.fromObjectId, line.cableType, line.toPortId]),
+      [[computer.id, 'usb', 'usb-1'], [computer.id, 'usb', 'usb-1']], `${label}: both on ${computer.id}`);
+    assert.notEqual(lines[0].fromPortId, lines[1].fromPortId, `${label}: different ports`);
+    assert.deepEqual(actionable(analyzeProjectWiring(scene.objects, scene.connections)).map(issue => issue.title), [], `${label}: wiring`);
+  }
+});
+
+test('on a laptop the keyboard and mouse take the USB ports that make the shortest cables', () => {
+  const scene = withPeripherals([{ modelId: 'laptop-15', count: 1 }, { modelId: 'monitor-27', count: 1 }], { length: 1.4, depth: 0.7 });
+  const laptop = byModel(scene, 'laptop-15')[0];
+  const [keyboard, mouse] = ['keyboard', 'mouse'].map(modelId => byModel(scene, modelId)[0]);
+  const [keyboardLine] = linesBetween(scene, laptop.id, keyboard.id);
+  const [mouseLine] = linesBetween(scene, laptop.id, mouse.id);
+  const again = withPeripherals([{ modelId: 'laptop-15', count: 1 }, { modelId: 'monitor-27', count: 1 }], { length: 1.4, depth: 0.7 });
+  const routeOf = line => evaluateConnectionLength(line, scene.objects).distance;
+  const swap = line => ({ ...line, fromPortId: line.fromPortId === 'usb-1' ? 'usb-2' : 'usb-1' });
+  assert.ok(routeOf(keyboardLine) + routeOf(mouseLine) <= routeOf(swap(keyboardLine)) + routeOf(swap(mouseLine)) + 1e-9);
+  assert.deepEqual(again.connections, scene.connections, 'the same every time');
+  assertReadyToUse(scene, 'laptop with keyboard and mouse');
+});
+
+test('the speakers take the computer\'s headphone jack, and only their cable goes on the shopping list', () => {
+  for (const computer of ['desktop-pc', 'laptop-15']) {
+    const scene = buildDeskScene({
+      devices: [{ modelId: computer, count: 1 }, { modelId: 'monitor-24', count: 1 }, ...allExtras],
+      desk: { length: 1.6, depth: 0.8 },
+    });
+    const speakers = byModel(scene, 'speakers')[0];
+    const pc = byModel(scene, computer)[0];
+    assert.deepEqual(linesBetween(scene, pc.id, speakers.id).map(line => [line.fromPortId, line.toPortId, line.cableType]),
+      [['audio-out', 'audio-in', 'audio']], computer);
+    assertReadyToUse(scene, `${computer} with every extra`);
+    const { items } = buildCableShoppingList(scene.connections, scene.objects);
+    assert.equal(items.filter(item => item.name.includes('USB-A')).length, 0, `${computer}: a keyboard or mouse cable is built in`);
+    assert.equal(items.filter(item => item.name.includes('3.5mm 音频线')).length, 1, `${computer}: the speakers cable is listed`);
+  }
 });

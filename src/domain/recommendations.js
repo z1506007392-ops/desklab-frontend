@@ -44,7 +44,8 @@ const SUGGESTION_ORDER = {
   auto_power_device: 3,
   auto_network_device: 4,
   auto_connect_display: 5,
-  extend_cable: 6,
+  auto_connect_peripheral: 6,
+  extend_cable: 7,
 };
 
 function compareSuggestions(first, second) {
@@ -494,6 +495,70 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
     }
   }
 
+  // 5. 自动连接键盘、鼠标、音箱 (auto_connect_peripheral, E60): a keyboard or
+  // mouse goes on a free USB port of a computer, speakers on its headphone
+  // jack. The tower comes before a laptop, then the nearest.
+  const PERIPHERAL_LINKS = { keyboard: 'usb', mouse: 'usb', speakers: 'audio' };
+  const isComputer = object => object.category === 'computer'
+    || object.type === 'desktop-pc' || object.type === 'laptop';
+  const computerRank = object => (object.type === 'desktop-pc' || object.modelId === 'desktop-pc' ? 0 : 1);
+  for (const object of actionableObjects) {
+    const portType = PERIPHERAL_LINKS[object.type] || PERIPHERAL_LINKS[object.modelId];
+    if (!portType) continue;
+    for (const port of getActionablePortRecords(object)) {
+      if (port.type !== portType || port.direction === 'output') continue;
+      if (occupiedPorts.get(object.id)?.has(port.id)) continue;
+
+      // The port with the shortest route (a laptop has one on each side).
+      let best = null;
+      for (const candidate of actionableObjects) {
+        if (candidate.id === object.id || !isComputer(candidate)) continue;
+        const rank = computerRank(candidate);
+        for (const candidatePort of getActionablePortRecords(candidate)) {
+          if (candidatePort.type !== portType || candidatePort.direction === 'input') continue;
+          if (occupiedPorts.get(candidate.id)?.has(candidatePort.id)) continue;
+          const distance = evaluateConnectionLength({
+            fromObjectId: candidate.id, fromPortId: candidatePort.id, toObjectId: object.id, toPortId: port.id, length: 1,
+          }, actionableObjects)?.distance ?? calculatePositionDistance(object.position, candidate.position);
+          if (distance === null || distance === undefined) continue;
+          if (!best || rank < best.rank || (rank === best.rank && distance < best.distance)) {
+            best = { device: candidate, port: candidatePort, distance, rank };
+          }
+        }
+      }
+      if (!best) continue;
+
+      const audio = portType === 'audio';
+      const length = autoCableLength({
+        fromObjectId: best.device.id, fromPortId: best.port.id, toObjectId: object.id, toPortId: port.id,
+      }, actionableObjects, Math.max(1.0, best.distance * 1.1 + 0.3));
+      suggestions.push({
+        id: `auto-peripheral:${object.id}:${port.id}`,
+        code: 'auto_connect_peripheral',
+        title: `把"${object.name}"接到电脑上`,
+        description: `"${object.name}"还没有接到电脑。可自动用一根 ${length}m 的${audio ? '音频线' : ' USB 线'}接到"${best.device.name}"的"${best.port.name}"。`,
+        objectIds: [best.device.id, object.id],
+        patch: {
+          newConnection: {
+            id: allocateConnectionId(`c-auto-peripheral-${object.id}-${port.id}`),
+            name: `${object.name}${audio ? '音频线' : ' USB 线'}`,
+            cableType: inferCableType(best.port, port),
+            length,
+            fromObjectId: best.device.id,
+            fromPortId: best.port.id,
+            toObjectId: object.id,
+            toPortId: port.id,
+          },
+        },
+      });
+      for (const [id, portId] of [[best.device.id, best.port.id], [object.id, port.id]]) {
+        if (!occupiedPorts.has(id)) occupiedPorts.set(id, new Set());
+        occupiedPorts.get(id).add(portId);
+      }
+      break;
+    }
+  }
+
   return suggestions.sort(compareSuggestions);
 }
 
@@ -761,8 +826,9 @@ export function applyAllAvailableImprovements(project) {
 }
 
 // Lines that only complete the model: the user's real devices are already
-// plugged in and cabled, so these are drawn for them rather than suggested.
-const MODEL_COMPLETION_CODES = new Set(['auto_power_device', 'auto_connect_display', 'auto_network_device']);
+// plugged in and cabled (a keyboard or mouse is on the computer, E60), so
+// these are drawn for them rather than suggested.
+const MODEL_COMPLETION_CODES = new Set(['auto_power_device', 'auto_connect_display', 'auto_network_device', 'auto_connect_peripheral']);
 const MAX_COMPLETION_PASSES = 5;
 
 /**
