@@ -80,17 +80,14 @@ test('things on the floor stay on the floor when moved without z', () => {
   assert.equal(find(next, 'desktop-pc').position.z, pc.scale.z / 2);
 });
 
-test('unknown devices, outside the room, outlets, and loaded desks are refused', () => {
+test('unknown devices, outside the room, outlets and unsupported changes are refused', () => {
   const project = gaming();
-  const desk = find(project, 'office-desk');
   const outlet = find(project, 'wall-outlet');
   const router = find(project, 'router');
   for (const [action, reason] of [
     [{ type: 'move', objectId: 'ghost', x: 0, y: 0 }, '找不到设备 ghost'],
     [{ type: 'move', objectId: router.id, x: 5, y: 0 }, '位置超出房间'],
     [{ type: 'move', objectId: outlet.id, x: 0, y: 1.74 }, '墙壁插座不能移动'],
-    [{ type: 'move', objectId: desk.id, x: 0.2, y: desk.position.y }, '桌上有设备时不移动桌子'],
-    [{ type: 'rotate', objectId: desk.id, rotationZ: 90 }, '桌上有设备时不移动桌子'],
     [{ type: 'remove', objectId: router.id }, '不支持的改动'],
     [{ type: 'add', modelId: 'router' }, '不支持的改动'],
   ]) {
@@ -100,7 +97,7 @@ test('unknown devices, outside the room, outlets, and loaded desks are refused',
   }
 });
 
-test('a clamp stand holds the monitor, and cannot be pulled out from under it', () => {
+test('a clamp stand holds the monitor, and moving the stand takes the monitor along', () => {
   const project = gaming();
   const monitor = find(project, 'ultrawide-monitor');
   const top = deskTop(project);
@@ -119,8 +116,10 @@ test('a clamp stand holds the monitor, and cannot be pulled out from under it', 
     objects: project.objects.map(object => (object.id === monitor.id ? raised : object)).concat(stand),
   };
   const pulled = applyAiActions(withStand, [{ type: 'move', objectId: 'stand', x: stand.position.x + 0.4, y: stand.position.y }]);
-  assert.equal(pulled.project, null);
-  assert.equal(pulled.rejected[0].reason, '上面还有设备，先挪开再移动');
+  assert.notEqual(pulled.project, null, pulled.rejected.map(item => item.reason).join());
+  const movedMonitor = find(pulled.project, monitor.modelId);
+  assert.ok(Math.abs(movedMonitor.position.x - (raised.position.x + 0.4)) < 1e-9, 'the monitor went with the stand');
+  assert.equal(movedMonitor.position.z, raised.position.z, 'still on the stand');
   const stayed = applyAiActions(withStand, [{ type: 'move', objectId: monitor.id, x: monitor.position.x + 0.02, y: monitor.position.y, z: raised.position.z }]);
   assert.notEqual(stayed.project, null, stayed.rejected.map(item => item.reason).join());
 });
@@ -270,4 +269,26 @@ test('changed devices are listed for highlighting', async () => {
   assert.deepEqual(changedObjectIds({ ...project, connections: project.connections.map(c => (c.id === video.id ? { ...c, length: 10 } : c)) }, shorter).sort(),
     [video.fromObjectId, video.toObjectId].sort());
   assert.deepEqual(changedObjectIds(project, project), []);
+});
+
+// Since E48 what stands on a desk goes along when it moves; the AI's moves
+// and turns do the same instead of refusing a loaded desk.
+test('moving or turning a loaded desk takes what stands on it along', () => {
+  const project = gaming();
+  const desk = find(project, 'office-desk');
+  const monitor = find(project, 'ultrawide-monitor');
+  const laptop = find(project, 'laptop-15');
+  const moved = applyAiActions(project, [{ type: 'move', objectId: desk.id, x: desk.position.x, y: desk.position.y - 0.3 }]);
+  assert.notEqual(moved.project, null, moved.rejected.map(item => item.reason).join());
+  for (const device of [monitor, laptop]) {
+    const after = find(moved.project, device.modelId);
+    assert.ok(Math.abs(after.position.y - (device.position.y - 0.3)) < 1e-9, `${device.id} moved with the desk`);
+    assert.equal(after.position.z, device.position.z, `${device.id} still on the desk`);
+  }
+  const pc = find(project, 'desktop-pc');
+  assert.deepEqual(find(moved.project, pc.modelId).position, pc.position, 'the tower on the floor stays');
+
+  const turned = applyAiActions(moved.project, [{ type: 'rotate', objectId: desk.id, rotationZ: 15 }]);
+  assert.notEqual(turned.project, null, turned.rejected.map(item => item.reason).join());
+  assert.equal(find(turned.project, monitor.modelId).rotation.z, (monitor.rotation.z + 15) % 360, 'the screen turns with the desk');
 });

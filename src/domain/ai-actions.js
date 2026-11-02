@@ -12,6 +12,7 @@ import { isDesk } from './layout-heuristics.js';
 import { scoreLayout } from './layout-score.js';
 import { isProjectEnvelope } from './project-validation.js';
 import { getRecordItems } from './record-collections.js';
+import { findRiders, updateWithRiders } from './riders.js';
 
 // Turns AI suggestions into checked project changes (roadmap §6.6). The AI
 // only proposes; every action goes through the same geometry and wiring
@@ -37,12 +38,6 @@ function findObject(project, id) {
   return project.objects.find(object => object.id === id) ?? refuse(`找不到设备 ${id}`);
 }
 
-function hasLoad(project, desk) {
-  return project.objects.some(object => {
-    const support = findSupportingObject(object, project.objects);
-    return support?.kind === 'object' && support.id === desk.id;
-  });
-}
 
 function restsOnDesk(object, objects) {
   const seen = new Set();
@@ -59,18 +54,21 @@ function restsOnDesk(object, objects) {
   return false;
 }
 
-function assertMovable(project, object) {
+// What stands on a moved or turned desk (or stand) goes along with it, the
+// same way a user edit carries it (E48), so a loaded desk can be moved too.
+function assertMovable(object) {
   if (isWallOutlet(object)) refuse('墙壁插座不能移动');
-  if (hasLoad(project, object)) {
-    refuse(isDesk(object) ? '桌上有设备时不移动桌子' : '上面还有设备，先挪开再移动');
-  }
 }
+
+const carryAlong = (project, next) => ({ ...project, objects: updateWithRiders(project.objects, next, project.room) });
 
 // Place an object at a new spot. With an explicit z it stays there (the
 // analysis then judges it); otherwise it keeps its level: things on the
 // floor stay on the floor, everything else drops onto the highest support.
 function placeObject(project, object, position, { keepFloor }) {
-  const others = project.objects.filter(other => other.id !== object.id);
+  // What stands on it moves with it, so it is not in the way.
+  const riders = new Set(findRiders(object, project.objects).map(rider => rider.id));
+  const others = project.objects.filter(other => other.id !== object.id && !riders.has(other.id));
   let candidate = { ...object, position: { ...object.position, ...position } };
   if (position.z === undefined) {
     if (keepFloor) {
@@ -119,13 +117,13 @@ function nextConnectionId(project, base) {
 const ACTIONS = {
   move(project, action) {
     const object = findObject(project, action.objectId);
-    assertMovable(project, object);
+    assertMovable(object);
     const keepFloor = findSupportingObject(object, project.objects)?.kind === 'floor';
-    return replaceObject(project, placeObject(project, object, { x: action.x, y: action.y, z: action.z }, { keepFloor }));
+    return carryAlong(project, placeObject(project, object, { x: action.x, y: action.y, z: action.z }, { keepFloor }));
   },
   rotate(project, action) {
     const object = findObject(project, action.objectId);
-    assertMovable(project, object);
+    assertMovable(object);
     const rotationZ = ((action.rotationZ % 360) + 360) % 360;
     const rotated = { ...object, rotation: { ...object.rotation, z: rotationZ } };
     const constrained = validateAndConstrainObject(rotated, project.room);
@@ -133,7 +131,7 @@ const ACTIONS = {
       || ['x', 'y', 'z'].some(axis => Math.abs(constrained.object.position[axis] - rotated.position[axis]) > GEOMETRY_EPSILON)) {
       refuse('转过去会超出房间');
     }
-    return replaceObject(project, constrained.object);
+    return carryAlong(project, constrained.object);
   },
   swap(project, action) {
     if (action.objectIdA === action.objectIdB) refuse('不能和自己交换位置');

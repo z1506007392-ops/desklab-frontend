@@ -173,3 +173,43 @@ test('the user can tell the AI what to change and get a new answer', async ({ pa
   expect(evidence.aiRequests[1].followUp.previousSuggestions.map(s => s.id)).toEqual(['floor', 'worse']);
   expect(evidence.errors).toEqual([]);
 });
+
+// The desk pushed 0.3 m right, with what stands on it, runs into the tower.
+// Moving the desk back is now a suggestion the app can take: its screen and
+// laptop go along, as when the user moves it (E48), instead of being refused.
+test('an AI suggestion to move a desk with things on it takes them along', async ({ page }) => {
+  const base = buildTemplateScene('gaming');
+  const onDesk = new Set(['office-desk', 'ultrawide-monitor', 'laptop-15']);
+  const objects = base.objects.map(object => (onDesk.has(object.modelId)
+    ? { ...object, position: { ...object.position, x: object.position.x + 0.3 } }
+    : object));
+  const scene = { ...base, objects };
+  const desk = objects.find(object => object.modelId === 'office-desk');
+  const ai = () => ({
+    version: 1,
+    model: 'test',
+    suggestions: [{ id: 'desk', title: '书桌往左挪开主机', reason: '书桌不再顶着主机，腿下和主机都有空间。', category: 'space',
+      actions: [{ type: 'move', objectId: desk.id, x: 0, y: desk.position.y }] }],
+  });
+  const evidence = await openProject(page, scene.objects, scene.connections, { room: scene.room, ai });
+  await expect(page.getByRole('button', { name: /^布局检查/ })).not.toHaveAccessibleName('布局检查');
+  const { dialog, section } = await openAiSection(page);
+  await section.getByRole('button', { name: '让 AI 看看', exact: true }).click();
+  const card = section.getByRole('group', { name: '书桌往左挪开主机', exact: true });
+  await expect(card).toBeVisible();
+  await card.getByRole('button', { name: '预览', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.getByRole('region', { name: 'AI 预览', exact: true }).getByRole('button', { name: '应用', exact: true }).click();
+  await expect(page.getByText(/已应用 AI 建议：书桌往左挪开主机/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /^布局检查/ })).toHaveAccessibleName('布局检查');
+
+  await page.getByRole('button', { name: '保存项目', exact: true }).click();
+  const stored = () => page.evaluate(key => JSON.parse(localStorage.getItem(key)).objects, PROJECT_STORAGE_KEY);
+  await expect.poll(async () => (await stored()).find(object => object.modelId === 'office-desk').position.x).toBeCloseTo(0, 6);
+  const saved = await stored();
+  for (const modelId of ['ultrawide-monitor', 'laptop-15']) {
+    const before = base.objects.find(object => object.modelId === modelId);
+    expect(saved.find(object => object.modelId === modelId).position.x, `${modelId} came along`).toBeCloseTo(before.position.x, 6);
+  }
+  expect(evidence.errors).toEqual([]);
+});
