@@ -190,10 +190,17 @@ test('a desk moved and turned takes what stands on it along, and undo puts it al
   expect(movedTower).toEqual(tower);
   await expect(page.getByRole('button', { name: /^布局检查/ }), 'nothing left floating or overlapping').toHaveAccessibleName('布局检查');
 
-  // One undo for the turn, one for the moves; the screen comes back with the desk.
+  // One undo for the turn, then the moves; the screen comes back with the
+  // desk. Arrow presses less than half a second apart are one undo step
+  // (unit-tested with a fake clock in project-history.test.js); on the CI
+  // runner a press can wait longer than that for a frame, so undo until the
+  // desk is back, at most once per press.
   await page.getByRole('button', { name: '撤销', exact: true }).click();
   expect((await posesOf('带鱼屏显示器'))[0].turn).toBeCloseTo(screen.turn, 1);
-  await page.getByRole('button', { name: '撤销', exact: true }).click();
+  for (let step = 0; step < 3; step += 1) {
+    await page.getByRole('button', { name: '撤销', exact: true }).click();
+    if ((await posesOf('书桌'))[0].y === desk.y) break;
+  }
   expect(await posesOf('带鱼屏显示器', '书桌')).toEqual([screen, desk]);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
