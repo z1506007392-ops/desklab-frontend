@@ -17,6 +17,10 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-02 · Claude · master
 
+CI：E51（`bd167cf`）和领 E52（`bcf357d`）整套全绿，包括 iPhone WebKit。E52（`469ebac`）线上核对过：部署后在 https://desklab-frontend.pages.dev 桌面和手机上，书桌旁地上的 24 寸按 6 次方向键挪上桌，x = 0.65、z = 0.91 站在桌面上，布局检查没有问题数，没有控制台或页面错误，手机截图看过。还剩：E52 自己的 CI（推送时还在跑）。
+
+### 2026-11-02 · Claude · master
+
 E51（`bd167cf`）线上核对过：部署后在 https://desklab-frontend.pages.dev 桌面和手机上，书桌旁地上的 24 寸横着拖到桌上，松手后 z = 0.91、站在桌面上，布局检查没有问题数，没有控制台错误，手机截图看过。
 
 E52 完成：方向键挪设备也像拖动一样落下、站上去。E51 记下的限制：只用键盘的人（E6、E39 让他们能选中和编辑设备）不能拖动，方向键把地上的显示器挪到桌子上会嵌在桌子里，把桌上的显示器挪出桌面会悬在半空；拖动松手时这两种情况都会处理（E1、E51）。做法：`App.jsx` 的设备快捷键里，方向键算出新位置后（先 `validateAndConstrainObject` 留在房间内），用和拖动松手同一个 `settleAfterDrag` 判断要不要落下或站上去，有结果就用它的位置，仍走 `updateSelectedObject`（桌上的东西跟着、方向键连按合并成一步撤销都不变）。空格和 Shift+空格是用户明确要抬高、降低，不处理；Q/E 转动不变。`useLayoutEffect` 的依赖加上 `room`（lint 的 exhaustive-deps 警告，修后 0 警告，和以前一样）。
