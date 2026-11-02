@@ -1,5 +1,5 @@
 import { withPortAnchors } from './catalog.js';
-import { getObjectBounds, horizontalFootprintsOverlap, objectsOverlap, validateAndConstrainObject } from './geometry.js';
+import { getObjectBounds, getRotatedFootprint, horizontalFootprintsOverlap, objectsOverlap, validateAndConstrainObject } from './geometry.js';
 import { createEntityId } from './identifiers.js';
 import { findSupportingObject, snapWallOutletToNearestWall } from './layout-analysis.js';
 
@@ -86,10 +86,16 @@ function* spiralOffsets(maxRadius) {
   }
 }
 
-// The user sits on the desk's -y side (the default camera side), so "in front
-// of the desk" means a smaller y than the desk's front edge.
-function isInFrontOfDesk(candidate, deskBounds) {
-  return candidate.position.y < deskBounds.minY;
+// The user sits on the desk's own -y side, so "in front of the desk" means
+// past the desk's front edge in its own frame, whichever way it is turned.
+function isInFrontOfDesk(candidate, frame) {
+  return frame.toLocal(candidate.position).y < -frame.halfY;
+}
+
+// Half an object's footprint along the desk's own x and y axes.
+function halfAlongDesk(object, desk) {
+  const { sizeX, sizeY } = getRotatedFootprint(object.scale, (object.rotation?.z ?? 0) - (desk.rotation?.z ?? 0));
+  return { x: sizeX / 2, y: sizeY / 2 };
 }
 
 // Where an object's footprint spans along the desk's own x axis (the line
@@ -121,19 +127,18 @@ function blocksScreenView(candidate, desk, objects, allowInFront) {
   });
 }
 
+// Rows and columns run along the desk's own axes, so the back edge is the
+// back and the seat half is the seat half however the desk is turned.
 function findOnDesk(object, desk, room, objects, { preferFront, isScreen }) {
-  const deskBounds = getObjectBounds(desk);
-  const objectBounds = getObjectBounds(object);
-  if (!deskBounds || !objectBounds) return null;
-  const halfX = objectBounds.sizeX / 2;
-  const halfY = objectBounds.sizeY / 2;
-  const minX = deskBounds.minX + DESK_EDGE_MARGIN + halfX;
-  const maxX = deskBounds.maxX - DESK_EDGE_MARGIN - halfX;
-  const minY = deskBounds.minY + DESK_EDGE_MARGIN + halfY;
-  const maxY = deskBounds.maxY - DESK_EDGE_MARGIN - halfY;
+  const frame = deskFrame(desk);
+  const half = halfAlongDesk(object, desk);
+  const minX = -frame.halfX + DESK_EDGE_MARGIN + half.x;
+  const maxX = frame.halfX - DESK_EDGE_MARGIN - half.x;
+  const minY = -frame.halfY + DESK_EDGE_MARGIN + half.y;
+  const maxY = frame.halfY - DESK_EDGE_MARGIN - half.y;
   if (minX > maxX || minY > maxY) return null;
 
-  const z = deskBounds.maxZ + objectBounds.sizeZ / 2;
+  const z = frame.top + object.scale.z / 2;
   const rowYs = [];
   for (let y = preferFront ? minY : maxY; preferFront ? y <= maxY + 1e-9 : y >= minY - 1e-9; y += preferFront ? SEARCH_STEP : -SEARCH_STEP) {
     rowYs.push(y);
@@ -149,7 +154,7 @@ function findOnDesk(object, desk, room, objects, { preferFront, isScreen }) {
   for (const allowInFront of isScreen ? [false, true] : [true]) {
     for (const y of rowYs) {
       for (const x of columnXs) {
-        const candidate = { ...object, position: { ...object.position, x, y, z } };
+        const candidate = { ...object, position: { ...frame.toWorld(x, y), z } };
         if (isScreen && blocksScreenView(candidate, desk, objects, allowInFront)) continue;
         if (horizontalFootprintsOverlap(candidate, desk) && fitsFreely(candidate, room, objects)) return candidate;
       }
@@ -158,30 +163,29 @@ function findOnDesk(object, desk, room, objects, { preferFront, isScreen }) {
   return null;
 }
 
-function* besideDeskPositions(object, deskBounds) {
-  const bounds = getObjectBounds(object);
-  const halfX = bounds.sizeX / 2;
-  const halfY = bounds.sizeY / 2;
+function* besideDeskPositions(object, desk) {
+  const frame = deskFrame(desk);
+  const half = halfAlongDesk(object, desk);
   // Behind the desk first (strips and adapters fit in the gap to the wall)...
-  const behindY = deskBounds.maxY + BEHIND_DESK_GAP + halfY;
-  const centerX = (deskBounds.minX + deskBounds.maxX) / 2;
-  for (let offset = 0; offset <= (deskBounds.maxX - deskBounds.minX) / 2; offset += SEARCH_STEP) {
-    yield { x: centerX + offset, y: behindY };
-    if (offset > 0) yield { x: centerX - offset, y: behindY };
+  const behindY = frame.halfY + BEHIND_DESK_GAP + half.y;
+  for (let offset = 0; offset <= frame.halfX; offset += SEARCH_STEP) {
+    yield frame.toWorld(offset, behindY);
+    if (offset > 0) yield frame.toWorld(-offset, behindY);
   }
   // ...then along the desk's two sides, from the back toward the front.
-  for (const x of [deskBounds.maxX + DESK_SIDE_GAP + halfX, deskBounds.minX - DESK_SIDE_GAP - halfX]) {
-    for (let y = deskBounds.maxY + BEHIND_DESK_GAP + halfY; y - halfY >= deskBounds.minY - 1e-9; y -= SEARCH_STEP) {
-      yield { x, y };
+  const sideX = frame.halfX + DESK_SIDE_GAP + half.x;
+  for (const x of [sideX, -sideX]) {
+    for (let y = behindY; y - half.y >= -frame.halfY - 1e-9; y -= SEARCH_STEP) {
+      yield frame.toWorld(x, y);
     }
   }
 }
 
 function findOnFloor(object, reference, room, objects, desk) {
   const z = object.scale.z / 2;
-  const deskBounds = desk ? getObjectBounds(desk) : null;
-  if (deskBounds) {
-    for (const { x, y } of besideDeskPositions(object, deskBounds)) {
+  const frame = desk ? deskFrame(desk) : null;
+  if (desk) {
+    for (const { x, y } of besideDeskPositions(object, desk)) {
       const candidate = { ...object, position: { ...object.position, x, y, z } };
       if (fitsFreely(candidate, room, objects)) return candidate;
     }
@@ -191,7 +195,7 @@ function findOnFloor(object, reference, room, objects, desk) {
   for (const { dx, dy } of spiralOffsets(maxRadius)) {
     const candidate = { ...object, position: { ...object.position, x: reference.x + dx, y: reference.y + dy, z } };
     if (!fitsFreely(candidate, room, objects)) continue;
-    if (deskBounds && isInFrontOfDesk(candidate, deskBounds)) {
+    if (frame && isInFrontOfDesk(candidate, frame)) {
       inFront ??= candidate;
       continue;
     }
@@ -200,11 +204,13 @@ function findOnFloor(object, reference, room, objects, desk) {
   return inFront;
 }
 
-function findOnWall(object, reference, room, objects) {
+// `along(offset)` is the point `offset` metres along the line the search
+// follows; each point snaps to the wall nearest it.
+function findOnWall(object, along, room, objects) {
   const maxOffset = Math.max(room.length, room.width);
   for (let offset = 0; offset <= maxOffset; offset += SEARCH_STEP * 2) {
     for (const sign of offset === 0 ? [1] : [1, -1]) {
-      const proposed = { ...object, position: { x: reference.x + sign * offset, y: reference.y, z: OUTLET_HEIGHT } };
+      const proposed = { ...object, position: { ...along(sign * offset), z: OUTLET_HEIGHT } };
       const snapped = snapWallOutletToNearestWall(room, proposed);
       if (snapped && fitsFreely(snapped, room, objects)) return snapped;
     }
@@ -417,10 +423,12 @@ function findFreePlacement(object, categoryId, modelTemplate, room, objects) {
     }
   }
   if (isWallOutlet(modelTemplate)) {
-    // Toward the wall behind the desk: start from the desk's far edge.
-    const deskBounds = desks[0] ? getObjectBounds(desks[0]) : null;
-    const start = deskBounds ? { x: reference.x, y: deskBounds.maxY } : reference;
-    return findOnWall(object, start, room, objects);
+    // Toward the wall behind the desk: along the desk's back edge.
+    const frame = desks[0] ? deskFrame(desks[0]) : null;
+    const along = frame
+      ? offset => frame.toWorld(offset, frame.halfY)
+      : offset => ({ x: reference.x + offset, y: reference.y });
+    return findOnWall(object, along, room, objects);
   }
   if (isDeskTopDevice(categoryId, modelTemplate)) {
     for (const desk of desks) {

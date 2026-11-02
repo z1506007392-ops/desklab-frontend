@@ -285,6 +285,52 @@ for (const turn of [0, 90]) {
   });
 }
 
+// The search on the desk, beside it and along the wall runs in the desk's
+// own frame: a turned desk gets the same layout as an unturned one.
+test('on a turned desk, screens, laptops, the PC and the outlet go where they would on an unturned one', () => {
+  const ids = ['monitor-27', 'laptop-15', 'desktop-pc', 'router', 'power-strip', 'wall-outlet'];
+  const layouts = [0, 90, 180, 270, 45].map(turn => {
+    const { model, categoryId } = templateFor('office-desk');
+    const placedDesk = placeCatalogObject({ modelTemplate: model, categoryId, room: homeRoom, id: 'desk' }).object;
+    const desk = { ...placedDesk, rotation: { ...placedDesk.rotation, z: turn } };
+    const objects = ids.reduce((current, modelId) => addTo(current, modelId), [desk]);
+    const at = modelId => localTo(desk, objects.find(object => object.modelId === modelId));
+    const halfY = desk.scale.y / 2;
+
+    assert.ok(Math.abs(at('monitor-27').x) < 1e-6 && at('monitor-27').y > halfY / 2, `${turn}°: screen centred at the back`);
+    assert.ok(at('laptop-15').y < 0, `${turn}°: laptop on the seat half`);
+    assert.ok(at('desktop-pc').y > halfY, `${turn}°: PC behind the desk`);
+    assert.ok(at('wall-outlet').y > halfY, `${turn}°: outlet on the wall behind the desk`);
+    for (const modelId of ['desktop-pc', 'router', 'power-strip']) {
+      assert.ok(at(modelId).y >= -halfY, `${turn}°: ${modelId} not in front of the desk`);
+    }
+    const problems = analyzeProjectLayout(homeRoom, objects).filter(issue => issue.severity !== 'info').map(issue => issue.title);
+    assert.deepEqual(problems, [], `${turn}°: layout`);
+    assert.deepEqual(analyzeLayoutHeuristics(homeRoom, objects, []).map(hint => hint.code), [], `${turn}°: hints`);
+    return ['monitor-27', 'laptop-15', 'desktop-pc'].map(modelId => at(modelId));
+  });
+  for (const layout of layouts.slice(1)) {
+    layout.forEach((spot, index) => {
+      assert.ok(Math.abs(spot.x - layouts[0][index].x) < 1e-6 && Math.abs(spot.y - layouts[0][index].y) < 1e-6, `${ids[index]} as on the unturned desk`);
+    });
+  }
+});
+
+test('on a desk turned around, four screens all stay on the desk', () => {
+  const { model, categoryId } = templateFor('office-desk');
+  const placedDesk = placeCatalogObject({ modelTemplate: model, categoryId, room: homeRoom, id: 'desk' }).object;
+  const desk = { ...placedDesk, rotation: { ...placedDesk.rotation, z: 180 } };
+  const objects = ['monitor-24', 'monitor-24', 'monitor-27', 'monitor-27'].reduce((current, modelId, index) => {
+    const entry = templateFor(modelId);
+    return [...current, placeCatalogObject({ modelTemplate: entry.model, categoryId: entry.categoryId, room: homeRoom, id: `screen-${index}`, objects: current }).object];
+  }, [desk]);
+  const deskTop = desk.position.z + desk.scale.z / 2;
+  for (const screen of objects.slice(1)) {
+    assert.ok(Math.abs(screen.position.z - screen.scale.z / 2 - deskTop) < 1e-9, `${screen.id} sits on the desk`);
+  }
+  assert.deepEqual(analyzeLayoutHeuristics(homeRoom, objects, []).map(hint => hint.code), []);
+});
+
 test('when the usual spot is taken an added device still finds a free place on the desk', () => {
   const objects = addInOrder(['office-desk', 'keyboard', 'keyboard', 'desk-lamp', 'desk-lamp']);
   const desk = objects[0];
