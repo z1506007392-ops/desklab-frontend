@@ -381,6 +381,32 @@ test('a copy of a screen sits right beside it when the desk has room, else where
   assert.deepEqual(second.position, fromLibrary.position);
 });
 
+// Side by side means along the desk's edge, and "on the desk" means on the
+// desk itself, not its world box, however the desk is turned.
+test('on a turned desk a copy goes beside the original along the desk, wholly on it', () => {
+  const { model, categoryId } = templateFor('office-desk');
+  const placedDesk = placeCatalogObject({ modelTemplate: model, categoryId, room: homeRoom, id: 'desk' }).object;
+  const copyOn = (turn, modelId) => {
+    const desk = { ...placedDesk, scale: { ...placedDesk.scale, x: 2 }, rotation: { ...placedDesk.rotation, z: turn } };
+    const objects = addTo([desk], modelId);
+    const original = objects[1];
+    const copy = placeCopy(original, { ...structuredClone(original), id: 'copy' }, homeRoom, objects);
+    return { desk, original: localTo(desk, original), copy: localTo(desk, copy), placed: copy, all: [...objects, copy] };
+  };
+  for (const modelId of ['monitor-27', 'laptop-15', 'desk-lamp', 'speakers']) {
+    const flat = copyOn(0, modelId);
+    for (const turn of [45, 90, 180]) {
+      const { desk, original, copy, placed, all } = copyOn(turn, modelId);
+      assert.ok(Math.abs(copy.y - original.y) < 1e-6 && Math.abs(copy.x - original.x) > 0.1, `${modelId} at ${turn}°: beside it along the desk`);
+      assert.ok(Math.abs(copy.x - flat.copy.x) < 1e-6 && Math.abs(copy.y - flat.copy.y) < 1e-6, `${modelId} at ${turn}°: as on an unturned desk`);
+      const half = { x: placed.scale.x / 2, y: placed.scale.y / 2 }; // turned with the desk, so its own axes
+      assert.ok(Math.abs(copy.x) + half.x <= desk.scale.x / 2 + 1e-6 && Math.abs(copy.y) + half.y <= desk.scale.y / 2 + 1e-6, `${modelId} at ${turn}°: wholly on the desk`);
+      const problems = analyzeProjectLayout(homeRoom, all).filter(issue => issue.severity !== 'info').map(issue => issue.title);
+      assert.deepEqual(problems, [], `${modelId} at ${turn}°`);
+    }
+  }
+});
+
 function deskWithScreen(length, turn = 0) {
   const { model, categoryId } = templateFor('office-desk');
   const placed = placeCatalogObject({ modelTemplate: model, categoryId, room: homeRoom, id: 'desk' }).object;

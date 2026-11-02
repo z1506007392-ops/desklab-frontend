@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { openProject } from './project-fixture.mjs';
 import { buildTemplateScene } from '../src/domain/desk-templates.js';
+import { DEVICE_CATALOG } from '../src/domain/catalog.js';
+import { placeCatalogObject } from '../src/domain/placement.js';
 
 const ROOM = { length: 4, width: 3.5, height: 2.7 };
 
@@ -83,5 +85,35 @@ test('a second screen is lined up beside the first instead of hiding it, and one
   await page.getByRole('button', { name: '撤销', exact: true }).click();
   expect(await readX('带鱼屏显示器')).toBeCloseTo(0, 3);
   await expect(page.getByLabel('设备', { exact: true }).locator('option', { hasText: '27 英寸显示器' })).toHaveCount(0);
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
+
+// A desk turned 90° runs along the room's y axis, so "beside" the lamp in
+// its back corner means a different y and the same x.
+test('on a turned desk a duplicated lamp goes beside the original along the desk', async ({ page }) => {
+  const room = { length: 4, width: 3.5, height: 2.7 };
+  const models = DEVICE_CATALOG.flatMap(category => category.models.map(model => ({ model, categoryId: category.category })));
+  const place = (modelId, objects) => {
+    const { model, categoryId } = models.find(entry => entry.model.modelId === modelId);
+    return placeCatalogObject({ modelTemplate: model, categoryId, room, id: modelId, objects }).object;
+  };
+  const desk = { ...place('office-desk', []), rotation: { x: 0, y: 0, z: 90 } };
+  const lamp = place('desk-lamp', [desk]);
+  const evidence = await openProject(page, [desk, lamp], [], { room });
+  const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
+  const positionOf = async name => {
+    if (await openPanel.isVisible()) await openPanel.click();
+    await page.getByLabel('设备', { exact: true }).selectOption({ label: name });
+    const value = async label => Number(await page.getByLabel(label, { exact: true }).inputValue());
+    return { x: await value('左右 X'), y: await value('前后 Y') };
+  };
+
+  const original = await positionOf('台灯');
+  await page.getByRole('button', { name: '复制设备', exact: true }).click();
+  await expect(page.getByText('复制成功', { exact: true })).toBeVisible();
+  const copy = await positionOf('台灯 副本');
+  expect(copy.x).toBeCloseTo(original.x, 2);
+  expect(Math.abs(copy.y - original.y)).toBeGreaterThan(0.1);
+  await expect(page.getByRole('button', { name: /^布局检查/ })).toHaveAccessibleName('布局检查');
   expect(evidence).toEqual({ errors: [], writes: [] });
 });

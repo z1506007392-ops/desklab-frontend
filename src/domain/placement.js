@@ -92,9 +92,10 @@ function isInFrontOfDesk(candidate, frame) {
   return frame.toLocal(candidate.position).y < -frame.halfY;
 }
 
-// Half an object's footprint along the desk's own x and y axes.
-function halfAlongDesk(object, desk) {
-  const { sizeX, sizeY } = getRotatedFootprint(object.scale, (object.rotation?.z ?? 0) - (desk.rotation?.z ?? 0));
+// Half an object's footprint along the own x and y axes of `base` (a desk,
+// or the stand or desk it stands on).
+function halfAlong(object, base) {
+  const { sizeX, sizeY } = getRotatedFootprint(object.scale, (object.rotation?.z ?? 0) - (base.rotation?.z ?? 0));
   return { x: sizeX / 2, y: sizeY / 2 };
 }
 
@@ -131,7 +132,7 @@ function blocksScreenView(candidate, desk, objects, allowInFront) {
 // back and the seat half is the seat half however the desk is turned.
 function findOnDesk(object, desk, room, objects, { preferFront, isScreen }) {
   const frame = deskFrame(desk);
-  const half = halfAlongDesk(object, desk);
+  const half = halfAlong(object, desk);
   const minX = -frame.halfX + DESK_EDGE_MARGIN + half.x;
   const maxX = frame.halfX - DESK_EDGE_MARGIN - half.x;
   const minY = -frame.halfY + DESK_EDGE_MARGIN + half.y;
@@ -165,7 +166,7 @@ function findOnDesk(object, desk, room, objects, { preferFront, isScreen }) {
 
 function* besideDeskPositions(object, desk) {
   const frame = deskFrame(desk);
-  const half = halfAlongDesk(object, desk);
+  const half = halfAlong(object, desk);
   // Behind the desk first (strips and adapters fit in the gap to the wall)...
   const behindY = frame.halfY + BEHIND_DESK_GAP + half.y;
   for (let offset = 0; offset <= frame.halfX; offset += SEARCH_STEP) {
@@ -304,16 +305,19 @@ function findPreferredSpot(object, modelTemplate, desk, room, objects) {
 
 // Wholly on top of the same thing as the original (the same desk or stand),
 // or on the floor like it; a copy half hanging off the desk does not count.
+// Measured in the desk's own frame: a turned desk's world box is bigger
+// than the desk.
 function restsLike(candidate, support, objects) {
   if (!support) return false;
   const now = findSupportingObject(candidate, objects);
   if (now?.kind !== support.kind || now?.id !== support.id) return false;
   if (support.kind !== 'object') return true;
-  const under = getObjectBounds(objects.find(object => object.id === support.id));
-  const bounds = getObjectBounds(candidate);
-  return Boolean(under && bounds)
-    && bounds.minX >= under.minX - 1e-6 && bounds.maxX <= under.maxX + 1e-6
-    && bounds.minY >= under.minY - 1e-6 && bounds.maxY <= under.maxY + 1e-6;
+  const under = objects.find(object => object.id === support.id);
+  if (!under) return false;
+  const frame = deskFrame(under);
+  const local = frame.toLocal(candidate.position);
+  const half = halfAlong(candidate, under);
+  return Math.abs(local.x) + half.x <= frame.halfX + 1e-6 && Math.abs(local.y) + half.y <= frame.halfY + 1e-6;
 }
 
 /**
@@ -329,15 +333,22 @@ export function placeCopy(original, copy, room, objects) {
   if (!bounds) return null;
   const isOutlet = isWallOutlet(original);
   const support = findSupportingObject(original, objects);
-  const stepX = bounds.sizeX + COPY_GAP;
-  const stepY = bounds.sizeY + COPY_GAP;
+  // Side by side, in front and behind run along the desk or stand the
+  // original stands on, however it is turned; on the floor, along the room.
+  const under = support?.kind === 'object' ? objects.find(object => object.id === support.id) : null;
+  const frame = under ? deskFrame(under) : null;
+  const start = frame ? frame.toLocal(original.position) : original.position;
+  const size = frame ? halfAlong(original, under) : { x: bounds.sizeX / 2, y: bounds.sizeY / 2 };
+  const toWorld = frame ? (x, y) => frame.toWorld(x, y) : (x, y) => ({ x, y });
+  const stepX = 2 * size.x + COPY_GAP;
+  const stepY = 2 * size.y + COPY_GAP;
   // A screen in front of or behind another hides it, so a screen copy only
   // goes side by side; otherwise the library's screen-aware search decides.
   const isScreen = copy.category === 'display';
   for (const k of [1, 2]) {
     const offsets = [[k * stepX, 0], [-k * stepX, 0], ...(isScreen ? [] : [[0, -k * stepY], [0, k * stepY]])];
     for (const [dx, dy] of offsets) {
-      let candidate = { ...copy, position: { ...original.position, x: original.position.x + dx, y: original.position.y + dy } };
+      let candidate = { ...copy, position: { ...original.position, ...toWorld(start.x + dx, start.y + dy) } };
       if (isOutlet) candidate = snapWallOutletToNearestWall(room, candidate);
       if (!candidate || !fitsFreely(candidate, room, objects)) continue;
       if (!isOutlet && !restsLike(candidate, support, objects)) continue;
