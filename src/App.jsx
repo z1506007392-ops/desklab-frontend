@@ -25,7 +25,7 @@ import {
 } from './domain/catalog.js';
 import LibraryBrowser from './components/LibraryBrowser.jsx';
 import { captureCameraSnapshot } from './domain/camera-snapshot.js';
-import { placeCatalogObject } from './domain/placement.js';
+import { placeCatalogObject, placeCopy } from './domain/placement.js';
 import { createEntityId } from './domain/identifiers.js';
 import { describeKeyTarget, getObjectKeyboardUpdate, shouldIgnoreDeviceShortcut } from './domain/keyboard-controls.js';
 import { cameraZoomEnabled } from './domain/view-controls.js';
@@ -705,38 +705,21 @@ export default function App() {
     }
     clonedObj.name = newName;
 
-    // 4. 边界处理与偏移规则
-    const checkPositionValid = (pos) => {
-      const proposed = {
-        ...clonedObj,
-        position: { ...clonedObj.position, ...pos }
-      };
-      const res = validateAndConstrainObject(proposed, room);
-      if (!res.valid) return null;
-      
-      const dx = Math.abs(res.object.position.x - pos.x);
-      const dy = Math.abs(res.object.position.y - pos.y);
-      const dz = Math.abs(res.object.position.z - pos.z);
-      if (dx < 1e-5 && dy < 1e-5 && dz < 1e-5) {
-        return res.object;
-      }
-      return null;
-    };
-
-    const pos1 = { x: obj.position.x + 0.2, y: obj.position.y + 0.2, z: obj.position.z };
-    const pos2 = { x: obj.position.x - 0.2, y: obj.position.y - 0.2, z: obj.position.z };
-
-    const validatedObj = checkPositionValid(pos1) || checkPositionValid(pos2);
-
-    if (validatedObj) {
-      recordHistory();
-      setObjects(prev => [...prev, validatedObj]);
-      setSelectedObjectId(validatedObj.id);
-      showStatus({ text: '复制成功', type: 'success' }, 3000);
-    } else {
-      showStatus({ text: '复制失败：超出房间边界', type: 'error' }, 3000);
+    // 4. 放在原设备旁边、同一个面上、不和别的重叠（placement.js 的 placeCopy），
+    //    再像新加的设备一样补上电源、显示和网络线。
+    const placed = placeCopy(obj, clonedObj, room, objects);
+    if (!placed) {
+      showStatus({ text: '复制失败：附近没有空位', type: 'error' }, 3000);
+      return;
     }
-  }, [selectedObjectId, connectionMode, objects, projectEditable, room, recordHistory, showStatus]);
+    recordHistory();
+    const nextObjects = [...objects, placed];
+    setObjects(nextObjects);
+    const newLines = buildConnectionCompletion({ room, objects: nextObjects, connections }, placed.id);
+    if (newLines.length > 0) setConnections([...connections, ...newLines]);
+    setSelectedObjectId(placed.id);
+    showStatus({ text: '复制成功', type: 'success' }, 3000);
+  }, [selectedObjectId, connectionMode, objects, connections, projectEditable, room, recordHistory, showStatus]);
 
   const handleSnapSelectedOutlet = useCallback(() => {
     if (!projectEditable || !selectedObjectId || connectionMode) return;

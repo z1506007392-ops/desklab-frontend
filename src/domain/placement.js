@@ -1,13 +1,14 @@
 import { withPortAnchors } from './catalog.js';
 import { getObjectBounds, horizontalFootprintsOverlap, objectsOverlap, validateAndConstrainObject } from './geometry.js';
 import { createEntityId } from './identifiers.js';
-import { snapWallOutletToNearestWall } from './layout-analysis.js';
+import { findSupportingObject, snapWallOutletToNearestWall } from './layout-analysis.js';
 
 const SEARCH_STEP = 0.05;
 const DESK_EDGE_MARGIN = 0.05;
 const DESK_SIDE_GAP = 0.05;
 const BEHIND_DESK_GAP = 0.01;
 const OUTLET_HEIGHT = 0.3;
+const COPY_GAP = 0.05;
 
 const isDeskTopDevice = (categoryId, modelTemplate) =>
   categoryId === 'display'
@@ -277,6 +278,52 @@ function findPreferredSpot(object, modelTemplate, desk, room, objects) {
     if (fitsFreely(candidate, room, objects)) return candidate;
   }
   return null;
+}
+
+// Wholly on top of the same thing as the original (the same desk or stand),
+// or on the floor like it; a copy half hanging off the desk does not count.
+function restsLike(candidate, support, objects) {
+  if (!support) return false;
+  const now = findSupportingObject(candidate, objects);
+  if (now?.kind !== support.kind || now?.id !== support.id) return false;
+  if (support.kind !== 'object') return true;
+  const under = getObjectBounds(objects.find(object => object.id === support.id));
+  const bounds = getObjectBounds(candidate);
+  return Boolean(under && bounds)
+    && bounds.minX >= under.minX - 1e-6 && bounds.maxX <= under.maxX + 1e-6
+    && bounds.minY >= under.minY - 1e-6 && bounds.maxY <= under.maxY + 1e-6;
+}
+
+/**
+ * Where a copy of `original` goes: right beside it (side by side, then in
+ * front or behind except for screens, then a step further), on the same surface (the same
+ * desk, stand or floor; an outlet stays on a wall) and clear of everything.
+ * When nothing near is free, the copy gets a place the way a device added
+ * from the library would, at its own size. Returns the positioned copy, or
+ * null when it fits nowhere.
+ */
+export function placeCopy(original, copy, room, objects) {
+  const bounds = getObjectBounds(original);
+  if (!bounds) return null;
+  const isOutlet = isWallOutlet(original);
+  const support = findSupportingObject(original, objects);
+  const stepX = bounds.sizeX + COPY_GAP;
+  const stepY = bounds.sizeY + COPY_GAP;
+  // A screen in front of or behind another hides it, so a screen copy only
+  // goes side by side; otherwise the library's screen-aware search decides.
+  const isScreen = copy.category === 'display';
+  for (const k of [1, 2]) {
+    const offsets = [[k * stepX, 0], [-k * stepX, 0], ...(isScreen ? [] : [[0, -k * stepY], [0, k * stepY]])];
+    for (const [dx, dy] of offsets) {
+      let candidate = { ...copy, position: { ...original.position, x: original.position.x + dx, y: original.position.y + dy } };
+      if (isOutlet) candidate = snapWallOutletToNearestWall(room, candidate);
+      if (!candidate || !fitsFreely(candidate, room, objects)) continue;
+      if (!isOutlet && !restsLike(candidate, support, objects)) continue;
+      return candidate;
+    }
+  }
+  const asTemplate = { modelId: copy.modelId, type: copy.type, defaultScale: { ...copy.scale } };
+  return findFreePlacement(copy, copy.category, asTemplate, room, objects);
 }
 
 function findFreePlacement(object, categoryId, modelTemplate, room, objects) {

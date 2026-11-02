@@ -32,3 +32,22 @@ test('a device can be selected from the panel list instead of the 3D view', asyn
   await expect(page.locator('.connection-list')).toContainText('接收自 插排');
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
+
+test('a duplicated device lands beside the original and is cabled like a new one', async ({ page }) => {
+  const evidence = await openProject(page, [], [], { room: ROOM });
+  await page.getByRole('button', { name: '桌面模板', exact: true }).click();
+  await page.getByRole('dialog', { name: '桌面模板', exact: true })
+    .getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
+  if (await openPanel.isVisible()) await openPanel.click();
+
+  await page.getByLabel('设备', { exact: true }).selectOption({ label: '台式主机' });
+  await page.getByRole('button', { name: '复制设备', exact: true }).click();
+  await expect(page.getByText('复制成功', { exact: true })).toBeVisible();
+  await expect(page.locator('.scene-tag')).toHaveText('台式主机 副本');
+  await expect(page.getByRole('button', { name: /^布局检查/ })).toHaveAccessibleName('布局检查');
+
+  await page.getByRole('button', { name: '所有连接', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: '全部连接清单', exact: true })).toContainText('台式主机 副本电源线');
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});

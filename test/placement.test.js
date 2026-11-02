@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { placeCatalogObject } from '../src/domain/placement.js';
+import { placeCatalogObject, placeCopy } from '../src/domain/placement.js';
 import { DEVICE_CATALOG } from '../src/domain/catalog.js';
 import { isPortDirectionConsistent } from '../src/domain/connections.js';
 import { analyzeProjectLayout } from '../src/domain/layout-analysis.js';
@@ -292,4 +292,45 @@ test('when the usual spot is taken an added device still finds a free place on t
   for (const device of objects.slice(1)) {
     assert.ok(Math.abs(device.position.z - device.scale.z / 2 - deskTop) < 1e-9, `${device.id} sits on the desk`);
   }
+});
+
+test('a copy of any template device goes beside it, on the same surface, without overlaps', async () => {
+  const { buildTemplateScene } = await import('../src/domain/desk-templates.js');
+  const { hydrateProjectObjects } = await import('../src/domain/catalog.js');
+  const { findSupportingObject } = await import('../src/domain/layout-analysis.js');
+  for (const templateId of ['home-office', 'desktop-dual', 'gaming']) {
+    const scene = buildTemplateScene(templateId);
+    const objects = hydrateProjectObjects(scene.objects);
+    for (const original of objects) {
+      const copy = { ...structuredClone(original), id: `${original.id}-copy`, name: `${original.name} 副本` };
+      const placed = placeCopy(original, copy, scene.room, objects);
+      const label = `${templateId}: ${original.name}`;
+      assert.ok(placed, `${label} has a place`);
+      const problems = analyzeProjectLayout(scene.room, [...objects, placed]).filter(issue => issue.severity !== 'info').map(issue => issue.title);
+      assert.deepEqual(problems, [], label);
+      assert.deepEqual(findSupportingObject(placed, objects), findSupportingObject(original, objects), `${label} rests on the same thing`);
+      assert.deepEqual(placed.scale, original.scale, `${label} keeps its size`);
+      assert.deepEqual(placed.rotation, original.rotation, `${label} keeps its turn`);
+    }
+  }
+});
+
+test('a copy of a screen sits right beside it when the desk has room, else where a second one from the library would', () => {
+  const [placedDesk, firstMonitor] = addInOrder(['office-desk', 'monitor-27']);
+  const desk = { ...placedDesk, scale: { ...placedDesk.scale, x: 2 } };
+  const objects = [desk, firstMonitor];
+  const monitor = firstMonitor;
+  const placed = placeCopy(monitor, { ...structuredClone(monitor), id: 'copy' }, homeRoom, objects);
+  assert.ok(Math.abs(Math.abs(placed.position.x - monitor.position.x) - (monitor.scale.x + 0.05)) < 1e-6, 'one screen width and a gap along');
+  assert.equal(placed.position.y, monitor.position.y);
+  assert.equal(placed.position.z, monitor.position.z);
+  assert.ok(Math.abs(placed.position.x - desk.position.x) + placed.scale.x / 2 <= desk.scale.x / 2 + 1e-6, 'still on the desk');
+
+  // On the 1.4 m desk there is no room beside it: the copy goes where the
+  // library would put a second 27-inch screen.
+  const narrow = addInOrder(['office-desk', 'monitor-27']);
+  const second = placeCopy(narrow[1], { ...structuredClone(narrow[1]), id: 'copy' }, homeRoom, narrow);
+  const { model, categoryId } = templateFor('monitor-27');
+  const fromLibrary = placeCatalogObject({ modelTemplate: model, categoryId, room: homeRoom, id: 'library', objects: narrow }).object;
+  assert.deepEqual(second.position, fromLibrary.position);
 });
