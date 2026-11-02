@@ -17,6 +17,12 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-02 · Claude · master
 
+E53 完成：删掉桌子（或支架）时，上面的东西落下来。三个模板删掉书桌后，显示器和笔记本停在原来的高度，布局检查各报 2 条"悬空"；删除前的确认也只写"确定要删除设备“书桌”吗？"。做法：`riders.js` 新增 `removeAndDropRiders(objects, removedId, room)`：先找出直接放在它上面的东西（`findRiders` 里支撑是它的那些），去掉它之后按高度从低到高用 `snapObjectToSupport` 落到下面（地上，或下面的东西上），各自上面的东西用 `updateWithRiders` 跟着落，左右前后不变；返回 `{ objects, dropped }`。`App.jsx` 的 `handleDeleteDevice` 用它，确认文字加一行"上面放着的 N 件设备会落到下面。"（N 是 `findRiders` 的数量，包括支架上的显示器），仍是一次 `recordHistory`。三个模板删掉书桌后布局检查都是 0（显示器、笔记本都在地上）。
+
+测试：`test/riders.test.js` 新增 2 个（电竞桌删掉书桌：落下的正好是桌上的那些、左右前后不变、其他设备原样不动、没有悬空；删掉支架时显示器落到桌面上；找不到的 id 不变）。UI 测试 1 个（`edit-edge-cases`：电竞桌删掉书桌，确认框写"确定要删除设备“书桌”吗？\n上面放着的 2 件设备会落到下面。"，删后布局检查没有问题数、笔记本 z < 0.2，撤销后书桌回来、笔记本回到原来的高度；在旧 `App.jsx` 上失败）。`npm test` 489，lint（0 警告），build，Chrome 桌面和手机 UI 全量 179 通过 + 1 跳过。截图看过（本地 build，桌面和手机）：书桌删掉后带鱼屏和笔记本站在地上原来的位置，线跟着走，布局、布线都没有问题数，没有错误。E52（`469ebac`）的 CI 整套全绿。还剩：推送后看 CI、线上核对。
+
+### 2026-11-02 · Claude · master
+
 CI：E51（`bd167cf`）和领 E52（`bcf357d`）整套全绿，包括 iPhone WebKit。E52（`469ebac`）线上核对过：部署后在 https://desklab-frontend.pages.dev 桌面和手机上，书桌旁地上的 24 寸按 6 次方向键挪上桌，x = 0.65、z = 0.91 站在桌面上，布局检查没有问题数，没有控制台或页面错误，手机截图看过。还剩：E52 自己的 CI（推送时还在跑）。
 
 ### 2026-11-02 · Claude · master

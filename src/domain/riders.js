@@ -1,5 +1,5 @@
 import { validateAndConstrainObject } from './geometry.js';
-import { findSupportingObject } from './layout-analysis.js';
+import { findSupportingObject, snapObjectToSupport } from './layout-analysis.js';
 
 /**
  * Everything resting on `base`, and on those in turn: the screen, laptop
@@ -71,4 +71,28 @@ export function moveWithRiders(objects, before, after, room) {
 export function updateWithRiders(objects, next, room) {
   const current = objects.find(object => object.id === next.id);
   return current ? moveWithRiders(objects, current, next, room) : objects;
+}
+
+/**
+ * `objects` without the one of `removedId`, with what stood on it fallen to
+ * whatever is below (usually the floor), carrying what stands on each in
+ * turn: taking away a desk drops the screens, not leaves them in the air.
+ * Returns { objects, dropped } with the ids of the things that fell.
+ */
+export function removeAndDropRiders(objects, removedId, room) {
+  const removed = objects.find(object => object.id === removedId);
+  if (!removed) return { objects, dropped: [] };
+  const direct = findRiders(removed, objects)
+    .filter(rider => findSupportingObject(rider, objects)?.id === removedId)
+    .sort((first, second) => first.position.z - second.position.z);
+  let next = objects.filter(object => object.id !== removedId);
+  const dropped = [];
+  for (const rider of direct) {
+    const current = next.find(object => object.id === rider.id);
+    const fallen = current && snapObjectToSupport(room, current, next);
+    if (!fallen) continue;
+    next = updateWithRiders(next, fallen, room);
+    dropped.push(rider.id);
+  }
+  return { objects: next, dropped };
 }

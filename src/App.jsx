@@ -28,7 +28,7 @@ import LibraryBrowser from './components/LibraryBrowser.jsx';
 import { captureCameraSnapshot } from './domain/camera-snapshot.js';
 import { hidesAnotherScreen, lineUpScreens, placeCatalogObject, placeCopy } from './domain/placement.js';
 import { lengthenCablesFor } from './domain/connections.js';
-import { updateWithRiders } from './domain/riders.js';
+import { findRiders, removeAndDropRiders, updateWithRiders } from './domain/riders.js';
 import { refitLayoutToRoom } from './domain/room-resize.js';
 import { createEntityId } from './domain/identifiers.js';
 import { describeKeyTarget, getObjectKeyboardUpdate, shouldIgnoreDeviceShortcut } from './domain/keyboard-controls.js';
@@ -662,14 +662,18 @@ export default function App() {
     if (!obj) return;
     
     const relatedConnections = connections.filter(c => c.fromObjectId === selectedObjectId || c.toObjectId === selectedObjectId);
-    
-    const confirmMessage = relatedConnections.length > 0 
-      ? `确定要删除设备“${obj.name}”吗？\n删除该设备将同时删除 ${relatedConnections.length} 条关联连接。`
-      : `确定要删除设备“${obj.name}”吗？`;
-      
+    // What stands on it falls to what is below once it is gone (E53).
+    const riderCount = findRiders(obj, objects).length;
+
+    const confirmMessage = [
+      `确定要删除设备“${obj.name}”吗？`,
+      riderCount > 0 ? `上面放着的 ${riderCount} 件设备会落到下面。` : '',
+      relatedConnections.length > 0 ? `删除该设备将同时删除 ${relatedConnections.length} 条关联连接。` : '',
+    ].filter(Boolean).join('\n');
+
     if (window.confirm(confirmMessage)) {
       recordHistory();
-      setObjects(prev => prev.filter(o => o.id !== selectedObjectId));
+      setObjects(prev => removeAndDropRiders(prev, selectedObjectId, room).objects);
       if (relatedConnections.length > 0) {
         setConnections(prev => prev.filter(c => c.fromObjectId !== selectedObjectId && c.toObjectId !== selectedObjectId));
       }
@@ -679,7 +683,7 @@ export default function App() {
       setHoveredDeviceId(null);
       showStatus({ text: '删除成功', type: 'success' }, 3000);
     }
-  }, [selectedObjectId, connectionMode, objects, connections, projectEditable, recordHistory, showStatus]);
+  }, [selectedObjectId, connectionMode, objects, connections, projectEditable, recordHistory, room, showStatus]);
 
   // A device just placed joins the project. A new screen that would hide
   // another is lined up with the desk's screens when they all fit side by

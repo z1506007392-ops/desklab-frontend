@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { findRiders, moveWithRiders, updateWithRiders } from '../src/domain/riders.js';
+import { findRiders, moveWithRiders, removeAndDropRiders, updateWithRiders } from '../src/domain/riders.js';
 import { buildTemplateScene } from '../src/domain/desk-templates.js';
 import { hydrateProjectObjects, DEVICE_CATALOG } from '../src/domain/catalog.js';
 import { analyzeProjectLayout, findSupportingObject } from '../src/domain/layout-analysis.js';
@@ -151,4 +151,37 @@ test('a floating stand that drops to the desk takes its screen down with it', ()
   assert.equal(supportId(stand, fixed.objects), desk.id);
   assert.equal(supportId(screen, fixed.objects), stand.id);
   assert.deepEqual(problemsIn(project, fixed.objects), []);
+});
+
+test('taking away the desk drops what stood on it to the floor, and leaves the rest alone', () => {
+  const project = gaming();
+  const { objects } = project;
+  const desk = deskOf(objects);
+  const onDesk = findRiders(desk, objects).map(object => object.id);
+  const { objects: next, dropped } = removeAndDropRiders(objects, desk.id, project.room);
+  assert.equal(next.some(object => object.id === desk.id), false);
+  assert.deepEqual([...dropped].sort(), [...onDesk].sort());
+  for (const object of next) {
+    const before = objects.find(item => item.id === object.id);
+    assert.equal(object.position.x, before.position.x, `${object.id} keeps its place in plan`);
+    assert.equal(object.position.y, before.position.y, `${object.id} keeps its place in plan`);
+    if (!onDesk.includes(object.id)) assert.deepEqual(object, before, `${object.id} untouched`);
+  }
+  assert.deepEqual(problemsIn(project, next), [], 'nothing left floating');
+});
+
+test('taking away a stand drops its screen onto the desk; a missing id changes nothing', () => {
+  const models = DEVICE_CATALOG.flatMap(category => category.models.map(model => ({ model, categoryId: category.category })));
+  const make = (modelId, objects) => {
+    const { model, categoryId } = models.find(entry => entry.model.modelId === modelId);
+    return placeCatalogObject({ modelTemplate: model, categoryId, room, id: modelId, objects }).object;
+  };
+  const desk = make('office-desk', []);
+  const stand = make('monitor-stand', [desk]);
+  const screen = make('monitor-27', [desk, stand]);
+  const { objects: next, dropped } = removeAndDropRiders([desk, stand, screen], stand.id, room);
+  assert.deepEqual(dropped, ['monitor-27']);
+  assert.equal(supportId(next[1], next), desk.id);
+  assert.ok(Math.abs(next[1].position.z - (desk.scale.z + screen.scale.z / 2)) < 1e-9);
+  assert.deepEqual(removeAndDropRiders([desk], 'missing', room), { objects: [desk], dropped: [] });
 });

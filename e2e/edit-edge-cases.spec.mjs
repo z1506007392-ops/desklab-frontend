@@ -298,3 +298,32 @@ test('arrow keys move a monitor onto the desk and off its far end like a drag wo
   await expect(page.getByRole('button', { name: /^布局检查/ })).toHaveAccessibleName('布局检查');
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
+
+// Taking away the desk drops what stood on it, says so first, and one undo
+// puts the desk and everything on it back.
+test('deleting the desk drops what stood on it instead of leaving it in the air', async ({ page }) => {
+  const prompts = [];
+  page.on('dialog', dialog => { prompts.push(dialog.message()); dialog.accept(); });
+  const evidence = await startWithDesk(page);
+  const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
+  if (await openPanel.isVisible()) await openPanel.click();
+  const picker = page.getByLabel('设备', { exact: true });
+  await picker.selectOption({ label: '15 英寸笔记本' });
+  const laptopZ = Number(await page.getByLabel('上下 Z', { exact: true }).inputValue());
+  await picker.selectOption({ label: '书桌' });
+  await page.getByRole('button', { name: '删除设备', exact: true }).click();
+  await expect(page.getByText('删除成功', { exact: true })).toBeVisible();
+  expect(prompts).toEqual(['确定要删除设备“书桌”吗？\n上面放着的 2 件设备会落到下面。']);
+
+  await expect(page.getByRole('button', { name: /^布局检查/ }), 'nothing left in the air').toHaveAccessibleName('布局检查');
+  if (await openPanel.isVisible()) await openPanel.click();
+  await picker.selectOption({ label: '15 英寸笔记本' });
+  expect(Number(await page.getByLabel('上下 Z', { exact: true }).inputValue())).toBeLessThan(0.2);
+
+  await page.getByRole('button', { name: '撤销', exact: true }).click();
+  if (await openPanel.isVisible()) await openPanel.click();
+  await expect(picker.locator('option', { hasText: '书桌' })).toHaveCount(1);
+  await picker.selectOption({ label: '15 英寸笔记本' });
+  expect(Number(await page.getByLabel('上下 Z', { exact: true }).inputValue())).toBeCloseTo(laptopZ, 3);
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
