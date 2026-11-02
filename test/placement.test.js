@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { placeCatalogObject, placeCopy } from '../src/domain/placement.js';
+import { hidesAnotherScreen, lineUpScreens, placeCatalogObject, placeCopy } from '../src/domain/placement.js';
 import { DEVICE_CATALOG } from '../src/domain/catalog.js';
 import { isPortDirectionConsistent } from '../src/domain/connections.js';
 import { analyzeProjectLayout } from '../src/domain/layout-analysis.js';
@@ -333,4 +333,59 @@ test('a copy of a screen sits right beside it when the desk has room, else where
   const { model, categoryId } = templateFor('monitor-27');
   const fromLibrary = placeCatalogObject({ modelTemplate: model, categoryId, room: homeRoom, id: 'library', objects: narrow }).object;
   assert.deepEqual(second.position, fromLibrary.position);
+});
+
+function deskWithScreen(length, turn = 0) {
+  const { model, categoryId } = templateFor('office-desk');
+  const placed = placeCatalogObject({ modelTemplate: model, categoryId, room: homeRoom, id: 'desk' }).object;
+  const desk = { ...placed, scale: { ...placed.scale, x: length }, rotation: { ...placed.rotation, z: turn } };
+  return addTo([desk], 'monitor-27');
+}
+
+test('a second screen that would hide the first is lined up beside it when both fit', () => {
+  for (const turn of [0, 90]) {
+    const objects = deskWithScreen(1.6, turn);
+    const [desk, first] = objects;
+    // A second screen 10 cm in front of the first, toward the seat (the
+    // library puts it there on an unturned desk; see the narrow-desk test).
+    const radians = (turn * Math.PI) / 180;
+    const second = {
+      ...structuredClone(first), id: 'second',
+      position: { ...first.position, x: first.position.x + 0.1 * Math.sin(radians), y: first.position.y - 0.1 * Math.cos(radians) },
+    };
+    assert.equal(hidesAnotherScreen(second, objects), true, `${turn}°: it hides the first`);
+
+    const row = lineUpScreens(second, homeRoom, objects);
+    assert.ok(row, `${turn}°: the two fit side by side`);
+    const movedFirst = { ...first, position: row.moved.find(entry => entry.id === first.id).position };
+    const next = [desk, movedFirst, row.screen];
+    assert.equal(hidesAnotherScreen(row.screen, [desk, movedFirst]), false, `${turn}°: neither hides the other`);
+    const at = object => localTo(desk, object);
+    assert.ok(Math.abs(at(movedFirst).x + at(row.screen).x) < 1e-6, `${turn}°: the row is centred`);
+    assert.ok(at(row.screen).x < at(movedFirst).x, `${turn}°: the new one on the seat's right`);
+    assert.ok(Math.abs(at(row.screen).y - at(first).y) < 1e-6, `${turn}°: same distance from the back`);
+    const problems = analyzeProjectLayout(homeRoom, next).filter(issue => issue.severity !== 'info').map(issue => issue.title);
+    assert.deepEqual(problems, []);
+  }
+});
+
+test('screens are not lined up when they do not fit side by side', () => {
+  const objects = deskWithScreen(1.2);
+  const { model, categoryId } = templateFor('monitor-27');
+  const second = placeCatalogObject({ modelTemplate: model, categoryId, room: homeRoom, id: 'second', objects }).object;
+  assert.equal(hidesAnotherScreen(second, objects), true, 'on an unturned desk the library puts it in front of the first');
+  assert.equal(lineUpScreens(second, homeRoom, objects), null, 'two 27-inch screens need 1.28 m');
+});
+
+test('only cables to moved devices that became short are lengthened', async () => {
+  const { lengthenCablesFor, evaluateConnectionLength } = await import('../src/domain/connections.js');
+  const objects = [
+    { id: 'a', type: 'device', name: 'a', shape: 'box', position: { x: 0, y: 0, z: 0.5 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 0.2, y: 0.2, z: 1 }, ports: [{ id: 'o', name: 'o', type: 'hdmi', direction: 'output' }] },
+    { id: 'b', type: 'device', name: 'b', shape: 'box', position: { x: 2, y: 0, z: 0.5 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 0.2, y: 0.2, z: 1 }, ports: [{ id: 'i', name: 'i', type: 'hdmi', direction: 'input' }] },
+  ];
+  const short = { id: 'c', fromObjectId: 'a', fromPortId: 'o', toObjectId: 'b', toPortId: 'i', cableType: 'hdmi', length: 1, name: 'HDMI' };
+  const [lengthened] = lengthenCablesFor([short], objects, new Set(['b']));
+  assert.equal(evaluateConnectionLength(lengthened, objects).hasRecommendedSlack, true);
+  assert.equal(lengthened.length, 3, 'the next common length');
+  assert.deepEqual(lengthenCablesFor([short], objects, new Set(['x'])), [short], 'untouched devices keep their cables');
 });

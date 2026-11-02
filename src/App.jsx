@@ -25,7 +25,8 @@ import {
 } from './domain/catalog.js';
 import LibraryBrowser from './components/LibraryBrowser.jsx';
 import { captureCameraSnapshot } from './domain/camera-snapshot.js';
-import { placeCatalogObject, placeCopy } from './domain/placement.js';
+import { hidesAnotherScreen, lineUpScreens, placeCatalogObject, placeCopy } from './domain/placement.js';
+import { lengthenCablesFor } from './domain/connections.js';
 import { createEntityId } from './domain/identifiers.js';
 import { describeKeyTarget, getObjectKeyboardUpdate, shouldIgnoreDeviceShortcut } from './domain/keyboard-controls.js';
 import { cameraZoomEnabled } from './domain/view-controls.js';
@@ -676,6 +677,31 @@ export default function App() {
     }
   }, [selectedObjectId, connectionMode, objects, connections, projectEditable, recordHistory, showStatus]);
 
+  // A device just placed joins the project. A new screen that would hide
+  // another is lined up with the desk's screens when they all fit side by
+  // side (placement.js), and their cables are lengthened where the move made
+  // them short; then the device gets its power, video and network lines.
+  const settleNewDevice = useCallback((placedDevice) => {
+    let device = placedDevice;
+    let nextObjects = [...objects, device];
+    let nextConnections = connections;
+    if (hidesAnotherScreen(device, objects)) {
+      const row = lineUpScreens(device, room, objects);
+      if (row) {
+        const moved = new Map(row.moved.map(entry => [entry.id, entry.position]));
+        device = row.screen;
+        nextObjects = [...objects.map(object => (moved.has(object.id) ? { ...object, position: moved.get(object.id) } : object)), device];
+        nextConnections = lengthenCablesFor(connections, nextObjects, new Set(moved.keys()));
+      }
+    }
+    const newLines = buildConnectionCompletion({ room, objects: nextObjects, connections: nextConnections }, device.id);
+    return {
+      device,
+      objects: nextObjects,
+      connections: newLines.length > 0 ? [...nextConnections, ...newLines] : nextConnections,
+    };
+  }, [connections, objects, room]);
+
   const handleDuplicateDevice = useCallback(() => {
     if (!projectEditable || !selectedObjectId || connectionMode) return;
     const obj = objects.find(o => o.id === selectedObjectId);
@@ -713,13 +739,12 @@ export default function App() {
       return;
     }
     recordHistory();
-    const nextObjects = [...objects, placed];
-    setObjects(nextObjects);
-    const newLines = buildConnectionCompletion({ room, objects: nextObjects, connections }, placed.id);
-    if (newLines.length > 0) setConnections([...connections, ...newLines]);
-    setSelectedObjectId(placed.id);
+    const settled = settleNewDevice(placed);
+    setObjects(settled.objects);
+    if (settled.connections !== connections) setConnections(settled.connections);
+    setSelectedObjectId(settled.device.id);
     showStatus({ text: '复制成功', type: 'success' }, 3000);
-  }, [selectedObjectId, connectionMode, objects, connections, projectEditable, room, recordHistory, showStatus]);
+  }, [selectedObjectId, connectionMode, objects, connections, projectEditable, room, recordHistory, settleNewDevice, showStatus]);
 
   const handleSnapSelectedOutlet = useCallback(() => {
     if (!projectEditable || !selectedObjectId || connectionMode) return;
@@ -1131,15 +1156,14 @@ export default function App() {
     }
 
     recordHistory();
-    const nextObjects = [...objects, result.object];
-    setObjects(nextObjects);
     // Real devices are already plugged in and cabled: draw the new device's
     // power, video and network lines for the user where a free port exists.
-    const newLines = buildConnectionCompletion({ room, objects: nextObjects, connections }, result.object.id);
-    if (newLines.length > 0) setConnections([...connections, ...newLines]);
-    setSelectedObjectId(result.object.id);
-    return result.object;
-  }, [connections, objects, projectEditable, recordHistory, room, showStatus]);
+    const settled = settleNewDevice(result.object);
+    setObjects(settled.objects);
+    if (settled.connections !== connections) setConnections(settled.connections);
+    setSelectedObjectId(settled.device.id);
+    return settled.device;
+  }, [connections, objects, projectEditable, recordHistory, room, settleNewDevice, showStatus]);
 
   const handleAddRecommendedDevice = useCallback((modelId, categoryId) => {
     if (!projectEditable) return;

@@ -111,6 +111,20 @@ export function orientPortPair(first, second) {
   return null;
 }
 
+/**
+ * After devices moved: their cables that are now short for the route get
+ * the length a fresh cable would (the shortest common length covering the
+ * route plus 10%). Every other cable is returned unchanged.
+ */
+export function lengthenCablesFor(connections, objects, objectIds) {
+  return connections.map(connection => {
+    if (!objectIds.has(connection.fromObjectId) && !objectIds.has(connection.toObjectId)) return connection;
+    const status = evaluateConnectionLength(connection, objects);
+    if (!status || status.hasRecommendedSlack) return connection;
+    return { ...connection, length: standardCableLength(status.recommendedLength) };
+  });
+}
+
 export function canJoinPorts(firstPort, secondPort) {
   return orientPortPair({ port: firstPort }, { port: secondPort }) !== null;
 }

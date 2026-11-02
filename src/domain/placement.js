@@ -9,6 +9,7 @@ const DESK_SIDE_GAP = 0.05;
 const BEHIND_DESK_GAP = 0.01;
 const OUTLET_HEIGHT = 0.3;
 const COPY_GAP = 0.05;
+const SCREEN_GAP = 0.04; // between screens in a row, as the generator lays them
 
 const isDeskTopDevice = (categoryId, modelTemplate) =>
   categoryId === 'display'
@@ -91,17 +92,32 @@ function isInFrontOfDesk(candidate, deskBounds) {
   return candidate.position.y < deskBounds.minY;
 }
 
-// A screen should not hide behind another screen on the same desk. With
-// allowInFront, sharing a column is fine as long as the new screen is nearer
-// the user than every screen it lines up with.
+// Where an object's footprint spans along the desk's own x axis (the line
+// of screens), whatever the desk's or the object's turn.
+function spanAlongDesk(object, frame) {
+  const radians = ((object.rotation?.z ?? 0) * Math.PI) / 180;
+  const halfX = object.scale.x / 2;
+  const halfY = object.scale.y / 2;
+  const xs = [[halfX, halfY], [halfX, -halfY], [-halfX, halfY], [-halfX, -halfY]].map(([a, b]) => frame.toLocal({
+    x: object.position.x + a * Math.cos(radians) - b * Math.sin(radians),
+    y: object.position.y + a * Math.sin(radians) + b * Math.cos(radians),
+  }).x);
+  return { min: Math.min(...xs), max: Math.max(...xs) };
+}
+
+// A screen should not hide behind another screen on the same desk: they
+// share a column along the desk. With allowInFront, sharing a column is fine
+// as long as the new screen is nearer the seat than every screen it lines up
+// with. Measured in the desk's own frame, so a turned desk works too.
 function blocksScreenView(candidate, desk, objects, allowInFront) {
-  const bounds = getObjectBounds(candidate);
+  const frame = deskFrame(desk);
+  const span = spanAlongDesk(candidate, frame);
+  const candidateY = frame.toLocal(candidate.position).y;
   return objects.some(other => {
     if (other.category !== 'display' || !horizontalFootprintsOverlap(other, desk)) return false;
-    const otherBounds = getObjectBounds(other);
-    const sharesColumn = otherBounds
-      && bounds.minX < otherBounds.maxX - 1e-6 && bounds.maxX > otherBounds.minX + 1e-6;
-    return sharesColumn && !(allowInFront && candidate.position.y < other.position.y);
+    const otherSpan = spanAlongDesk(other, frame);
+    const sharesColumn = span.min < otherSpan.max - 1e-6 && span.max > otherSpan.min + 1e-6;
+    return sharesColumn && !(allowInFront && candidateY < frame.toLocal(other.position).y);
   });
 }
 
@@ -324,6 +340,65 @@ export function placeCopy(original, copy, room, objects) {
   }
   const asTemplate = { modelId: copy.modelId, type: copy.type, defaultScale: { ...copy.scale } };
   return findFreePlacement(copy, copy.category, asTemplate, room, objects);
+}
+
+/**
+ * Whether a screen would hide, or be hidden by, another screen on the first
+ * desk: the two share a column (one stands in front of the other).
+ */
+export function hidesAnotherScreen(screen, objects) {
+  const desk = objects.find(isDesk);
+  if (!desk || screen.category !== 'display') return false;
+  return blocksScreenView(screen, desk, objects.filter(object => object.id !== screen.id), false);
+}
+
+/**
+ * Line up the screens standing on the first desk with a new one, the way the
+ * generator does: a centred row in their present left-to-right order as seen
+ * from the seat, the new screen at the right-hand end, each existing screen
+ * keeping its distance from the back and the new one taking the first's.
+ * For a new screen that would otherwise hide another. Returns
+ * { screen, moved: [{ id, position }] }, or null when the row does not fit
+ * on the desk, a screen is turned at an odd angle, or the row would run into
+ * something else.
+ */
+export function lineUpScreens(screen, room, objects) {
+  const desk = objects.find(isDesk);
+  if (!desk) return null;
+  const frame = deskFrame(desk);
+  const standing = objects.filter(object => {
+    if (object.category !== 'display' || object.id === screen.id) return false;
+    const support = findSupportingObject(object, objects);
+    return support?.kind === 'object' && support.id === desk.id;
+  });
+  if (standing.length === 0) return null;
+  const square = object => {
+    const turn = ((((object.rotation?.z ?? 0) - (desk.rotation?.z ?? 0)) % 180) + 180) % 180;
+    return turn < 1 || turn > 179;
+  };
+  if (![...standing, screen].every(square)) return null;
+
+  // Seen from the seat, the left is the desk's local +x.
+  const ordered = [...standing].sort((a, b) => frame.toLocal(b.position).x - frame.toLocal(a.position).x);
+  const row = [...ordered, screen];
+  const total = row.reduce((sum, object) => sum + object.scale.x, 0) + SCREEN_GAP * (row.length - 1);
+  if (total > 2 * (frame.halfX - DESK_EDGE_MARGIN) + 1e-9) return null;
+
+  const backY = frame.toLocal(ordered[0].position).y;
+  let cursor = total / 2;
+  const placed = row.map(object => {
+    const x = cursor - object.scale.x / 2;
+    cursor -= object.scale.x + SCREEN_GAP;
+    const y = object === screen ? backY : frame.toLocal(object.position).y;
+    const z = object === screen ? frame.top + object.scale.z / 2 : object.position.z;
+    return { ...object, position: { ...frame.toWorld(x, y), z } };
+  });
+  const others = objects.filter(object => !row.some(item => item.id === object.id));
+  if (!placed.every(candidate => fitsFreely(candidate, room, others))) return null;
+  return {
+    screen: placed[placed.length - 1],
+    moved: placed.slice(0, -1).map(object => ({ id: object.id, position: object.position })),
+  };
 }
 
 function findFreePlacement(object, categoryId, modelTemplate, room, objects) {

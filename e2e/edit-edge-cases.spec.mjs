@@ -47,6 +47,15 @@ async function grabPoint(page) {
     : { x: box.x + box.width / 2 + 36, y: box.y + box.height + 22 };
 }
 
+// Off the desk, a dropped monitor rests on the floor or on whatever low
+// thing is under it there (the strip and adapters by the wall), never in the
+// air: well below the desktop, and the layout check finds nothing floating
+// or overlapping.
+async function expectDropped(page, position) {
+  expect(position.z, 'well below the desktop').toBeLessThan(0.4);
+  await expect(page.getByRole('button', { name: /^布局检查/ }), 'nothing floating or overlapping').toHaveAccessibleName('布局检查');
+}
+
 // Drags with a pause halfway, like a user who stops to look before letting
 // go (and like a slow CI machine): the drag must still be one undo step.
 // `releaseAt` lets go somewhere else, e.g. after sliding off the 3D view.
@@ -60,7 +69,7 @@ async function drag(page, from, dx, dy, { releaseAt = null } = {}) {
   await page.mouse.up();
 }
 
-test('a monitor dragged off the desk drops to the floor, and one undo puts it back', async ({ page }) => {
+test('a monitor dragged off the desk drops down instead of hanging in the air, and one undo puts it back', async ({ page }) => {
   const evidence = await startWithDesk(page);
   await addDevice(page, '显示器', '24 英寸显示器');
   const before = await readPosition(page);
@@ -69,8 +78,7 @@ test('a monitor dragged off the desk drops to the floor, and one undo puts it ba
   await drag(page, await grabPoint(page), testIsPhone(page) ? -150 : -250, 40);
   const after = await readPosition(page);
   expect(after.x).not.toBeCloseTo(before.x, 2);
-  expect(after.z, 'it rests on the floor instead of hanging in the air').toBeCloseTo(0.16, 2);
-  await expect(page.getByRole('button', { name: /^布局检查/ })).toHaveAccessibleName('布局检查');
+  await expectDropped(page, after);
 
   await page.getByRole('button', { name: '撤销', exact: true }).click();
   expect(await readPosition(page)).toEqual(before);
@@ -87,7 +95,7 @@ test('a monitor let go outside the 3D view still drops, and one undo puts it bac
   await drag(page, from, testIsPhone(page) ? -150 : -250, 40, { releaseAt: { x: from.x, y: 20 } });
   const after = await readPosition(page);
   expect(after.x).not.toBeCloseTo(before.x, 2);
-  expect(after.z, 'it rests on the floor instead of hanging in the air').toBeCloseTo(0.16, 2);
+  await expectDropped(page, after);
 
   await page.getByRole('button', { name: '撤销', exact: true }).click();
   expect(await readPosition(page)).toEqual(before);
