@@ -173,6 +173,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 | `analysis.js` | 布线与供电（过载、串联、线太短、端口问题等） | `analyzeProjectWiring(objects, connections)`、`buildPowerGraph`、`computeDevicePowerLoad`、`classifyPowerLoad` |
 | `recommendations.js` | 免费修复 + 购买建议；补线 | `buildRecommendations(project)`、`buildFreeImprovements`、`buildPurchaseSuggestions`、`applyImprovement(project, suggestion)`、`buildConnectionCompletion(project, objectId)` |
 | `placement.js` | 新设备找空位 | `placeCatalogObject({ modelTemplate, categoryId, room, id, objects })` |
+| `room-resize.js` | 改房间尺寸时整套布局跟着它靠着的墙走，墙插留在自己的墙上 | `refitLayoutToRoom(oldRoom, newRoom, objects)` |
 | `riders.js` | 挪动、转动、升降一个物体时，放在它上面的东西跟着走（桌上的显示器、支架上的显示器） | `findRiders(base, objects)`、`moveWithRiders(objects, before, after, room)`、`updateWithRiders(objects, next, room)` |
 | `scene-builder.js` / `desk-templates.js` | 按设备清单生成桌面 / 内置模板 | `buildDeskScene`、`DESK_TEMPLATES`、`buildTemplateScene(id)` |
 | `connections.js` | 端口兼容、线型推断、线长评估 | `arePortsCompatible`、`inferCableType`、`evaluateConnectionLength`、`getPortWorldPosition` |
@@ -425,7 +426,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E46 [x] 完成（claude，2026-11-02）** 桌子转过时，从资产库添加的设备按桌子自己的方向摆（E45 时发现）：以前桌面上找空位、桌子后面和两侧找地面位置、"在桌子前面"的判断、墙插从哪面墙找，都按世界坐标的方向算，桌子转 180° 时显示器放到座位一边、笔记本在它后面、主机在座位前的地上，转 90°/270° 时显示器在桌子一头，转 135°/180° 时多台显示器会被挤到地上。现在这些都在桌子自己的坐标系里找（`placement.js` 的 `findOnDesk`、`besideDeskPositions`、`isInFrontOfDesk`、墙插沿后沿找墙），任何角度的桌子都和没转时摆得一样；桌子 0° 时结果不变。
 - **E47 [x] 完成（claude，2026-11-02）** 桌子转过时"复制设备"也按桌子方向放（E46 时发现）：以前 `placeCopy` 的"并排"按世界坐标的 x 挪，"整个落在桌上"按桌子的世界包围盒判断，桌子转 90° 时笔记本、台灯、音箱、键盘的副本放到原设备前后，显示器副本放到原屏幕正前方；转 45° 时台灯、显示器的副本一部分悬在桌外。现在原设备在桌子或支架上时，并排、前后都沿它自己的方向挪，"整个落在上面"在它的坐标里比；任何角度的桌子都和没转时一样，没转的桌子结果不变；地上的设备仍按房间方向。
 - **E48 [x] 完成（claude，2026-11-02）** 移动、转动、升降桌子时，桌上的东西跟着走（E47 后试出来的）：以前选中桌子按方向键挪开、按 Q 转、拖动或在属性面板改位置，显示器、笔记本、键盘都留在原地，悬在半空或掉在桌沿外，布局、布线、改进建议立刻冒出问题。现在放在它上面的东西（以及放在那些东西上面的，比如支架上的显示器）一起平移、绕桌子中心一起转、随桌面一起升降，同一步撤销；地上的主机、插排不动。所有编辑路径（方向键、Q/E、空格升降、拖动、控制柄、属性面板）和"落到下方支撑面""移回房间内"两个修复都走同一个函数（`riders.js` 的 `updateWithRiders`）。被带着走的东西仍限制在房间内。AI 本来就不移动桌上有东西的桌子，不变。
-- **E49 [~] 进行中（claude，2026-11-02）** 改房间尺寸时布局跟着墙走（E48 时发现）：现在每个物体各自被夹回房间内。三个模板把房间宽度改小 30 厘米，墙边的插排、墙插、电源适配器被推进桌子里，布局检查报 3–4 个穿插；改大时墙插离开墙面（"没有贴在墙面上"），靠墙的桌子留在房间中间。先选模板再填自己房间的尺寸是很常见的第一步。
+- **E49 [x] 完成（claude，2026-11-02）** 改房间尺寸时布局跟着墙走（E48 时发现）：以前每个物体各自被夹回房间内，三个模板把房间宽度改小 30 厘米，墙边的插排、墙插、电源适配器被推进桌子里（布局检查 3–4 个穿插），改大时墙插离开墙面、靠墙的桌子留在房间中间。现在整套布局作为一个整体挪：每个方向上，离某面墙 30 厘米以内就跟着那面墙走、保持原来的间距，否则不动；放不下时只挪必要的距离。墙插沿墙方向跟布局走、垂直方向跟自己的墙走。设备之间的相对位置和线长都不变。整体放不下时才逐个推进房间，桌上的东西跟着桌子（E48）。房间小到放不下某个设备时提示和以前一样。`room-resize.js` 的 `refitLayoutToRoom`。
 - E14 线上限流目前只在单个 Cloudflare 实例内存里计数（首轮评测 29 次请求一次都没被拦），想要真正生效需要人做 H2（绑定 KV `AI_LIMITS`）；做完后用 30 次连续请求验证会出现 429。
 - **E15 [x] 完成（claude，2026-10-30）** 界面视觉重做，按 `.claude/skills/impeccable` 的流程：负责人确认 `PRODUCT.md`，从四个真页面预览里选了"桌搭标签"（方向合同 `.impeccable/surfaces/src-app-jsx.md`）。按钮和菜单文字、整体布局、3D 场景、DeskLab 名字都没改。做了：颜色/字体/控件统一变量、行内样式搬进 CSS（E11）、emoji 换成圆点和画出来的图标、手机两行工具栏（E10）、44px 触控（E12）、桌面分组（E8）、状态动效、底部浮起的消息标签。impeccable 检查器无发现；全新子代理按 impeccable 终审，第一轮六条全部修完，复审 ship。设计规则写在根目录 `DESIGN.md` 和 `.impeccable/design.json`，以后改界面先读它。可选的后续（审查提的，没做）：把选中标签钉在 3D 画面里设备旁边（要先问负责人，因为 3D 外观冻结）；资产库卡片加设备缩略图。
 - **E16 [x] 完成（claude，2026-10-30）** 负责人同意后，把选中标签钉进 3D 画面：选中设备时，设备正上方出现白色圆点标签（drei `Html`，画在盖在画布上的一层里，不挡操作、不盖弹窗，读屏跳过）。3D 场景本身的背景、网格、灯光、模型不变。测试 `e2e/scene-tag.spec.mjs`。

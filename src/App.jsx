@@ -5,7 +5,7 @@ import {
   getInvalidConnectionIds,
   summarizeWiringIssues,
 } from './domain/analysis.js';
-import { constrainProjectToRoom, safeClamp, validateAndConstrainObject } from './domain/geometry.js';
+import { safeClamp, validateAndConstrainObject } from './domain/geometry.js';
 import {
   analyzeProjectLayout,
   settleAfterDrag,
@@ -28,6 +28,7 @@ import { captureCameraSnapshot } from './domain/camera-snapshot.js';
 import { hidesAnotherScreen, lineUpScreens, placeCatalogObject, placeCopy } from './domain/placement.js';
 import { lengthenCablesFor } from './domain/connections.js';
 import { updateWithRiders } from './domain/riders.js';
+import { refitLayoutToRoom } from './domain/room-resize.js';
 import { createEntityId } from './domain/identifiers.js';
 import { describeKeyTarget, getObjectKeyboardUpdate, shouldIgnoreDeviceShortcut } from './domain/keyboard-controls.js';
 import { cameraZoomEnabled } from './domain/view-controls.js';
@@ -1185,7 +1186,8 @@ export default function App() {
 
   const handleUpdateRoom = () => {
     if (!projectEditable) return;
-    const result = constrainProjectToRoom(inputRoom, objects);
+    // The layout moves with the walls as one piece (E49).
+    const result = refitLayoutToRoom(room, inputRoom, objects);
     if (!result.valid) {
       showStatus({ text: result.reason, type: 'error' }, 4000);
       return;
