@@ -1,8 +1,10 @@
 import {
   GEOMETRY_EPSILON,
   getObjectBounds,
+  getRotatedFootprint,
   horizontalFootprintsOverlap,
   objectsOverlap,
+  safeClamp,
   validateAndConstrainObject,
 } from './geometry.js';
 import { getRecordItems } from './record-collections.js';
@@ -53,6 +55,56 @@ export function snapObjectToSupport(room, object, objects) {
  * The drag already recorded the undo step, so callers apply this without a
  * new one.
  */
+// A point and an object's frame: x along its width, y along its depth.
+function toFrameOf(object, point) {
+  const radians = ((object.rotation?.z ?? 0) * Math.PI) / 180;
+  const dx = point.x - object.position.x;
+  const dy = point.y - object.position.y;
+  return { x: dx * Math.cos(radians) + dy * Math.sin(radians), y: -dx * Math.sin(radians) + dy * Math.cos(radians) };
+}
+
+function fromFrameOf(object, local) {
+  const radians = ((object.rotation?.z ?? 0) * Math.PI) / 180;
+  return {
+    x: object.position.x + local.x * Math.cos(radians) - local.y * Math.sin(radians),
+    y: object.position.y + local.x * Math.sin(radians) + local.y * Math.cos(radians),
+  };
+}
+
+// Whether a point lies over an object's top, in the object's own frame.
+function isOverTopOf(point, object) {
+  const local = toFrameOf(object, point);
+  return Math.abs(local.x) <= object.scale.x / 2 + 1e-3 && Math.abs(local.y) <= object.scale.y / 2 + 1e-3;
+}
+
+/**
+ * Push an object that hangs mostly off what it stands on back onto it, by
+ * the least distance: wholly on top where it fits, otherwise centred on it
+ * (a wide screen on a small stand). Null when it does not stand on anything
+ * or the spot is taken or outside the room.
+ */
+export function pushOntoSupport(room, object, objects) {
+  const support = findSupportingObject(object, objects);
+  if (support?.kind !== 'object') return null;
+  const base = objects.find(candidate => candidate.id === support.id);
+  if (!base) return null;
+  const { sizeX, sizeY } = getRotatedFootprint(object.scale, (object.rotation?.z ?? 0) - (base.rotation?.z ?? 0));
+  const local = toFrameOf(base, object.position);
+  const onto = (value, half, baseHalf) => (half <= baseHalf ? safeClamp(value, -(baseHalf - half), baseHalf - half) : 0);
+  const spot = fromFrameOf(base, { x: onto(local.x, sizeX / 2, base.scale.x / 2), y: onto(local.y, sizeY / 2, base.scale.y / 2) });
+  const candidate = { ...object, position: { ...object.position, x: spot.x, y: spot.y } };
+  const constrained = validateAndConstrainObject(candidate, room);
+  if (!constrained.valid
+    || ['x', 'y', 'z'].some(axis => Math.abs(constrained.object.position[axis] - candidate.position[axis]) > GEOMETRY_EPSILON)) {
+    return null;
+  }
+  // What stands on it comes along, so only the rest has to be clear.
+  const others = objects.filter(other => other.id !== object.id
+    && findSupportingObject(other, objects)?.id !== object.id);
+  if (others.some(other => objectsOverlap(candidate, other))) return null;
+  return candidate;
+}
+
 export function settleAfterDrag(room, object, objects, startPosition) {
   if (!object?.position || !startPosition) return null;
   const moved = ['x', 'y', 'z'].some(axis => Math.abs(object.position[axis] - startPosition[axis]) > GEOMETRY_EPSILON);
@@ -173,12 +225,27 @@ export function analyzeProjectLayout(room, rawObjects) {
 
   for (const target of validBounds) {
     if (isWallOutlet(target.object) || target.bounds.minZ <= 0.03) continue;
-    const supported = validBounds.some(candidate =>
+    const supports = validBounds.filter(candidate =>
       candidate.object.id !== target.object.id
       && horizontalFootprintsOverlap(target.object, candidate.object)
       && Math.abs(target.bounds.minZ - candidate.bounds.maxZ) <= 0.03
     );
-    if (supported) continue;
+    if (supports.length > 0) {
+      // Touching is not enough: with its centre past the edge of everything
+      // under it, it tips over and falls (more than half hangs off).
+      if (!supports.some(candidate => isOverTopOf(target.object.position, candidate.object))) {
+        const under = supports.reduce((highest, candidate) => (candidate.bounds.maxZ > highest.bounds.maxZ ? candidate : highest));
+        issues.push({
+          id: `overhanging:${target.object.id}`,
+          code: 'overhanging_object',
+          severity: 'warning',
+          title: `${target.object.name} 大半悬在${under.object.name}外面，会掉下去`,
+          description: '它的中心已经不在下面那件东西上，实际这样放会翻倒。可以自动推回去。',
+          objectIds: [target.object.id],
+        });
+      }
+      continue;
+    }
     issues.push({
       id: `floating:${target.object.id}`,
       code: 'floating_object',

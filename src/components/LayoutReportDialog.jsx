@@ -18,6 +18,7 @@ export default function LayoutReportDialog({
   onDropToSupport,
   onMoveInsideRoom,
   onSnapOutletToWall,
+  onPushOntoSupport,
   onLocate,
 }) {
   const dialogRef = useDialogFocus();
@@ -88,6 +89,15 @@ export default function LayoutReportDialog({
                         onClick={() => onDropToSupport(issue.objectIds[0])}
                       >
                         落到表面
+                      </button>
+                    )}
+                    {issue.code === 'overhanging_object' && (
+                      <button
+                        type="button"
+                        className="ui-button ui-button-primary"
+                        onClick={() => onPushOntoSupport(issue.objectIds[0])}
+                      >
+                        推回去
                       </button>
                     )}
                     {issue.code === 'out_of_bounds' && (

@@ -190,3 +190,35 @@ test('a desk moved and turned takes what stands on it along, and undo puts it al
   expect(await posesOf('带鱼屏显示器', '书桌')).toEqual([screen, desk]);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
+
+// A screen pushed mostly past the desk edge would tip over in real life:
+// the layout check says so and pushes it back for free.
+test('a screen pushed mostly off the desk edge is reported and can be pushed back', async ({ page }) => {
+  test.setTimeout(60_000);
+  const evidence = await startWithDesk(page);
+  const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
+  if (await openPanel.isVisible()) await openPanel.click();
+  await page.getByLabel('设备', { exact: true }).selectOption({ label: '带鱼屏显示器' });
+  const closePanel = page.getByRole('button', { name: '收起属性面板', exact: true });
+  if (testIsPhone(page) && await closePanel.isVisible()) await closePanel.click();
+  await page.locator('.selection-hint').click();
+  // Eight steps still leave its middle over the 1.6 m desk; the ninth does not.
+  for (let step = 0; step < 8; step += 1) await page.keyboard.press('ArrowLeft');
+  await expect(page.getByRole('button', { name: /^布局检查/ })).toHaveAccessibleName('布局检查');
+  await page.keyboard.press('ArrowLeft');
+  expect((await readPosition(page)).x).toBeCloseTo(0.9, 3);
+  await expect(page.getByRole('button', { name: /^布局检查/ })).not.toHaveAccessibleName('布局检查');
+
+  await page.getByRole('button', { name: /^布局检查/ }).click();
+  const report = page.getByRole('dialog', { name: '布局检查', exact: true });
+  await expect(report).toContainText('带鱼屏显示器 大半悬在书桌外面，会掉下去');
+  await report.getByRole('button', { name: '推回去', exact: true }).click();
+  await expect(page.getByText('已推回去，放稳了', { exact: true })).toBeVisible();
+  await expect(report).toContainText('当前未发现可识别的布局问题');
+  await page.keyboard.press('Escape');
+  expect((await readPosition(page)).x).toBeCloseTo(0.39, 3); // its edge on the desk edge
+
+  await page.getByRole('button', { name: '撤销', exact: true }).click();
+  expect((await readPosition(page)).x).toBeCloseTo(0.9, 3);
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});

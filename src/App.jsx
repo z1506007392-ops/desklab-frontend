@@ -9,6 +9,7 @@ import { safeClamp, validateAndConstrainObject } from './domain/geometry.js';
 import {
   analyzeProjectLayout,
   settleAfterDrag,
+  pushOntoSupport,
   snapObjectToSupport,
   snapWallOutletToNearestWall,
   summarizeLayoutIssues,
@@ -1355,9 +1356,9 @@ export default function App() {
     showStatus({ text: `已自动应用 ${suggestions.length} 项改进建议`, type: 'success' });
   };
 
-  const layoutAutoFixCodes = ['drop_to_support', 'move_inside_room', 'snap_outlet_to_wall'];
+  const layoutAutoFixCodes = ['drop_to_support', 'push_onto_support', 'move_inside_room', 'snap_outlet_to_wall'];
   const layoutAutoFixableCount = layoutIssues.filter(issue =>
-    issue.code === 'floating_object' || issue.code === 'out_of_bounds' || issue.code === 'outlet_off_wall'
+    issue.code === 'floating_object' || issue.code === 'overhanging_object' || issue.code === 'out_of_bounds' || issue.code === 'outlet_off_wall'
   ).length;
   const cableAutoFixableCount = wiringIssues.filter(issue =>
     issue.code === 'short_cable' || issue.code === 'low_cable_slack'
@@ -1414,6 +1415,21 @@ export default function App() {
     setObjects(current => updateWithRiders(current, snapped, room));
     setSelectedObjectId(objectId);
     showStatus({ text: '物体已落到下方支撑面', type: 'success' });
+  };
+
+  const handlePushOntoSupport = (objectId) => {
+    if (!projectEditable) return;
+    const object = objects.find(candidate => candidate.id === objectId);
+    if (!object) return;
+    const pushed = pushOntoSupport(room, object, objects);
+    if (!pushed) {
+      showStatus({ text: '推不回去：那里有别的东西，请手动挪一下', type: 'error' });
+      return;
+    }
+    recordHistory();
+    setObjects(current => updateWithRiders(current, pushed, room));
+    setSelectedObjectId(objectId);
+    showStatus({ text: '已推回去，放稳了', type: 'success' });
   };
 
   const handleMoveObjectInsideRoom = (objectId) => {
@@ -1953,6 +1969,7 @@ export default function App() {
           onDropToSupport={handleDropObjectToSupport}
           onMoveInsideRoom={handleMoveObjectInsideRoom}
           onSnapOutletToWall={handleSnapOutletToWall}
+          onPushOntoSupport={handlePushOntoSupport}
           onLocate={(objectId) => {
             setSelectedObjectId(objectId);
             setActiveTab('properties');
@@ -2076,6 +2093,7 @@ export default function App() {
           onDropToSupport={handleDropObjectToSupport}
           onMoveInsideRoom={handleMoveObjectInsideRoom}
           onSnapOutletToWall={handleSnapOutletToWall}
+          onPushOntoSupport={handlePushOntoSupport}
           onExtendCable={handleExtendCableToRecommended}
           onAutoConnectNetwork={handleAutoConnectNetwork}
           onAutoConnectDisplay={handleAutoConnectDisplay}

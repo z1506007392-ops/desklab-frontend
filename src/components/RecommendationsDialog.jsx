@@ -26,6 +26,7 @@ export default function RecommendationsDialog({
   onDropToSupport,
   onMoveInsideRoom,
   onSnapOutletToWall,
+  onPushOntoSupport,
   onExtendCable,
   onAutoConnectNetwork,
   onAutoConnectDisplay,
@@ -170,6 +171,16 @@ export default function RecommendationsDialog({
                               disabled={!editable}
                             >
                               落到表面
+                            </button>
+                          )}
+                          {issue.code === 'push_onto_support' && (
+                            <button
+                              type="button"
+                              className="ui-button ui-button-primary"
+                              onClick={() => onPushOntoSupport(issue.objectIds[0])}
+                              disabled={!editable}
+                            >
+                              推回去
                             </button>
                           )}
                           {issue.code === 'move_inside_room' && (

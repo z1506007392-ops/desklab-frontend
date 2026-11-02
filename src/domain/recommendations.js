@@ -1,5 +1,6 @@
 import {
   analyzeProjectLayout,
+  pushOntoSupport,
   snapObjectToSupport,
   snapWallOutletToNearestWall,
 } from './layout-analysis.js';
@@ -38,6 +39,7 @@ function hasSameOwnValues(current, next) {
 const SUGGESTION_ORDER = {
   move_inside_room: 0,
   drop_to_support: 1,
+  push_onto_support: 1,
   snap_outlet_to_wall: 2,
   auto_power_device: 3,
   auto_network_device: 4,
@@ -215,6 +217,19 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
           description: '将悬空物体下移到最近的支撑面或地板，无需购买任何物品。',
           objectIds: [object.id],
           patch: { objectId: object.id, position: fixed.position },
+        });
+      }
+    } else if (issue.code === 'overhanging_object') {
+      const object = objectsById.get(issue.objectIds[0]);
+      const pushed = object && pushOntoSupport(room, object, objects);
+      if (pushed) {
+        suggestions.push({
+          id: `push-onto-support:${object.id}`,
+          code: 'push_onto_support',
+          title: `${object.name} 推回去，放稳`,
+          description: '把大半悬空的物体推回到下面的桌面或支架上，挪动最少，无需购买任何物品。',
+          objectIds: [object.id],
+          patch: { objectId: object.id, position: pushed.position },
         });
       }
     } else if (issue.code === 'out_of_bounds') {
