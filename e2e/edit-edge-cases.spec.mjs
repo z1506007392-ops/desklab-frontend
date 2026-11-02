@@ -145,30 +145,34 @@ test('device shortcuts leave buttons and open dialogs alone', async ({ page }) =
 // What stands on a desk goes along when the desk is moved or turned: the
 // screen keeps its spot on the desktop and turns with it, the floor stays.
 test('a desk moved and turned takes what stands on it along, and undo puts it all back', async ({ page }) => {
+  // Many steps, and a phone opens the panel for each reading: on the CI
+  // runner this takes about twice as long as the default budget allows.
+  test.setTimeout(60_000);
   const evidence = await startWithDesk(page);
-  const poseOf = async name => {
+  // Reads several devices with one opening of the panel; the last one named
+  // stays selected.
+  const posesOf = async (...names) => {
     const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
     if (await openPanel.isVisible()) await openPanel.click();
-    await page.getByLabel('设备', { exact: true }).selectOption({ label: name });
-    const value = async label => Number(await page.getByLabel(label, { exact: true }).inputValue());
-    const pose = { x: await value('左右 X'), y: await value('前后 Y'), z: await value('上下 Z'), turn: await value('旋转 (°)') };
+    const poses = [];
+    for (const name of names) {
+      await page.getByLabel('设备', { exact: true }).selectOption({ label: name });
+      const value = async label => Number(await page.getByLabel(label, { exact: true }).inputValue());
+      poses.push({ x: await value('左右 X'), y: await value('前后 Y'), z: await value('上下 Z'), turn: await value('旋转 (°)') });
+    }
     const closePanel = page.getByRole('button', { name: '收起属性面板', exact: true });
     if (testIsPhone(page) && await closePanel.isVisible()) await closePanel.click();
-    return pose;
+    return poses;
   };
-  const desk = await poseOf('书桌');
-  const screen = await poseOf('带鱼屏显示器');
-  const tower = await poseOf('台式主机');
+  const [screen, tower, desk] = await posesOf('带鱼屏显示器', '台式主机', '书桌');
 
-  await poseOf('书桌'); // select the desk
   await page.locator('.selection-hint').click();
   for (let step = 0; step < 3; step += 1) await page.keyboard.press('ArrowDown');
   await page.keyboard.press('q');
 
-  const movedDesk = await poseOf('书桌');
+  const [movedScreen, movedTower, movedDesk] = await posesOf('带鱼屏显示器', '台式主机', '书桌');
   expect(movedDesk.y).toBeCloseTo(desk.y - 0.3, 3);
   expect(movedDesk.turn).toBeCloseTo(15, 1);
-  const movedScreen = await poseOf('带鱼屏显示器');
   const radians = (15 * Math.PI) / 180;
   const dx = screen.x - desk.x;
   const dy = screen.y - desk.y;
@@ -176,14 +180,13 @@ test('a desk moved and turned takes what stands on it along, and undo puts it al
   expect(movedScreen.y).toBeCloseTo(movedDesk.y + dx * Math.sin(radians) + dy * Math.cos(radians), 2);
   expect(movedScreen.z).toBeCloseTo(screen.z, 3);
   expect(movedScreen.turn).toBeCloseTo(screen.turn + 15, 1);
-  expect(await poseOf('台式主机')).toEqual(tower);
+  expect(movedTower).toEqual(tower);
   await expect(page.getByRole('button', { name: /^布局检查/ }), 'nothing left floating or overlapping').toHaveAccessibleName('布局检查');
 
   // One undo for the turn, one for the moves; the screen comes back with the desk.
   await page.getByRole('button', { name: '撤销', exact: true }).click();
-  expect((await poseOf('带鱼屏显示器')).turn).toBeCloseTo(screen.turn, 1);
+  expect((await posesOf('带鱼屏显示器'))[0].turn).toBeCloseTo(screen.turn, 1);
   await page.getByRole('button', { name: '撤销', exact: true }).click();
-  expect(await poseOf('带鱼屏显示器')).toEqual(screen);
-  expect(await poseOf('书桌')).toEqual(desk);
+  expect(await posesOf('带鱼屏显示器', '书桌')).toEqual([screen, desk]);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
