@@ -17,6 +17,20 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-02 · Claude · master
 
+E57：NVIDIA SimReady 模型的对比预览（负责人发来 https://huggingface.co/spaces/nvidia/simready-central ，回复"先做对比预览"）。只在本地做，没有合并，等负责人决定。
+
+来源与授权：官方 `nvidia/simready-assets`（CC-BY-4.0，约 2,600 个 USD 资产）；第三方 `codepawl/simready-glb` 把它们转成了网页用的 GLB（2,595 个，meshopt 压缩几何、WebP 贴图、最长边 1024 像素，README 写明原作 NVIDIA、CC BY 4.0，要求署名并链接来源数据集）。CC-BY 可以商用，但要在 `public/models/CREDITS.md` 和"关于"里署名。注意：SimReady Central 只是索引，各资产授权由提供者自定，有非商用的，要逐个核对；NVIDIA 论坛有人问过能否放进分发给用户的场景，还没看到答复。另外：本会话网络是全部放行的，`WebFetch` 打不开 huggingface.co 是它自己不走代理，用 `curl` 正常。
+
+和目录对得上的：`desk_a01`（书桌，浅色桌面黑腿，有线孔）、`computer_desktop_tower_a01`（台式主机）、`computer_monitor_office_a01`（显示器，约 24 寸）、`computer_keyboard_a01`、`computer_mouse_office_b01`（自带鼠标垫，单独的节点，可去掉）。不合适：`lamp_table_bedside_a01`（床头灯，不如已确认的 Kenney 台灯）、`equipment_powerStrip_portable_c01`（黄色工业款）、`equipment_powerOutlet_wallMount_b01`（挂墙盒子）。没有：音箱、路由器、笔记本、游戏主机、电源适配器、带鱼屏。
+
+处理（在 scratchpad 里用 gltf-transform 4.5.1 + meshoptimizer，脚本没进仓库）：读入（解 meshopt，丢掉 `KHR_physics_rigid_bodies`），去掉鼠标垫，书桌绕竖轴转 -90°（原文件长边在 Z、前沿在 +X，线孔在 -X 一侧），其余正面本来就在 +Z（显示器屏幕、主机前面板、键盘空格键一侧、鼠标手掌一侧）；再按 blender-gltf-export 技能的约定整体移到中心、按目录尺寸逐轴缩放（three.js X 宽、Y 高、Z 深），保留 meshopt 压缩写出。缩放比例：书桌 0.78/0.99/0.87，主机 1.27/1.02/0.80，24 寸 1.00/0.81/0.29，27 寸 1.14/0.94/0.35（显示器深度压到约三成，因为目录厚度只有 5–6 厘米，正面看不出，侧面支架底座变扁），键盘 1.00/1.58/1.06，鼠标约 1。用 git worktree 建了一份换了这 6 个文件的应用，和 master 各起一个预览，同样的项目和视角截图。
+
+结果（截图看过，桌面和手机）：浅色桌面上黑色设备更清楚（E22 时负责人否决过深色桌面），主机、键盘、鼠标细节多很多；显示器屏幕上是一张紫蓝色壁纸（现在是黑屏）；没换的笔记本、带鱼屏、路由器、插排仍是自制的简化风格，放在一起风格不完全统一。代价：16 个模型合计 387 KB → 4.8 MB（书桌 35 KB → 1.76 MB，主机 34 KB → 1.88 MB，显示器 21 KB → 215 KB，键盘 21 KB → 230 KB，鼠标 4 KB → 245 KB）；应用一打开就预载全部 16 个模型，所以每个访客都要多下 4.4 MB；手机视口、节流到约 9 Mbps/40 ms 时下载完全部模型 1.6 秒 → 5.2 秒；三角面：书桌 27.7 万、主机 8.6 万、键盘 2.7 万、鼠标 2.5 万、显示器 1.1 万，一张桌面四十多万，现在是几千；无头 Chrome 的软件渲染（SwiftShader，只能比相对快慢，不代表真机）下帧率约 11 → 约 2.5。布局、布线检查不受影响（还是按目录尺寸算），没有控制台错误。
+
+如果负责人要换，还要做：把书桌、主机减面（meshoptimizer 简化到一两万面）、贴图降到 512，目标是全部模型 1 MB 左右；或者改成只下载场景里用到的模型；重新生成资产库小图（`tools/thumbnails`）；署名；核对接线锚点（显示器、主机的接口位置）；显示器屏幕换成黑屏或暗色；把处理脚本收进 `tools/`。还剩：等负责人决定。
+
+### 2026-11-02 · Claude · master
+
 E56（`c92ba9d`）线上核对过：部署后在 https://desklab-frontend.pages.dev 桌面和手机上，电竞桌带鱼屏右移 0.4 米、主机挪到桌下，打开"改进建议"：工具栏"改进建议"没有数字，弹窗最后有"摆放小建议（可选）"两条（"带鱼屏显示器挪到座位正前方""台式主机挪出放腿的地方"），排版正常，没有控制台错误，截图看过。还剩：E56 的 CI。
 
 ### 2026-11-02 · Claude · master
