@@ -27,6 +27,7 @@ import LibraryBrowser from './components/LibraryBrowser.jsx';
 import { captureCameraSnapshot } from './domain/camera-snapshot.js';
 import { hidesAnotherScreen, lineUpScreens, placeCatalogObject, placeCopy } from './domain/placement.js';
 import { lengthenCablesFor } from './domain/connections.js';
+import { updateWithRiders } from './domain/riders.js';
 import { createEntityId } from './domain/identifiers.js';
 import { describeKeyTarget, getObjectKeyboardUpdate, shouldIgnoreDeviceShortcut } from './domain/keyboard-controls.js';
 import { cameraZoomEnabled } from './domain/view-controls.js';
@@ -432,7 +433,8 @@ export default function App() {
 
     const changedFields = Object.keys(newProps).sort().join(',');
     recordHistory(history.groupKey ?? `object:${selectedObjectId}:${changedFields}`, { holdGroup: Boolean(history.holdGroup) });
-    setObjects(prev => prev.map(item => item.id === selectedObjectId ? constrainedObj : item));
+    // What stands on it goes along: a moved or turned desk keeps its screens.
+    setObjects(prev => updateWithRiders(prev, constrainedObj, room));
     return constrainedObj;
   }, [objects, projectEditable, recordHistory, room, selectedObjectId, showStatus]);
 
@@ -467,7 +469,7 @@ export default function App() {
       const latest = projectStateRef.current;
       const dragged = latest.objects.find(item => item.id === drag.id);
       const settled = dragged && settleAfterDrag(latest.room, dragged, latest.objects, drag.startPosition);
-      if (settled) setObjects(current => current.map(item => item.id === settled.id ? settled : item));
+      if (settled) setObjects(current => updateWithRiders(current, settled, latest.room));
     }
     finishHistoryGroup();
     setGizmoDragging(false);
@@ -580,7 +582,7 @@ export default function App() {
       const latest = projectStateRef.current;
       const dragged = latest.objects.find(item => item.id === drag.objId);
       const settled = dragged && settleAfterDrag(latest.room, dragged, latest.objects, drag.startPosition);
-      if (settled) setObjects(current => current.map(item => (item.id === settled.id ? settled : item)));
+      if (settled) setObjects(current => updateWithRiders(current, settled, latest.room));
     }
     setDragInfo(null);
     finishHistoryGroup();
@@ -1407,7 +1409,7 @@ export default function App() {
     }
     if (Math.abs(snapped.position.z - object.position.z) <= 1e-5) return;
     recordHistory();
-    setObjects(current => current.map(candidate => candidate.id === objectId ? snapped : candidate));
+    setObjects(current => updateWithRiders(current, snapped, room));
     setSelectedObjectId(objectId);
     showStatus({ text: '物体已落到下方支撑面', type: 'success' });
   };
@@ -1422,7 +1424,7 @@ export default function App() {
       return;
     }
     recordHistory();
-    setObjects(current => current.map(candidate => candidate.id === objectId ? constrained.object : candidate));
+    setObjects(current => updateWithRiders(current, constrained.object, room));
     setSelectedObjectId(objectId);
     showStatus({ text: '物体已移回房间边界内', type: 'success' });
   };

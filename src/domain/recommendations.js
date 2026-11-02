@@ -9,6 +9,7 @@ import { validateAndConstrainObject } from './geometry.js';
 import { findModelTemplate } from './catalog.js';
 import { getPortRecords } from './port-collections.js';
 import { getRecordItems } from './record-collections.js';
+import { updateWithRiders } from './riders.js';
 
 // Round a recommended cable length up to the centimetre so the applied value is
 // never shorter than the computed recommendation (which would leave the slack
@@ -637,17 +638,13 @@ export function applyImprovement(project, suggestion) {
       && hasSameOwnValues(targetObject.rotation, nextRotation)) {
       return project;
     }
-    return {
-      ...project,
-      objects: objects.map(object =>
-        object.id === patch.objectId
-          ? {
-              ...object,
-              position: patch.position ? { ...patch.position } : object.position,
-              rotation: patch.rotation ? { ...patch.rotation } : object.rotation,
-            }
-          : object),
+    // What rests on it goes along (a floating stand drops with its screen).
+    const nextObject = {
+      ...targetObject,
+      position: patch.position ? { ...patch.position } : targetObject.position,
+      rotation: patch.rotation ? { ...patch.rotation } : targetObject.rotation,
     };
+    return { ...project, objects: updateWithRiders(objects, nextObject, project.room) };
   }
 
   if (patch.connectionId) {
