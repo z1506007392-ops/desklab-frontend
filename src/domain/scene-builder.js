@@ -2,6 +2,7 @@ import { DEVICE_CATALOG, findModelTemplate, withPortAnchors } from './catalog.js
 import { evaluateConnectionLength, inferCableType, standardCableLength } from './connections.js';
 import { objectsOverlap } from './geometry.js';
 import { placeCatalogObject } from './placement.js';
+import { deskCameraPose } from './camera-snapshot.js';
 
 // Turns a short device list ("a desktop, two 27-inch monitors, a router") into
 // a placed and fully wired desk. Templates use it today; an LLM that turns a
@@ -471,12 +472,8 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
     }
   }
 
-  // Frame the desk from the user's side. Camera poses use Three.js axes
-  // (y is height, z is the room's y axis), matching saved project cameras.
-  const camera = {
-    position: { x: 0, y: deskTop + 1.4, z: deskY - (deskScale.x + 1.4) },
-    target: { x: 0, y: deskTop, z: deskY },
-  };
+  // Frame the desk from the user's side, the same view "重置视角" returns to.
+  const camera = deskCameraPose(deskObject);
 
   return { room, objects, connections, camera, notes };
 }

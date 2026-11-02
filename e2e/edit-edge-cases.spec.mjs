@@ -341,9 +341,11 @@ test('deleting the desk drops what stood on it instead of leaving it in the air'
 });
 
 // With the desk turned round, "重置视角" looks from behind its seat, so the
-// screens face the viewer; the view is what gets saved with the project.
+// screens face the viewer, and from close enough to see the desk the way a
+// template opens (E63); the view is what gets saved with the project.
 test('reset view looks from the seat side of a turned desk', async ({ page }) => {
   const { PROJECT_STORAGE_KEY } = await import('../src/domain/local-project-store.js');
+  const { deskCameraPose } = await import('../src/domain/camera-snapshot.js');
   const models = DEVICE_CATALOG.flatMap(category => category.models.map(model => ({ model, categoryId: category.category })));
   const make = (modelId, objects) => {
     const { model, categoryId } = models.find(entry => entry.model.modelId === modelId);
@@ -369,9 +371,13 @@ test('reset view looks from the seat side of a turned desk', async ({ page }) =>
   const savedCamera = () => page.evaluate(key => JSON.parse(localStorage.getItem(key))?.camera ?? null, PROJECT_STORAGE_KEY);
   await expect.poll(savedCamera, { message: 'the view is saved with the project' }).not.toBeNull();
   const camera = await savedCamera();
-  // The seat of a desk turned 180° faces the +y wall; three.js z is the
-  // room's y. Without the turn the view comes from the -y wall (z = -5.6).
-  expect(camera.position.z, 'from the +y wall').toBeCloseTo(ROOM.width * 1.6, 2);
-  expect(camera.position.x, 'straight on').toBeCloseTo(0, 2);
+  // The seat of a desk turned 180° is on the room's +y side; three.js z is
+  // the room's y. Without the turn the view would come from -y.
+  const expected = deskCameraPose(desk);
+  expect(camera.position.z, 'from the seat side').toBeGreaterThan(desk.position.y);
+  for (const axis of ['x', 'y', 'z']) {
+    expect(camera.position[axis], `position ${axis}`).toBeCloseTo(expected.position[axis], 2);
+    expect(camera.target[axis], `target ${axis}`).toBeCloseTo(expected.target[axis], 2);
+  }
   expect(evidence.errors).toEqual([]);
 });

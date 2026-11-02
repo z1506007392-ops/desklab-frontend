@@ -20,25 +20,47 @@ export function captureCameraSnapshot(camera, controls, fallback = null) {
   return isValidCamera(fallback) ? cloneCamera(fallback) : null;
 }
 
+// How far the view stands back from a desk and above its top, in metres:
+// back by the desk's length plus this, up by this.
+const DESK_VIEW_MARGIN = 1.4;
+
 /**
- * The overview the view starts from and returns to ("重置视角"): the whole
- * room from high above the wall behind the seat of the first desk, so its
- * screens face the viewer and left and right are the seat's, whichever way
- * the desk is turned (to the nearest wall). With no desk, or an unturned
- * one, that is the -y wall. Camera poses use three.js axes: y is up and z
- * is the room's y.
+ * The view of a desk from its seat side: back from the middle of the desk by
+ * its length plus 1.4 m, 1.4 m above its top, looking at the middle of the
+ * top. Its screens face the viewer and left and right are the seat's, however
+ * the desk is turned. A template or a generated desk opens on this view.
+ * Camera poses use three.js axes: y is up and z is the room's y.
+ */
+export function deskCameraPose(desk) {
+  const radians = ((desk.rotation?.z ?? 0) * Math.PI) / 180;
+  // The seat is on the desk's own -y side.
+  const seat = { x: Math.sin(radians), y: -Math.cos(radians) };
+  const top = desk.position.z + desk.scale.z / 2;
+  const back = desk.scale.x + DESK_VIEW_MARGIN;
+  // Rounded so a quarter turn gives 0, not 6e-17 (or -0).
+  const round = value => Math.round(value * 1e9) / 1e9 || 0;
+  return {
+    position: {
+      x: round(desk.position.x + seat.x * back),
+      y: round(top + DESK_VIEW_MARGIN),
+      z: round(desk.position.y + seat.y * back),
+    },
+    target: { x: desk.position.x, y: top, z: desk.position.y },
+  };
+}
+
+/**
+ * The view the scene starts from (when no view was saved) and returns to
+ * ("重置视角"): the first desk from its seat side, the way a template opens
+ * (E63). With no desk, the whole room from high above its -y wall.
  */
 export function defaultCameraPose(room, objects = []) {
   const desk = Array.isArray(objects) ? objects.find(isDesk) : null;
-  const radians = ((desk?.rotation?.z ?? 0) * Math.PI) / 180;
-  // The seat is on the desk's own -y side.
-  const seat = { x: Math.sin(radians), y: -Math.cos(radians) };
-  const height = room.height * 1.8;
-  const target = { x: 0, y: room.height / 2, z: 0 };
-  if (Math.abs(seat.x) > Math.abs(seat.y) + 1e-9) {
-    return { position: { x: Math.sign(seat.x) * room.length * 1.6, y: height, z: 0 }, target };
-  }
-  return { position: { x: 0, y: height, z: (seat.y > 0 ? 1 : -1) * room.width * 1.6 }, target };
+  if (desk) return deskCameraPose(desk);
+  return {
+    position: { x: 0, y: room.height * 1.8, z: -room.width * 1.6 },
+    target: { x: 0, y: room.height / 2, z: 0 },
+  };
 }
 
 /**

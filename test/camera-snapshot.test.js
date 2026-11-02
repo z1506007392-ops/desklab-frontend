@@ -88,23 +88,41 @@ function createMutableVector() {
 const room = { length: 4, width: 3.5, height: 2.7 };
 const deskTurned = z => ({ id: 'desk', modelId: 'office-desk', type: 'office-desk', position: { x: 0, y: 0, z: 0.375 }, rotation: { x: 0, y: 0, z }, scale: { x: 1.4, y: 0.7, z: 0.75 } });
 
-test('the overview looks from behind the seat of the first desk, to the nearest wall', () => {
-  const height = room.height * 1.8;
-  const target = { x: 0, y: room.height / 2, z: 0 };
-  const fromMinusY = { position: { x: 0, y: height, z: -room.width * 1.6 }, target };
-  assert.deepEqual(defaultCameraPose(room, []), fromMinusY, 'no desk: as before');
-  assert.deepEqual(defaultCameraPose(room, [deskTurned(0)]), fromMinusY, 'unturned desk: as before');
-  assert.deepEqual(defaultCameraPose(room, [deskTurned(15)]), fromMinusY, 'a little turned: same wall');
-  assert.deepEqual(defaultCameraPose(room, [deskTurned(180)]), { position: { x: 0, y: height, z: room.width * 1.6 }, target });
+test('the view starts from and resets to the first desk, from its seat side, however it is turned', () => {
+  // The desk's top is 0.75 m up; the view stands back by its length plus
+  // 1.4 m and 1.4 m above the top, looking at the middle of the top (E63).
+  const target = { x: 0, y: 0.75, z: 0 };
+  const back = 1.4 + 1.4;
+  assert.deepEqual(defaultCameraPose(room, [deskTurned(0)]), { position: { x: 0, y: 2.15, z: -back }, target });
+  assert.deepEqual(defaultCameraPose(room, [deskTurned(180)]), { position: { x: 0, y: 2.15, z: back }, target });
   // At 90° the seat is on the desk's +x side (its -y axis turned), at 270° on -x.
-  assert.deepEqual(defaultCameraPose(room, [deskTurned(90)]), { position: { x: room.length * 1.6, y: height, z: 0 }, target });
-  assert.deepEqual(defaultCameraPose(room, [deskTurned(270)]), { position: { x: -room.length * 1.6, y: height, z: 0 }, target });
+  assert.deepEqual(defaultCameraPose(room, [deskTurned(90)]), { position: { x: back, y: 2.15, z: 0 }, target });
+  assert.deepEqual(defaultCameraPose(room, [deskTurned(270)]), { position: { x: -back, y: 2.15, z: 0 }, target });
+  const turned = defaultCameraPose(room, [deskTurned(15)]).position;
+  assert.ok(Math.abs(turned.x - back * Math.sin(Math.PI / 12)) < 1e-9 && Math.abs(turned.z + back * Math.cos(Math.PI / 12)) < 1e-9,
+    'a little turned: straight from its seat');
+  // Wherever the desk stands; a longer desk is seen from further back.
+  const moved = { ...deskTurned(0), position: { x: 1, y: 1.2, z: 0.375 }, scale: { x: 1.8, y: 0.8, z: 0.75 } };
+  assert.deepEqual(defaultCameraPose(room, [moved]), { position: { x: 1, y: 2.15, z: 1.2 - 3.2 }, target: { x: 1, y: 0.75, z: 1.2 } });
   // Other devices do not count; the first desk does.
   const screen = { id: 'screen', modelId: 'monitor-27', rotation: { z: 90 }, position: { x: 0, y: 0, z: 1 }, scale: { x: 0.6, y: 0.2, z: 0.4 } };
-  assert.deepEqual(defaultCameraPose(room, [screen, deskTurned(180), deskTurned(0)]).position.z, room.width * 1.6);
+  assert.equal(defaultCameraPose(room, [screen, deskTurned(180), deskTurned(0)]).position.z, back);
 });
 
-test('a project without a saved view opens on the overview from the seat side', () => {
+test('with no desk the view is the whole room from high above its -y wall', () => {
+  assert.deepEqual(defaultCameraPose(room, []), {
+    position: { x: 0, y: room.height * 1.8, z: -room.width * 1.6 },
+    target: { x: 0, y: room.height / 2, z: 0 },
+  });
+});
+
+test('a generated desk opens on the same view that "重置视角" returns to', async () => {
+  const { buildDeskScene } = await import('../src/domain/scene-builder.js');
+  const scene = buildDeskScene({ devices: [{ modelId: 'desktop-pc', count: 1 }, { modelId: 'monitor-27', count: 1 }] });
+  assert.deepEqual(defaultCameraPose(scene.room, scene.objects), scene.camera);
+});
+
+test('a project without a saved view opens on the desk from the seat side', () => {
   const cameraPosition = createMutableVector();
   const controlsTarget = createMutableVector();
   const synchronizer = createCameraPoseSynchronizer();
@@ -116,7 +134,7 @@ test('a project without a saved view opens on the overview from the seat side', 
     controls: { target: controlsTarget, update() {} },
   });
   assert.deepEqual(vectorValues(cameraPosition), defaultCameraPose(room, [deskTurned(180)]).position);
-  assert.deepEqual(vectorValues(controlsTarget), { x: 0, y: room.height / 2, z: 0 });
+  assert.deepEqual(vectorValues(controlsTarget), { x: 0, y: 0.75, z: 0 });
 });
 
 // E62 CI: "重置视角" right after a spin drifted 0.55 m sideways, because the
