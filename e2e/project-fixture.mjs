@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 import { DEVICE_CATALOG } from '../src/domain/catalog.js';
 import { isProjectEnvelope } from '../src/domain/project-validation.js';
 import { PROJECT_STORAGE_KEY } from '../src/domain/local-project-store.js';
+import { PHONE_NOTICE_STORAGE_KEY } from '../src/domain/phone-notice.js';
 
 export function box(id, x = 0) {
   return {
@@ -18,6 +19,8 @@ export function box(id, x = 0) {
  * Options:
  * - saved: false opens it as a first-time visitor with nothing stored.
  * - room: the stored room size (default 10 x 10 x 3 m).
+ * - phoneNotice: true leaves the "建议用电脑打开" notice to show on a touch
+ *   phone (it starts dismissed otherwise).
  * - camera: a stored view ({ position, target } in three.js axes), e.g. to
  *   frame the desk the way a generated desk does.
  * - ai: (requestBody) => responseJson | { status, json } answers
@@ -25,7 +28,7 @@ export function box(id, x = 0) {
  *   evidence.aiRequests. Without it, an AI request fails the test like any
  *   other /api call.
  */
-export async function openProject(page, objects, connections = [], { saved = true, ai = null, room = { length: 10, width: 10, height: 3 }, camera = null } = {}) {
+export async function openProject(page, objects, connections = [], { saved = true, ai = null, room = { length: 10, width: 10, height: 3 }, camera = null, phoneNotice = false } = {}) {
   const project = {
     id: 'default', updatedAt: '2026-09-09T00:00:00.000Z',
     room, objects, connections,
@@ -45,6 +48,11 @@ export async function openProject(page, objects, connections = [], { saved = tru
   // The project is seeded into this browser's storage once per tab (a reload
   // must show what the user saved, not the seed). Projects never go to a
   // server, so any API request is recorded as unexpected.
+  // On a touch phone the app suggests a computer once (E59). Tests start
+  // with that already dismissed unless they are about it.
+  if (!phoneNotice) {
+    await page.addInitScript(key => localStorage.setItem(key, '1'), PHONE_NOTICE_STORAGE_KEY);
+  }
   if (saved) {
     await page.addInitScript(({ key, raw }) => {
       if (sessionStorage.getItem('desklab-e2e-seeded')) return;

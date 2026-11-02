@@ -58,6 +58,7 @@ import { buildShoppingList } from './domain/shopping-list.js';
 import { buildCableShoppingList } from './domain/cable-shopping-list.js';
 import { labelObjectsForPicker } from './domain/object-labels.js';
 import { hasSeenGuide, markGuideSeen } from './domain/onboarding.js';
+import { PHONE_MEDIA_QUERY, dismissPhoneNotice, hasDismissedPhoneNotice } from './domain/phone-notice.js';
 import { SHARE_LINK_MESSAGES, decodeShareLink, encodeShareLink } from './domain/share-link.js';
 import { applyAllAvailableImprovements, applyAllImprovements, applyImprovement, buildConnectionCompletion, buildFreeImprovements, buildRecommendations } from './domain/recommendations.js';
 import { createProjectHistory } from './domain/project-history.js';
@@ -76,6 +77,7 @@ import OnboardingGuide from './components/OnboardingGuide.jsx';
 import ErrorNotice from './components/ErrorNotice.jsx';
 import DraftRecoveryBanner from './components/DraftRecoveryBanner.jsx';
 import BackupReminderBanner from './components/BackupReminderBanner.jsx';
+import PhoneNoticeBanner from './components/PhoneNoticeBanner.jsx';
 import AiPreviewBanner from './components/AiPreviewBanner.jsx';
 import CorruptSaveBanner from './components/CorruptSaveBanner.jsx';
 import ConnectionModeBanner from './components/ConnectionModeBanner.jsx';
@@ -194,6 +196,9 @@ export default function App() {
   const moreMenuRef = useRef(null);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
+  // A phone (small touch screen) is told once that a computer works better (E59).
+  const [onPhone, setOnPhone] = useState(() => window.matchMedia?.(PHONE_MEDIA_QUERY).matches ?? false);
+  const [phoneNoticeDismissed, setPhoneNoticeDismissed] = useState(() => hasDismissedPhoneNotice(getBrowserStorage()));
   const [isRoomEditorOpen, setIsRoomEditorOpen] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(window.innerWidth >= 900);
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(window.innerWidth >= 900);
@@ -385,6 +390,14 @@ export default function App() {
     recordHistory();
     setConnections(next);
   }, [projectEditable, recordHistory]);
+
+  useEffect(() => {
+    const mql = window.matchMedia?.(PHONE_MEDIA_QUERY);
+    if (!mql) return undefined;
+    const onChange = event => setOnPhone(event.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
 
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 899px)');
@@ -809,6 +822,21 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedObjectId, objects, room, connectionMode, dialogOpen, handleDeleteDevice, handleDuplicateDevice, projectEditable, updateSelectedObject]);
+
+  const handleDismissPhoneNotice = () => {
+    dismissPhoneNotice(getBrowserStorage());
+    setPhoneNoticeDismissed(true);
+  };
+
+  const handleCopyPageLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      showStatus({ text: '网址已复制，可以发到电脑上打开', type: 'success' }, 3000);
+      handleDismissPhoneNotice();
+    } catch {
+      showStatus({ text: '复制失败，请长按地址栏里的网址复制', type: 'error' }, 4000);
+    }
+  };
 
   const handleResetView = () => {
     if (!projectEditable && !shareView) return;
@@ -1699,6 +1727,10 @@ export default function App() {
       {/* 顶部控制栏 */}
       <div className="app-top">
         {appToolbar}
+
+        {onPhone && !phoneNoticeDismissed && (
+          <PhoneNoticeBanner onCopyLink={handleCopyPageLink} onDismiss={handleDismissPhoneNotice} />
+        )}
 
         {shareView && (
           <ShareViewBanner onCopyIn={handleAdoptShare} />
