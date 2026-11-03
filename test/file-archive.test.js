@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { COMMUNITY_POSTS_KEY, COMMUNITY_PROFILE_KEY } from '../src/domain/community-gallery.js';
+import { EYE_HEIGHT_STORAGE_KEY } from '../src/domain/eye-height.js';
+import { LAYOUT_SCHEMES_STORAGE_KEY } from '../src/domain/layout-schemes.js';
 import { GUIDE_SEEN_STORAGE_KEY } from '../src/domain/onboarding.js';
 import {
   PROJECT_BACKUP_STORAGE_KEY,
@@ -41,6 +43,8 @@ test('known saves map to plain file names inside the app data directory', () => 
   assert.equal(ARCHIVE_FILES[PROJECT_STORAGE_KEY], 'project.json');
   assert.equal(ARCHIVE_FILES[PROJECT_BACKUP_STORAGE_KEY], 'project-backup.json');
   assert.equal(ARCHIVE_FILES[GUIDE_SEEN_STORAGE_KEY], 'guide-seen.txt');
+  assert.equal(ARCHIVE_FILES[EYE_HEIGHT_STORAGE_KEY], 'eye-height.json');
+  assert.equal(ARCHIVE_FILES[LAYOUT_SCHEMES_STORAGE_KEY], 'layout-schemes.json');
   assert.equal(ARCHIVE_FILES[COMMUNITY_PROFILE_KEY], 'community-profile.json');
   assert.equal(ARCHIVE_FILES[COMMUNITY_POSTS_KEY], 'community-posts.json');
   for (const name of Object.values(ARCHIVE_FILES)) {
@@ -113,6 +117,18 @@ test('an empty file archive copies a browser project once and will not overwrite
   const second = await migrateBrowserArchive(browserStorage, storage);
   assert.deepEqual(second, { migrated: false, reason: 'file_exists' });
   assert.notEqual(storage.getItem(PROJECT_STORAGE_KEY), 'newer-browser-copy');
+});
+
+test('eye height and layout copies are files in the same archive', async () => {
+  const io = memoryIo();
+  const storage = await loadFileArchive(io);
+  await storage.setItem(EYE_HEIGHT_STORAGE_KEY, '{"version":1,"eyeHeightMetres":1.15,"posture":"sitting","bifocals":false}');
+  await storage.setItem(LAYOUT_SCHEMES_STORAGE_KEY, '{"version":1,"schemes":[]}');
+  assert.equal(io.files.get('eye-height.json'), '{"version":1,"eyeHeightMetres":1.15,"posture":"sitting","bifocals":false}');
+  assert.equal(io.files.get('layout-schemes.json'), '{"version":1,"schemes":[]}');
+  const again = await loadFileArchive(io);
+  assert.equal(again.getItem(EYE_HEIGHT_STORAGE_KEY), io.files.get('eye-height.json'));
+  assert.equal(again.getItem(LAYOUT_SCHEMES_STORAGE_KEY), io.files.get('layout-schemes.json'));
 });
 
 test('migration does nothing when the browser has no project', async () => {

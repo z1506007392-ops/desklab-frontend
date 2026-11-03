@@ -69,7 +69,10 @@ export default function CableShoppingDialog({ items, sheet, onCopy, onClose }) {
                           aria-label={`在${link.label}搜索 ${item.name}`}
                           onClick={event => {
                             if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                            if (openExternalHttps(link.href)) event.preventDefault();
+                            if (openExternalHttps(link.href)) {
+                              event.preventDefault();
+                              event.stopPropagation();
+                            }
                           }}
                         >
                           {link.label}

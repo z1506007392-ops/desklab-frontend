@@ -1,6 +1,8 @@
 import { BACKUP_REMINDER_STORAGE_KEY } from './backup-reminder.js';
 import { COMMUNITY_POSTS_KEY, COMMUNITY_PROFILE_KEY } from './community-gallery.js';
 import { PROJECT_DRAFT_STORAGE_KEY } from './draft-storage.js';
+import { EYE_HEIGHT_STORAGE_KEY } from './eye-height.js';
+import { LAYOUT_SCHEMES_STORAGE_KEY } from './layout-schemes.js';
 import { PROJECT_BACKUP_STORAGE_KEY, PROJECT_STORAGE_KEY } from './local-project-store.js';
 import { GUIDE_SEEN_STORAGE_KEY } from './onboarding.js';
 import { PHONE_NOTICE_STORAGE_KEY } from './phone-notice.js';
@@ -15,6 +17,8 @@ export const ARCHIVE_FILES = Object.freeze({
   [BACKUP_REMINDER_STORAGE_KEY]: 'backup-reminder.json',
   [PHONE_NOTICE_STORAGE_KEY]: 'phone-notice.txt',
   [GUIDE_SEEN_STORAGE_KEY]: 'guide-seen.txt',
+  [EYE_HEIGHT_STORAGE_KEY]: 'eye-height.json',
+  [LAYOUT_SCHEMES_STORAGE_KEY]: 'layout-schemes.json',
   [COMMUNITY_PROFILE_KEY]: 'community-profile.json',
   [COMMUNITY_POSTS_KEY]: 'community-posts.json',
 });

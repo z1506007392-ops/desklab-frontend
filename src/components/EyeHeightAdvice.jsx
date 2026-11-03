@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getAppStorage } from '../domain/app-storage.js';
 import {
   eyeHeightAdvice,
   normalizeEyeHeight,
@@ -7,8 +8,9 @@ import {
 } from '../domain/eye-height.js';
 
 // Three local fields and one sentence. The profile never enters the project,
-// the share link, or a server.
-export default function EyeHeightAdvice({ project, storage = () => window.localStorage }) {
+// the share link, or a server. The desktop shell's file archive and the
+// browser's localStorage are the same getter.
+export default function EyeHeightAdvice({ project, storage = getAppStorage }) {
   const store = storage();
   const [profile, setProfile] = useState(() => readEyeProfile(store));
   const [heightText, setHeightText] = useState(() => (
