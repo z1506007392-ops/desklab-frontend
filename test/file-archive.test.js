@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { COMMUNITY_POSTS_KEY, COMMUNITY_PROFILE_KEY } from '../src/domain/community-gallery.js';
 import { GUIDE_SEEN_STORAGE_KEY } from '../src/domain/onboarding.js';
 import {
   PROJECT_BACKUP_STORAGE_KEY,
@@ -40,6 +41,8 @@ test('known saves map to plain file names inside the app data directory', () => 
   assert.equal(ARCHIVE_FILES[PROJECT_STORAGE_KEY], 'project.json');
   assert.equal(ARCHIVE_FILES[PROJECT_BACKUP_STORAGE_KEY], 'project-backup.json');
   assert.equal(ARCHIVE_FILES[GUIDE_SEEN_STORAGE_KEY], 'guide-seen.txt');
+  assert.equal(ARCHIVE_FILES[COMMUNITY_PROFILE_KEY], 'community-profile.json');
+  assert.equal(ARCHIVE_FILES[COMMUNITY_POSTS_KEY], 'community-posts.json');
   for (const name of Object.values(ARCHIVE_FILES)) {
     assert.match(name, /^[a-z0-9.-]+$/);
     assert.equal(name.includes('..'), false);

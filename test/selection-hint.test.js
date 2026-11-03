@@ -18,6 +18,8 @@ test('a selected device is named the way the user named it', () => {
 test('a read-only share does not invite the visitor to edit', () => {
   assert.equal(describeSelectionHint({ viewOnly: true }).title, '只读分享，可以转视角查看设备和连线');
   assert.equal(describeSelectionHint({ viewOnly: true, isMobile: true }).title, '只读分享，可以转视角查看');
+  assert.equal(describeSelectionHint({ viewKind: 'gallery' }).title, '图库里的桌子，可以转视角查看，复制后才能改');
+  assert.equal(describeSelectionHint({ viewKind: 'gallery', isMobile: true }).title, '图库里的桌子，可以转视角查看');
 });
 
 test('phones get touch wording without keyboard shortcuts', () => {

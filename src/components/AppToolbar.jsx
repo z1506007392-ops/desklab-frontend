@@ -7,6 +7,7 @@ export default function AppToolbar({
   titleLabel,
   roomFields,
   templatesButton,
+  galleryButton,
   undoButton,
   redoButton,
   resetViewButton,
@@ -36,6 +37,7 @@ export default function AppToolbar({
           {layoutButton}
           {wiringButton}
           {templatesButton}
+          {galleryButton}
           <button
             type="button"
             className="ui-button"
@@ -63,6 +65,7 @@ export default function AppToolbar({
         {titleLabel}
         {roomFields}
         {templatesButton}
+        {galleryButton}
       </div>
       <div className="toolbar-group global-actions">
         <div className="toolbar-cluster">{undoButton}{redoButton}{resetViewButton}</div>

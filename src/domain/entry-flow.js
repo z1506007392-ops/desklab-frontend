@@ -41,10 +41,17 @@ export function formatEntryRoom(room) {
   return `${room.length} × ${room.width} 米`;
 }
 
-// A returning project, a share link, or a guide already finished skips the
-// two entry screens. The email login is not a gate.
-export function shouldShowEntry({ shareView = false, hasSavedProject = false, objectCount = 0, guideSeen = false, recoveringDraft = false } = {}) {
-  if (shareView || hasSavedProject || recoveringDraft || guideSeen) return false;
+// A returning project, a share link, a gallery desk, or a guide already
+// finished skips the two entry screens. The email login is not a gate.
+export function shouldShowEntry({
+  shareView = false,
+  galleryView = false,
+  hasSavedProject = false,
+  objectCount = 0,
+  guideSeen = false,
+  recoveringDraft = false,
+} = {}) {
+  if (shareView || galleryView || hasSavedProject || recoveringDraft || guideSeen) return false;
   return !(objectCount > 0);
 }
 

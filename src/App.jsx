@@ -64,6 +64,7 @@ import { labelObjectsForPicker } from './domain/object-labels.js';
 import { hasSeenGuide, markGuideSeen } from './domain/onboarding.js';
 import { PHONE_MEDIA_QUERY, dismissPhoneNotice, hasDismissedPhoneNotice } from './domain/phone-notice.js';
 import { SHARE_LINK_MESSAGES, decodeShareLink, encodeShareLink } from './domain/share-link.js';
+import { openGalleryFromHash } from './domain/community-gallery.js';
 import { applyAllAvailableImprovements, applyAllImprovements, applyImprovement, buildConnectionCompletion, buildFreeImprovements, buildRecommendations } from './domain/recommendations.js';
 import { createProjectHistory } from './domain/project-history.js';
 import { createStatusNotifier } from './domain/status-notifier.js';
@@ -77,6 +78,8 @@ import ConnectionsListDialog from './components/ConnectionsListDialog.jsx';
 import CableShoppingDialog from './components/CableShoppingDialog.jsx';
 import ShareLinkDialog from './components/ShareLinkDialog.jsx';
 import ShareViewBanner from './components/ShareViewBanner.jsx';
+import CommunityGalleryDialog from './components/CommunityGalleryDialog.jsx';
+import GalleryViewBanner from './components/GalleryViewBanner.jsx';
 import OnboardingGuide from './components/OnboardingGuide.jsx';
 import ErrorNotice from './components/ErrorNotice.jsx';
 import DraftRecoveryBanner from './components/DraftRecoveryBanner.jsx';
@@ -126,6 +129,12 @@ function requestPersistentStorage() {
 const serializeLayout = (room, objects, connections) =>
   JSON.stringify({ room, objects, connections });
 
+function replacePageHash(hash) {
+  const url = new URL(window.location.href);
+  url.hash = hash || '';
+  window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+}
+
 function downloadProject(project, prefix) {
   const exported = createProjectExport(project, { prefix });
   const blob = new Blob([exported.contents], { type: exported.mediaType });
@@ -173,7 +182,11 @@ export default function App() {
   });
   // A share link is viewed in memory only. It must not become the saved project.
   const [shareView, setShareView] = useState(false);
-  const projectEditable = projectBaseEditable && !aiPreview && !shareView;
+  // A gallery desk is also only on screen. Returning restores what was here.
+  const [galleryView, setGalleryView] = useState(false);
+  const [galleryTitle, setGalleryTitle] = useState('');
+  const readOnlyView = shareView || galleryView;
+  const projectEditable = projectBaseEditable && !aiPreview && !readOnlyView;
   
   const cameraRef = useRef(null);
   const controlsRef = useRef(null);
@@ -182,6 +195,7 @@ export default function App() {
   const saveInFlightRef = useRef(false);
   const projectVersionRef = useRef(null);
   const visitorLayoutRef = useRef(null);
+  const galleryReturnRef = useRef(null);
   const storedLoadFailedRef = useRef(false);
   const [cameraConfig, setCameraConfig] = useState(undefined);
   const getCurrentCamera = useCallback(() =>
@@ -239,6 +253,7 @@ export default function App() {
   const [showLayoutReport, setShowLayoutReport] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [webglAvailable] = useState(() => canUseWebGL());
   // First-visit guide: only for a project that has never been saved, until
@@ -514,6 +529,7 @@ export default function App() {
       decodeShareLink(hash),
     ]).then(([stored, shared]) => {
       if (controller.signal.aborted) return;
+      let loaded = null;
       if (stored.ok) {
         const data = stored.result.project;
         const loadedRoom = data.room || { length: 10, width: 10, height: 3 };
@@ -523,6 +539,12 @@ export default function App() {
         setHasSavedProject(stored.result.version !== UNSAVED_PROJECT_VERSION);
         storedLoadFailedRef.current = false;
         visitorLayoutRef.current = serializeLayout(loadedRoom, hydratedObjects, loadedConnections);
+        loaded = {
+          room: loadedRoom,
+          objects: hydratedObjects,
+          connections: loadedConnections,
+          camera: data.camera || null,
+        };
       } else {
         storedLoadFailedRef.current = true;
         visitorLayoutRef.current = null;
@@ -547,7 +569,43 @@ export default function App() {
         return;
       }
 
+      // A built-in gallery desk is also only on screen. A desk saved in this
+      // browser is not opened from the address.
+      const gallery = openGalleryFromHash(hash);
+      if (gallery.kind === 'ok') {
+        if (loaded) {
+          const extraConnection = e2eDanglingConnection();
+          galleryReturnRef.current = {
+            room: loaded.room,
+            objects: loaded.objects,
+            connections: extraConnection ? [...loaded.connections, extraConnection] : loaded.connections,
+            camera: loaded.camera,
+            savedLayout: visitorLayoutRef.current,
+            cameraDirty: false,
+          };
+        } else {
+          galleryReturnRef.current = null;
+        }
+        const project = gallery.desk.project;
+        const nextObjects = hydrateProjectObjects(project.objects || []);
+        const nextConnections = project.connections || [];
+        setProjectLoadFailed(false);
+        setRoom(project.room);
+        setInputRoom(project.room);
+        setObjects(nextObjects);
+        setConnections(nextConnections);
+        setCameraConfig(project.camera || null);
+        setSavedLayout(serializeLayout(project.room, nextObjects, nextConnections));
+        setCameraDirty(false);
+        setGalleryTitle(gallery.desk.title);
+        setGalleryView(true);
+        setProjectLoaded(true);
+        resetHistory();
+        return;
+      }
+
       const shareNotice = shared.kind === 'absent' ? '' : SHARE_LINK_MESSAGES[shared.kind];
+      const galleryNotice = gallery.kind === 'unknown' ? gallery.message : '';
       if (!stored.ok) {
         const err = stored.error;
         console.error(err instanceof Error ? `${err.name}: ${err.message}` : err);
@@ -555,14 +613,16 @@ export default function App() {
         const storedNotice = err.code === 'storage_unavailable'
           ? err.message
           : '本机保存的项目无法读取，已锁定保存以保护原数据。可以尝试恢复上一版本。';
-        showStatus({ text: shareNotice ? `${shareNotice} ${storedNotice}` : storedNotice, type: 'error' });
+        const notice = [shareNotice, galleryNotice, storedNotice].filter(Boolean).join(' ');
+        showStatus({ text: notice, type: 'error' });
         const localDraft = readLocalDraft();
         if (localDraft) setRecoveryDraft(localDraft);
         setProjectLoaded(true);
         return;
       }
 
-      if (shareNotice) showStatus({ text: shareNotice, type: 'error' }, 6000);
+      const openNotice = [shareNotice, galleryNotice].filter(Boolean).join(' ');
+      if (openNotice) showStatus({ text: openNotice, type: 'error' }, 6000);
       const data = stored.result.project;
       const loadedRoom = data.room || { length: 10, width: 10, height: 3 };
       const hydratedObjects = hydrateProjectObjects(data.objects || []);
@@ -660,11 +720,14 @@ export default function App() {
           setScrollTemplatesToBuilder(false);
           setShowTemplates(false);
         }
+        if (showGallery) {
+          setShowGallery(false);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDownEsc);
     return () => window.removeEventListener('keydown', handleKeyDownEsc);
-  }, [closeRecommendations, connectionMode, shareLink, showAbout, showCableShop, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations, showTemplates]);
+  }, [closeRecommendations, connectionMode, shareLink, showAbout, showCableShop, showGallery, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations, showTemplates]);
 
   useEffect(() => {
     const handleHistoryKeys = (e) => {
@@ -796,7 +859,7 @@ export default function App() {
   }, [connectionMode, objects, projectEditable, room, selectedObjectId, showStatus, updateSelectedObject]);
 
   const entryOpen = entryStep === 'room' || entryStep === 'desk';
-  const dialogOpen = showTemplates || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || shareLink || showRecommendations || showAbout || guideOpen || entryOpen;
+  const dialogOpen = showTemplates || showGallery || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || shareLink || showRecommendations || showAbout || guideOpen || entryOpen;
 
   useLayoutEffect(() => {
     const handleKeyDown = (e) => {
@@ -854,7 +917,7 @@ export default function App() {
   };
 
   const handleResetView = () => {
-    if (!projectEditable && !shareView) return;
+    if (!projectEditable && !shareView && !galleryView) return;
     if (cameraRef.current && controlsRef.current) {
       // From behind the seat of the first desk, however it is turned (E54).
       applyCameraPose(cameraRef.current, controlsRef.current, defaultCameraPose(room, objects));
@@ -867,7 +930,7 @@ export default function App() {
   }, [projectEditable]);
 
   useEffect(() => {
-    if (!projectLoaded || recoveryDraft || shareView) return undefined;
+    if (!projectLoaded || recoveryDraft || shareView || galleryView) return undefined;
     if (!isDirty) {
       clearLocalDraft();
       return undefined;
@@ -891,7 +954,7 @@ export default function App() {
     }, 500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [clearLocalDraft, connections, getCurrentCamera, isDirty, objects, projectLoaded, recoveryDraft, room, shareView, showStatus]);
+  }, [clearLocalDraft, connections, galleryView, getCurrentCamera, isDirty, objects, projectLoaded, recoveryDraft, room, shareView, showStatus]);
 
   const handleSave = async () => {
     if (!projectLoaded) {
@@ -908,7 +971,7 @@ export default function App() {
       });
       return;
     }
-    if (shareView) return;
+    if (shareView || galleryView) return;
     if (recoveryDraft) {
       showStatus({
         text: '请先恢复或放弃本地草稿，再保存项目。',
@@ -1109,17 +1172,18 @@ export default function App() {
     const guideSeen = guideDismissedRef.current || hasSeenGuide(getBrowserStorage());
     if (!shouldShowEntry({
       shareView,
+      galleryView,
       hasSavedProject,
       objectCount: objects.length,
       guideSeen,
       recoveringDraft: Boolean(recoveryDraft),
     })) {
-      if (objects.length > 0 && !hasSavedProject && !shareView && !guideSeen) finishEntry();
+      if (objects.length > 0 && !hasSavedProject && !shareView && !galleryView && !guideSeen) finishEntry();
       else setEntryStep('done');
       return;
     }
     setEntryStep(current => (current === 'desk' ? 'desk' : 'room'));
-  }, [finishEntry, hasSavedProject, objects.length, projectLoaded, recoveryDraft, shareView]);
+  }, [finishEntry, galleryView, hasSavedProject, objects.length, projectLoaded, recoveryDraft, shareView]);
 
   const handleConfirmEntryRoom = roomSize => {
     setRoom(roomSize);
@@ -1206,6 +1270,116 @@ export default function App() {
     setScrollTemplatesToBuilder(false);
     setShowTemplates(false);
     showStatus({ text: `${label}，可按实际情况调整，尚未保存`, type: 'success' }, 4000);
+  };
+
+  const showGalleryDesk = (desk, stash) => {
+    galleryReturnRef.current = stash;
+    const project = desk.project;
+    const nextObjects = hydrateProjectObjects(project.objects || []);
+    const nextConnections = project.connections || [];
+    setProjectLoadFailed(false);
+    setRoom(project.room);
+    setInputRoom(project.room);
+    setObjects(nextObjects);
+    setConnections(nextConnections);
+    setCameraConfig(project.camera || null);
+    setSavedLayout(serializeLayout(project.room, nextObjects, nextConnections));
+    setCameraDirty(false);
+    setSelectedObjectId(null);
+    setConnectionMode(false);
+    setConnectionDraft({});
+    setHoveredDeviceId(null);
+    setGalleryTitle(desk.title);
+    setGalleryView(true);
+    setShowGallery(false);
+    replacePageHash(desk.builtin ? `desklab-gallery/${desk.id}` : '');
+    resetHistory();
+  };
+
+  const handleOpenGalleryDesk = (desk) => {
+    const stash = galleryView ? galleryReturnRef.current : {
+      room,
+      objects,
+      connections,
+      camera: getCurrentCamera(),
+      savedLayout,
+      cameraDirty,
+    };
+    showGalleryDesk(desk, stash);
+  };
+
+  const handleReturnFromGallery = () => {
+    if (!galleryView) return;
+    const back = galleryReturnRef.current;
+    galleryReturnRef.current = null;
+    setGalleryView(false);
+    setGalleryTitle('');
+    replacePageHash('');
+    setShowGallery(false);
+    if (!back) {
+      if (storedLoadFailedRef.current) setProjectLoadFailed(true);
+      resetHistory();
+      return;
+    }
+    setRoom(back.room);
+    setInputRoom(back.room);
+    setObjects(back.objects);
+    setConnections(back.connections);
+    setCameraConfig(back.camera || null);
+    setSavedLayout(back.savedLayout);
+    setCameraDirty(Boolean(back.cameraDirty));
+    setSelectedObjectId(null);
+    setConnectionMode(false);
+    setConnectionDraft({});
+    resetHistory();
+  };
+
+  const adoptGalleryProject = (project, title) => {
+    const confirmed = window.confirm(
+      `确定把“${title}”复制到你的项目吗？\n画面会换成这张桌子。还没保存的修改会丢掉。浏览器里已经保存的项目不会被改掉，除非你之后自己点“保存项目”。`
+    );
+    if (!confirmed) return;
+    const nextObjects = hydrateProjectObjects(project.objects || []);
+    const nextConnections = project.connections || [];
+    galleryReturnRef.current = null;
+    setGalleryView(false);
+    setGalleryTitle('');
+    replacePageHash('');
+    setShowGallery(false);
+    setProjectLoadFailed(Boolean(storedLoadFailedRef.current));
+    setRoom(project.room);
+    setInputRoom(project.room);
+    setObjects(nextObjects);
+    setConnections(nextConnections);
+    setCameraConfig(project.camera || null);
+    if (visitorLayoutRef.current !== null) setSavedLayout(visitorLayoutRef.current);
+    setCameraDirty(true);
+    setSelectedObjectId(null);
+    resetHistory();
+    const sameAsSaved = visitorLayoutRef.current !== null
+      && visitorLayoutRef.current === serializeLayout(project.room, nextObjects, nextConnections);
+    showStatus({
+      text: storedLoadFailedRef.current
+        ? '你原来的存档读不出来，这张桌子只留在当前页面，没有写入浏览器。'
+        : sameAsSaved
+          ? '这张桌子和你已保存的项目一样。'
+          : '已复制到当前项目，尚未保存。你原来的存档还在，要点“保存项目”才会替换。',
+      type: 'success',
+    }, 5000);
+  };
+
+  const handleCopyGalleryDesk = (desk) => {
+    if (galleryView || !projectEditable) {
+      adoptGalleryProject(desk.project, desk.title);
+      return;
+    }
+    applyGeneratedScene({
+      room: desk.project.room,
+      objects: hydrateProjectObjects(desk.project.objects || []),
+      connections: desk.project.connections || [],
+      camera: desk.project.camera || null,
+    }, `已复制“${desk.title}”`);
+    setShowGallery(false);
   };
 
   const handleCopyProjectToClipboard = async () => {
@@ -1348,6 +1522,7 @@ export default function App() {
     selectedName: selectedObj ? selectedObj.name : null,
     isMobile,
     viewOnly: shareView,
+    viewKind: galleryView ? 'gallery' : null,
   });
   const wiringIssues = useMemo(
     () => analyzeProjectWiring(objects, connections),
@@ -1679,9 +1854,10 @@ export default function App() {
   );
   const titleLabel = <span className="toolbar-label">DeskLab</span>;
   const templatesButton = <button className="ui-button" onClick={() => { setScrollTemplatesToBuilder(false); setShowTemplates(true); }} disabled={!projectEditable}>桌面模板</button>;
+  const galleryButton = <button className="ui-button" onClick={() => setShowGallery(true)} disabled={!projectEditable && !galleryView}>社区图库</button>;
   const undoButton = <button className="ui-button" onClick={handleUndo} disabled={!projectEditable || !historyStatus.canUndo} title="撤销 (Ctrl+Z)">撤销</button>;
   const redoButton = <button className="ui-button" onClick={handleRedo} disabled={!projectEditable || !historyStatus.canRedo} title="重做 (Ctrl+Y)">重做</button>;
-  const resetViewButton = <button className="ui-button" onClick={handleResetView} disabled={!projectEditable && !shareView}>重置视角</button>;
+  const resetViewButton = <button className="ui-button" onClick={handleResetView} disabled={!projectEditable && !shareView && !galleryView}>重置视角</button>;
   const connectionsButton = <button className="ui-button" onClick={() => setShowGlobalConnections(true)}>所有连接</button>;
   const layoutButton = (
     <button className={`ui-button${actionableLayoutIssueCount > 0 ? ' ui-button-tag' : ''}`} onClick={() => setShowLayoutReport(true)} aria-label={countLabel('布局检查', actionableLayoutIssueCount)}>
@@ -1789,6 +1965,7 @@ export default function App() {
       titleLabel={titleLabel}
       roomFields={roomFields}
       templatesButton={templatesButton}
+      galleryButton={galleryButton}
       undoButton={undoButton}
       redoButton={redoButton}
       resetViewButton={resetViewButton}
@@ -1835,7 +2012,15 @@ export default function App() {
           <ShareViewBanner onCopyIn={handleAdoptShare} />
         )}
 
-        {recoveryDraft && !shareView && (
+        {galleryView && (
+          <GalleryViewBanner
+            title={galleryTitle}
+            onBack={handleReturnFromGallery}
+            onCopyIn={() => adoptGalleryProject({ room, objects, connections, camera: getCurrentCamera() }, galleryTitle)}
+          />
+        )}
+
+        {recoveryDraft && !shareView && !galleryView && (
           <DraftRecoveryBanner
             savedAt={recoveryDraft.savedAt}
             onRestore={handleRestoreDraft}
@@ -1844,7 +2029,7 @@ export default function App() {
           />
         )}
 
-        {showBackupReminder && !recoveryDraft && !projectLoadFailed && (
+        {showBackupReminder && !recoveryDraft && !projectLoadFailed && !galleryView && (
           <BackupReminderBanner fileArchive={fileArchive} onExport={handleExportProject} onSnooze={handleSnoozeBackupReminder} />
         )}
 
@@ -1932,7 +2117,7 @@ export default function App() {
             cameraRef={cameraRef}
             controlsEnabled={cameraZoomEnabled({
               editable: projectEditable,
-              viewOnly: shareView,
+              viewOnly: shareView || galleryView,
               connectionMode,
               dragging: Boolean(dragInfo),
               gizmoDragging,
@@ -2131,6 +2316,17 @@ export default function App() {
           }}
           onApplyTemplate={handleApplyTemplate}
           onGenerate={scene => applyGeneratedScene(scene, '已按你的设备生成桌面')}
+        />
+      )}
+
+      {showGallery && (
+        <CommunityGalleryDialog
+          canPublish={projectEditable}
+          hasObjects={objects.length > 0}
+          currentProject={() => ({ room, objects, connections, camera: getCurrentCamera() })}
+          onClose={() => setShowGallery(false)}
+          onOpen={handleOpenGalleryDesk}
+          onCopy={handleCopyGalleryDesk}
         />
       )}
 

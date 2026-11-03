@@ -25,6 +25,7 @@ test('entry is only for a first visit with an empty unsaved room', () => {
   assert.equal(shouldShowEntry({ objectCount: 1 }), false);
   assert.equal(shouldShowEntry({ guideSeen: true }), false);
   assert.equal(shouldShowEntry({ shareView: true }), false);
+  assert.equal(shouldShowEntry({ galleryView: true }), false);
   assert.equal(shouldShowEntry({ recoveringDraft: true }), false);
 });
 

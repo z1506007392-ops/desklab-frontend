@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { box, openProject } from './project-fixture.mjs';
 
 // Everything that used to wrap into five rows on a phone (E10).
-const STRIP = ['展开资产库', /^改进建议/, /^布局检查/, /^布线检查/, '桌面模板', '房间尺寸', '所有连接', '重置视角', '展开属性面板', '更多'];
+const STRIP = ['展开资产库', /^改进建议/, /^布局检查/, /^布线检查/, '桌面模板', '社区图库', '房间尺寸', '所有连接', '重置视角', '展开属性面板', '更多'];
 
 test('on a phone the toolbar is two rows and every action can still be reached', async ({ page }, testInfo) => {
   test.skip(testInfo.project.use.viewport.width >= 900, 'the compact toolbar is the phone layout');

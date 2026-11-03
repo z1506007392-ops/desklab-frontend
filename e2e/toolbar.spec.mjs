@@ -141,6 +141,7 @@ test('the about and privacy dialog says where the desk is kept and what AI sends
   };
   const dialog = await open();
   await expect(dialog).toContainText('项目只保存在你这台设备的浏览器里');
+  await expect(dialog).toContainText('也不会同步到别的设备');
   await expect(dialog).toContainText('导出备份');
   await expect(dialog).toContainText('发送给 DeepSeek');
   await expect(dialog).toContainText('不使用统计或广告追踪');

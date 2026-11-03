@@ -1,11 +1,13 @@
 import { BACKUP_REMINDER_STORAGE_KEY } from './backup-reminder.js';
+import { COMMUNITY_POSTS_KEY, COMMUNITY_PROFILE_KEY } from './community-gallery.js';
 import { PROJECT_DRAFT_STORAGE_KEY } from './draft-storage.js';
 import { PROJECT_BACKUP_STORAGE_KEY, PROJECT_STORAGE_KEY } from './local-project-store.js';
 import { GUIDE_SEEN_STORAGE_KEY } from './onboarding.js';
 import { PHONE_NOTICE_STORAGE_KEY } from './phone-notice.js';
 
 // One file per key the app already stores. Names stay inside the app data
-// directory; the desktop shell refuses anything else.
+// directory; the desktop shell refuses anything else. The gallery keys are
+// local to this device: a display name and the desks someone chose to keep.
 export const ARCHIVE_FILES = Object.freeze({
   [PROJECT_STORAGE_KEY]: 'project.json',
   [PROJECT_BACKUP_STORAGE_KEY]: 'project-backup.json',
@@ -13,6 +15,8 @@ export const ARCHIVE_FILES = Object.freeze({
   [BACKUP_REMINDER_STORAGE_KEY]: 'backup-reminder.json',
   [PHONE_NOTICE_STORAGE_KEY]: 'phone-notice.txt',
   [GUIDE_SEEN_STORAGE_KEY]: 'guide-seen.txt',
+  [COMMUNITY_PROFILE_KEY]: 'community-profile.json',
+  [COMMUNITY_POSTS_KEY]: 'community-posts.json',
 });
 
 const ARCHIVE_WRITE_MESSAGE = '应用数据没有写到这台电脑上，项目未保存。请先导出项目文件备份。';
