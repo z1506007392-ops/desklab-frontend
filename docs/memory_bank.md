@@ -17,6 +17,20 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+F7 完成（`a128756`）。Windows 和 macOS 安装包不在这台 Linux 上打，交给 `.github/workflows/desktop.yml`：推 master 或手动触发，矩阵是 `windows-latest` 的 NSIS `.exe` 和 `macos-latest` 的 `.dmg`。工件名 `desklab-windows-nsis`、`desklab-macos-dmg`，留 14 天，不发 GitHub Release。安装包失败不挡住 `ci.yml` 的网站部署。本机 `npm run desktop:build -- --bundles deb` 打出 `src-tauri/target/release/bundle/deb/DeskLab_0.1.0_amd64.deb`（2.69 MiB）。二进制里的内容安全策略含 blob、`wasm-unsafe-eval`、Tauri IPC 和 `https://desklab-frontend.pages.dev`。`tauri dev` 的 `devCsp` 仍是空的。网站 `public/_headers` 没改。
+
+打包后的 AI 请求不再走相对 `/api`。基址默认现有 Pages 生产站，`VITE_DESKLAB_API_BASE` 只能是另一个 https 源，打包脚本会把它写进 connect-src。网页和 `tauri dev` 仍是相对路径。以后的社区请求用同一个 `apiUrl()`，本机图库没有改，F4 的接口仍没实现。
+
+桌面来源（`tauri://localhost`、`http://tauri.localhost`、`https://tauri.localhost`）才加 CORS，并把会话 cookie 改成 `SameSite=None; Secure`。网站同域仍是 `SameSite=Lax`，没有 CORS 头。带了别的 Origin 的请求直接 403，避免这枚 None cookie 被任意网站拿去用。本地 Vite 代理的回环地址只在开发服务器上放行。
+
+第一次打开仍是房间大小，保存仍在应用数据目录，没有改进门或存档代码。
+
+验证：`npm test` 628 通过，lint 0 问题。`desktop:build` 里的 vite build 通过（three.js 分块超过 500kB 的警告照旧）。Chrome 桌面和手机的进门与本地保存 18 通过（`start-guide`、`local-save`）。整套 Chrome UI 这一轮没有重跑。没有改 Rust，没再跑 `cargo test`。
+
+还剩：安装包没有签名，也没有公证，要等 GitHub Actions 跑完才能下载 Windows 和 macOS 文件。扫描仍不做。网上社区接口仍是 F4，没有实现。E97、E99、E100 是别的线。E69、E70 仍等负责人决定。发信仍等 Mailjet 或 Brevo。Git 自动部署仍等负责人关掉。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 WebKit 上「打开分享链接」没过（https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41725859846 和 https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41726808879 ，都只有 webkit；Chrome 四片和 static 过了）。第一次进入时保存按钮会先出现，房间页随后盖住它。`openProject` 现在重试，直到房间页在，或保存按钮一直可点。外观和登录都没改。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
@@ -4468,8 +4482,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 596 domain tests (E91–E95 plus E71–E75)
-npm run test:ui   # Chrome desktop + phone: 243 passed + 1 skipped on the combined tree. Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 628 domain tests (F7: packaged API base, desktop CSP, desktop-origin cookie)
+npm run test:ui   # Chrome desktop + phone. F7 re-ran the room page and local save only: 18 passed. The last full run recorded in the progress log is 249 passed + 1 skipped. CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
@@ -4485,11 +4499,11 @@ If rendered UI behavior changes, do browser QA against localhost if browser runt
 
 ## High-Value Next Work
 
-The next task is roadmap F7: Windows and macOS installers, with the first
-screen still the room page and saves in the app data directory. The packaged
-app also needs an API base before AI works, and the content security policy
-is still null. Do not pick up E96, E97, E98, or E102–E105; those are already
-claimed. Do not implement room scanning.
+Phase F is done except F6, which stays a concept: do not implement room
+scanning. Windows and macOS installers come from
+`.github/workflows/desktop.yml` as unsigned artifacts. Do not pick up E97,
+E99, or E100; other lines have them. Do not implement the community upload
+API; F4 is still only a sketch.
 
 The autonomous hardening backlog and recommendation foundation are complete.
 Do not resume open-ended malformed-state hardening; it had stopped producing

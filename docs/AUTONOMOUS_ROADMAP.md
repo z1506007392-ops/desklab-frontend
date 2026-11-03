@@ -219,7 +219,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 ### 4.6 存储与后端
 - 网页上，每个访客的项目存在**自己浏览器的 localStorage**：`desklab.project.v1`（存档）、`desklab.project-backup.v1`（上一版）、`desklab.project-draft.v1`（未保存草稿）、`desklab.backup-reminder.v1`、`desklab.phone-notice-dismissed.v1`（手机上点过"知道了"）、`desklab.guide-seen.v1`（进门或新手引导已结束）。图库另用 `desklab.community-profile.v1`（显示名）和 `desklab.community-posts.v1`（留下的桌子和实拍），不写进项目存档。
 - 桌面应用用同一批键，写成应用数据目录里的文件（`project.json`、`project-backup.json`、`project-draft.json`、`backup-reminder.json`、`phone-notice.txt`、`guide-seen.txt`、`community-profile.json`、`community-posts.json`）。目录是 Tauri 的 app data：Windows `%APPDATA%\app.desklab.desktop`，macOS `~/Library/Application Support/app.desklab.desktop`，Linux `~/.local/share/app.desklab.desktop`。只有这份壳能写这些文件。没列在这份名单里的键只留在内存里，重启就没了。这个 webview 里已有的 localStorage，在文件里还没有项目时复制一次，不覆盖已有文件，浏览器里的那份留着。安装好的应用和 Chrome 不是同一份存储，网站存档不会自动出现。图库的写入要等文件写完；写失败会退回，并说明这台设备的存储空间不够。
-- 摆放、布线和存档不需要登录。使用 AI 时要先用邮箱验证码登录（E67）：会话是 HttpOnly cookie，验证码和次数在 KV `AI_LIMITS`。不登录也能看 3D，也能进门。后端仓库（Express，`/api/projects/default`）**前端已不再调用**；保留它，但不要在它上面加新功能。AI 代理仍放在 Cloudflare Pages Functions（见第 6 节），不放在这个后端。`tauri dev` 仍用 Vite 把 `/api` 代理到 `localhost:3001`。打包后的应用没有这个代理，直接请求 `/api` 会 404，直到 F7 给一个基址。
+- 摆放、布线和存档不需要登录。使用 AI 时要先用邮箱验证码登录（E67）：会话是 HttpOnly cookie，验证码和次数在 KV `AI_LIMITS`。不登录也能看 3D，也能进门。后端仓库（Express，`/api/projects/default`）**前端已不再调用**；保留它，但不要在它上面加新功能。AI 代理仍放在 Cloudflare Pages Functions（见第 6 节），不放在这个后端。`tauri dev` 仍用 Vite 把 `/api` 代理到 `localhost:3001`。打包后的应用没有这个代理，AI 和以后的社区请求用 https 基址，默认 `https://desklab-frontend.pages.dev`（打包前设 `VITE_DESKLAB_API_BASE` 可换成另一个 https 源）。桌面来源的会话 cookie 是 `SameSite=None; Secure`，网站仍是 `SameSite=Lax`。
 - `vite.config.js` 仍把 `/api` 代理到 `localhost:3001`，第 6 节的本地 AI 开发服务器会用到它。
 
 ### 4.7 部署
@@ -252,7 +252,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 放进图库：显示名最多 24 字，桌子名字最多 40 字，可选一张 jpg、png 或 webp 实拍（界面里缩到长边 480）。最多 12 张。作者名在放进去时定下，之后改显示名不改已经留下的那张。
 - 给别人：导出 `desklab-desk.json`（`kind` 是 `desklab-community-desk`，version 1）。对方用「导入桌子文件」放进自己的图库。空房间不能放。导入时和备份一样先筛（E92）：不是本站 `/models/*.glb` 的模型地址丢掉，太大的桌子拒绝。
 - 图库地址不打开进门的两步。查看图库时不改正在用的项目，也不清掉未保存草稿。
-- 这一版没有：邮箱登录才能发布、照片上传、审核、公开网页、短链服务器、跨设备同步、跨设备账号。邮箱登录仍只给 AI。以后若要网上的图库，接口形状仍是 F4，这一版没有接。打包后的社区请求要等 F7 的基址，不要先做。
+- 这一版没有：邮箱登录才能发布、照片上传、审核、公开网页、短链服务器、跨设备同步、跨设备账号。邮箱登录仍只给 AI。以后若要网上的图库，接口形状仍是 F4，这一版没有接。打包后的社区请求走 F7 的同一个基址。不要先做这些接口。
 
 ---
 
@@ -575,10 +575,10 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
   - `POST /api/community/layouts/:id/photos`，multipart，一张按这个摆法拍的实拍。
   - `GET /api/community/layouts` 和 `GET /api/community/layouts/:id` 返回布局和照片。
   - 客户端「复制到我的项目」只写本机文件。没有云端项目这种资源。账号复用邮箱验证码，只用于发布和浏览，不是同步。
-  - 宿主可以是 Pages Functions，也可以是以后任何一个 HTTPS。打包后的应用要等 F7 的基址才能打到这个宿主。不要为了本机图库先做这些接口，也不要加登录墙。
+  - 宿主可以是 Pages Functions，也可以是以后任何一个 HTTPS。打包后的应用已经有 F7 的基址，默认打到现有 Pages。不要为了本机图库先做这些接口，也不要加登录墙。
 - **F5 [x] 完成（Desklab，2026-11-04，f6fd7b1）** 进门：整页房间大小，一个确认；然后 3D 生成这间房；然后只有「用电竞桌」和「自己摆」。已保存的项目、分享链接、图库地址、正在恢复的草稿不再看到这两步。
 - **F6 [x] 暂不做（Leo 2026-11-04：只留概念）** 房间已经生成之后，以后可以把一次房间扫描交给 AI，再选预设或自己摆。不要做拍摄、上传、识别，也不要把这一条改成可领的 `[ ]`。
-- **F7 [~] 进行中（Desklab，2026-11-04）** 打出 Windows 和 macOS 安装包。第一次打开应是房间大小那一页，保存应落在应用数据目录。打包后的应用没有 Vite 的 `/api` 代理，AI 和以后的社区请求需要一个基址（可以先指向现有的 Pages）。内容安全策略现在是空的，打安装包时收紧，但不要为了收紧而挡住安装包。
+- **F7 [x] 完成（Desklab，2026-11-04，a128756）** Windows 和 macOS 安装包由 `.github/workflows/desktop.yml` 在推送到 master 或手动触发时构建。产物是 Actions 工件 `desklab-windows-nsis`（NSIS `.exe`）和 `desklab-macos-dmg`（`.dmg`），保留 14 天，不发 GitHub Release。这个工作流失败不会挡住 `ci.yml` 的网站部署。本机 Linux 用 `npm run desktop:build -- --bundles deb` 打出 `src-tauri/target/release/bundle/deb/DeskLab_0.1.0_amd64.deb`。第一次打开仍是房间大小，保存仍在应用数据目录。打包后的 AI（以及以后的社区）请求默认打到 `https://desklab-frontend.pages.dev`，打包前可以用 `VITE_DESKLAB_API_BASE` 换成另一个 https 源。安装包的内容安全策略已收紧，仍允许 blob worker、`wasm-unsafe-eval` 和 Tauri IPC；`tauri dev` 不套这条策略。网站的 CSP 没有放宽。桌面来源（`tauri://localhost`、`http://tauri.localhost`、`https://tauri.localhost`）的会话 cookie 是 `SameSite=None; Secure`，其它来源仍是 `SameSite=Lax`，陌生 Origin 直接拒绝。安装包没有签名，也没有公证。
 
 ---
 
@@ -605,7 +605,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **代理用 Cloudflare Pages Functions**，与前端同域（无跨域问题），随前端一起部署，无需维护服务器。日本 EC2 和旧后端都不用于此功能。只有当 Pages Functions 被证实无法访问 DeepSeek 时，才改用日本 EC2 部署同一个处理函数（`tools/dev-api-server.mjs` 就是现成的 Node 版），并记录原因。
 - **提示词和模型调用在服务端**，客户端只发"场景摘要 + 用户目标"。
 - **校验在客户端**（那里有全部规则引擎），服务端只做结构检查。客户端校验是最终防线。
-- **桌面应用是入口。** AI 代理这一轮仍可以留在 Pages Functions。`tauri dev` 用 Vite 把 `/api` 代理到 `localhost:3001`。打包后的应用没有这个代理，调用 `/api` 会 404，直到 F7 配上基址。不要为此把 Express 后端接回来。
+- **桌面应用是入口。** AI 代理这一轮仍留在 Pages Functions。`tauri dev` 用 Vite 把 `/api` 代理到 `localhost:3001`。打包后的应用没有这个代理，AI 请求打到 `https://desklab-frontend.pages.dev`（打包前设 `VITE_DESKLAB_API_BASE` 可换成另一个 https 源）。不要为此把 Express 后端接回来。
 
 ### 6.2 DeepSeek 接口（开工前先核对官方文档）
 - 官方文档：`https://api-docs.deepseek.com/`。**写代码前先读一遍，以文档为准**（2026-10-30 的云端会话里该域名被网络策略拦截，只核对了第三方资料，结论与下文一致；能访问时再核一次）；下面是 2026 年时的已知做法，如有出入按文档改，并更新本节。
