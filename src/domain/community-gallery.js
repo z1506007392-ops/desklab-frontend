@@ -3,6 +3,7 @@ import { buildTemplateScene } from './desk-templates.js';
 import { createEntityId } from './identifiers.js';
 import { normalizeProject } from './local-project-store.js';
 import { placeCatalogObject } from './placement.js';
+import { screenUntrustedProject } from './untrusted-project.js';
 
 // A desk gallery that lives on this device. A display name, the layout, and
 // one optional photo stay in their own storage keys. Nothing here is uploaded,
@@ -113,6 +114,17 @@ function cleanProject(project) {
     return { ok: false, message: '当前房间里还没有设备，不能放进图库。' };
   }
   return { ok: true, project: normalized };
+}
+
+// A desk file is the same kind of untrusted input as a backup or a share
+// link. Drop model addresses that are not on this site, and refuse a desk
+// that is too large to open.
+function screenDesk(project) {
+  try {
+    return { ok: true, project: screenUntrustedProject(project) };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error && error.message ? error.message : '这份桌子的内容不完整，不能放进图库。' };
+  }
 }
 
 function readJson(storage, key) {
@@ -309,13 +321,15 @@ export function importCommunityDesk(raw) {
   if (!picture.ok) return picture;
   const clean = cleanProject(parsed.project);
   if (!clean.ok) return clean;
+  const screened = screenDesk(clean.project);
+  if (!screened.ok) return screened;
   return {
     ok: true,
     desk: {
       title: title.title,
       authorName: author.name,
       photo: picture.photo,
-      project: clean.project,
+      project: screened.project,
     },
   };
 }

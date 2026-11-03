@@ -127,6 +127,33 @@ test('a desk file round-trips, and a project backup is not a gallery file', () =
   assert.equal(readCommunityPosts(storage).some(post => post.id === 'local-3'), true);
 });
 
+test('an imported desk file cannot point a device at another site', () => {
+  const project = deskProject();
+  project.objects[0] = { ...project.objects[0], assetUrl: 'https://evil.example/steal.glb', name: '桌<a>' };
+  const imported = importCommunityDesk(JSON.stringify({
+    kind: 'desklab-community-desk',
+    version: 1,
+    title: '外来',
+    authorName: '甲',
+    project,
+  }));
+  assert.equal(imported.ok, true);
+  assert.equal(imported.desk.project.objects[0].assetUrl, null);
+  assert.equal(imported.desk.project.objects[0].name.includes('<'), false);
+
+  const huge = deskProject();
+  huge.room = { ...huge.room, length: 5000 };
+  const refused = importCommunityDesk(JSON.stringify({
+    kind: 'desklab-community-desk',
+    version: 1,
+    title: '太大',
+    authorName: '甲',
+    project: huge,
+  }));
+  assert.equal(refused.ok, false);
+  assert.match(refused.message, /太大/);
+});
+
 test('the desktop file archive keeps a gallery desk, and a failed write stays off disk', async () => {
   const files = new Map();
   const storage = createFileArchiveStorage({
