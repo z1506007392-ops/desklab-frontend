@@ -2,6 +2,15 @@
 # pull requests. After those checks pass on a master push, Wrangler deploys
 # the built site. Cloudflare's own Git build still deploys too, until it is
 # turned off.
+#
+# The checks used to be one job. On
+# https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698980114
+# (ddcfdd8) that job took 22m 10s: Chrome UI 17m 56s, then WebKit 2m 53s,
+# on the same machine, after a 31s WebKit install. npm ci was 7s, unit
+# tests 11s, lint 11s, and the production build 2s. Deploy was another 35s.
+# The same tests now run together. npm stays cached by setup-node. The
+# WebKit browser build is cached; apt libraries are installed every time
+# because a fresh runner does not have them. The deploy job is unchanged.
 name: CI
 
 on:
@@ -14,8 +23,9 @@ permissions:
   contents: read
 
 jobs:
-  check:
+  static:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -25,25 +35,78 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run lint
+      # Pull requests never deploy, so this is the build they get. The
+      # deploy job still builds for itself; those steps are left as they are.
       - run: npm run build
-      # Chrome is already on the runner. iPhone WebKit is installed here.
-      # The four-browser run took 18 minutes on this runner, more than twice
-      # the previous job, and its Firefox build has no usable WebGL. CI keeps
-      # the full Chrome suite plus the WebKit cases that cover loading,
-      # saving, the phone toolbar, and the 3D view. Firefox stays a local run
-      # (`npm run test:ui:firefox`); `npx playwright test` still runs all four.
-      - run: npx playwright install --with-deps webkit
-      - run: npm run test:ui
-      - run: npm run test:ui:webkit
-      # A one-off UI failure is otherwise gone with the runner: keep the
-      # screenshots and page snapshots Playwright wrote for it.
+
+  ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      # Chrome is already on the runner. The four shards together are
+      # `npm run test:ui` (desktop and phone). Nothing is skipped.
+      - name: Run Chrome UI shard ${{ matrix.shard }} of 4
+        run: npm run test:ui -- --shard=${{ matrix.shard }}/4
       - name: Keep the UI test failure screenshots
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-test-results
+          name: playwright-test-results-chrome-${{ matrix.shard }}
           path: test-results/
           retention-days: 14
+          if-no-files-found: ignore
+
+  webkit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: Cache the Playwright WebKit build
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+      # A cache hit skips the browser download. System libraries are still
+      # installed here; they are not part of that cache.
+      - run: npx playwright install --with-deps webkit
+      - run: npm run test:ui:webkit
+      - name: Keep the UI test failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results-webkit
+          path: test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # deploy waits on this name. The job only checks that the parallel jobs
+  # passed; it does not build or deploy.
+  check:
+    needs: [static, ui, webkit]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every check before deploy
+        run: |
+          echo "static=${{ needs.static.result }} ui=${{ needs.ui.result }} webkit=${{ needs.webkit.result }}"
+          test "${{ needs.static.result }}" = "success"
+          test "${{ needs.ui.result }}" = "success"
+          test "${{ needs.webkit.result }}" = "success"
 
   deploy:
     needs: check
