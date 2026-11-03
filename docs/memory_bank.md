@@ -17,6 +17,20 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E102–E105 已实现，等 CI 绿了再标完成。E101 已由另一条线在 `94f7158` 完成（上游失败带回剩余次数），本线没有改那条，也没有改 `layout-handler.js`。任务书里的 Mailjet 发信和 E101 的编号撞上了，写进手册 §6.9 和 README，不改 E101 的状态。E80 的「查看是否已登录」失败仍是「网络连接失败」且不打开登录框，这次只是在它旁边加上退出失败的那一句。E106–E108 已由另一条线完成，rebase 时保留了他们的代码。
+
+- 发信：两个 Mailjet 密钥都有就走 Mailjet HTTP API（Basic Auth），否则有 Brevo 走 Brevo，都没配好仍是 503「登录暂未开放」。只填一个 Mailjet 密钥不会改去 Brevo。中文验证码邮件不变。没有写入真实密钥。
+- E102：小时限流拒绝时不调用 `takeUser`，`remaining` 仍是 `readUser` 的原值。另补登录流：发码限流文案、会话 cookie、退出、未登录 AI 401、`X-AI-Limit-Mode` 和当日剩余次数。不测真发信。
+- E103：只读分享里「让 AI 看看」保持禁用，不弹登录、不请求 `/api/ai/layout`。复制到自己的项目后，未登录能开登录框，已登录能请求。
+- E104：退出失败显示一句中文，留在已登录，可以再点一次。
+- E105：验证码不是 6 位留在当前步骤；换邮箱清掉错误；断网或响应不是 JSON 用现成中文。
+
+验证：`npm test` 564 通过，lint 0 问题，build 通过（three.js 分块超过 500kB 的警告照旧）。Chrome 桌面和手机 UI 241 通过 + 1 跳过。
+
+还剩：CI 绿了把 E102–E105 标完成。生产没有配 Mailjet 或 Brevo，线上发码仍是「登录暂未开放」。E69、E70、E96–E100 不动。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E106–E108 完成。E102–E105 仍是另一条线的，没有改。E76–E80、E96、E97、E98 也是别人的，没有改它们的代码。
 
 - E106：`/api/ai/layout` 的 `remaining` 必须是有限的非负数，否则不当成剩余次数。0 次仍然显示。Infinity、NaN、负数和字符串都丢掉。
@@ -4318,8 +4332,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 547 domain tests (E106–E108 on top of E76–E80; 545 before these three)
-npm run test:ui   # Chrome desktop + phone: 229 passed + 1 skipped. Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 564 domain tests (E102–E105 login mail and limits; 547 at E106–E108)
+npm run test:ui   # Chrome desktop + phone: 241 passed + 1 skipped. Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
