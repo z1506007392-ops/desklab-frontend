@@ -169,6 +169,12 @@ E67 已部署。CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+领了 E91–E95（安全加固，不改外观）。E91 安全响应头，E92 分享链接和导入存档校验，E93 `/api/ai/layout` 的输入和错误信息，E94 npm audit，E95 登录只读审查。不改 `functions/api/auth/*`，也不改 `server/ai/auth.js`。缓存头留给别的线；`public/_headers` 冲突时两边都留。
+
+还剩：把这五项做完，全量验证后推 master，并看 CI。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E67 完成（d95e9d5）。AI 改为登录后才能用：邮箱验证码，每个邮箱每天 20 次（`AI_DAILY_PER_USER`），不设全站上限，也不再用 `AI_DAILY_TOTAL` / `AI_DAILY_GLOBAL`。每 IP 每小时 20 次仍作兜底。发验证码：同一邮箱 60 秒 1 次、每天 5 次；同一 IP 每小时默认 10 次（`AUTH_CODE_PER_IP_HOURLY`，负责人只要求有上限、没有给数字）。没配 `BREVO_API_KEY` 或 `MAIL_FROM` 时发码返回「登录暂未开放」，不扣次数。验证码只存哈希。会话 cookie 30 天，HttpOnly、SameSite=Lax，只有 https 才加 Secure。
 
 没登录时点「让 AI 看看」先出登录框，登录成功不自动请求。登录后按钮旁是「今日剩余 N 次」和退出。分享链接只读时这个按钮仍禁用。关于页改成摆放和布线不需要登录。3D 和布线不登录也能用。
