@@ -17,6 +17,10 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+WebKit 上「打开分享链接」有一次没过（https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41725859846 ，只有 webkit；Chrome 四片和 static 过了，deploy 没跑）。第一次进入时保存按钮会先出现，房间页马上盖住它，`openProject` 仍要求这个按钮保持可点，5 秒后找不到。现在房间页已经在，就不再等保存按钮。外观和登录都没改。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E71–E75 完成（1f8b656）。只做加载和缓存，3D 画面没有改。电竞桌桌面 1440×900 和手机 390×844 的截图像素差为 0。和 E91 的安全头写在同一个 `public/_headers`：`/*` 不写 Cache-Control，缓存写在各自的路径块，同一个头的名字不会被拼成一行。预加载脚本的 sha256 加在 CSP 的 `script-src` 里，没有改成 `unsafe-inline`。模型地址只多允许 `?v=` 加 8 位小写十六进制，其它查询、远程地址和 `javascript:` 仍拒绝。目录模型仍关掉 Draco。
 
 E71：带 `?v=`（sha256 前 8 位）的模型、缩略图、轴字体，以及带哈希的 `/assets/*`，缓存一年且 immutable。改前刷新电竞桌，3 个脚本各 300 字节、模型 7200 字节都是重新验证。改后这些传输是 0。HTML 仍是短缓存。

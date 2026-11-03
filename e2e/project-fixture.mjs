@@ -117,7 +117,10 @@ export async function openProject(page, objects, connections = [], { saved = tru
   const saveButton = page.getByRole('button', { name: '保存项目', exact: true });
   const roomPage = page.getByRole('dialog', { name: '这间房有多大' });
   await expect(saveButton.or(roomPage).first()).toBeVisible();
-  if (await saveButton.isVisible()) await expect(saveButton).toBeEnabled();
+  // The room page can replace the toolbar a moment after the save button
+  // first appears. Requiring that button to stay enabled then fails on
+  // WebKit. When the room page is up, it is the signal that the app loaded.
+  if (!(await roomPage.isVisible())) await expect(saveButton).toBeEnabled();
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
   return ai ? { errors, writes, aiRequests } : { errors, writes };
 }
