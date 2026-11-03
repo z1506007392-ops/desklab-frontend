@@ -80,6 +80,10 @@ test('AI suggestions are checked, previewed, applied, and undone', async ({ page
   await page.getByRole('button', { name: '保存项目', exact: true }).click();
   await expect(page.getByText(/^已保存$/)).toBeVisible();
   expect(await storedMonitorX(page, scene)).toBe(0.4);
+  await page.getByRole('button', { name: '重做', exact: true }).click();
+  await page.getByRole('button', { name: '保存项目', exact: true }).click();
+  await expect(page.getByText(/^已保存$/)).toBeVisible();
+  expect(await storedMonitorX(page, scene)).toBe(0);
   expect(evidence.errors).toEqual([]);
   expect(evidence.writes).toEqual([]);
 });
@@ -137,6 +141,19 @@ test('a request in progress can be cancelled', async ({ page }) => {
     room: scene.room,
     ai: () => new Promise(resolve => { release = () => resolve(answer(scene)); }),
   });
+  // Cancel aborts the request. The answer is released afterwards, so a late
+  // response must not become a suggestion. Either failure or a finished
+  // response counts; waiting only for a response hangs when the abort wins.
+  const layoutSettled = new Promise(resolve => {
+    const done = (request) => {
+      if (!request.url().includes('/api/ai/layout') || request.method() !== 'POST') return;
+      page.off('requestfinished', done);
+      page.off('requestfailed', done);
+      resolve();
+    };
+    page.on('requestfinished', done);
+    page.on('requestfailed', done);
+  });
   const { section } = await openAiSection(page);
   await section.getByRole('button', { name: '让 AI 看看', exact: true }).click();
   const status = section.getByRole('status').filter({ hasText: 'AI 正在看你的桌面' });
@@ -145,9 +162,32 @@ test('a request in progress can be cancelled', async ({ page }) => {
   await expect(status).toHaveCount(0);
   await expect(section.getByRole('button', { name: '让 AI 看看', exact: true })).toBeEnabled();
   release?.();
-  await page.waitForTimeout(300);
-  await expect(section.getByRole('group')).toHaveCount(0, { timeout: 1000 });
+  await layoutSettled;
+  await page.evaluate(() => new Promise(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  }));
+  await expect(section.getByRole('button', { name: '让 AI 看看', exact: true })).toBeEnabled();
+  await expect(section.getByRole('group')).toHaveCount(0);
   expect(evidence.writes).toEqual([]);
+});
+
+test('a dropped AI request says the network failed and can be retried', async ({ page }) => {
+  const scene = messyGaming();
+  const evidence = await openProject(page, scene.objects, scene.connections, { room: scene.room, ai: () => answer(scene) });
+  let dropped = false;
+  await page.route('**/api/ai/layout', route => {
+    if (dropped || route.request().method() !== 'POST') return route.fallback();
+    dropped = true;
+    return route.abort('failed');
+  });
+  const { section } = await openAiSection(page);
+  await section.getByRole('button', { name: '让 AI 看看', exact: true }).click();
+  const alert = section.getByRole('alert').filter({ hasText: '网络连接失败' });
+  await expect(alert).toContainText('网络连接失败，请检查网络后再试');
+  await alert.getByRole('button', { name: '再试一次', exact: true }).click();
+  await expect(section.getByRole('group', { name: '显示器移到正前方' })).toBeVisible();
+  expect(evidence.errors.filter(message => !/Failed to load resource/.test(message))).toEqual([]);
+  expect(evidence.writes.filter(line => !line.includes('/api/ai/layout'))).toEqual([]);
 });
 
 test('the user can tell the AI what to change and get a new answer', async ({ page }) => {
