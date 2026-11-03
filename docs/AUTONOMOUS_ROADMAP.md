@@ -138,7 +138,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 ### 3.6 收尾
 1. 任务板状态改为 `[x] 完成（你的名字，YYYY-MM-DD，提交号）`。
 2. 在 `docs/memory_bank.md` 对应位置追加一段记录：做了什么、关键设计、验证结果（测试数量）、已知限制。更新"Verification Gates"里的测试数量。
-3. 推送后约 2 分钟，Cloudflare 会自动部署。**涉及用户可见变化的任务，到线上站点实际打开验证一次**（见 4.7）。
+3. 推送后，GitHub Actions 在检查全绿时用 wrangler 部署（A8）。Git 自动部署仍开着，它不等 CI，大约 2 分钟也可能更新站点。关 Git 自动部署等负责人/Desklab 在控制台操作（见 4.7）。**涉及用户可见变化的任务，到线上站点实际打开验证一次**。
 4. 回到 3.1，开始下一轮。**不要停。**
 
 ### 3.7 卡住了怎么办
@@ -200,8 +200,12 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - `vite.config.js` 仍把 `/api` 代理到 `localhost:3001`，第 6 节的本地 AI 开发服务器会用到它。
 
 ### 4.7 部署
-- **Cloudflare Pages** 从 `master` 自动构建部署：构建命令 `npm run build`，输出 `dist`，Node 版本读 `.node-version`。线上：`https://desklab-frontend.pages.dev`。Git 自动部署仍然开着。
-- **GitHub Actions**（`.github/workflows/ci.yml`）先跑检查。推送到 `master` 且检查全绿后，再用 `wrangler pages deploy dist --project-name desklab-frontend` 部署（A8）。两套部署同时存在。等 Desklab 关掉 Git 自动部署。注意：Cloudflare 的 Git 构建不会等 CI；CI 红了，Git 那条仍可能更新站点。所以**本地验证全绿才推送**。
+- **A8 已上线。** `.github/workflows/ci.yml` 的 `deploy`：推送到 `master` 且 `check` 全绿后执行 `npx wrangler@4.157.0 pages deploy dist --project-name desklab-frontend`（仓库根目录，`functions/` 会一起上传）。Secrets：`CLOUDFLARE_API_TOKEN`（token 名 `desklab-github-actions-pages`，仅 Account → Cloudflare Pages → Edit）、`CLOUDFLARE_ACCOUNT_ID`。第一次成功：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698923327 （https://79dc0a72.desklab-frontend.pages.dev ）。E67 那次尖端也部署成功：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41704588154 （https://3c8daf45.desklab-frontend.pages.dev ）。线上首页 https://desklab-frontend.pages.dev 。
+- **Git 自动部署仍然开着。** 构建命令 `npm run build`，输出 `dist`，Node 版本读 `.node-version`。它不等 CI；CI 红了，Git 那条仍可能更新站点。所以**本地验证全绿才推送**。已经连上 Git 的 Pages 项目不能改成 Direct Upload；关掉的是自动构建，wrangler 直接上传仍然可用。
+- **关 Git 自动部署：等负责人/Desklab 在控制台关。** 2026-11-04 这台环境没有 `CLOUDFLARE_API_TOKEN`，也没有 `CLOUDFLARE_ACCOUNT_ID`，不能代关。不要从 GitHub Actions secrets 里把 token 读出来。
+  - 控制台：Workers & Pages → `desklab-frontend` → Settings → Builds & deployments → Configure Production deployments，取消 **Enable automatic production branch deployments** 并保存。Preview branch 选 **None**（Disable automatic branch deployments）并保存。文档：https://developers.cloudflare.com/pages/configuration/git-integration/#disable-automatic-deployments 和 https://developers.cloudflare.com/pages/configuration/branch-build-controls/ 。
+  - API：先 `GET /accounts/{account_id}/pages/projects/desklab-frontend`，保留返回的 `source.type`、`source.config`（owner、repo_name、production_branch 等），再 `PATCH` 同一个地址。只把 `source.config.production_deployments_enabled` 设为 `false`、`source.config.preview_deployment_setting` 设为 `"none"`。`deployments_enabled` 已弃用，不要只靠它。不要提交一份缺了 owner / repo_name 的 `source`，以免把仓库连接清掉。请求头 `Authorization: Bearer <API_TOKEN>`。文档：https://developers.cloudflare.com/api/resources/pages/subresources/projects/methods/edit/ 。
+  - 关掉之后用 `GET` 看这两项已变，再推一次不相关的提交，确认没有新的 Cloudflare Pages Git 构建，而 Actions 的 wrangler 部署仍然更新 https://desklab-frontend.pages.dev 。
 - 线上验证方法：用 Playwright 打开线上网址（云端环境需要走 `HTTPS_PROXY` 代理：`chromium.launch({ proxy: { server: process.env.HTTPS_PROXY } })`；`waitUntil` 用 `'load'`，不要用 `'networkidle'`，后者在代理下会超时）。检查：标题、模板加载、所有 `/models/*.glb` 返回 200、保存刷新、控制台无报错。
 
 ### 4.8 已知坑
@@ -269,7 +273,8 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 验收：单元测试覆盖"墙插有空位→插墙插"和"墙插满了→不补线、不报错"；UI 测试：模板上加插排后布线检查无问题。
 
 **A8 [x] 完成（Desklab，2026-11-04） 可选 — 让 Cloudflare 只部署通过测试的版本**
-- H3 已于 2026-11-04 完成。CI 全绿后用 `wrangler pages deploy dist --project-name desklab-frontend` 部署（`.github/workflows/ci.yml` 的 `deploy`，GitHub secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）。第一次成功：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698923327 ，部署到 https://79dc0a72.desklab-frontend.pages.dev 。线上 https://desklab-frontend.pages.dev 首页仍是 DeskLab。Git 自动部署先留着，和新工作流同时存在。等 Desklab 关掉 Git 自动部署。
+- wrangler 部署已经在跑，见 4.7。第一次成功：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698923327 。E67 尖端再次成功：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41704588154 。
+- **关 Git 自动部署：等负责人/Desklab 在控制台关。** 2026-11-04 执行环境没有 `CLOUDFLARE_*`，没有代关。步骤和 API 写在 4.7。关掉之前，Git 构建和 wrangler 部署同时存在。
 
 ### 阶段 B：LLM 基础设施（DeepSeek 接入的管道）（已完成 2026-10-30；线上等待 H1 密钥）
 
@@ -495,6 +500,11 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
   - 实现要点和工作量：中，全在浏览器里。在现有存档旁边再留最多 3 份有名字的副本，可以切换、从当前复制、删除。打开时仍只把当前这一份画进 3D。导出备份要带上这几份，旧的单份备份仍能导入。不上传。入口放在「更多」里，不动工具栏那四组的位置。
   - 视觉或新设备：3D 不变，没有新设备。多一个菜单项，算界面改动。工具栏和整体布局曾经由负责人定过，这个入口要负责人点头。
   - 变现：不适合单独收费。Planner 5D 免费档就是不限项目数。留下多套方案的好处，是人会多试几次，购线清单和 AI 会被多用。详细对照见 `docs/research/competitors-2026-11.md`。
+- **E101 [ ]** 已登录的 AI 请求如果上游失败（502、504、看不懂的回答），而且这次已经扣了当日次数，响应里带 `remaining`，页面上的「今日剩余」跟着变。查看是否已登录时的网络失败是 E80，这里不动。
+- **E102 [ ]** 小时限流拒绝时不扣这个邮箱的当日次数。单测锁住：地址额度已用完时不调用 `takeUser`，响应里的 `remaining` 是 `readUser` 的原值。
+- **E103 [ ]** 分享链接和登录互不干扰。只读分享里「让 AI 看看」保持禁用，不弹出登录框，不请求 `/api/ai/layout`。复制到自己的项目之后，未登录可以打开登录框，已登录可以正常请求。不改 E78 的分享对话框。
+- **E104 [ ]** 退出失败时用一句中文说明，并留在已登录状态，可以再点一次。不改样式。不改 E80 的「查看是否已登录」失败提示。
+- **E105 [ ]** 登录框的错误文案：验证码不是 6 位时留在当前步骤；换邮箱清掉上一次的错误；发码或验证在断网、响应不是 JSON 时用现成的中文，不把异常抛到页面外。
 
 ---
 
@@ -790,7 +800,7 @@ total = 100 × errors + 20 × warnings + 5 × hints + 1 × cableMeters
 |---|---|---|---|
 | H1（已完成 2026-10-30） | 申请 DeepSeek API 密钥，并在 Cloudflare Pages 项目 `desklab-frontend` → 设置 → 环境变量（生产 + 预览）里添加加密变量 `DEEPSEEK_API_KEY` | 产品负责人 | 阶段 B、C 全部照做（用模拟模型和录制响应）；C6 脚本写好但不跑；C7 标"等待 H1" |
 | H2（已完成 2026-11-04，Desklab (Grok Bot)，负责人同意） | 新建 KV 命名空间 `desklab-ai-limits`（id `c129d77cfb99444fba8fbd6919eaa885`），Pages 项目 `desklab-frontend` 的 Production 和 Preview 都绑定为 `AI_LIMITS` | Desklab (Grok Bot) | 已绑定。线上限流用这个命名空间，不要再建一个 |
-| H3（已完成 2026-11-04，Desklab (Grok Bot)，负责人同意） | 创建 Cloudflare API Token `desklab-github-actions-pages`（仅 Account → Cloudflare Pages → Edit），与账户 ID 一起写入 GitHub Actions secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID` | Desklab (Grok Bot) | 已写入 secrets，给 A8 用。不要自己关 Git 自动部署 |
+| H3（已完成 2026-11-04，Desklab (Grok Bot)，负责人同意） | 创建 Cloudflare API Token `desklab-github-actions-pages`（仅 Account → Cloudflare Pages → Edit），与账户 ID 一起写入 GitHub Actions secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID` | Desklab (Grok Bot) | 已写入 secrets，给 A8 的 wrangler 部署用。关 Git 自动部署另见 4.7：等负责人/Desklab 在控制台关。不要从 secrets 里把 token 读出来 |
 | H4 | 域名 ICP 备案、国内服务器部署 | 产品负责人（已决定暂缓） | 不做任何相关工作 |
 | H5 | 本地旧数据迁移（后端 `data/default-project.json` → 浏览器） | 产品负责人：新版里"更多 → 导入"那个文件再保存 | 无需处理 |
 

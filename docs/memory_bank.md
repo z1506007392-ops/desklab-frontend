@@ -17,6 +17,20 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E67 线上验收（https://desklab-frontend.pages.dev ，2026-11-04 04:08 UTC+8 前后，各请求一次）：
+
+- 首页 200，标题 DeskLab。未登录套用「家庭办公」模板后，3D 画面直接出来（桌子、显示器、笔记本），没有要求登录。截图 `live_e67_desk.png`。
+- 未登录 `POST /api/ai/layout`（`{"version":1,"summary":{},"goal":"更整洁"}`）返回 **401** `{"error":"auth_required","message":"请先登录后再使用 AI"}`。先检查密钥再检查登录，所以这是 401 而不是 503，说明生产上的 DeepSeek 密钥还在。
+- `GET /api/auth/me` 无 cookie：200 `{"email":null,"remaining":null}`。
+- 改进建议里点「让 AI 看看」，弹出「登录后使用 AI」。填 `probe@example.com` 点「获取验证码」，页面红字是「登录暂未开放」。这一次浏览器请求是 503 `{"error":"auth_unavailable","message":"登录暂未开放"}`。截图 `live_e67_login_unavailable.png`。控制台只有这一条预期的 503，没有别的页面错误。改进建议弹窗和 3D 画面都还在。
+- 「今日剩余」线上没显示出来，因为没配 `BREVO_API_KEY` / `MAIL_FROM`，登录走不完，也就没有会话。已部署的 `/assets/index-wfljpa56.js` 里有「今日剩余」「登录后使用 AI」「请先登录后再使用 AI」和「退出」；「登录暂未开放」不在包里，是接口原文。本地 E67 截图 `ai_remaining_desktop.png` 是「今日剩余 19 次」。等负责人配好发信后再到线上看这个数字。
+
+Git 自动部署没有关。这台环境没有 `CLOUDFLARE_API_TOKEN`，也没有 `CLOUDFLARE_ACCOUNT_ID`，没有调用 Cloudflare API，也没有读 GitHub secrets。手册 4.7 写了控制台和 API 步骤。**关 Git 自动部署：等负责人/Desklab 在控制台关。** A8 的 wrangler 部署已经在线上：第一次 https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698923327 ，E67 尖端 https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41704588154 。两套部署同时存在。
+
+接着做 E101–E105。查看登录状态时的网络失败留给 E80，本线不改那条。不碰 E71–E100，不改外观，不加设备。E69、E70 仍等负责人决定。H4 不动。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E96–E100 写成提案，状态是「等负责人决定」，没有改产品代码，也没有实现。详细调研在 `docs/research/competitors-2026-11.md`。五条都要负责人拍板后才能做：E96 公开图库会把布局存到服务器；E97 购线清单跳到商店搜索，不编价格；E98 要新的桌下理线槽，3D 会变；E99 先只加眼睛高度的建议，不加椅子；E100 在本机多留几套摆法，多一个菜单入口。
 
 还剩：等负责人决定。批准前不要做。推送后看 CI。
