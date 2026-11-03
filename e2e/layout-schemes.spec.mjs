@@ -17,7 +17,7 @@ test('three local layouts can be saved, switched, exported, and not synced', asy
   await expect(dialog).toHaveCount(0);
 
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
-  await page.getByRole('dialog', { name: '桌面模板', exact: true }).getByRole('button', { name: '使用模板：家庭办公', exact: true }).click();
+  await page.getByRole('dialog', { name: '桌面模板', exact: true }).getByRole('button', { name: '使用模板：极简单屏', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
   await page.getByRole('button', { name: '更多', exact: true }).click();
