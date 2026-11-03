@@ -173,7 +173,7 @@ export function describeCatalogModel(model) {
     parts.push(`${model.defaultScale.x} × ${model.defaultScale.y} m`, '尺寸可调');
   }
   if (model.type === 'monitor-stand') parts.push('夹桌', '可放显示器');
-  if (model.modelId === 'cable-tray') parts.push('桌下', '收后沿的线');
+  if (model.modelId === 'cable-tray') parts.push('桌下', '收进槽里');
   const acOutputs = ports.filter(port => port.type === 'ac_output').length;
   const hasDcOutput = ports.some(port => port.type === 'dc_output');
   const isPluggedPowerGear = (acOutputs > 0 || hasDcOutput)

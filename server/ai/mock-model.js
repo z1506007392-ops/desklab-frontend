@@ -21,6 +21,8 @@ const cm = value => Math.round(value * 100) / 100;
 // checker rejects anything that looks like an internal id.
 const HINT_CATEGORY = Object.freeze({
   monitor_off_center: 'ergonomics',
+  screens_far_apart: 'ergonomics',
+  keyboard_off_axis: 'ergonomics',
   monitor_too_close: 'ergonomics',
   monitor_facing_away: 'ergonomics',
   monitor_not_on_desk: 'ergonomics',
@@ -30,6 +32,7 @@ const HINT_CATEGORY = Object.freeze({
   speakers_block_seat: 'ergonomics',
   mouse_far_from_keyboard: 'ergonomics',
   tower_on_desk_center: 'space',
+  tower_on_desktop: 'space',
   tower_blocks_legroom: 'space',
   console_on_desk: 'space',
   console_blocks_legroom: 'space',

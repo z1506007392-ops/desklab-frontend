@@ -9,7 +9,7 @@ import {
   placeCableTray,
   remountCableTray,
 } from '../src/domain/cable-tray.js';
-import { pathLength, routeCable } from '../src/domain/cable-route.js';
+import { routeCable } from '../src/domain/cable-route.js';
 import { findModelTemplate, hydrateProjectObjects } from '../src/domain/catalog.js';
 import { getConnectionEndpoints, getConnectionRoute } from '../src/domain/connections.js';
 import { buildTemplateScene } from '../src/domain/desk-templates.js';
@@ -80,29 +80,47 @@ test('without a desk the tray sits on the floor', () => {
   assert.ok(Math.abs(tray.position.z - tray.scale.z / 2) < 1e-6);
 });
 
-test('the three templates do not come with a tray', () => {
+function longSurfaceRun(points, deskObject) {
+  const top = deskObject.position.z + deskObject.scale.z / 2;
+  for (let index = 1; index < points.length; index += 1) {
+    const previous = points[index - 1];
+    const point = points[index];
+    if (Math.abs(previous.z - top) > 0.01 || Math.abs(point.z - top) > 0.01) continue;
+    if (Math.hypot(previous.x - point.x, previous.y - point.y) > 0.08) return true;
+  }
+  return false;
+}
+
+test('each preset hangs one tray under the back, beside the strip', () => {
   for (const id of ['home-office', 'desktop-dual', 'gaming']) {
     const scene = buildTemplateScene(id);
-    assert.equal(scene.objects.some(object => object.modelId === 'cable-tray'), false);
+    const trays = scene.objects.filter(object => object.modelId === 'cable-tray');
+    assert.equal(trays.length, 1, id);
+    const deskObject = scene.objects.find(object => object.modelId === 'office-desk');
+    assert.equal(findHostDesk(trays[0], scene.objects)?.id, deskObject.id, id);
+    assert.ok(trays[0].position.z > 0.4, id);
+    const issues = analyzeProjectLayout(scene.room, scene.objects);
+    assert.equal(issues.some(issue => issue.code === 'object_overlap' || issue.code === 'floating_object'), false, id);
   }
 });
 
-test('a tray added to a preset still hangs under the back, beside the strip', () => {
+test('a tray still hangs under a preset desk when the strip is already there', () => {
   for (const id of ['home-office', 'desktop-dual', 'gaming']) {
     const scene = buildTemplateScene(id);
+    const objects = scene.objects.filter(object => object.modelId !== 'cable-tray');
     const tray = placeCatalogObject({
       modelTemplate: trayTemplate(),
       categoryId: 'accessory',
       room: scene.room,
       id: 'tray',
-      objects: scene.objects,
+      objects,
     });
     assert.equal(tray.valid, true, id);
-    const deskObject = scene.objects.find(object => object.modelId === 'office-desk');
-    const objects = [...scene.objects, tray.object];
-    assert.equal(findHostDesk(tray.object, objects)?.id, deskObject.id, id);
+    const deskObject = objects.find(object => object.modelId === 'office-desk');
+    const withTray = [...objects, tray.object];
+    assert.equal(findHostDesk(tray.object, withTray)?.id, deskObject.id, id);
     assert.ok(tray.object.position.z > 0.4, id);
-    const issues = analyzeProjectLayout(scene.room, objects);
+    const issues = analyzeProjectLayout(scene.room, withTray);
     assert.equal(issues.some(issue => issue.code === 'object_overlap' || issue.code === 'floating_object'), false, id);
   }
 });
@@ -133,19 +151,27 @@ test('a cable over the back edge is drawn into the tray, and the shop length sta
   assert.deepEqual(after.points, before.points);
 
   const drawn = drawCablePoints(after.points, withTray);
-  assert.ok(drawn.length > after.points.length);
   const inside = drawn.some(point => Math.abs(point.y - tray.position.y) < 1e-6 && point.z < tray.position.z);
   assert.equal(inside, true);
-  assert.ok(pathLength(drawn) >= after.length - 1e-6);
+  assert.equal(longSurfaceRun(drawn, objects[0]), false);
 
-  const side = [desk(), onDesk('monitor', 0.4, 0.1, 0.5), device('console', { x: 0.2, y: -0.9 })];
+  const side = [desk(), onDesk('monitor', 0.4, 0.1, 0.5), device('console', { x: 1.2, y: 0.1 })];
   const sideTray = addTray(side, 'side-tray');
   const sideObjects = [...side, sideTray];
   const connection = {
     id: 'c', fromObjectId: 'console', fromPortId: 'p', toObjectId: 'monitor', toPortId: 'p', cableType: 'hdmi', length: 3, name: '线',
   };
   const sideRoute = getConnectionRoute(connection, sideObjects);
-  assert.deepEqual(drawCablePoints(sideRoute.points, sideObjects), sideRoute.points);
+  const sideDrawn = drawCablePoints(sideRoute.points, sideObjects);
+  assert.equal(sideRoute.length, routeCable(
+    getConnectionEndpoints(connection, side).from,
+    getConnectionEndpoints(connection, side).to,
+    side[2],
+    side[1],
+    side,
+  ).length);
+  assert.equal(longSurfaceRun(sideDrawn, side[0]), false);
+  assert.ok(sideDrawn.some(point => point.z < sideTray.position.z));
 });
 
 test('a turned desk still tucks the cable into the tray on its own back edge', () => {
@@ -167,7 +193,7 @@ test('a turned desk still tucks the cable into the tray on its own back edge', (
 
 test('the shop list gains one tray line and does not shorten the cables', () => {
   const scene = buildTemplateScene('gaming');
-  const objects = hydrateProjectObjects(scene.objects);
+  const objects = hydrateProjectObjects(scene.objects).filter(object => object.modelId !== 'cable-tray');
   const before = buildCableShoppingList(scene.connections, objects);
   const tray = addTray(objects, 'shop-tray');
   const after = buildCableShoppingList(scene.connections, [...objects, tray]);
@@ -175,6 +201,25 @@ test('the shop list gains one tray line and does not shorten the cables', () => 
   assert.deepEqual(after.items.at(-1), { name: '桌下理线槽', length: null, quantity: 1 });
   assert.match(after.text, /桌下理线槽 ×1/);
   assert.equal(buildCableShoppingList([], [tray]).text, '要买的线\n- 桌下理线槽 ×1');
+});
+
+test('preset cables drop into the tray on screen and stay the same length to buy', () => {
+  for (const id of ['home-office', 'desktop-dual', 'gaming']) {
+    const scene = buildTemplateScene(id);
+    const deskObject = scene.objects.find(object => object.modelId === 'office-desk');
+    const bare = scene.objects.filter(object => object.modelId !== 'cable-tray');
+    const withList = buildCableShoppingList(scene.connections, scene.objects);
+    const bareList = buildCableShoppingList(scene.connections, bare);
+    assert.deepEqual(withList.items.slice(0, -1), bareList.items, id);
+    assert.deepEqual(withList.items.at(-1), { name: '桌下理线槽', length: null, quantity: 1 }, id);
+    for (const connection of scene.connections) {
+      const measured = getConnectionRoute(connection, scene.objects);
+      const without = getConnectionRoute(connection, bare);
+      assert.equal(measured.length, without.length, `${id} ${connection.name}`);
+      const drawn = drawCablePoints(measured.points, scene.objects);
+      assert.equal(longSurfaceRun(drawn, deskObject), false, `${id} ${connection.name}`);
+    }
+  }
 });
 
 test('the tray rides the desk and drops to the floor when the desk is removed', () => {

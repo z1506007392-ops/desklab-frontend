@@ -112,7 +112,8 @@ test('a tower in the middle of the desk, or under it where the legs go, is hinte
   const legroom = moved(objects, 'desktop-pc', pc => { pc.position.x = 0; pc.position.y = desk.position.y; return pc; });
   assert.deepEqual(codes(room, legroom), ['tower_blocks_legroom']);
   const desktopEnd = moved(objects, 'desktop-pc', pc => { pc.position = { x: 0.55, y: desk.position.y, z: deskTop + pc.scale.z / 2 }; return pc; });
-  assert.ok(!codes(room, desktopEnd).includes('tower_on_desk_center'), 'the end of the desk is fine');
+  assert.ok(!codes(room, desktopEnd).includes('tower_on_desk_center'), 'the end of the desk is not the centre hint');
+  assert.ok(codes(room, desktopEnd).includes('tower_on_desktop'), 'a tower on the desktop still leaves the writing surface');
 });
 
 test('a power strip on the desk and a router buried under it are hinted', () => {
@@ -279,6 +280,28 @@ test('every hint carries a fix that the AI checks would accept', async () => {
     y: mouseDesk.position.y,
     z: mouseDesk.position.z + mouseDesk.scale.z / 2 + mouse.scale.z / 2,
   }));
+  const office = base('home-office');
+  const officeMonitor = byModel(office.objects, 'monitor-27');
+  const farRight = {
+    ...structuredClone(officeMonitor),
+    id: 'monitor-27-b',
+    name: '27 英寸显示器 2',
+    position: { ...officeMonitor.position, x: 0.39 },
+  };
+  const farLeft = { ...officeMonitor, position: { ...officeMonitor.position, x: -0.39 } };
+  add('screens far apart', {
+    ...office,
+    objects: office.objects.map(object => (object.id === officeMonitor.id ? farLeft : object)).concat(farRight),
+  });
+  add('keyboard off the screen axis', withObjects('home-office', base('home-office').objects.map(object => (
+    object.modelId === 'keyboard' || object.modelId === 'mouse'
+      ? { ...object, position: { ...object.position, x: object.position.x + 0.22 } }
+      : object
+  ))));
+  add('tower on the desktop end', withObjects('desktop-dual', moved(dual.objects, 'desktop-pc', pc => {
+    pc.position = { x: 0.55, y: dualDesk.position.y, z: dualTop + pc.scale.z / 2 };
+    return pc;
+  })));
   const expectCode = (name, code) => {
     const project = cases.find(([label]) => label === name)[1];
     assert.ok(analyzeLayoutHeuristics(project.room, project.objects, project.connections).some(item => item.code === code), name);
@@ -290,6 +313,9 @@ test('every hint carries a fix that the AI checks would accept', async () => {
   expectCode('mouse far from keyboard', 'mouse_far_from_keyboard');
   expectCode('strip on floor', 'strip_on_floor');
   expectCode('laptop in front of the screen', 'laptop_blocks_screen');
+  expectCode('screens far apart', 'screens_far_apart');
+  expectCode('keyboard off the screen axis', 'keyboard_off_axis');
+  expectCode('tower on the desktop end', 'tower_on_desktop');
 
   for (const [name, project] of cases) {
     const hints = analyzeLayoutHeuristics(project.room, project.objects, project.connections);

@@ -167,7 +167,11 @@ test('taking away the desk drops what stood on it to the floor, and leaves the r
     assert.equal(object.position.y, before.position.y, `${object.id} keeps its place in plan`);
     if (!onDesk.includes(object.id)) assert.deepEqual(object, before, `${object.id} untouched`);
   }
-  assert.deepEqual(problemsIn(project, next), [], 'nothing left floating');
+  const fallen = analyzeProjectLayout(project.room, next).filter(issue => issue.severity !== 'info');
+  assert.equal(fallen.some(issue => issue.code === 'floating_object'), false, 'nothing left floating');
+  // The tray shares the screen's plan footprint, so both land on the same
+  // patch of floor. That overlap is the drop, not something still in the air.
+  assert.ok(fallen.every(issue => issue.code === 'object_overlap'), fallen.map(issue => issue.title).join('；'));
 });
 
 test('taking away a stand drops its screen onto the desk; a missing id changes nothing', () => {

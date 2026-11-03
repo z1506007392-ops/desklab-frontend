@@ -334,9 +334,12 @@ test('deleting the desk drops what stood on it instead of leaving it in the air'
   await picker.selectOption({ label: '书桌' });
   await page.getByRole('button', { name: '删除设备', exact: true }).click();
   await expect(page.getByText('删除成功', { exact: true })).toBeVisible();
-  expect(prompts).toEqual(['确定要删除设备“书桌”吗？\n跟着这张桌子的 5 件设备会落到下面。']);
+  expect(prompts).toEqual(['确定要删除设备“书桌”吗？\n跟着这张桌子的 6 件设备会落到下面。']);
 
-  await expect(page.getByRole('button', { name: /^布局检查/ }), 'nothing left in the air').toHaveAccessibleName('布局检查');
+  await page.getByRole('button', { name: /^布局检查/ }).click();
+  const fallen = page.getByRole('dialog', { name: '布局检查', exact: true });
+  await expect(fallen, 'nothing left in the air').not.toContainText('悬空');
+  await page.keyboard.press('Escape');
   if (await openPanel.isVisible()) await openPanel.click();
   await picker.selectOption({ label: '键盘' });
   expect(Number(await page.getByLabel('上下 Z', { exact: true }).inputValue())).toBeLessThan(0.2);

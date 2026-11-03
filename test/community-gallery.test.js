@@ -46,7 +46,10 @@ test('the app ships four example desks, including one with a cable tray', () => 
   const tray = managed.project.objects.find(object => object.modelId === 'cable-tray');
   assert.ok(tray);
   assert.equal(findHostDesk(tray, managed.project.objects)?.modelId, 'office-desk');
-  assert.equal(listBuiltinDesks().find(desk => desk.id === 'home-office').project.objects.some(object => object.modelId === 'cable-tray'), false);
+  assert.equal(managed.project.objects.filter(object => object.modelId === 'cable-tray').length, 1);
+  const minimal = listBuiltinDesks().find(desk => desk.id === 'home-office').project;
+  assert.equal(minimal.objects.filter(object => object.modelId === 'cable-tray').length, 1);
+  assert.equal(findHostDesk(minimal.objects.find(object => object.modelId === 'cable-tray'), minimal.objects)?.modelId, 'office-desk');
 });
 
 test('a gallery address opens only a built-in desk', () => {

@@ -1,8 +1,6 @@
-import { findModelTemplate } from './catalog.js';
 import { buildTemplateScene } from './desk-templates.js';
 import { createEntityId } from './identifiers.js';
 import { normalizeProject } from './local-project-store.js';
-import { placeCatalogObject } from './placement.js';
 import { screenUntrustedProject } from './untrusted-project.js';
 
 // A desk gallery that lives on this device. A display name, the layout, and
@@ -23,10 +21,10 @@ const PHOTO_PATTERN = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$
 const STORAGE_FULL_MESSAGE = '这台设备的存储空间不够，桌子没有放进图库。';
 
 const BUILTIN_DESKS = Object.freeze([
-  Object.freeze({ id: 'home-office', title: '极简单屏', summary: '27 英寸居中，键盘和鼠标在正前方。' }),
-  Object.freeze({ id: 'desktop-dual', title: '电竞双屏', summary: '两台 27 英寸向内转，主机在桌旁地上。' }),
-  Object.freeze({ id: 'gaming', title: '超宽', summary: '带鱼屏、键盘、鼠标和主机。插排在桌下。' }),
-  Object.freeze({ id: 'managed-cables', title: '线收进桌下槽', summary: '极简单屏的桌子，后沿下面加了一只理线槽。' }),
+  Object.freeze({ id: 'home-office', title: '极简单屏', summary: '27 英寸居中，键盘和鼠标在正前方。线在桌下。' }),
+  Object.freeze({ id: 'desktop-dual', title: '电竞双屏', summary: '两台 27 英寸向内转，主机在左侧地上。' }),
+  Object.freeze({ id: 'gaming', title: '超宽', summary: '带鱼屏、键盘、鼠标和主机。线在桌下。' }),
+  Object.freeze({ id: 'managed-cables', title: '线收进桌下槽', summary: '和极简单屏同一张桌子，后沿下面这一只槽收走桌面上的线。' }),
 ]);
 
 function sceneProject(templateId) {
@@ -41,18 +39,11 @@ function sceneProject(templateId) {
 
 function managedCablesProject() {
   const scene = buildTemplateScene('home-office');
-  const template = findModelTemplate({ modelId: 'cable-tray' });
-  const placed = placeCatalogObject({
-    modelTemplate: template,
-    categoryId: 'accessory',
-    room: scene.room,
-    id: 'example-cable-tray',
-    objects: scene.objects,
-  });
-  if (!placed.valid) throw new Error('example cable tray did not fit the home-office desk');
+  const trays = scene.objects.filter(object => object.modelId === 'cable-tray');
+  if (trays.length !== 1) throw new Error('the minimal preset should already include one cable tray');
   return normalizeProject({
     room: scene.room,
-    objects: [...scene.objects, placed.object],
+    objects: scene.objects,
     connections: scene.connections,
     camera: scene.camera,
   });

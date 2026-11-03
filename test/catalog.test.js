@@ -183,7 +183,7 @@ test('catalog models have a short user-facing spec line instead of internal ids'
   assert.equal(describe('desk-lamp'), '约 8W');
   assert.equal(describe('speakers'), '约 18W · 3.5mm');
   assert.equal(describe('monitor-stand'), '夹桌 · 可放显示器');
-  assert.equal(describe('cable-tray'), '桌下 · 收后沿的线');
+  assert.equal(describe('cable-tray'), '桌下 · 收进槽里');
   assert.equal(describe('game-console'), '约 200W · HDMI · 网口');
 
   for (const category of DEVICE_CATALOG) {

@@ -15,12 +15,17 @@ async function readHeight(page) {
 
 test('a cable tray mounts under the desk and is listed to buy', async ({ page }) => {
   const evidence = await openProject(page, []);
-  await page.getByRole('button', { name: '桌面模板', exact: true }).click();
-  await page.getByRole('dialog', { name: '桌面模板', exact: true })
-    .getByRole('button', { name: '使用模板：极简单屏', exact: true }).click();
-
+  const library = page.getByPlaceholder('搜索设备名称、类型、型号...');
+  const add = async name => {
+    await openLibrary(page);
+    await library.fill(name);
+    await page.getByRole('button', { name: new RegExp(`^${name}`) }).click();
+  };
+  // The photographed presets already include a tray, so this checks a bare
+  // desk: the library still hangs the first tray under the back edge.
+  await add('书桌');
   await openLibrary(page);
-  await page.getByRole('button', { name: '配件', exact: true }).click();
+  await library.fill('桌下理线槽');
   const card = page.getByRole('button', { name: /^桌下理线槽/ });
   await expect(card.locator('img')).toHaveAttribute('src', catalogThumbnailUrl('cable-tray'));
   await card.click();

@@ -3,8 +3,9 @@ import { getRotatedFootprint, isHungUnderDesk, objectsOverlap, validateAndConstr
 import { getRecordItems } from './record-collections.js';
 
 // A plain under-desk channel. It has no ports and uses no power. The mesh is
-// a generic tray, not a branded product. Cables that already leave over the
-// back edge are drawn through it; routeCable's length is not changed here.
+// a generic tray, not a branded product. Cables that leave a desk over the
+// back or a side edge are drawn down into it, so the desktop stays clear.
+// routeCable's length is not changed here.
 export const CABLE_TRAY_MODEL_ID = 'cable-tray';
 
 // The tray's top sits this far under the desktop top, in the knee space.
@@ -150,13 +151,29 @@ export function remountCableTray(room, tray, objects) {
   return firstFreeOnDesk(tray, host, room, objects, localX);
 }
 
-function backExitLocal(point, desk) {
+function nearEdge(past) {
+  return past >= BACK_EDGE_CLEARANCE - 0.004 && past <= BACK_EDGE_CLEARANCE + 0.015;
+}
+
+// Just outside the back or a side edge, on the desktop. The seat edge is not
+// a way off the desk (cable-route.js), so it is not an exit.
+function edgeExitLocal(point, desk) {
   const frame = frameOf(desk);
-  const local = frame.toLocal(point);
-  const past = local.y - frame.halfY;
-  if (past < BACK_EDGE_CLEARANCE - 0.004 || past > BACK_EDGE_CLEARANCE + 0.015) return null;
   if (Math.abs(point.z - frame.top) > 0.004) return null;
-  if (Math.abs(local.x) > frame.halfX + 0.05) return null;
+  const local = frame.toLocal(point);
+  const withinX = Math.abs(local.x) <= frame.halfX + 0.05;
+  const withinY = Math.abs(local.y) <= frame.halfY + 0.05;
+  if (nearEdge(local.y - frame.halfY) && withinX) return local;
+  if (nearEdge(-frame.halfX - local.x) && withinY) return local;
+  if (nearEdge(local.x - frame.halfX) && withinY) return local;
+  return null;
+}
+
+function onDesktopLocal(point, desk) {
+  const frame = frameOf(desk);
+  if (Math.abs(point.z - frame.top) > 0.004) return null;
+  const local = frame.toLocal(point);
+  if (Math.abs(local.x) > frame.halfX + 0.004 || Math.abs(local.y) > frame.halfY + 0.004) return null;
   return local;
 }
 
@@ -174,44 +191,80 @@ function trayForExit(desk, items, localX) {
     .sort((first, second) => Math.abs(first.center - localX) - Math.abs(second.center - localX))[0]).tray;
 }
 
-function channelPoints(desk, tray, entryX, leaveX) {
+function dedupePoints(points) {
+  const kept = [];
+  for (const point of points) {
+    const last = kept[kept.length - 1];
+    if (last && Math.hypot(last.x - point.x, last.y - point.y, last.z - point.z) < 1e-4) continue;
+    kept.push(point);
+  }
+  return kept;
+}
+
+// Along the tray, clamped to the channel. The rise or drop at the device is
+// added by the caller, at the device's own x, so a short run under the top
+// can reach a device the 0.70 m tray does not span.
+function trayChannel(desk, tray, fromX, toX) {
   const frame = frameOf(desk);
   const center = frame.toLocal(tray.position).x;
   const half = Math.max(0.01, halfAlong(tray, desk).x - 0.02);
   const clamp = value => Math.min(center + half, Math.max(center - half, value));
   const y = frame.toLocal(tray.position).y;
   const z = tray.position.z - tray.scale.z * 0.2;
-  const at = x => ({ ...frame.toWorld(x, y), z });
-  const out = { ...frame.toWorld(clamp(leaveX), frame.halfY + BACK_EDGE_CLEARANCE), z };
-  return [at(clamp(entryX)), at(clamp(leaveX)), out];
+  const at = x => ({ ...frame.toWorld(clamp(x), y), z });
+  return [at(fromX), at(toX)];
 }
 
-function tuckBackEdge(points, index, items) {
-  const exit = points[index + 1];
-  if (!exit) return null;
-  const desks = getRecordItems(items).filter(isDesk);
-  for (const desk of desks) {
-    const local = backExitLocal(exit, desk);
-    if (!local) continue;
-    const tray = trayForExit(desk, items, local.x);
+// Replace the on-desktop run between a device and the edge it leaves by.
+// `index` is the last point already drawn. skip 1 drops the point after the
+// one the loop would otherwise add next, which this tuck already consumed.
+function tuckLeavingCable(points, index, items) {
+  const next = points[index + 1];
+  const after = points[index + 2];
+  if (!next || !after) return null;
+  for (const desk of getRecordItems(items).filter(isDesk)) {
+    const exitNext = edgeExitLocal(next, desk);
+    const exitAfter = edgeExitLocal(after, desk);
+    const inNext = onDesktopLocal(next, desk);
+    const inAfter = onDesktopLocal(after, desk);
+    let exitLocal;
+    let insidePoint;
+    let insideLocal;
+    let towardDevice = false;
+    if (exitNext && inAfter) {
+      exitLocal = exitNext;
+      insidePoint = after;
+      insideLocal = inAfter;
+      towardDevice = true;
+    } else if (inNext && exitAfter) {
+      exitLocal = exitAfter;
+      insidePoint = next;
+      insideLocal = inNext;
+    } else continue;
+    const tray = trayForExit(desk, items, exitLocal.x);
     if (!tray) continue;
-    const drop = points[index + 2];
-    const drops = Boolean(drop
-      && Math.abs(drop.x - exit.x) < 1e-4
-      && Math.abs(drop.y - exit.y) < 1e-4
-      && drop.z < exit.z - 0.01);
-    const after = drops ? points[index + 3] : drop;
-    const leaveX = after ? frameOf(desk).toLocal(after).x : local.x;
-    return { points: [exit, ...channelPoints(desk, tray, local.x, leaveX)], skip: drops ? 1 : 0 };
+    const grommet = { x: insidePoint.x, y: insidePoint.y, z: tray.position.z - tray.scale.z * 0.2 };
+    const channel = trayChannel(
+      desk,
+      tray,
+      towardDevice ? exitLocal.x : insideLocal.x,
+      towardDevice ? insideLocal.x : exitLocal.x,
+    );
+    const inserted = towardDevice ? [...channel, grommet, insidePoint] : [grommet, ...channel];
+    return { points: dedupePoints(inserted), skip: 1 };
   }
   return null;
 }
 
 /**
  * The points to draw. Same as the measured route unless a mounted tray sits
- * under a desk whose back edge the cable already crosses: then the picture
- * drops into that tray and comes out again. The shop length still uses the
- * route from routeCable, so hiding the cable does not make it shorter.
+ * under a desk the cable leaves over the back or a side: then the picture
+ * drops at the device into that tray instead of running across the top.
+ * The shop length still uses the route from routeCable, so hiding the cable
+ * does not make it shorter. Two devices on the same desk still join on top.
+ * A cable with both ends off the desktop (tower to router, tower to the hung
+ * strip) keeps the measured chord: pulling that chord down through the knee
+ * opening made a worse picture.
  */
 export function drawCablePoints(points, objects) {
   if (!Array.isArray(points) || points.length < 2) return points;
@@ -219,7 +272,7 @@ export function drawCablePoints(points, objects) {
   if (!items.some(object => findHostDesk(object, items))) return points;
   const drawn = [points[0]];
   for (let index = 0; index < points.length - 1; index += 1) {
-    const tuck = tuckBackEdge(points, index, items);
+    const tuck = tuckLeavingCable(points, index, items);
     if (tuck) {
       drawn.push(...tuck.points);
       index += tuck.skip;

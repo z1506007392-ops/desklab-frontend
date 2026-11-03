@@ -121,5 +121,5 @@ test('the cable list buys the gaming desk a display cable long enough to go over
   const { items } = buildCableShoppingList(display, objects);
   // Straight through the desktop would buy 1.5 m. Over the back edge the
   // route is about 1.51 m, and 0.2 m of shop slack buys 2 m.
-  assert.deepEqual(items.map(item => item.name), ['2 米 DP 线']);
+  assert.deepEqual(items.map(item => item.name), ['2 米 DP 线', '桌下理线槽']);
 });

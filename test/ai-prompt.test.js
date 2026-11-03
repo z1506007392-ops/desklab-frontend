@@ -11,6 +11,8 @@ test('messages are a system prompt plus one user message that mention json', () 
   assert.deepEqual(messages.map(message => message.role), ['system', 'user']);
   assert.equal(messages[0].content, SYSTEM_PROMPT);
   assert.match(SYSTEM_PROMPT, /json/);
+  assert.match(SYSTEM_PROMPT, /插排挂在桌面下靠后/);
+  assert.match(SYSTEM_PROMPT, /不要这样建议/);
   assert.match(messages[1].content, /json/);
   assert.ok(messages[1].content.includes(JSON.stringify(summary)));
   assert.ok(messages[1].content.includes(JSON.stringify(RESPONSE_EXAMPLE)));

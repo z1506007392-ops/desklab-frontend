@@ -365,7 +365,10 @@ test('a copy of any template device goes beside it, on the same surface, without
       // Two angled 27-inch panels, or one ultrawide, already fill the preset.
       // A display copy that cannot stay on that top may rest on the floor.
       const fullDeskDisplay = original.category === 'display' && originalSupport?.kind === 'object' && copySupport?.kind === 'floor';
-      if (!fullDeskDisplay) {
+      // The preset already fills the back edge with one tray. A second one
+      // cannot mount there, so it may sit on the floor.
+      const secondTray = original.modelId === 'cable-tray' && copySupport?.kind === 'floor';
+      if (!fullDeskDisplay && !secondTray) {
         assert.deepEqual(copySupport, originalSupport, `${label} rests on the same thing`);
       }
       assert.deepEqual(placed.scale, original.scale, `${label} keeps its size`);

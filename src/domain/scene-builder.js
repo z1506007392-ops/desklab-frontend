@@ -162,10 +162,12 @@ function planFrontRow({ counts, deskScale, deskFrontY, deskBackY, hasMonitors })
 }
 
 // Two screens of equal use: the seam stays on the seat's centre line and
-// each turns inward, the way a photographed dual desk does. The pair is
-// pulled forward just enough that the turned backs stay on the desktop.
+// each turns inward about 20°, inside the 15–30° a photographed dual desk
+// uses. The pair is pulled forward just enough that the turned backs stay
+// on the desktop. A primary-centred 27" plus a side screen does not fit a
+// 1.6 m desk without a long empty wing, so this is the equal-use form.
 function angleMonitorPair(monitors, desk) {
-  const yaw = 18;
+  const yaw = 20;
   let gap = 0.02;
   const [first, second] = monitors;
   const left = first.position.x >= second.position.x ? first : second;
@@ -396,6 +398,9 @@ export function buildDeskScene({ devices = [], desk = {}, arrangement } = {}) {
     const size = pcTemplate.defaultScale;
     // Beside the desk on the seat's left, back edge lined up with the desk,
     // so it is not sitting out by the chair.
+    // Floor, beside the back half, on the seat's left. The seat's right is
+    // the mouse. On the ultrawide preset the router already stands there.
+    // Never on the desktop and never in the footwell.
     pc = createObject('desktop-pc', 'desktop-pc', pcTemplate.displayName,
       { x: deskScale.x / 2 + SIDE_GAP + size.x / 2, y: deskBackY - size.y / 2, z: size.z / 2 }, 180);
     objects.push(pc);

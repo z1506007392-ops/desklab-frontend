@@ -345,6 +345,23 @@
           "linkedTo": "router:dc-in"
         }
       ]
+    },
+    {
+      "id": "cable-tray",
+      "kind": "cable-tray",
+      "name": "桌下理线槽",
+      "center": [
+        0,
+        1.51,
+        0.68
+      ],
+      "size": [
+        0.7,
+        0.16,
+        0.08
+      ],
+      "rotationZ": 0,
+      "restingOn": "desk"
     }
   ],
   "connections": [

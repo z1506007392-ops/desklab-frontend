@@ -1,3 +1,4 @@
+import { isCableTray } from './cable-tray.js';
 import { evaluateConnectionLength, standardCableLength } from './connections.js';
 import { getRotatedFootprint, horizontalFootprintsOverlap, hungUnderDeskPosition, isHungUnderDesk } from './geometry.js';
 import { isDesk } from './desks.js';
@@ -31,6 +32,12 @@ export const HEURISTIC_LIMITS = Object.freeze({
   frontOfDeskLocalY: -0.05,
   mouseKeyboardDistance: 0.45,
   cornerInset: 0.05,
+  // Inner gap between two side-by-side screens, and how far apart in depth
+  // they can be and still count as a pair. A shallow V at about 2 cm does
+  // not trip this. The keyboard shares the screen centre line within this.
+  screenInnerGap: 0.15,
+  screenPairDepth: 0.2,
+  keyboardAxisOffset: 0.15,
 });
 
 // From the seat, the right hand is -x (scene-builder uses the same sign).
@@ -187,13 +194,85 @@ function laptopBesideMonitors(frame, laptop, monitors, objects) {
   return null;
 }
 
+// The widest gap between two screens that sit at about the same depth.
+// Slide that pair together to a 4 cm gap, keeping their midpoint, and stay
+// on the desktop. Null when they are already close, or cannot move closer.
+function closeScreenGap(frame, monitors) {
+  const placed = monitors.map(monitor => ({ monitor, local: frame.toLocal(monitor.position) }))
+    .sort((first, second) => first.local.x - second.local.x);
+  let worst = null;
+  for (let index = 1; index < placed.length; index += 1) {
+    const left = placed[index - 1];
+    const right = placed[index];
+    if (Math.abs(left.local.y - right.local.y) > HEURISTIC_LIMITS.screenPairDepth) continue;
+    const gap = (right.local.x - right.monitor.scale.x / 2) - (left.local.x + left.monitor.scale.x / 2);
+    if (gap > HEURISTIC_LIMITS.screenInnerGap && (!worst || gap > worst.gap)) {
+      worst = { left, right, gap };
+    }
+  }
+  if (!worst) return null;
+  const target = worst.left.monitor.scale.x / 2 + worst.right.monitor.scale.x / 2 + 0.04;
+  const mid = (worst.left.local.x + worst.right.local.x) / 2;
+  let leftX = mid - target / 2;
+  let rightX = mid + target / 2;
+  const limitFor = monitor => frame.halfLength - monitor.scale.x / 2 - 0.02;
+  const leftLimit = limitFor(worst.left.monitor);
+  const rightLimit = limitFor(worst.right.monitor);
+  if (leftX < -leftLimit) {
+    const shift = -leftLimit - leftX;
+    leftX += shift;
+    rightX += shift;
+  }
+  if (rightX > rightLimit) {
+    const shift = rightX - rightLimit;
+    leftX -= shift;
+    rightX -= shift;
+  }
+  if (leftX < -leftLimit || rightX > rightLimit) return null;
+  const closer = (rightX - worst.right.monitor.scale.x / 2) - (leftX + worst.left.monitor.scale.x / 2);
+  if (!(closer < worst.gap - 0.04)) return null;
+  return {
+    ids: [worst.left.monitor.id, worst.right.monitor.id],
+    actions: [
+      move(worst.left.monitor, frame.toWorld({ x: leftX, y: worst.left.local.y })),
+      move(worst.right.monitor, frame.toWorld({ x: rightX, y: worst.right.local.y })),
+    ],
+  };
+}
+
+// Shift the keyboard onto the screen centre line, and the mouse on the same
+// desk by the same amount, clamped so both stay on the desktop.
+function alignKeyboardToAxis(frame, keyboard, mouse, axis) {
+  const local = frame.toLocal(keyboard.position);
+  const moving = [keyboard, ...(mouse ? [mouse] : [])];
+  let low = -Infinity;
+  let high = Infinity;
+  for (const item of moving) {
+    const itemLocal = frame.toLocal(item.position);
+    const room = frame.halfLength - item.scale.x / 2 - 0.02;
+    low = Math.max(low, -room - itemLocal.x);
+    high = Math.min(high, room - itemLocal.x);
+  }
+  const wanted = axis - local.x;
+  const shift = Math.min(high, Math.max(low, wanted));
+  if (!Number.isFinite(shift) || Math.abs(shift) < 0.02) return null;
+  return moving.map(item => {
+    const itemLocal = frame.toLocal(item.position);
+    return move(item, frame.toWorld({ x: itemLocal.x + shift, y: itemLocal.y }));
+  });
+}
+
 function hungStripFix(frame, strip, objects) {
   const localY = frame.halfDepth - strip.scale.y / 2 - 0.005;
   for (const localX of [0, 0.2, -0.2, 0.4, -0.4]) {
     const point = hungUnderDeskPosition(frame.desk, localX, localY, strip);
     const candidate = { ...strip, position: point, rotation: { ...strip.rotation, z: frame.desk.rotation?.z ?? 0 } };
     if (!isHungUnderDesk(candidate, frame.desk)) continue;
-    const blocked = objects.some(other => other.id !== strip.id && !isDesk(other) && horizontalFootprintsOverlap(candidate, other)
+    // A mounted tray shares this channel on purpose. Layout checks already
+    // ignore a hung strip against its tray, so the tray must not block the
+    // move that puts the strip back under the desktop.
+    const blocked = objects.some(other => other.id !== strip.id && !isDesk(other) && !isCableTray(other)
+      && horizontalFootprintsOverlap(candidate, other)
       && Math.abs((other.position.z) - point.z) < (other.scale.z + strip.scale.z) / 2);
     if (blocked) continue;
     return move(strip, { x: point.x, y: point.y }, point.z);
@@ -263,6 +342,19 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
         }),
       }));
     }
+    const gapFix = closeScreenGap(frame, monitors);
+    if (gapFix) {
+      hints.push(hint('screens_far_apart', gapFix.ids, '两台屏幕中间空着一块', { fix: gapFix.actions }));
+    }
+    // Only once the screens already sit in front of the seat. If they are
+    // off to one side, that hint moves them back onto the keyboard.
+    const keyboard = objects.find(object => isKeyboard(object) && deskUnder(object)?.desk.id === frame.desk.id);
+    if (keyboard && Math.abs(centre) <= limit
+      && Math.abs(frame.toLocal(keyboard.position).x - centre) > HEURISTIC_LIMITS.keyboardAxisOffset) {
+      const mouse = objects.find(object => isMouse(object) && deskUnder(object)?.desk.id === frame.desk.id);
+      const axisFix = alignKeyboardToAxis(frame, keyboard, mouse, centre);
+      hints.push(hint('keyboard_off_axis', [keyboard.id], `${keyboard.name}没有对准屏幕中线`, axisFix ? { fix: axisFix } : {}));
+    }
   }
 
   // With a keyboard on the same desk the laptop is a screen, not something
@@ -295,6 +387,8 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
     };
     if (frame && frame.inMiddle(frame.toLocal(tower.position))) {
       hints.push(hint('tower_on_desk_center', [tower.id], `${tower.name}占着桌面中间`, towerFix(frame)));
+    } else if (frame) {
+      hints.push(hint('tower_on_desktop', [tower.id], `${tower.name}放在桌面上，桌面留给屏幕和键盘`, towerFix(frame)));
     }
     if (onFloor(tower)) {
       for (const floorFrame of frames.values()) {

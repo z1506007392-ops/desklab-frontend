@@ -56,10 +56,13 @@ test('the three presets sit like a photographed desk, with the strip under the t
   assert.equal(screens.length, 2);
   const onLeft = screens.find(screen => screen.position.x > 0);
   const onRight = screens.find(screen => screen.position.x < 0);
-  assert.equal(onLeft.rotation.z, 162);
-  assert.equal(onRight.rotation.z, 198);
+  assert.equal(onLeft.rotation.z, 160);
+  assert.equal(onRight.rotation.z, 200);
   assert.ok(Math.abs(onLeft.position.x + onRight.position.x) < 1e-6, 'the seam stays on the centre line');
   assert.ok(Math.abs(byModel(dual, 'keyboard')[0].position.x) < 1e-6, 'the keyboard is on that line');
+  assert.ok(byModel(dual, 'desktop-pc')[0].position.x > 0, 'the tower stands on the floor to the seat\'s left');
+  assert.ok(byModel(wide, 'desktop-pc')[0].position.x > 0, 'the ultrawide tower stays on the seat\'s left, clear of the router');
+  assert.ok(byModel(wide, 'mouse')[0].position.x < byModel(wide, 'keyboard')[0].position.x, 'the mouse is on the seat\'s right');
 
   // Forearm room: the keyboard's far edge stays at least 8 cm clear of the
   // nearest screen. A turned pair used to land almost on the keys.
@@ -83,6 +86,7 @@ test('the three presets sit like a photographed desk, with the strip under the t
     for (const device of hung) {
       assert.equal(isHungUnderDesk(device, desk), true, `${device.name} hangs under the desk`);
       assert.ok(device.position.z > 0.4, `${device.name} is not on the floor`);
+      if (device.modelId === 'power-strip') assert.ok(Math.abs(device.position.z - 0.62) < 0.01, 'the strip stays at 0.62 m');
     }
   }
 

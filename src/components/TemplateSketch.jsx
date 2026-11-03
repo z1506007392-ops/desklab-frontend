@@ -25,18 +25,18 @@ function Plan({ label, children }) {
 
 const SKETCHES = {
   'home-office': (
-    <Plan label="极简单屏俯视示意图：27 英寸显示器在后沿正中，键盘在前沿正中，鼠标在键盘右侧，插排在桌面下靠后。">
+    <Plan label="极简单屏俯视示意图：27 英寸显示器在后沿正中，键盘在前沿正中，鼠标在键盘右侧，插排和理线槽在桌面下靠后。">
       <rect className="template-sketch-screen" x="62" y="26" width="36" height="10" rx="1" />
       <rect className="template-sketch-input" x="64" y="64" width="32" height="8" rx="1" />
       <rect className="template-sketch-input" x="100" y="66" width="8" height="6" rx="2" />
     </Plan>
   ),
   'desktop-dual': (
-    <Plan label="电竞双屏俯视示意图：两台 27 英寸显示器呈浅 V，接缝在正中，键盘对准接缝，鼠标在右，主机在左侧地上，插排在桌面下靠后。">
-      <g transform="rotate(-14 52 32)">
+    <Plan label="电竞双屏俯视示意图：两台 27 英寸显示器呈浅 V，各向内约 20 度，接缝在正中，键盘对准接缝，鼠标在右，主机在左侧地上，插排和理线槽在桌面下靠后。">
+      <g transform="rotate(-16 52 32)">
         <rect className="template-sketch-screen" x="36" y="26" width="34" height="10" rx="1" />
       </g>
-      <g transform="rotate(14 108 32)">
+      <g transform="rotate(16 108 32)">
         <rect className="template-sketch-screen" x="90" y="26" width="34" height="10" rx="1" />
       </g>
       <rect className="template-sketch-input" x="64" y="64" width="32" height="8" rx="1" />
@@ -45,7 +45,7 @@ const SKETCHES = {
     </Plan>
   ),
   gaming: (
-    <Plan label="超宽俯视示意图：带鱼屏在后沿正中，键盘对准中线，鼠标在右，主机在左侧地上，路由器靠后，插排在桌面下靠后。">
+    <Plan label="超宽俯视示意图：带鱼屏在后沿正中，键盘对准中线，鼠标在右，主机在左侧地上，路由器靠后，插排和理线槽在桌面下靠后。">
       <rect className="template-sketch-screen" x="40" y="26" width="80" height="10" rx="1" />
       <rect className="template-sketch-input" x="64" y="64" width="32" height="8" rx="1" />
       <rect className="template-sketch-input" x="100" y="66" width="8" height="6" rx="2" />
