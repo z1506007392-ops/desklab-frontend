@@ -17,6 +17,17 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E102–E105 完成。CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41718477246 （尖端 `cc51f4a`，static、Chrome 四片、WebKit、check、deploy 都成功）。
+
+- E102 `7dac87d`：小时限流拒绝时不扣这个邮箱的当日次数。
+- E103 `7490486`：只读分享不弹登录、不请求 AI；复制到自己的项目之后可以登录或请求。
+- E104、E105 `56bcbcc`：退出失败留在已登录并给出中文；验证码不是 6 位、换邮箱、断网或非 JSON 都留在登录框里。
+- Mailjet 发信是 `86f968b`，写在手册 §6.9。E101 仍是另一条线的剩余次数（`94f7158`），没有改它的状态。
+
+还剩：生产没有配 Mailjet 或 Brevo，线上发码仍是「登录暂未开放」。E69、E70 等负责人。E96、E98 由并行线 I。E97 由另一条线。Git 自动部署仍等负责人关掉。H4 不动。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E102–E105 已实现，等 CI 绿了再标完成。E101 已由另一条线在 `94f7158` 完成（上游失败带回剩余次数），本线没有改那条，也没有改 `layout-handler.js`。任务书里的 Mailjet 发信和 E101 的编号撞上了，写进手册 §6.9 和 README，不改 E101 的状态。E80 的「查看是否已登录」失败仍是「网络连接失败」且不打开登录框，这次只是在它旁边加上退出失败的那一句。E106–E108 已由另一条线完成，rebase 时保留了他们的代码。
 
 - 发信：两个 Mailjet 密钥都有就走 Mailjet HTTP API（Basic Auth），否则有 Brevo 走 Brevo，都没配好仍是 503「登录暂未开放」。只填一个 Mailjet 密钥不会改去 Brevo。中文验证码邮件不变。没有写入真实密钥。
