@@ -25,7 +25,9 @@ Last updated: 2026-11-04, Asia/Singapore
 
 `27288c9` 的重试仍把 WebKit 的 15 秒用完（https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41728145201 ，start-guide 第 23、27 条）。`isEnabled()` 会一直等到保存按钮可点，房间页中途盖住按钮时就不会再看房间页。`openProject` 改成 `count()` 和 `evaluateAll()`，只读当前页面。本机 Chrome 桌面和手机的 start-guide 12 条通过。显示器拖出桌面已由另一条线在 `20fd517` 加长滑动，这次没改摆放，也没改画面和登录。
 
-还剩：这次推送的 CI。E71–E75 的测量仍以 https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41724487289 为准。
+CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41731274728 （static、Chrome 四片、webkit、check、deploy 都过了）。线上 `desktop-pc.glb?v=31bb9f90` 在 `Accept-Encoding: br` 时仍是 92664 字节 brotli，解开后 140512 字节、glTF 魔数不变，缓存一年；HTML 仍是 `max-age=0`。
+
+还剩：没有。E71–E75 的测量仍以 https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41724487289 为准。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
