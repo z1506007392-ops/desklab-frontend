@@ -220,7 +220,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 状态标记：`[ ]` 未开始；`[~] 进行中（谁，日期）`；`[x] 完成（谁，日期，提交号）`；`[x] 已不需要（原因）`。
 每个任务都有：目标、做法、验收标准。**验收标准全部满足才能标完成。**
 
-### 阶段 A：基础打磨（让普通人用得顺）（必做部分已完成 2026-10-30；A8 可选，等待 H3）
+### 阶段 A：基础打磨（让普通人用得顺）（必做部分已完成 2026-10-30；A8 可选，H3 已于 2026-11-04 完成）
 
 **A1 [x] 完成（claude，2026-10-30，940e696） 必做 — "更多"菜单去掉 JSON 字样**
 - 目标：普通人看得懂备份入口。
@@ -269,7 +269,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 验收：单元测试覆盖"墙插有空位→插墙插"和"墙插满了→不补线、不报错"；UI 测试：模板上加插排后布线检查无问题。
 
 **A8 [ ] 可选 — 让 Cloudflare 只部署通过测试的版本**
-- 需要人（第 7 节 H3）。人没做之前跳过；人做完后：把 Cloudflare 的 Git 自动部署关掉，改为 CI 全绿后用 `wrangler pages deploy dist --project-name desklab-frontend` 部署（GitHub secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）。
+- H3 已于 2026-11-04 完成。CI 全绿后用 `wrangler pages deploy dist --project-name desklab-frontend` 部署（GitHub secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）。Git 自动部署先留着，和新工作流同时存在。等 Desklab 关掉 Git 自动部署。
 
 ### 阶段 B：LLM 基础设施（DeepSeek 接入的管道）（已完成 2026-10-30；线上等待 H1 密钥）
 
@@ -289,7 +289,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 
 **B3 [x] 完成（claude，2026-10-30，202c2c8） 必做 — 防滥用与成本控制**
 - 做法（按 6.3.4）：请求体 ≤ 64KB；用户目标 ≤ 200 字；`max_tokens` ≤ 2000；每 IP 每小时次数限制、全站每日次数上限；环境变量 `AI_ENABLED=false` 时一律 503（总开关）。
-- 计数存储：如果绑定了 KV 命名空间 `AI_LIMITS`（需要人，第 7 节 H2）就用 KV；没绑定就用 isolate 内存计数（弱限制，但不报错），并在响应头 `X-AI-Limit-Mode: memory|kv` 标明。
+- 计数存储：如果绑定了 KV 命名空间 `AI_LIMITS`（H2 已于 2026-11-04 完成）就用 KV；没绑定就用 isolate 内存计数（弱限制，但不报错），并在响应头 `X-AI-Limit-Mode: memory|kv` 标明。
 - 测试：两种模式都覆盖；超限返回 429 `ai_rate_limited`，中文提示"今天的 AI 次数用完了，明天再试"。
 
 **B4 [x] 完成（claude，2026-10-30，ea51b15） 必做 — 本地开发服务器**
@@ -724,8 +724,8 @@ total = 100 × errors + 20 × warnings + 5 × hints + 1 × cableMeters
 | 编号 | 事情 | 谁做 | 没做之前 AI 怎么办 |
 |---|---|---|---|
 | H1（已完成 2026-10-30） | 申请 DeepSeek API 密钥，并在 Cloudflare Pages 项目 `desklab-frontend` → 设置 → 环境变量（生产 + 预览）里添加加密变量 `DEEPSEEK_API_KEY` | 产品负责人 | 阶段 B、C 全部照做（用模拟模型和录制响应）；C6 脚本写好但不跑；C7 标"等待 H1" |
-| H2 | （可选）在 Cloudflare 创建 KV 命名空间并绑定为 `AI_LIMITS`（2026-10-30 负责人决定暂缓，以后再做） | 产品负责人 | 用内存限流（B3 已设计）；不要催，也不要替负责人做 |
-| H3 | （可选）创建 Cloudflare API Token，放进 GitHub secrets，用于"测试通过才部署" | 产品负责人 | 跳过 A8 |
+| H2（已完成 2026-11-04，Desklab (Grok Bot)，负责人同意） | 新建 KV 命名空间 `desklab-ai-limits`（id `c129d77cfb99444fba8fbd6919eaa885`），Pages 项目 `desklab-frontend` 的 Production 和 Preview 都绑定为 `AI_LIMITS` | Desklab (Grok Bot) | 已绑定。线上限流用这个命名空间，不要再建一个 |
+| H3（已完成 2026-11-04，Desklab (Grok Bot)，负责人同意） | 创建 Cloudflare API Token `desklab-github-actions-pages`（仅 Account → Cloudflare Pages → Edit），与账户 ID 一起写入 GitHub Actions secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID` | Desklab (Grok Bot) | 已写入 secrets，给 A8 用。不要自己关 Git 自动部署 |
 | H4 | 域名 ICP 备案、国内服务器部署 | 产品负责人（已决定暂缓） | 不做任何相关工作 |
 | H5 | 本地旧数据迁移（后端 `data/default-project.json` → 浏览器） | 产品负责人：新版里"更多 → 导入"那个文件再保存 | 无需处理 |
 

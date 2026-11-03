@@ -17,6 +17,20 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+手册第 7 节把 H2、H3 标成已完成。两件都是 Desklab (Grok Bot) 在 2026-11-04 01:28（UTC+8）做的，负责人同意。
+
+H2：新建 KV 命名空间 `desklab-ai-limits`（id `c129d77cfb99444fba8fbd6919eaa885`）。Pages 项目 `desklab-frontend` 的 Production 和 Preview 都绑成 `AI_LIMITS`。开工时线上 `POST /api/ai/layout` 的响应头已经是 `X-AI-Limit-Mode: kv`（cf-ray 在 PDX），所以这个绑定已经在当前部署上生效，不必为了绑定再部署一次。
+
+H3：Cloudflare API Token 名 `desklab-github-actions-pages`，权限只有 Account → Cloudflare Pages → Edit。账户 ID 和这个 token 在仓库的 GitHub Actions secrets 里：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`。
+
+阶段 A 的标题改为 H3 已完成。B3 的计数说明改为 H2 已完成。A8 还没做：Git 自动部署先留着，等 Desklab 关掉 Git 自动部署。
+
+同一轮用 curl 对线上 `/api/ai/layout` 连发 30 次，每次都是 200，响应头都是 `kv`，一次 429 都没有。旧计数是同一个 KV 键读出来再加一写回，连发时读数不往上走。E14 还不能标完成。
+
+还剩：改限流计数，再连发 30 次，看到 429 后标完 E14，然后做 A8。E67、E68 等负责人决定。H4 不动。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E66 完成：E58–E65 之后在 https://desklab-frontend.pages.dev 按第 1 节 7 条复跑。桌面 1440×900 和手机 390×844 都过。电竞桌模板套上后 3D 有画面，布局检查和布线检查都是 0。购线清单能导出 Markdown 和 CSV，说明里有「自带」。显示器三张缩略图都能显示（第一次读像素时图还没解码完，等 `naturalWidth` 之后是好的，不是坏图）。新加的 27 寸会自动接上电源和 HDMI。拖动、Q 旋转、撤销、重做、删除再撤销都做过。带鱼屏的线长从 1.5 米改成 2 米后能撤销。重置视角后画面还在。保存后出现备份提醒，导出的文件能再导入。把本机存档改坏后，能恢复上一版本。关于页写了项目在浏览器里、AI 才发给 DeepSeek、NVIDIA SimReady，CC BY 4.0 指向 https://creativecommons.org/licenses/by/4.0/ 。分享链接能生成。改进建议里有「让 AI 看看」，没有真的点，避免扣额度。正常操作没有控制台错误、页面异常，模型和解缩略图没有 404。手机上「建议用电脑打开」在新手引导关掉之后可以点「知道了」。电竞桌模板的设备清单里没有键盘和鼠标（在「按我的设备生成」里才默认有）。
 
 没有改产品代码。手册 4.3 把目录从过时的 14 个模型改成 16 个（补上游戏主机和显示器支架），并写上显示器的旧尺寸迁移。
