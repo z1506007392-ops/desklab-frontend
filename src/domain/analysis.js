@@ -1,5 +1,6 @@
 import {
   arePortTypesCompatible,
+  isPeripheralToPeripheralUsb,
   CABLE_SERVICE_LOOP_FACTOR,
   CABLE_TYPE_VALUES,
   describeCableType,
@@ -523,13 +524,16 @@ export function analyzeProjectWiring(rawObjects, rawConnections) {
       continue;
     }
 
-    if (!arePortTypesCompatible(fromPort.type, toPort.type)) {
+    if (!arePortTypesCompatible(fromPort.type, toPort.type) || isPeripheralToPeripheralUsb(fromObject, toObject, fromPort, toPort)) {
+      const peripheralPair = isPeripheralToPeripheralUsb(fromObject, toObject, fromPort, toPort);
       issues.push({
         id: `incompatible-ports:${connection.id}`,
         code: 'incompatible_port_types',
         severity: 'error',
         title: `连接“${connection.name}”的端口类型不兼容`,
-        description: `${describePortType(fromPort.type)} 不能连接到 ${describePortType(toPort.type)}。`,
+        description: peripheralPair
+          ? `${fromObject.name}和${toObject.name}都要接到电脑上，不能互相连接。`
+          : `${describePortType(fromPort.type)} 不能连接到 ${describePortType(toPort.type)}。`,
         connectionIds: [connection.id],
         invalidConnectionIds: [connection.id],
         objectIds: [connection.fromObjectId, connection.toObjectId],

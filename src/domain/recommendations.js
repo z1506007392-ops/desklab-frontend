@@ -617,7 +617,9 @@ export function buildPurchaseSuggestions(rawObjects, rawConnections = [], option
         objectIds: [...issue.objectIds],
         product: { category: 'power', modelId: 'power-strip' },
       });
-    } else if (issue.code === 'short_cable' || issue.code === 'low_cable_slack') {
+    } else if (issue.code === 'short_cable') {
+      // A cable that reaches, but is a little under the 10% loop, is not a
+      // purchase. The free "extend" suggestion can still lengthen it.
       const connectionId = issue.connectionIds[0];
       const connection = actionableConnections.find(candidate => candidate.id === connectionId);
       const status = connection && evaluateConnectionLength(connection, objects);
@@ -643,20 +645,31 @@ export function buildPurchaseSuggestions(rawObjects, rawConnections = [], option
     }
   }
 
-  // 3. 插孔够不够：每个要插电的设备占一个插孔。没画适配器的笔记本等 DC
+  // 3. 插孔够不够：每个交流插头占一个插孔。没画适配器的笔记本等 DC
   // 设备按自带充电器算一个插孔；接在已画适配器上的，由适配器占插孔。
+  // 画了适配器但还没把 DC 线接上时，适配器空着的 DC 口先算给这些设备，
+  // 不要把适配器和它要带的那台设备算成两个插头。
   // 没画任何插座时不做判断，避免凭空猜测用户家里的插座数量。
   {
     const outletCount = actionableObjects.reduce((count, object) => count + getActionablePortRecords(object)
       .filter(port => port.type === 'ac_output' && isPortDirectionConsistent(port)).length, 0);
     if (outletCount > 0) {
-      const plugsNeeded = actionableObjects.reduce((count, object) => {
+      let acPlugs = 0;
+      let bareDc = 0;
+      let freeDcOutputs = 0;
+      for (const object of actionableObjects) {
         const ports = getActionablePortRecords(object).filter(port => isPortDirectionConsistent(port));
-        if (ports.some(port => port.type === 'ac_input')) return count + 1;
+        if (ports.some(port => port.type === 'ac_input')) {
+          acPlugs += 1;
+          const taken = occupiedPorts.get(object.id);
+          freeDcOutputs += ports.filter(port => port.type === 'dc_output' && !taken?.has(port.id)).length;
+          continue;
+        }
         const dcInputs = ports.filter(port => port.type === 'dc_input');
-        const chargedByModeledAdapter = dcInputs.some(port => occupiedPorts.get(object.id)?.has(port.id));
-        return dcInputs.length > 0 && !chargedByModeledAdapter ? count + 1 : count;
-      }, 0);
+        const charged = dcInputs.some(port => occupiedPorts.get(object.id)?.has(port.id));
+        if (dcInputs.length > 0 && !charged) bareDc += 1;
+      }
+      const plugsNeeded = acPlugs + Math.max(0, bareDc - freeDcOutputs);
       if (plugsNeeded > outletCount) {
         const stripOutlets = (findModelTemplate({ modelId: 'power-strip' })?.ports || [])
           .filter(port => port.type === 'ac_output').length || 6;

@@ -2,6 +2,11 @@ import { routeCable } from './cable-route.js';
 import { getPortRecords } from './port-collections.js';
 
 export const CABLE_SERVICE_LOOP_FACTOR = 1.1;
+// A shop length a couple of centimetres under the 10% loop is still enough
+// to plug in. 2 cm is smaller than the gap between standard lengths, so a
+// cable that is actually short of the next size (5.2 m against a 5.5 m
+// recommendation) still warns.
+export const CABLE_SLACK_TOLERANCE_METRES = 0.02;
 export const CABLE_TYPE_VALUES = ['power', 'hdmi', 'usb_c', 'usb', 'audio', 'ethernet', 'displayport', 'other'];
 export const CABLE_TYPE_NAMES = Object.freeze({
   power: '电源线',
@@ -81,11 +86,29 @@ export function isPortDirectionConsistent(port) {
   return !requiredDirection || port.direction === requiredDirection;
 }
 
+const USB_PORT_TYPES = new Set(['usb', 'usb_c']);
+const USB_PERIPHERAL_IDS = new Set(['keyboard', 'mouse']);
+
 export function arePortTypesCompatible(fromType, toType) {
   if (fromType === toType) return true;
   if (fromType === 'ac_output' && toType === 'ac_input') return true;
   if (fromType === 'dc_output' && toType === 'dc_input') return true;
+  // A USB-A peripheral can use a computer's USB-C port. Same-type pairs
+  // still win in auto-wiring; this only says the two families can meet.
+  if (USB_PORT_TYPES.has(fromType) && USB_PORT_TYPES.has(toType)) return true;
   return false;
+}
+
+export function isUsbPeripheral(object) {
+  return USB_PERIPHERAL_IDS.has(object?.type) || USB_PERIPHERAL_IDS.has(object?.modelId);
+}
+
+/** Keyboard and mouse plug into a computer, not into each other. */
+export function isPeripheralToPeripheralUsb(fromObject, toObject, fromPort, toPort) {
+  return isUsbPeripheral(fromObject)
+    && isUsbPeripheral(toObject)
+    && USB_PORT_TYPES.has(fromPort?.type)
+    && USB_PORT_TYPES.has(toPort?.type);
 }
 
 export function arePortsCompatible(fromPort, toPort) {
@@ -129,12 +152,27 @@ export function canJoinPorts(firstPort, secondPort) {
   return orientPortPair({ port: firstPort }, { port: secondPort }) !== null;
 }
 
+/**
+ * Ports that may be joined, including which devices they belong to.
+ * Type and direction are not enough: two USB peripherals cannot cable to
+ * each other. Kept out of the save-file check so an old project still opens.
+ */
+export function canJoinDevicePorts(firstObject, firstPort, secondObject, secondPort) {
+  const oriented = orientPortPair({ port: firstPort }, { port: secondPort });
+  if (!oriented) return false;
+  const fromObject = oriented.from.port === firstPort ? firstObject : secondObject;
+  const toObject = fromObject === firstObject ? secondObject : firstObject;
+  return !isPeripheralToPeripheralUsb(fromObject, toObject, oriented.from.port, oriented.to.port);
+}
+
 export function inferCableType(fromPort, toPort) {
   if (!fromPort || !toPort) return 'other';
   if (POWER_PORT_TYPES.has(fromPort.type) && POWER_PORT_TYPES.has(toPort.type)) return 'power';
   if (fromPort.type === toPort.type && CABLE_TYPE_VALUES.includes(fromPort.type)) {
     return fromPort.type;
   }
+  // USB-A to USB-C is still a USB cable. Two USB-C ports stay usb_c above.
+  if (USB_PORT_TYPES.has(fromPort.type) && USB_PORT_TYPES.has(toPort.type)) return 'usb';
   return 'other';
 }
 
@@ -219,6 +257,6 @@ export function evaluateConnectionLength(connection, objects, knownEndpoints = n
     sufficient: slack >= -0.001,
     recommendedLength,
     recommendedSlack,
-    hasRecommendedSlack: recommendedSlack >= -0.001,
+    hasRecommendedSlack: recommendedSlack >= -CABLE_SLACK_TOLERANCE_METRES,
   };
 }

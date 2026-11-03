@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  canJoinPorts,
+  canJoinDevicePorts,
   evaluateConnectionLength,
   inferCableType,
   isPortDirectionConsistent,
@@ -17,9 +17,9 @@ import { CloseIcon } from './Icons.jsx';
 // The draft starts on the selected device, whichever end it is: its port may
 // send or receive. The other device's ports that fit either way are offered,
 // and the saved connection runs from the sending end (orientPortPair).
-const getCompatibleTargetPorts = (localPort, targetObject) => {
-  if (!localPort || !targetObject || !targetObject.ports) return [];
-  return targetObject.ports.filter(port => canJoinPorts(localPort, port));
+const getCompatibleTargetPorts = (localObject, localPort, targetObject) => {
+  if (!localObject || !localPort || !targetObject?.ports) return [];
+  return targetObject.ports.filter(port => canJoinDevicePorts(localObject, localPort, targetObject, port));
 };
 
 const ConnectionsEditor = ({ 
@@ -68,8 +68,8 @@ const ConnectionsEditor = ({
     (connection.toObjectId === objectId && connection.toPortId === portId)
   ), [connections]);
 
-  const getAvailableTargetPorts = useCallback((fromPort, targetObject) =>
-    getCompatibleTargetPorts(fromPort, targetObject)
+  const getAvailableTargetPorts = useCallback((fromObject, fromPort, targetObject) =>
+    getCompatibleTargetPorts(fromObject, fromPort, targetObject)
       .filter(port => !isPortOccupied(targetObject.id, port.id)),
   [isPortOccupied]);
 
@@ -92,7 +92,7 @@ const ConnectionsEditor = ({
       );
     } else if (role === 'to') {
       const fromPort = selectedObj?.ports?.find(p => p.id === connectionDraft.fromPortId);
-      filteredPorts = getAvailableTargetPorts(fromPort, obj);
+      filteredPorts = getAvailableTargetPorts(selectedObj, fromPort, obj);
     }
 
     if (filteredPorts.length === 0) return <option value="">(无兼容或空闲端口)</option>;
@@ -144,13 +144,13 @@ const ConnectionsEditor = ({
     if (toObj && toObj.ports && connectionDraft.fromPortId) {
       const fromPort = selectedObj?.ports?.find(p => p.id === connectionDraft.fromPortId);
       if (fromPort) {
-        const compatiblePorts = getAvailableTargetPorts(fromPort, toObj);
+        const compatiblePorts = getAvailableTargetPorts(selectedObj, fromPort, toObj);
         if (compatiblePorts.length === 1 && connectionDraft.toPortId !== compatiblePorts[0].id) {
            setConnectionDraft(prev => ({ ...prev, toPortId: compatiblePorts[0].id }));
         }
       }
     }
-  }, [toObj, connectionDraft.fromPortId, connectionDraft.toPortId, selectedObj?.ports, setConnectionDraft, getAvailableTargetPorts]);
+  }, [toObj, connectionDraft.fromPortId, connectionDraft.toPortId, selectedObj, setConnectionDraft, getAvailableTargetPorts]);
 
   useEffect(() => {
     if (connectionDraft.fromPortId && connectionDraft.toPortId && selectedObj && toObj) {
@@ -189,7 +189,7 @@ const ConnectionsEditor = ({
       return alert('所选端口已被其它连接占用，请选择空闲端口');
     }
 
-    const compPorts = getAvailableTargetPorts(localPort, toObj);
+    const compPorts = getAvailableTargetPorts(selectedObj, localPort, toObj);
     const ends = draftEnds();
     if (!compPorts.some(p => p.id === otherPort.id) || !ends) {
        return alert(`端口类型不兼容或方向错误`);
@@ -252,7 +252,7 @@ const ConnectionsEditor = ({
   if (toObj && toObj.ports && connectionDraft.fromPortId) {
      const fromPort = selectedObj.ports?.find(p => p.id === connectionDraft.fromPortId);
      if (fromPort) {
-        const comp = getAvailableTargetPorts(fromPort, toObj);
+        const comp = getAvailableTargetPorts(selectedObj, fromPort, toObj);
         hasCompatibleToPorts = comp.length > 0;
      }
   }

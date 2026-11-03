@@ -5,6 +5,7 @@ import {
   arePortsCompatible,
   arePortTypesCompatible,
   calculatePositionDistance,
+  canJoinDevicePorts,
   canJoinPorts,
   evaluateConnectionLength,
   getConnectionEndpoints,
@@ -24,6 +25,8 @@ test('infers the formal cable type from both endpoint ports', () => {
   assert.equal(inferCableType({ type: 'ac_output' }, { type: 'ac_input' }), 'power');
   assert.equal(inferCableType({ type: 'dc_output' }, { type: 'dc_input' }), 'power');
   assert.equal(inferCableType({ type: 'custom' }, { type: 'custom' }), 'other');
+  assert.equal(inferCableType({ type: 'usb_c' }, { type: 'usb' }), 'usb');
+  assert.equal(inferCableType({ type: 'usb' }, { type: 'usb_c' }), 'usb');
 });
 
 test('checks direction and type compatibility together', () => {
@@ -58,6 +61,9 @@ test('power port type and direction cannot contradict each other', () => {
   assert.equal(isPortDirectionConsistent({ type: 'ac_input', direction: 'output' }), false);
   assert.equal(arePortTypesCompatible('ac_input', 'ac_output'), false);
   assert.equal(arePortTypesCompatible('ac_output', 'ac_input'), true);
+  assert.equal(arePortTypesCompatible('usb', 'usb_c'), true);
+  assert.equal(arePortTypesCompatible('usb_c', 'usb'), true);
+  assert.equal(arePortTypesCompatible('usb_c', 'hdmi'), false);
   assert.equal(
     arePortsCompatible(
       { type: 'ac_input', direction: 'output' },
@@ -100,6 +106,9 @@ test('reports cable slack and sufficiency', () => {
     false
   );
   assert.equal(evaluateConnectionLength({ fromObjectId: 'a', toObjectId: 'b', length: 5.2 }, objects)?.hasRecommendedSlack, false);
+  // 1.5 cm under the 10% loop is within the 2 cm tolerance; 3 cm is not.
+  assert.equal(evaluateConnectionLength({ fromObjectId: 'a', toObjectId: 'b', length: 5.485 }, objects)?.hasRecommendedSlack, true);
+  assert.equal(evaluateConnectionLength({ fromObjectId: 'a', toObjectId: 'b', length: 5.47 }, objects)?.hasRecommendedSlack, false);
 
   // Applying the recommended length must itself satisfy both slack checks, so the
   // "increase cable length" suggestion always resolves the warning it raised.
@@ -225,4 +234,19 @@ test('a cable can be started from either end and is stored sending end first', (
   const lanB = { id: 'lan-2', type: 'ethernet', direction: 'bidirectional' };
   assert.deepEqual(orientPortPair({ objectId: 'a', port: lanA }, { objectId: 'b', port: lanB }).from.objectId, 'a');
   assert.equal(orientPortPair(null, pc), null);
+});
+
+test('a keyboard and a mouse cannot be cabled to each other, other USB devices can', () => {
+  const usb = { id: 'usb', type: 'usb', direction: 'bidirectional' };
+  const keyboard = { id: 'keyboard', type: 'keyboard', modelId: 'keyboard', name: '键盘' };
+  const mouse = { id: 'mouse', type: 'mouse', modelId: 'mouse', name: '鼠标' };
+  const laptop = { id: 'laptop', type: 'laptop', modelId: 'laptop-15', name: '15 英寸笔记本' };
+  const usbC = { id: 'usb-c', type: 'usb_c', direction: 'bidirectional' };
+  assert.equal(canJoinPorts(usb, usb), true, 'the port types themselves still match');
+  assert.equal(canJoinDevicePorts(keyboard, usb, mouse, { ...usb, id: 'usb-m' }), false);
+  assert.equal(canJoinDevicePorts(mouse, usb, keyboard, { ...usb, id: 'usb-k' }), false);
+  assert.equal(canJoinDevicePorts(keyboard, usb, laptop, usbC), true);
+  const drive = { id: 'drive', type: 'device', name: '移动硬盘' };
+  const dock = { id: 'dock', type: 'device', name: '扩展坞' };
+  assert.equal(canJoinDevicePorts(drive, usb, dock, { ...usb, id: 'usb-d' }), true);
 });

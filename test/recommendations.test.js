@@ -226,7 +226,7 @@ test('recommends unchaining daisy-chained strips with a larger strip, deduped pe
   assert.deepEqual(buildPurchaseSuggestions([], []), []);
 });
 
-test('recommends a cable purchase for short cable or low slack', () => {
+test('recommends a cable purchase only when the cable does not reach', () => {
   const objects = [
     object('source', { position: { x: 0, y: 0, z: 0.1 }, ports: [{ id: 'out', name: 'out', type: 'dc_output', direction: 'output' }] }),
     object('target', { position: { x: 3, y: 0, z: 0.1 }, ports: [{ id: 'in', name: 'in', type: 'dc_input', direction: 'input' }] }),
@@ -243,6 +243,18 @@ test('recommends a cable purchase for short cable or low slack', () => {
   assert.equal(buyCable.product.modelId, 'power');
   assert.ok(buyCable.product.length > 1);
   assert.equal(buyCable.connectionIds[0], 'c1');
+
+  const reaches = [
+    object('a', { position: { x: 0, y: 0, z: 0 }, ports: [{ id: 'out', name: 'out', type: 'ethernet', direction: 'output' }] }),
+    object('b', { position: { x: 0, y: 3, z: 4 }, ports: [{ id: 'in', name: 'in', type: 'ethernet', direction: 'input' }] }),
+  ];
+  const slack = [{
+    id: 'slack', name: '网线', cableType: 'ethernet', length: 5.2,
+    fromObjectId: 'a', fromPortId: 'out', toObjectId: 'b', toPortId: 'in',
+  }];
+  assert.equal(buildPurchaseSuggestions(reaches, slack).some(item => item.code === 'buy_cable'), false,
+    'a cable that reaches is not a purchase, even with less than 10% spare');
+  assert.equal(buildFreeImprovements(room, reaches, slack).some(item => item.code === 'extend_cable'), true);
 });
 
 test('suggests powering an unpowered device and the fix creates a valid connection', () => {
@@ -2283,6 +2295,10 @@ test('a laptop counts as one plug through its charger unless it is wired to a mo
     fromObjectId: 'adapter', fromPortId: 'dc-out', toObjectId: 'laptop', toPortId: 'dc-in',
   }]).find(item => item.code === 'buy_power_strip_for_outlets');
   assert.ok(charged, 'the adapter now takes the plug instead of the laptop, still two plugs for one outlet');
+  assert.equal(outletPurchase([outlet, adapter, laptop]), undefined,
+    'an unwired adapter already covers the unwired laptop');
+  assert.ok(outletPurchase([outlet, adapter, laptop, object('laptop-2', { ports: [{ id: 'dc-in', name: 'DC 输入', type: 'dc_input', direction: 'input' }] })]),
+    'a second laptop still needs its own plug');
 });
 
 test('no outlet check when the user has not modeled any outlets', () => {

@@ -12,6 +12,7 @@ import {
 import { placeCatalogObject } from '../src/domain/placement.js';
 import { DEVICE_CATALOG, findModelTemplate } from '../src/domain/catalog.js';
 import { PASSIVE_CABLE_LIMITS } from '../src/domain/cable-limits.js';
+import { isProjectEnvelope } from '../src/domain/project-validation.js';
 import { DESK_TEMPLATES, buildTemplateScene } from '../src/domain/desk-templates.js';
 import { buildDeskScene } from '../src/domain/scene-builder.js';
 
@@ -60,6 +61,39 @@ test('the catalog wall outlet overloads above 2500W and warns above 90 percent',
   assert.equal(wired(2400).includes('power_overload'), false);
   assert.equal(wired(2400).includes('power_warning'), true);
   assert.equal(wired(3000).includes('power_overload'), true);
+});
+
+test('a keyboard cabled to a mouse is invalid, and the project still loads', () => {
+  const keyboard = object('键盘', [port('usb', 'usb', 'bidirectional')], { type: 'keyboard', modelId: 'keyboard', name: '键盘' });
+  const mouse = object('鼠标', [port('usb', 'usb', 'bidirectional')], { type: 'mouse', modelId: 'mouse', name: '鼠标' });
+  const link = connection('c1', '键盘', 'usb', '鼠标', 'usb', 1);
+  link.cableType = 'usb';
+  link.name = '键鼠线';
+  const issues = analyzeProjectWiring([keyboard, mouse], [link]);
+  const incompatible = issues.find(issue => issue.code === 'incompatible_port_types');
+  assert.ok(incompatible);
+  assert.match(incompatible.description, /都要接到电脑上/);
+  assert.ok(incompatible.invalidConnectionIds.includes('c1'));
+  const room = { length: 4, width: 3.5, height: 2.7 };
+  const project = {
+    room,
+    objects: [keyboard, mouse].map(item => ({
+      ...item,
+      category: 'peripheral',
+      shape: 'rect',
+      position: { x: 0, y: 0, z: 0.02 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 0.2, y: 0.1, z: 0.03 },
+    })),
+    connections: [link],
+  };
+  assert.equal(isProjectEnvelope(project), true, 'an old save with this cable still opens');
+
+  const drive = object('硬盘', [port('usb', 'usb', 'bidirectional')], { name: '移动硬盘' });
+  const dock = object('扩展坞', [port('usb', 'usb', 'bidirectional')], { name: '扩展坞' });
+  const other = connection('c2', '硬盘', 'usb', '扩展坞', 'usb', 1);
+  other.cableType = 'usb';
+  assert.equal(analyzeProjectWiring([drive, dock], [other]).some(issue => issue.code === 'incompatible_port_types'), false);
 });
 
 test('reports cables that can connect but lack recommended service slack', () => {
