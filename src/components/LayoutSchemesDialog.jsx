@@ -50,7 +50,7 @@ export default function LayoutSchemesDialog({
                   <li key={scheme.id} className="layout-scheme-row">
                     <span>{scheme.name}</span>
                     <span className="layout-scheme-actions">
-                      <button type="button" className="ui-button ui-button-primary" onClick={() => onSwitch(scheme)} disabled={!editable}>
+                      <button type="button" className="ui-button" onClick={() => onSwitch(scheme)} disabled={!editable}>
                         换成这套
                       </button>
                       <button type="button" className="ui-button" onClick={() => onDelete(scheme)} disabled={!editable}>
