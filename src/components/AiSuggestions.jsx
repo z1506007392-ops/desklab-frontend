@@ -19,6 +19,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
   const [feedback, setFeedback] = useState('');
   const [session, setSession] = useState({ status: 'loading', email: null, remaining: null });
   const [loginOpen, setLoginOpen] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
   const [authPromptSeen, setAuthPromptSeen] = useState(false);
   // Click can land in the same turn as the input event, before React stores
   // the new text. Read the box itself so the request matches what is visible.
@@ -63,12 +64,15 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
   };
 
   const logout = async () => {
+    setLogoutError('');
     try {
       await logoutSession();
-    } catch {
-      // Leave the signed-in controls up so the user can try again.
+    } catch (error) {
+      // Stay signed in so the same button can be used again.
+      setLogoutError(error instanceof Error && error.message ? error.message : '退出没有完成，请再试一次');
       return;
     }
+    setLogoutError('');
     setSession({ status: 'ready', email: null, remaining: null });
   };
 
@@ -119,6 +123,11 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
         )}
         {signedIn && (
           <button type="button" className="ui-button" onClick={logout} disabled={loading}>退出</button>
+        )}
+        {logoutError && (
+          <div className="ai-suggestions-status ai-suggestions-error" role="alert">
+            <span>{logoutError}</span>
+          </div>
         )}
       </div>
       {empty && <p className="ai-suggestions-note">先放几件设备，AI 才能给建议。</p>}

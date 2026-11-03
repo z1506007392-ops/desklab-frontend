@@ -41,7 +41,7 @@ export function LoginDialog({ onClose, onSignedIn }) {
       setEmail(next);
       setStep('code');
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error && err.message ? err.message : '登录没有完成，请稍后再试');
     } finally {
       setBusy(false);
     }
@@ -60,7 +60,7 @@ export function LoginDialog({ onClose, onSignedIn }) {
       onSignedIn(session);
       onClose();
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error && err.message ? err.message : '登录没有完成，请稍后再试');
       setBusy(false);
     }
   };

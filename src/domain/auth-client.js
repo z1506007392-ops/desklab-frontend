@@ -28,7 +28,7 @@ export async function fetchCurrentSession(fetchImpl = (...args) => fetch(...args
   }
 }
 
-async function postJson(path, payload, fetchImpl) {
+async function postJson(path, payload, fetchImpl, fallback = '登录没有完成，请稍后再试') {
   let response;
   try {
     response = await fetchImpl(path, {
@@ -41,7 +41,7 @@ async function postJson(path, payload, fetchImpl) {
     throw failure(null, '网络连接失败，请检查网络后再试');
   }
   const body = await readBody(response);
-  if (!response.ok) throw failure(body, '登录没有完成，请稍后再试');
+  if (!response.ok || !body || typeof body !== 'object' || Array.isArray(body)) throw failure(body, fallback);
   return body;
 }
 
@@ -58,5 +58,5 @@ export async function verifyLoginCode({ email, code, fetchImpl = (...args) => fe
 }
 
 export function logoutSession(fetchImpl = (...args) => fetch(...args)) {
-  return postJson('/api/auth/logout', {}, fetchImpl);
+  return postJson('/api/auth/logout', {}, fetchImpl, '退出没有完成，请再试一次');
 }
