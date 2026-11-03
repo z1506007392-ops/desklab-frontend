@@ -2,7 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createLayoutHandler } from '../server/ai/layout-handler.js';
+import { clientAddress } from '../server/ai/layout-input.js';
 import { createRateLimiter } from '../server/ai/rate-limit.js';
+import { buildSceneSummary } from '../src/domain/ai-scene-summary.js';
+import { buildTemplateScene } from '../src/domain/desk-templates.js';
 
 const KEY = 'sk-test-secret-key';
 const env = { DEEPSEEK_API_KEY: KEY };
@@ -232,4 +235,70 @@ test('a follow-up sends the filtered previous answer and the feedback to DeepSee
   let plain;
   await call({ body: { version: 1, summary, followUp: 'nonsense' }, fetchImpl: async (url, init) => { plain = JSON.parse(init.body).messages; return completion('{"suggestions": []}'); } });
   assert.equal(plain.length, 2);
+});
+
+test('a body that is not JSON, too deep, or uses a prototype key is refused', async () => {
+  const neverCalled = async () => assert.fail('DeepSeek must not be called');
+  const plain = await call({
+    headers: { 'Content-Type': 'text/plain' },
+    body: '{"version":1}',
+    fetchImpl: neverCalled,
+  });
+  assert.equal(plain.response.status, 400);
+  assert.equal(plain.json.error, 'bad_request');
+
+  let nested = { leaf: true };
+  for (let depth = 0; depth < 30; depth += 1) nested = { child: nested };
+  const deep = await call({ body: { version: 1, summary: nested }, fetchImpl: neverCalled });
+  assert.equal(deep.response.status, 400);
+  assert.equal(deep.json.error, 'bad_request');
+  assert.equal(deep.json.message.includes('深度'), false);
+
+  const prototypeKey = JSON.parse('{"version":1,"summary":{"room":{"length":1}},"__proto__":{"admin":true}}');
+  const poisoned = await call({ body: prototypeKey, fetchImpl: neverCalled });
+  assert.equal(poisoned.response.status, 400);
+  assert.equal(Object.prototype.admin, undefined);
+});
+
+test('an unexpected failure stays a fixed Chinese message and does not echo the cause', async () => {
+  const secret = 'sk-secret path /internal';
+  const { response, text, json, logger } = await call({
+    rateLimiter: { async take() { throw new Error(`KV token ${secret}`); } },
+    fetchImpl: async () => assert.fail('DeepSeek must not be called'),
+  });
+  assert.equal(response.status, 500);
+  assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff');
+  assert.equal(json.error, 'internal');
+  assert.equal(json.message, '服务暂时不可用，请稍后再试');
+  assert.equal(text.includes(secret), false);
+  assert.equal(text.includes('KV'), false);
+  assert.ok(logger.lines.every(line => !line.includes(secret) && !line.includes('KV')));
+});
+
+test('upstream bodies and a dirty model name never reach the browser', async () => {
+  const busy = await call({ fetchImpl: async () => new Response('busy sk-live', { status: 503 }) });
+  assert.equal(busy.text.includes('busy'), false);
+  assert.equal(busy.text.includes('sk-live'), false);
+  const html = await call({ fetchImpl: async () => new Response('<html>secret</html>', { status: 200 }) });
+  assert.equal(html.text.includes('<html>'), false);
+  assert.equal(html.text.includes('secret'), false);
+  const named = await call({
+    fetchImpl: async () => completion('{"suggestions":[]}', { model: 'deepseek-chat\r\nX: 1' }),
+  });
+  assert.equal(named.json.model, 'deepseek-chat');
+});
+
+test('a real gaming summary is still accepted, and a smashed IP is only its first token', async () => {
+  const seen = [];
+  const { response } = await call({
+    body: { version: 1, summary: buildSceneSummary(buildTemplateScene('gaming')), goal: '更整洁' },
+    headers: { 'CF-Connecting-IP': '203.0.113.7, 198.51.100.4' },
+    rateLimiter: { async take(key) { seen.push(key); return { allowed: true, mode: 'memory' }; } },
+    fetchImpl: async () => completion('{"suggestions":[]}'),
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(seen, ['203.0.113.7']);
+  assert.equal(clientAddress('203.0.113.7\r\nX-Evil: 1'), '203.0.113.7');
+  assert.equal(clientAddress('bad<script>'), 'unknown');
+  assert.equal(clientAddress(''), 'unknown');
 });

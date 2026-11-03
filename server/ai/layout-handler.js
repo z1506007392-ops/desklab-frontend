@@ -1,4 +1,5 @@
 import { AI_ERROR_MESSAGES, AI_LIMITS, AI_PROTOCOL_VERSION, sanitizeSuggestions } from '../../src/domain/ai-protocol.js';
+import { clientAddress, isJsonContentType, layoutInputProblem, publicModelName } from './layout-input.js';
 import { buildMessages } from './prompt.js';
 
 // POST /api/ai/layout: scene summary + optional goal in, structurally clean
@@ -15,7 +16,12 @@ const DEFAULTS = Object.freeze({
 function json(status, body, headers = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers },
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+      ...headers,
+    },
   });
 }
 
@@ -68,16 +74,29 @@ export function createLayoutHandler({
   logger = console,
   sessionOf = async () => null,
 } = {}) {
-  return async function handleLayoutRequest({ request, env }) {
+  return async function handleLayoutRequest(context) {
+    try {
+      return await handleLayout(context);
+    } catch (error) {
+      // Name only. The message can quote a key, a stack, or the request.
+      logger.log('ai/layout failed', error instanceof Error ? error.name : 'error');
+      return fail(500, 'internal');
+    }
+  };
+
+  async function handleLayout({ request, env }) {
     const config = readConfig(env);
     if (!config.enabled || !config.apiKey) return fail(503, 'ai_unavailable');
 
     const session = await sessionOf(request, env);
-    if (!session?.email) return fail(401, 'auth_required');
+    if (typeof session?.email !== 'string' || session.email.length > 254 || !session.email.includes('@')) {
+      return fail(401, 'auth_required');
+    }
 
+    if (!isJsonContentType(request.headers.get('content-type'))) return fail(400, 'bad_request');
     const { body, tooLarge } = await readJsonBody(request);
     if (tooLarge) return fail(413, 'too_large');
-    if (!body || typeof body !== 'object' || Array.isArray(body)
+    if (!body || typeof body !== 'object' || Array.isArray(body) || layoutInputProblem(body)
       || body.version !== AI_PROTOCOL_VERSION
       || !body.summary || typeof body.summary !== 'object' || Array.isArray(body.summary)) {
       return fail(400, 'bad_request');
@@ -86,7 +105,7 @@ export function createLayoutHandler({
     let limitHeaders = {};
     let remaining = null;
     if (rateLimiter) {
-      const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+      const ip = clientAddress(request.headers.get('CF-Connecting-IP'));
       const limit = await rateLimiter.take(ip, env);
       limitHeaders = { 'X-AI-Limit-Mode': limit.mode };
       if (!limit.allowed) {
@@ -157,7 +176,7 @@ export function createLayoutHandler({
     logger.log('ai/layout ok', `${Date.now() - started}ms`, 'tokens', usage.prompt_tokens, usage.completion_tokens);
     return json(200, {
       version: AI_PROTOCOL_VERSION,
-      model: typeof completion.model === 'string' ? completion.model : config.model,
+      model: publicModelName(completion.model, config.model),
       suggestions: sanitizeSuggestions(parsed),
       usage: {
         promptTokens: Number.isFinite(usage.prompt_tokens) ? usage.prompt_tokens : null,

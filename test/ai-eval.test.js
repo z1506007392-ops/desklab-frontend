@@ -51,7 +51,11 @@ test('a run through the mock model produces sound metrics', async () => {
   });
   const post = async body => {
     const response = await handler({
-      request: new Request('https://desklab.test/api/ai/layout', { method: 'POST', body: JSON.stringify(body) }),
+      request: new Request('https://desklab.test/api/ai/layout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
       env: { DEEPSEEK_API_KEY: 'mock' },
     });
     return { status: response.status, json: await response.json() };

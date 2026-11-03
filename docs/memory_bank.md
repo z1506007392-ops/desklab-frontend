@@ -169,6 +169,12 @@ E67 已部署。CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E92：分享链接在解开之前就按长度拒绝过大的 hash。版本 2 里用户改过的字段改成白名单，不再整段展开。导入文件、粘贴和打开分享链接时检查设备数量、房间和坐标；名字里的尖括号换成全角，避免被当成 HTML。模型地址只留本站的 `/models/*.glb`，别的丢掉；已知型号仍用水合后的目录模型，外观不变。已经存在存档里的远程地址也不会再发请求。
+
+还剩：E93–E95，以及全量验证后推 master。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E91：全站静态文件加上安全响应头（`public/_headers`）。Content-Security-Policy 只允许本站脚本，meshopt 需要的 `wasm-unsafe-eval` 和 blob worker，以及 React 的内联样式。旧浏览器检测那段内联脚本用它自己的 sha256。模型和字体不再去别的网站拉（目录模型是 meshopt，不是 Draco，加载时关掉了 Draco）。另外写了 nosniff、Referrer-Policy、Permissions-Policy 和 X-Frame-Options: DENY。这个文件没有写 Cache-Control，避免和 E71–E75 的缓存头被拼成同一个值；冲突时两边都留。
 
 还剩：E92–E95，以及全量验证后推 master。

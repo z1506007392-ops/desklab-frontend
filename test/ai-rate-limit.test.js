@@ -144,7 +144,9 @@ test('the endpoint explains which limit was hit', async () => {
   });
   const ask = () => handler({
     request: new Request('https://desklab.test/api/ai/layout', {
-      method: 'POST', headers: { 'CF-Connecting-IP': '5.5.5.5' }, body: JSON.stringify({ version: 1, summary: {} }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '5.5.5.5' },
+      body: JSON.stringify({ version: 1, summary: {} }),
     }),
     env,
   });
