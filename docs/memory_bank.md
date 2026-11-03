@@ -23,7 +23,7 @@ E64 完成：布线检查会警告超规格的被动线。常量表 `src/domain/
 
 验证：`npm test` 511 通过，lint 0 问题。界面没有改，Playwright 在推送前再跑一遍。
 
-还剩：写上提交号并推送。E65 还没开始。E61 的 CI 还在跑。
+提交：`ebb7b0f`。还剩：Playwright 通过后，等 E61 的 CI 绿了再推。E65 还没开始。
 
 ### 2026-11-03 · Desklab (Grok Bot) · master
 
