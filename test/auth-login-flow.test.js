@@ -142,7 +142,9 @@ test('the login flow sends one Mailjet note, then a cookie, and AI stays closed 
   const cookie = ok.headers.get('set-cookie');
   assert.match(cookie, /HttpOnly/i);
   assert.match(cookie, /SameSite=Lax/i);
+  assert.equal(/SameSite=None/i.test(cookie), false);
   assert.match(cookie, /Secure/);
+  assert.equal(ok.headers.get('x-content-type-options'), 'nosniff');
   assert.match(cookie, /Path=\//);
   assert.match(cookie, /Max-Age=2592000/);
   const token = cookieToken(ok);
@@ -187,7 +189,8 @@ test('one address shares the hourly send cap, and the message is the hourly sent
   assert.equal((await ask('a@b.cn')).status, 200);
   const blocked = await ask('c@b.cn');
   assert.equal(blocked.status, 429);
-  assert.equal((await blocked.json()).message, '发送太频繁，请一小时后再试');
+  assert.equal((await blocked.json()).message, '发送太频繁，请稍后再试');
+  assert.equal(blocked.headers.get('x-content-type-options'), 'nosniff');
   assert.equal(rig.calls.filter(call => String(call.url).includes('mailjet')).length, 1);
 });
 
@@ -203,7 +206,7 @@ test('a Mailjet failure deletes the code and answers 502', async () => {
     request: post('https://desklab.test/api/auth/verify', { email: 'a@b.cn', code: '123456' }),
     env: rig.env,
   });
-  assert.equal((await missed.json()).message, '验证码已失效，请重新获取');
+  assert.equal((await missed.json()).message, '验证码不对或已失效，请重新获取');
 });
 
 test('a code expires after ten minutes, and a session expires after thirty days', async () => {
@@ -240,7 +243,7 @@ test('a code expires after ten minutes, and a session expires after thirty days'
     request: post('https://desklab.test/api/auth/verify', { email: 'a@b.cn', code: '000000' }),
     env: expired.env,
   });
-  assert.equal((await late.json()).message, '验证码已失效，请重新获取');
+  assert.equal((await late.json()).message, '验证码不对或已失效，请重新获取');
 });
 
 test('the daily send cap resets at Beijing midnight', async () => {
@@ -258,7 +261,7 @@ test('the daily send cap resets at Beijing midnight', async () => {
   time.advance(61 * 1000);
   const blocked = await ask();
   assert.equal(blocked.status, 429);
-  assert.equal((await blocked.json()).message, '这个邮箱今天的验证码次数用完了，明天再试');
+  assert.equal((await blocked.json()).message, '发送太频繁，请稍后再试');
   time.set('2026-10-30T16:00:01.000Z');
   assert.equal((await ask()).status, 200);
 });

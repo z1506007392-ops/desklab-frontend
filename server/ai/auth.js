@@ -10,19 +10,19 @@ const SENDS_PER_EMAIL_DAY = 5;
 const LOCK_TTL_SECONDS = 60;
 const MAX_ATTEMPTS = 5;
 const CODE_IP_HOURLY_DEFAULT = 10;
+const VERIFY_IP_HOURLY_DEFAULT = 30;
 const COOKIE = 'desklab_session';
 
 export const AUTH_MESSAGES = Object.freeze({
   auth_unavailable: '登录暂未开放',
   bad_email: '请填写有效的邮箱地址',
   bad_code: '请填写 6 位验证码',
-  send_lock: '发送太频繁，请稍后再试',
-  send_daily: '这个邮箱今天的验证码次数用完了，明天再试',
-  send_ip: '发送太频繁，请一小时后再试',
+  // One sentence for "just sent", "this email is done today", and "this IP is done".
+  send_limited: '发送太频繁，请稍后再试',
   send_failed: '邮件没有发出去，请稍后再试',
-  code_expired: '验证码已失效，请重新获取',
-  code_wrong: '验证码不对',
-  code_locked: '验证码错误次数太多，请重新获取',
+  // One sentence for a missing code, a wrong code, and a code that is used up.
+  code_rejected: '验证码不对或已失效，请重新获取',
+  verify_limited: '发送太频繁，请稍后再试',
 });
 
 function positiveInt(value, fallback) {
@@ -33,7 +33,12 @@ function positiveInt(value, fallback) {
 function json(status, body, headers = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...headers },
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      'x-content-type-options': 'nosniff',
+      ...headers,
+    },
   });
 }
 
@@ -65,7 +70,25 @@ function newCode() {
 }
 
 function clientIp(request) {
-  return request.headers.get('CF-Connecting-IP') || 'unknown';
+  const raw = request.headers.get('CF-Connecting-IP') || '';
+  const token = raw.split(/[\s,]/).find(Boolean) || '';
+  return /^[A-Za-z0-9.:]{1,64}$/.test(token) ? token : 'unknown';
+}
+
+// One isolate runs overlapping requests. Chain them per key so a burst
+// cannot read the same attempt count twice. KV itself has no compare-and-set.
+function createKeyLock() {
+  const tails = new Map();
+  return function exclusive(key, task) {
+    const previous = tails.get(key) || Promise.resolve();
+    const run = previous.then(task, task);
+    const settled = run.then(() => {}, () => {});
+    tails.set(key, settled);
+    settled.then(() => {
+      if (tails.get(key) === settled) tails.delete(key);
+    });
+    return run;
+  };
 }
 
 function cookieValue(request, name) {
@@ -80,11 +103,14 @@ function cookieValue(request, name) {
 }
 
 function sessionCookie(token, { secure, maxAge }) {
+  // Lax, never None: a cross-site POST must not carry this cookie.
   const parts = [`${COOKIE}=${token}`, 'HttpOnly', 'SameSite=Lax', 'Path=/', `Max-Age=${maxAge}`];
   if (secure) parts.push('Secure');
   return parts.join('; ');
 }
 
+// Pages gives the function the public URL, so production https includes Secure.
+// Local http omits it; otherwise the browser will not store the cookie.
 function isSecureRequest(request) {
   return new URL(request.url).protocol === 'https:';
 }
@@ -146,6 +172,7 @@ export function createAuthHandlers({
 } = {}) {
   const memory = new Map();
   const limiter = rateLimiter ?? createRateLimiter({ now });
+  const exclusive = createKeyLock();
 
   function storeFor(env) {
     const kv = env?.AI_LIMITS;
@@ -188,17 +215,17 @@ export function createAuthHandlers({
       const current = await limiter.read(env, { prefix, limit });
       return current.count >= limit ? fail(429, error) : null;
     };
-    const refusal = await blocked(lockPrefix, 1, 'send_lock')
-      || await blocked(dailyPrefix, SENDS_PER_EMAIL_DAY, 'send_daily')
-      || await blocked(ipPrefix, ipLimit, 'send_ip');
+    const refusal = await blocked(lockPrefix, 1, 'send_limited')
+      || await blocked(dailyPrefix, SENDS_PER_EMAIL_DAY, 'send_limited')
+      || await blocked(ipPrefix, ipLimit, 'send_limited');
     if (refusal) return refusal;
 
     const lock = await limiter.consume(env, { prefix: lockPrefix, limit: 1, ttlSeconds: LOCK_TTL_SECONDS });
-    if (!lock.allowed) return fail(429, 'send_lock');
+    if (!lock.allowed) return fail(429, 'send_limited');
     const daily = await limiter.consume(env, { prefix: dailyPrefix, limit: SENDS_PER_EMAIL_DAY, ttlSeconds: 2 * 24 * 60 * 60 });
-    if (!daily.allowed) return fail(429, 'send_daily');
+    if (!daily.allowed) return fail(429, 'send_limited');
     const ipHit = await limiter.consume(env, { prefix: ipPrefix, limit: ipLimit, ttlSeconds: 2 * 60 * 60 });
-    if (!ipHit.allowed) return fail(429, 'send_ip');
+    if (!ipHit.allowed) return fail(429, 'send_limited');
 
     const code = newCode();
     const record = JSON.stringify({ hash: await sha256Hex(`${email}:${code}`), attempts: 0 });
@@ -211,6 +238,10 @@ export function createAuthHandlers({
     return json(200, { ok: true });
   }
 
+  function rejectCode() {
+    return fail(400, 'code_rejected');
+  }
+
   async function verify({ request, env = {} }) {
     const body = await readJson(request);
     const email = normalizeEmail(body?.email);
@@ -218,24 +249,37 @@ export function createAuthHandlers({
     if (!email) return fail(400, 'bad_email');
     if (!/^\d{6}$/.test(code)) return fail(400, 'bad_code');
 
+    const ip = clientIp(request);
+    const verifyLimit = positiveInt(env.AUTH_VERIFY_PER_IP_HOURLY, VERIFY_IP_HOURLY_DEFAULT);
+    const ipHit = await exclusive(`verify-ip:${ip}`, () => limiter.consume(env, {
+      prefix: `auth:verify-ip:${ip}:${hourBucket(now())}:`,
+      limit: verifyLimit,
+      ttlSeconds: 2 * 60 * 60,
+    }));
+    if (!ipHit.allowed) return fail(429, 'verify_limited');
+
+    return exclusive(`verify:${email}`, () => checkCode({ request, env, email, code }));
+  }
+
+  async function checkCode({ request, env, email, code }) {
     const store = storeFor(env);
     const key = `auth:code:${email}`;
     const raw = await store.get(key);
-    if (!raw) return fail(400, 'code_expired');
+    if (!raw) return rejectCode();
     let record;
     try {
       record = JSON.parse(raw);
     } catch {
       record = null;
     }
-    if (!record || typeof record.hash !== 'string') return fail(400, 'code_expired');
+    if (!record || typeof record.hash !== 'string') return rejectCode();
     const attempts = Number(record.attempts) || 0;
-    if (attempts >= MAX_ATTEMPTS) return fail(400, 'code_locked');
+    if (attempts >= MAX_ATTEMPTS) return rejectCode();
     const expected = await sha256Hex(`${email}:${code}`);
     if (!safeEqual(record.hash, expected)) {
       const next = JSON.stringify({ hash: record.hash, attempts: attempts + 1 });
       await store.put(key, next, { expirationTtl: CODE_TTL_SECONDS });
-      return fail(400, attempts + 1 >= MAX_ATTEMPTS ? 'code_locked' : 'code_wrong');
+      return rejectCode();
     }
 
     await store.delete(key);

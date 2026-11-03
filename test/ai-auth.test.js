@@ -112,7 +112,8 @@ test('a code is stored only as a hash, and the right code opens a 30-day session
     env: rig.env,
   });
   assert.equal(missed.status, 400);
-  assert.equal((await missed.json()).message, '验证码不对');
+  assert.deepEqual(await missed.json(), { error: 'code_rejected', message: '验证码不对或已失效，请重新获取' });
+  assert.equal(missed.headers.get('x-content-type-options'), 'nosniff');
 
   const ok = await rig.verify({
     request: post('https://desklab.test/api/auth/verify', { email: 'user@example.com', code: rig.sent[0].code }),
@@ -122,6 +123,7 @@ test('a code is stored only as a hash, and the right code opens a 30-day session
   const cookie = ok.headers.get('set-cookie');
   assert.match(cookie, /HttpOnly/i);
   assert.match(cookie, /SameSite=Lax/i);
+  assert.equal(/SameSite=None/i.test(cookie), false);
   assert.match(cookie, /Secure/);
   assert.match(cookie, /Path=\//);
   assert.match(cookie, /Max-Age=2592000/);
@@ -145,6 +147,9 @@ test('a code is stored only as a hash, and the right code opens a 30-day session
   });
   assert.equal(gone.status, 200);
   assert.match(gone.headers.get('set-cookie'), /Max-Age=0/);
+  assert.match(gone.headers.get('set-cookie'), /Secure/);
+  assert.match(gone.headers.get('set-cookie'), /SameSite=Lax/i);
+  assert.equal(gone.headers.get('x-content-type-options'), 'nosniff');
   assert.equal(await rig.kv.get(`auth:session:${await sha256Hex(token)}`), null);
   const after = await rig.me({ request: new Request('https://desklab.test/api/auth/me'), env: rig.env });
   assert.deepEqual(await after.json(), { email: null, remaining: null });
@@ -162,7 +167,14 @@ test('a local http session cookie is not marked Secure', async () => {
   });
   const cookie = ok.headers.get('set-cookie');
   assert.match(cookie, /HttpOnly/i);
+  assert.match(cookie, /SameSite=Lax/i);
   assert.equal(/Secure/.test(cookie), false);
+  const gone = await rig.logout({
+    request: new Request('http://127.0.0.1/api/auth/logout', { method: 'POST', headers: { cookie: `desklab_session=${cookieToken(ok)}` } }),
+    env: rig.env,
+  });
+  assert.equal(/Secure/.test(gone.headers.get('set-cookie')), false);
+  assert.match(gone.headers.get('set-cookie'), /SameSite=Lax/i);
 });
 
 test('five wrong codes lock the challenge', async () => {
@@ -172,23 +184,104 @@ test('five wrong codes lock the challenge', async () => {
     env: rig.env,
   });
   const wrong = rig.sent[0].code === '111111' ? '222222' : '111111';
-  for (let attempt = 1; attempt <= 4; attempt += 1) {
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
     const response = await rig.verify({
       request: post('https://desklab.test/api/auth/verify', { email: 'a@b.cn', code: wrong }),
       env: rig.env,
     });
-    assert.equal((await response.json()).error, 'code_wrong', `attempt ${attempt}`);
+    const body = await response.json();
+    assert.equal(body.error, 'code_rejected', `attempt ${attempt}`);
+    assert.equal(body.message, '验证码不对或已失效，请重新获取');
   }
-  const locked = await rig.verify({
-    request: post('https://desklab.test/api/auth/verify', { email: 'a@b.cn', code: wrong }),
-    env: rig.env,
-  });
-  assert.equal((await locked.json()).message, '验证码错误次数太多，请重新获取');
+  assert.equal(JSON.parse(await rig.kv.get('auth:code:a@b.cn')).attempts, 5);
   const tooLate = await rig.verify({
     request: post('https://desklab.test/api/auth/verify', { email: 'a@b.cn', code: rig.sent[0].code }),
     env: rig.env,
   });
-  assert.equal((await tooLate.json()).error, 'code_locked');
+  assert.deepEqual(await tooLate.json(), { error: 'code_rejected', message: '验证码不对或已失效，请重新获取' });
+  assert.equal(tooLate.status, 400);
+});
+
+test('a missing code and a wrong code use the same words', async () => {
+  const rig = setup();
+  const missing = await rig.verify({
+    request: post('https://desklab.test/api/auth/verify', { email: 'a@b.cn', code: '123456' }),
+    env: rig.env,
+  });
+  await rig.requestCode({
+    request: post('https://desklab.test/api/auth/request-code', { email: 'a@b.cn' }),
+    env: rig.env,
+  });
+  const wrong = rig.sent[0].code === '123456' ? '654321' : '123456';
+  const missed = await rig.verify({
+    request: post('https://desklab.test/api/auth/verify', { email: 'a@b.cn', code: wrong }),
+    env: rig.env,
+  });
+  assert.deepEqual(await missing.json(), await missed.json());
+});
+
+test('a burst of wrong codes cannot record more than five attempts', async () => {
+  const rig = setup();
+  await rig.requestCode({
+    request: post('https://desklab.test/api/auth/request-code', { email: 'a@b.cn' }),
+    env: rig.env,
+  });
+  const wrong = rig.sent[0].code === '111111' ? '222222' : '111111';
+  const responses = await Promise.all(Array.from({ length: 12 }, () => rig.verify({
+    request: post('https://desklab.test/api/auth/verify', { email: 'a@b.cn', code: wrong }),
+    env: rig.env,
+  })));
+  const bodies = await Promise.all(responses.map(response => response.json()));
+  assert.equal(bodies.every(body => body.error === 'code_rejected'), true);
+  assert.equal(JSON.parse(await rig.kv.get('auth:code:a@b.cn')).attempts, 5);
+  const late = await rig.verify({
+    request: post('https://desklab.test/api/auth/verify', { email: 'a@b.cn', code: rig.sent[0].code }),
+    env: rig.env,
+  });
+  assert.equal(late.status, 400);
+  assert.notEqual(await rig.kv.get('auth:code:a@b.cn'), null);
+});
+
+test('an address that is verifying too fast does not use up the five tries', async () => {
+  const rig = setup({ env: { ...mailEnv, AUTH_VERIFY_PER_IP_HOURLY: '2' } });
+  await rig.requestCode({
+    request: post('https://desklab.test/api/auth/request-code', { email: 'a@b.cn' }, { 'CF-Connecting-IP': '203.0.113.9' }),
+    env: rig.env,
+  });
+  const wrong = rig.sent[0].code === '111111' ? '222222' : '111111';
+  const guess = ip => rig.verify({
+    request: post('https://desklab.test/api/auth/verify', { email: 'a@b.cn', code: wrong }, { 'CF-Connecting-IP': ip }),
+    env: rig.env,
+  });
+  assert.equal((await guess('203.0.113.9')).status, 400);
+  assert.equal((await guess('203.0.113.9')).status, 400);
+  const blocked = await guess('203.0.113.9');
+  assert.equal(blocked.status, 429);
+  const blockedBody = await blocked.json();
+  assert.equal(blockedBody.error, 'verify_limited');
+  assert.equal(blockedBody.message, '发送太频繁，请稍后再试');
+  assert.equal(JSON.parse(await rig.kv.get('auth:code:a@b.cn')).attempts, 2);
+  const ok = await rig.verify({
+    request: post('https://desklab.test/api/auth/verify', { email: 'a@b.cn', code: rig.sent[0].code }, { 'CF-Connecting-IP': '203.0.113.10' }),
+    env: rig.env,
+  });
+  assert.equal(ok.status, 200);
+});
+
+test('parallel verifies from one address cannot pass the hourly cap', async () => {
+  const rig = setup({ env: { ...mailEnv, AUTH_VERIFY_PER_IP_HOURLY: '1' } });
+  await rig.requestCode({
+    request: post('https://desklab.test/api/auth/request-code', { email: 'a@b.cn' }, { 'CF-Connecting-IP': '203.0.113.40' }),
+    env: rig.env,
+  });
+  const wrong = rig.sent[0].code === '111111' ? '222222' : '111111';
+  const responses = await Promise.all(Array.from({ length: 8 }, () => rig.verify({
+    request: post('https://desklab.test/api/auth/verify', { email: 'a@b.cn', code: wrong }, { 'CF-Connecting-IP': '203.0.113.40' }),
+    env: rig.env,
+  })));
+  const statuses = responses.map(response => response.status).sort();
+  assert.deepEqual(statuses, [400, 429, 429, 429, 429, 429, 429, 429]);
+  assert.equal(JSON.parse(await rig.kv.get('auth:code:a@b.cn')).attempts, 1);
 });
 
 test('the same email waits a minute and can only ask five times a day', async () => {
@@ -201,7 +294,7 @@ test('the same email waits a minute and can only ask five times a day', async ()
   assert.equal((await ask()).status, 200);
   const locked = await ask();
   assert.equal(locked.status, 429);
-  assert.equal((await locked.json()).error, 'send_lock');
+  assert.deepEqual(await locked.json(), { error: 'send_limited', message: '发送太频繁，请稍后再试' });
   for (let i = 0; i < 4; i += 1) {
     time.advance(61 * 1000);
     assert.equal((await ask()).status, 200, `send ${i + 2}`);
@@ -209,7 +302,7 @@ test('the same email waits a minute and can only ask five times a day', async ()
   time.advance(61 * 1000);
   const daily = await ask();
   assert.equal(daily.status, 429);
-  assert.equal((await daily.json()).message, '这个邮箱今天的验证码次数用完了，明天再试');
+  assert.deepEqual(await daily.json(), { error: 'send_limited', message: '发送太频繁，请稍后再试' });
 });
 
 test('one address shares an hourly send cap, and a refusal does not spend the other email', async () => {
@@ -222,7 +315,7 @@ test('one address shares an hourly send cap, and a refusal does not spend the ot
   assert.equal((await ask('a@b.cn')).status, 200);
   const blocked = await ask('c@b.cn');
   assert.equal(blocked.status, 429);
-  assert.equal((await blocked.json()).error, 'send_ip');
+  assert.deepEqual(await blocked.json(), { error: 'send_limited', message: '发送太频繁，请稍后再试' });
   time.advance(60 * 60 * 1000);
   assert.equal((await ask('c@b.cn')).status, 200, 'the refused email still has its daily send');
 });
