@@ -17,6 +17,12 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E14 被 E67 取代，30 次连发不再做。负责人 Leo 2026-11-04 02:52：AI 改为登录后才能用，每个邮箱每天 20 次，全站不设上限。手册里 E14 标成被 E67 取代。原先记在 E67、E68 的主机和键盘比例改号为 E69、E70，仍等负责人决定，E67 留给登录。H2、H3 已在前面标完成。E66 的 CI 已全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41685018813 。H2/H3 记录和领 E14 是同一次推送，CI 跑在尖端提交：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41688354131 。限流改键那次：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41689662642 。
+
+还剩：A8，然后按修正后的需求做 E67（不要全站每日上限）。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E14 的计数改了，还没在线上验收。上一轮连发 30 次都是 200，响应头是 `X-AI-Limit-Mode: kv`：KV 会缓存同一个键的读取，连发时那个数不加。现在每次放行写一个新键，小时前缀是 `ai:addr:<地址>:<小时>:`，日期前缀是 `ai:day:<北京日期>:`，用 `list` 数键。`list` 也可能要过一会儿才看得到新键，所以同一机房的 Cache API 记同一个数，两个数取较大的那个。超过每小时 20 或每天 2000 就 429，这两个上限没改。响应头仍然是 `kv`。没有 `list` 的绑定继续用内存，响应头是 `memory`。
 
 验证：`npm test` 520 通过，lint 0 问题，build 通过。Chrome 桌面和手机 UI 195 通过 + 1 跳过。E66 那次提交的 CI 已全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41685018813
