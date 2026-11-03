@@ -1,3 +1,4 @@
+import { cableShopSearchLinks } from '../domain/cable-shop-search.js';
 import { CloseIcon } from './Icons.jsx';
 import { useDialogFocus } from './useDialogFocus.js';
 
@@ -37,7 +38,7 @@ export default function CableShoppingDialog({ items, sheet, onCopy, onClose }) {
           </button>
         </div>
         <div className="modal-body">
-          <p className="panel-note">按线实际要走的路（桌上的设备先落到桌面，再从桌子后边或侧边绕下去，不穿过桌面），加上弯折余量，再向上取到常见的线长。键盘、鼠标的线是自带的，不算在里面。桌下有理线槽时，从这张桌子后沿走的线在画面里会收进槽里再出去，要买的长度仍按原来的走法算，不会因为收进槽里就变短，清单里会多一行这只槽。这里不标价格，也不链接商店。</p>
+          <p className="panel-note">按线实际要走的路（桌上的设备先落到桌面，再从桌子后边或侧边绕下去，不穿过桌面），加上弯折余量，再向上取到常见的线长。键盘、鼠标的线是自带的，不算在里面。桌下有理线槽时，从这张桌子后沿走的线在画面里会收进槽里再出去，要买的长度仍按原来的走法算，不会因为收进槽里就变短，清单里会多一行这只槽。这里不标价格。京东和淘宝只按这一行的名称打开搜索，链接里没有价格，也不加追踪参数。</p>
           <div className="shopping-list" role="group" aria-label="要买的线">
             <div className="shopping-list-header">
               <span className="shopping-list-title">要买的线</span>
@@ -54,7 +55,24 @@ export default function CableShoppingDialog({ items, sheet, onCopy, onClose }) {
             ) : (
               <ul className="shopping-list-items">
                 {items.map(item => (
-                  <li key={item.name}><span>{item.name}</span><span className="shopping-list-quantity">×{item.quantity}</span></li>
+                  <li key={item.name} className="shopping-list-cable">
+                    <span>{item.name}</span>
+                    <span className="shopping-list-buy">
+                      <span className="shopping-list-quantity">×{item.quantity}</span>
+                      {cableShopSearchLinks(item.name).map(link => (
+                        <a
+                          key={link.id}
+                          className="link-button"
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`在${link.label}搜索 ${item.name}`}
+                        >
+                          {link.label}
+                        </a>
+                      ))}
+                    </span>
+                  </li>
                 ))}
               </ul>
             )}

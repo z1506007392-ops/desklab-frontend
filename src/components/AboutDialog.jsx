@@ -58,6 +58,7 @@ export default function AboutDialog({ onClose, fileArchive = false }) {
           <h4 className="template-section-title">我们不做的事</h4>
           <ul>
             <li>不收集姓名、手机号，不使用统计或广告追踪。登录 AI 时留下的邮箱只用于发送验证码和计算每日次数。</li>
+            <li>购线清单可以打开京东或淘宝的搜索页。链接只带线的名称，不含价格，也不加追踪参数。标价和是否有货以商店页面为准。</li>
           </ul>
         </div>
       </div>

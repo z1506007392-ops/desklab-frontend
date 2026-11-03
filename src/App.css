@@ -1311,6 +1311,20 @@
   color: var(--ink-3);
 }
 
+.shopping-list-cable {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.shopping-list-buy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px 8px;
+  margin-left: auto;
+}
+
 .shopping-list-quantity {
   font-variant-numeric: tabular-nums;
 }

@@ -54,8 +54,20 @@ test('the cable list merges matching lines and copies plain words', async ({ pag
 
   const dialog = page.getByRole('dialog', { name: '购线清单', exact: true });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('listitem')).toHaveText(['1 米 网线×1', '3 米 HDMI 线×2']);
+  const rows = dialog.getByRole('listitem');
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0)).toContainText('1 米 网线');
+  await expect(rows.nth(0)).toContainText('×1');
+  await expect(rows.nth(1)).toContainText('3 米 HDMI 线');
+  await expect(rows.nth(1)).toContainText('×2');
+  const jd = rows.nth(1).getByRole('link', { name: '在京东搜索 3 米 HDMI 线', exact: true });
+  const taobao = rows.nth(1).getByRole('link', { name: '在淘宝搜索 3 米 HDMI 线', exact: true });
+  await expect(jd).toHaveAttribute('href', /^https:\/\/search\.jd\.com\/Search\?keyword=/);
+  await expect(taobao).toHaveAttribute('href', /^https:\/\/s\.taobao\.com\/search\?q=/);
+  await expect(jd).toHaveAttribute('target', '_blank');
   await expect(dialog).toContainText('不标价格');
+  await expect(dialog).not.toContainText('¥');
+  await expect(dialog).not.toContainText('元');
   await expect(dialog).not.toContainText('hdmi-1');
   await expect(dialog).not.toContainText('主机甲');
 
@@ -128,7 +140,10 @@ test('a cable from the floor to the desk is bought long enough to go over the de
   const dialog = page.getByRole('dialog', { name: '购线清单', exact: true });
   // Tower on the floor to the screen on the desk: 1.21 m in a straight line
   // through the desktop (1.5 m to buy), 1.44 m over the back edge.
-  await expect(dialog.getByRole('listitem').filter({ hasText: 'DP 线' })).toHaveText(['2 米 DP 线×1']);
+  const dp = dialog.getByRole('listitem').filter({ hasText: 'DP 线' });
+  await expect(dp).toContainText('2 米 DP 线');
+  await expect(dp).toContainText('×1');
+  await expect(dp.getByRole('link', { name: '在京东搜索 2 米 DP 线', exact: true })).toHaveAttribute('href', /keyword=/);
   await expect(dialog).toContainText('不穿过桌面');
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
