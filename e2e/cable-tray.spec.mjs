@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { catalogThumbnailUrl } from '../src/domain/catalog.js';
 import { openProject } from './project-fixture.mjs';
 
 async function openLibrary(page) {
@@ -21,7 +22,7 @@ test('a cable tray mounts under the desk and is listed to buy', async ({ page })
   await openLibrary(page);
   await page.getByRole('button', { name: '配件', exact: true }).click();
   const card = page.getByRole('button', { name: /^桌下理线槽/ });
-  await expect(card.locator('img')).toHaveAttribute('src', '/thumbnails/cable-tray.webp');
+  await expect(card.locator('img')).toHaveAttribute('src', catalogThumbnailUrl('cable-tray'));
   await card.click();
   await expect(page.locator('.scene-tag')).toHaveText('桌下理线槽');
   const height = await readHeight(page);
