@@ -17,6 +17,12 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+领了 E113–E116（E95 交给主线的登录修复，原拟 E109–E112；E109 已被房间尺寸 `dbf81af` 用掉）。E113 给验证码错误次数加锁，并给验证接口加 IP 限流。E114 统一发码和验证的对外文案。E115 确认 https 的会话 cookie 带 Secure，网站的 SameSite 仍是 Lax。E116 给登录 JSON 加 nosniff。不改 `src-tauri`，不改 E96、E97、E98，不改工作流，不改 E109 的房间尺寸。
+
+还剩：实现并验证，然后推 master。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 购线清单里的桌下理线槽也可以打开京东和淘宝搜索。要买的长度仍不因收进槽里变短。
 
 验证（合入 E109 设置页 `dbf81af`、本机图库、理线槽、F7 安装包和房间页轮询 `2f0ea2d` 之后）：`npm test` 645 通过，lint 0 问题，build 通过（three.js 分块超过 500kB 是预期的，brotli 17 个 GLB 652248 → 285991）。Chrome 桌面和手机 UI 255 通过 + 1 跳过（8.7 分钟）。E97 是 `e9c478b`，眼睛高度和摆法是 `e50a55b`，快捷键是 `bbcd67f`，文件存档是 `b5d7b32`。
