@@ -21,7 +21,7 @@
 5. 选完才回到平时的编辑界面。五步新手引导不再自动弹出，仍可从「更多 → 新手引导」打开。
 6. 再以后（本轮不做）：房间已经有了，才可以把扫描交给 AI。只留概念，见 F6。不要做拍摄、上传或识别。
 7. 核心电竞设备是：台式主机、带鱼屏、键盘、鼠标、音箱、游戏主机、路由器（`CORE_ESPORTS_MODEL_IDS`）。进门的电竞桌现在只放模板里已经有的书桌、主机、带鱼屏、笔记本和路由器。键盘、鼠标、音箱、游戏主机还在目录里，这一轮不放上去，放上去会改 3D。
-8. 社区是自愿的：发布一份布局 JSON，再加一张按这个摆法拍的照片。正在用的项目仍留在本机。图库界面是 E96，仍由已领走的那条线做。接口只写在 F4，本轮不实现。
+8. 社区是自愿的，这一版只在本机。工具栏「社区图库」可以打开随应用带的示例，或把当前桌子和一张实拍留在这台设备上，再复制进自己的项目。给别人是导出一份文件。正在用的项目仍留在本机，不上传，不同步。网上的发布接口仍只写在 F4，没有实现。不要为了本机图库加登录墙。见 4.9。
 
 ---
 
@@ -103,7 +103,7 @@ DeskLab 是给**普通家庭用户和电竞玩家**用的 3D 桌面搭建与布�
 
 ### 3.1 选任务
 1. 打开第 5 节任务板，按阶段顺序（A → B → C → D → E → F）从上往下找第一个状态为 `[ ]` 且依赖已完成的任务。阶段 F 里还没做的，优先于阶段 E 里新开的网页任务。
-2. 同一阶段内，标了 **必做** 的优先于 **可选**。别人标了 `[~]` 的不要碰，包括 E96、E97、E98。
+2. 同一阶段内，标了 **必做** 的优先于 **可选**。别人标了 `[~]` 的不要碰。E96、E98 已完成。现在进行中的是 E97。
 3. 网页构建是红的、桌面壳起不来、或有用户可见的崩溃，这些永远插队。Pages 站点打不开要记下来，但不再压过这三件。
 
 ### 3.2 领任务（防止两个 AI 撞车）
@@ -183,8 +183,8 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 接口锚点 `port.anchor` 是相对包围盒的归一化坐标，每个轴在 `[-0.5, 0.5]`。目录内模型的锚点以 `catalog.js` 的 `PORT_ANCHOR_BY_MODEL` 为准。
 
 ### 4.3 设备目录（`src/domain/catalog.js`）
-16 个模型，每个都有 `public/models/<modelId>.glb`，按目录 `defaultScale` 精确建模，渲染时按 `obj.scale / defaultScale` 缩放：
-`office-desk`（书桌）、`desktop-pc`、`laptop-15`、`monitor-24`、`monitor-27`、`ultrawide-monitor`、`keyboard`、`mouse`、`desk-lamp`、`speakers`、`router`、`power-strip`、`wall-outlet`、`power-adapter`、`game-console`（游戏主机）、`monitor-stand`（显示器支架）。
+17 个模型，每个都有 `public/models/<modelId>.glb`，按目录 `defaultScale` 精确建模，渲染时按 `obj.scale / defaultScale` 缩放：
+`office-desk`（书桌）、`desktop-pc`、`laptop-15`、`monitor-24`、`monitor-27`、`ultrawide-monitor`、`keyboard`、`mouse`、`desk-lamp`、`speakers`、`router`、`power-strip`、`wall-outlet`、`power-adapter`、`game-console`（游戏主机）、`monitor-stand`（显示器支架）、`cable-tray`（桌下理线槽）。
 `hydrateProjectObjects()` 在加载、导入、恢复草稿时整理对象：补端口、用最新锚点、修正旧存档的压扁笔记本和旧面板尺寸的显示器。
 
 ### 4.4 主要模块（`src/domain/`）
@@ -194,6 +194,8 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 | `analysis.js` | 布线与供电（过载、串联、线太短、端口问题等） | `analyzeProjectWiring(objects, connections)`、`buildPowerGraph`、`computeDevicePowerLoad`、`classifyPowerLoad` |
 | `recommendations.js` | 免费修复 + 购买建议；补线 | `buildRecommendations(project)`、`buildFreeImprovements`、`buildPurchaseSuggestions`、`applyImprovement(project, suggestion)`、`buildConnectionCompletion(project, objectId)` |
 | `placement.js` | 新设备找空位 | `placeCatalogObject({ modelTemplate, categoryId, room, id, objects })` |
+| `cable-tray.js` | 桌下理线槽贴在书桌后沿下面。画面把穿过后沿的线画进槽再出去；购线长度仍用原来的走线 | `placeCableTray`、`drawCablePoints`、`isCableTray` |
+| `community-gallery.js` | 本机图库：随应用带的示例、显示名、留下的桌子和实拍、导出的桌子文件 | `listGalleryDesks`、`publishCommunityDesk`、`openGalleryFromHash`、`exportCommunityDesk`、`importCommunityDesk` |
 | `room-resize.js` | 改房间尺寸时整套布局跟着它靠着的墙走，墙插留在自己的墙上 | `refitLayoutToRoom(oldRoom, newRoom, objects)` |
 | `tools/simready/build.mjs` | 从 NVIDIA SimReady（CC BY 4.0）生成书桌、主机、显示器、键盘、鼠标 6 个模型（减面、压缩，见 `public/models/CREDITS.md`） | `cd tools/simready && npm install && npm run build` |
 | `layout-tips.js` | 把 C1 的人体工学/整洁提示变成可选的一键小建议（改进建议弹窗里） | `buildLayoutTips(project)`、`applyLayoutTip(project, tip)` |
@@ -208,15 +210,15 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 
 问题代码（issue/suggestion `code`）的完整列表用 `grep -rhoE "code: '[a-z_]+'" src/domain | sort -u` 查看。
 
-### 4.5 界面（`src/App.jsx`，约 2350 行）
-- 顶部工具栏：房间尺寸、桌面模板、撤销/重做、重置视角、所有连接、布局检查、布线检查、改进建议、更多（导入/导出/复制/粘贴 JSON、坐标轴开关）、保存项目。
-- 对话框标题（UI 测试靠它们定位）：`桌面模板`、`布局检查`、`布线检查`、`全部连接清单`、`自动检查与改进建议`。第一次进入还有 `这间房有多大` 和 `放一张桌子`。这两步里工具栏和两侧面板先藏起来，保存按钮仍在页面里，只是还看不见。
-- 横幅：本地草稿恢复、存档损坏锁定、备份提醒（region `备份提醒`）。
+### 4.5 界面（`src/App.jsx`，约 2490 行）
+- 顶部工具栏：房间尺寸、桌面模板、社区图库、撤销/重做、重置视角、所有连接、布局检查、布线检查、改进建议、更多（导入备份、导出备份、复制、粘贴、坐标轴开关）、保存项目。
+- 对话框标题（UI 测试靠它们定位）：`桌面模板`、`社区图库`、`布局检查`、`布线检查`、`全部连接清单`、`自动检查与改进建议`、`关于与隐私`。第一次进入还有 `这间房有多大` 和 `放一张桌子`。这两步里工具栏和两侧面板先藏起来，保存按钮仍在页面里，只是还看不见。图库地址和分享链接一样，不打开这两步。
+- 横幅：本地草稿恢复、存档损坏锁定、备份提醒（region `备份提醒`）、只读分享（region `只读分享`）、社区图库（region `社区图库`）。只读分享和社区图库是两套文案，不要混用。
 - `App.jsx` 很大。**不要一次性大重构**；当某个任务要改到某一块时，顺手把那块抽成组件（`src/components/`），并保持测试全绿。
 
 ### 4.6 存储与后端
-- 网页上，每个访客的项目存在**自己浏览器的 localStorage**：`desklab.project.v1`（存档）、`desklab.project-backup.v1`（上一版）、`desklab.project-draft.v1`（未保存草稿）、`desklab.backup-reminder.v1`、`desklab.phone-notice-dismissed.v1`（手机上点过"知道了"）、`desklab.guide-seen.v1`（进门或新手引导已结束）。
-- 桌面应用用同一批键，写成应用数据目录里的文件（`project.json`、`project-backup.json`、`project-draft.json`、`backup-reminder.json`、`phone-notice.txt`、`guide-seen.txt`）。目录是 Tauri 的 app data：Windows `%APPDATA%\app.desklab.desktop`，macOS `~/Library/Application Support/app.desklab.desktop`，Linux `~/.local/share/app.desklab.desktop`。只有这份壳能写这些文件。这个 webview 里已有的 localStorage，在文件里还没有项目时复制一次，不覆盖已有文件，浏览器里的那份留着。安装好的应用和 Chrome 不是同一份存储，网站存档不会自动出现。
+- 网页上，每个访客的项目存在**自己浏览器的 localStorage**：`desklab.project.v1`（存档）、`desklab.project-backup.v1`（上一版）、`desklab.project-draft.v1`（未保存草稿）、`desklab.backup-reminder.v1`、`desklab.phone-notice-dismissed.v1`（手机上点过"知道了"）、`desklab.guide-seen.v1`（进门或新手引导已结束）。图库另用 `desklab.community-profile.v1`（显示名）和 `desklab.community-posts.v1`（留下的桌子和实拍），不写进项目存档。
+- 桌面应用用同一批键，写成应用数据目录里的文件（`project.json`、`project-backup.json`、`project-draft.json`、`backup-reminder.json`、`phone-notice.txt`、`guide-seen.txt`、`community-profile.json`、`community-posts.json`）。目录是 Tauri 的 app data：Windows `%APPDATA%\app.desklab.desktop`，macOS `~/Library/Application Support/app.desklab.desktop`，Linux `~/.local/share/app.desklab.desktop`。只有这份壳能写这些文件。没列在这份名单里的键只留在内存里，重启就没了。这个 webview 里已有的 localStorage，在文件里还没有项目时复制一次，不覆盖已有文件，浏览器里的那份留着。安装好的应用和 Chrome 不是同一份存储，网站存档不会自动出现。图库的写入要等文件写完；写失败会退回，并说明这台设备的存储空间不够。
 - 摆放、布线和存档不需要登录。使用 AI 时要先用邮箱验证码登录（E67）：会话是 HttpOnly cookie，验证码和次数在 KV `AI_LIMITS`。不登录也能看 3D，也能进门。后端仓库（Express，`/api/projects/default`）**前端已不再调用**；保留它，但不要在它上面加新功能。AI 代理仍放在 Cloudflare Pages Functions（见第 6 节），不放在这个后端。`tauri dev` 仍用 Vite 把 `/api` 代理到 `localhost:3001`。打包后的应用没有这个代理，直接请求 `/api` 会 404，直到 F7 给一个基址。
 - `vite.config.js` 仍把 `/api` 代理到 `localhost:3001`，第 6 节的本地 AI 开发服务器会用到它。
 
@@ -238,6 +240,19 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 手机视口下"更多"菜单打开时会盖住保存按钮；测试里不要无谓地打开菜单。
 - 夹具 `openProject` 默认把手机提示记为已关闭，免得它挡住手机测试；要测这条提示时传 `{ phoneNotice: true }`。Playwright 的"手机"项目没有触屏，看不到这条提示；要用 `hasTouch: true` 的新 context（见 `e2e/phone-notice.spec.mjs`）。
 - 3D 场景的视角变化会让项目显示"未保存"（视角是项目的一部分），这是设计行为。
+
+### 4.9 社区图库（本机，E96）
+
+这一版的图库在应用里，不另开网站，也不上传。正在用的项目仍是本机那一份。
+
+- 入口：工具栏「社区图库」。桌面和手机都有。
+- 随应用带四张示例：家庭办公、台式机双屏、电竞桌、线收进桌下槽。地址 `#desklab-gallery/<id>` 只打开这四张。本机留下的桌子不进地址，所以不能把这台设备上的桌子写成一个链接让别的设备打开。
+- 打开后只读：能转视角，能看购线清单。横幅区域名是「社区图库」，按钮是「返回我的桌面」和「复制到我的项目」。这不是「只读分享」（那是 `#desklab-share-2`）。
+- 复制：在自己的桌面上复制，走撤销。在只读图库里复制，要确认；画面换成那张桌子，已保存的项目要等自己点「保存项目」才替换。
+- 放进图库：显示名最多 24 字，桌子名字最多 40 字，可选一张 jpg、png 或 webp 实拍（界面里缩到长边 480）。最多 12 张。作者名在放进去时定下，之后改显示名不改已经留下的那张。
+- 给别人：导出 `desklab-desk.json`（`kind` 是 `desklab-community-desk`，version 1）。对方用「导入桌子文件」放进自己的图库。空房间不能放。导入时和备份一样先筛（E92）：不是本站 `/models/*.glb` 的模型地址丢掉，太大的桌子拒绝。
+- 图库地址不打开进门的两步。查看图库时不改正在用的项目，也不清掉未保存草稿。
+- 这一版没有：邮箱登录才能发布、照片上传、审核、公开网页、短链服务器、跨设备同步、跨设备账号。邮箱登录仍只给 AI。以后若要网上的图库，接口形状仍是 F4，这一版没有接。打包后的社区请求要等 F7 的基址，不要先做。
 
 ---
 
@@ -508,11 +523,11 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E78 [x] 完成（Desklab，2026-11-04，0e66c47）** 存档和分享链接的缺口：未保存的本地草稿可以恢复或放弃，已保存的项目不被覆盖；分享链接对话框里可以用键盘复制链接。
 - **E79 [x] 完成（Desklab，2026-11-04，1fb2709）** 设备目录和 AI 建议：搜索能按名称和规格找到目录里的型号，没有匹配时说明；AI 建议应用后可以撤销再重做；取消进行中的请求后，迟到的回答不再套用到桌面上。另有 d298ef2、0fe48ab。
 - **E80 [x] 完成（Desklab，2026-11-04，e568039）** 非视觉的可访问性和健壮性，不改外观样式。「更多」菜单可用方向键、Home、End、Tab、Escape，关掉后焦点回到「更多」。重复的「定位」等按钮带上对应问题的名字。页面外壳崩溃时有错误边界，刷新后本机存档还在。查看是否已登录时如果网络失败，给出失败提示，不把这当成未登录去弹登录框。
-- **E96 [~] 进行中（Desklab，2026-11-04）** 社区图库。别人能打开一张桌子，并复制到自己的项目。负责人 Leo 2026-11-04 定了方向：桌面应用为主；社区是简单账号，发布的是布局 JSON 和一张按这个摆法拍的实拍；账号不为同步服务。不要假设必须打开 Pages 网站才能用。图库界面仍由领了这条的线做。E97、E99、E100 由另一条线做。接口草图在 F4，本轮没有实现。
+- **E96 [x] 完成（Desklab，2026-11-04，0dca698；29954ed）** 社区图库在应用里。可以打开一张随应用带的桌子，或这台设备上留下的桌子，再复制到自己的项目。没有公开网站，没有上传，没有跨设备同步。做法见 4.9。E97 仍由另一条线做。E99、E100 仍等负责人。F4 的网上接口没有实现。
   - 用户问题：分享链接是一条只能发给某一个人的地址，链接里已经带上整张桌子（`#desklab-share-2.`，超过约 2000 字会提示微信可能打不开）。做完的人没有地方被别人看见，也翻不到别人怎么摆。正在用的项目仍只在本机（网页是 `desklab.project.v1`，桌面应用是应用数据目录里的文件）。
   - 竞品：[Juddesk](https://www.juddesk.com/) 免费、不注册就能摆，可选把方案发到社区图库，别人可以 remix；保存到命名槽位用 Google 登录。[Desk Setup Builder](https://www.desksetupbuilder.com/) 有社区方案和 3D 设计，2026-11-04 打开首页时写着 “490 desks designed so far”。[PCPartPicker 完成品](https://pcpartpicker.com/builds/) 按价格、日期、评分浏览别人的装机，[关于页](https://pcpartpicker.com/about/) 写可以分享零件单和论坛讨论。[Loadout](https://loadout.app/) 是上传实拍、在照片上标产品。[MySetup](https://mysetup.is/) 写的是发照片、给整套设置打分、保留升级历史。[DeskFlex HQ](https://deskflexhq.com/) 是照片图库，免费账号 1 套公开桌子、5 张照片，Premium 为每月 5 美元或每年 40 美元。Reddit 的 r/battlestations 本次打开超时，订阅人数和现行规则未查到；一条旧帖侧栏写过只收实拍、不收 CAD 或 AI 图、禁止联盟链接（见调研）。
-  - 实现要点和工作量：中。2026-11-04 早先的认领写成了「只在本机、导出一份文件、不上传」。Leo 后来的决定不是这个：正在用的项目仍然不上传、不同步；社区发布是自愿的，内容是布局 JSON 加一张实拍。图库在应用里，可以打开只读 3D，再「复制到我的项目」（只写本机）。账号复用邮箱验证码，只用于发布和浏览，不是云端项目。宿主可以是 Pages Functions，也可以是以后任何一个 HTTPS，桌面应用不必先打开网站。接口形状见 F4，由做图库的那条线去接，不要在这里重做布线或加设备。界面沿用 `DESIGN.md`。
-  - 视觉或新设备：应用里多一个图库。3D 场景的背景、灯光、模型不变。没有新设备。
+  - 实现要点和工作量：中。这一版（`0dca698`，导入筛查 `29954ed`）做的是本机图库，见 4.9。Leo 2026-11-04 的方向是：正在用的项目不上传、不同步；社区内容是布局加一张实拍；不要假设必须打开一个公开网站。账号以后可以复用邮箱验证码，只用于发布和浏览，不是云端项目，也不做跨设备同步。宿主可以是 Pages Functions，或以后任何一个 HTTPS。接口形状见 F4，这一版没有接。不要在这里重做布线。界面沿用 `DESIGN.md`。
+  - 视觉或新设备：应用里多了图库入口和只读横幅。3D 场景的背景、灯光、已有模型不变。理线槽是 E98，不是图库另加的设备。
   - 变现：DeskFlex 对更多照片和多套桌子收费；Juddesk 和 Planner 5D 的分享在免费档里。PCPartPicker 的收入在商家链接，不在图库本身（[披露](https://pcpartpicker.com/disclosure/)）。图库单独收费的把握小。它更适合把人留下来，再走到购线链接（E97）。品牌买位置要另定，和关于页「不做广告」有关。
 - **E97 [~] 进行中（Desklab，2026-11-04）** 购线清单可以跳到商店搜索。页面上不写 DeskLab 自己编的价格。Leo 2026-11-04 已批准。
   - 用户问题：清单已经按走线算出「2 米 HDMI 线 ×1」这种行（键盘和鼠标的线标成自带，不进清单），人还是要自己去搜。E25 定过不接商城、不编价格，所以现在没有价格、也没有链接。
@@ -520,11 +535,12 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
   - 实现要点和工作量：小到中。小的做法：每一行加「去商店搜」，用现成的名称打开京东或淘宝的搜索，页面上仍不出现价格。用哪一家要负责人定。中的做法：接京东联盟接口，只显示接口返回的价格和链接。联盟账号要人去注册；没有账号之前用普通搜索，不计佣。[京东联盟协议](https://union.jd.com/searchResultDetail?articleId=57251) 写服务费比例以商品页为准，推广者目前另付所收服务费的 10% 作为平台费。线材类目的具体比例未查到。
   - 视觉或新设备：购线清单多一个链接。3D 不变。没有新设备。要负责人定的是：这和 E25「不接商城」以及关于页「不使用广告追踪」是否一起放行。价格仍然不由 DeskLab 编写。
   - 变现：按成交拿佣金，和 PCPartPicker 同一类。线材单价低，一单佣金能有多少未查到。不适合把清单本身做成会员功能，免费档就该能导出。
-- **E98 [~] 进行中（Desklab，2026-11-04）** 加一件桌下理线槽，让已经算好的线可以收进去。负责人 Leo 2026-11-04 已批准，包括新设备和 3D 线的画法。E97、E99、E100 本线不做。
+- **E98 [x] 完成（Desklab，2026-11-04，ef50a47）** 加一件桌下理线槽，让已经算好的线可以收进去。负责人 Leo 2026-11-04 已批准，包括新设备和 3D 线的画法。E97、E99、E100 本线不做。
   - 用户问题：线会沿桌面绕到后沿或侧边，清单和布线表也有了，但画面里线还是露在外面。想要照片里那种「线收在桌下」的人，不知道槽放哪、线会不会因此改道。目录里没有线槽、束线管或桌下网篮。现有配件只有显示器支架。
   - 竞品：未查到同时按接口算线长、又在 3D 里摆线槽的消费级工具。[宜家 SIGNUM](https://www.ikea.com/sg/en/p/signum-cable-trunking-horizontal-silver-colour-10200254/)（货号 102.002.54）是装在桌面下的线槽，新加坡页写长 70 厘米、宽 16 厘米、最大承重 10 千克、不能用于玻璃桌面，标价 9.90 新加坡元。澳洲页 15 澳元，印度页 699 印度卢比，菲律宾页 499 菲律宾比索。中国站这件的价格和是否在售，未查到。[Roomiva 的线材规划页](https://roomivahome.com/cable-management-planner/) 是一张表（设备数量、桌宽、支架数、有没有落地插座）加上一篇英文说明，不是 3D；页上「一张桌子通常有 8 到 14 根线」没有出处，不采用。
   - 实现要点和工作量：中，和 E28 加一件设备同一量级。配件类加「桌下理线槽」，不耗电、没有接口，贴在书桌下沿靠后。尺寸用通用的大约 0.70×0.16×0.08 米，不用任何品牌的名字和外形。穿过该桌后沿的线，画面里落到槽中再出去；购线长度仍按现在的走线算，不把「藏起来」当成线变短。清单多一行这件槽。三个模板不默认加它，避免现有验收桌面突然多一件东西。
-  - 视觉或新设备：有。新模型和线的画法都会改 3D。要负责人批外观之后才能做。它是家用配件，不是已经删掉的 UPS、交换机、NAS、光猫、迷你主机、一体机。
+  - 落地：配件「桌下理线槽」，模型 `cable-tray`，0.70×0.16×0.08 米，通用 U 形槽，朝上开口，不是任何品牌的外形。贴在书桌后沿下方。穿过该桌后沿的线，画面里落到槽中再出去（`drawCablePoints`）；`routeCable` 的购线长度不变。清单多一行「桌下理线槽」，写明收进槽里不会让要买的线变短。三个模板不加。`DESK_SCENE_DEVICE_LIMITS` 和 AI 的设备表也没加，所以「按我的设备生成」和 AI 不会摆它。删掉桌子时槽落到地上。一张 0.70 米的槽占满 1.40 米书桌的后沿，第二只落到地上。
+  - 视觉或新设备：已做。新模型 `public/models/cable-tray.glb` 和后沿线的画法都进了 3D。它是家用配件，不是已经删掉的 UPS、交换机、NAS、光猫、迷你主机、一体机。
   - 变现：槽本身可以走 E97 的搜索或联盟链接。单独为这一件设备收费不合适。宜家各国标价差很多，页面上不要写死一个售价。
 - **E99 [x] 等负责人决定（Desklab，2026-11-04）** 按眼睛高度看屏幕高不高、离得远不远。先只给一句建议，不加椅子。批准前不要做。
   - 用户问题：现在每个人得到同一套摆放提示。屏幕「离人太近」的门槛是 0.45 米，量的是座位点到屏幕靠近人的那一条边（座位点在桌前沿再向外 0.35 米）。书桌桌面高 0.75 米。不问身高、坐着还是站着、戴不戴双光眼镜。目录里没有椅子，也没有升降桌。
@@ -549,18 +565,18 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 
 ### 阶段 F：本地桌面应用（Leo 2026-11-04）
 
-上面「方向」一节是产品决定。这一阶段是它的任务。不要把 E96–E108 改成自己的；E96 的界面仍归已领走的那条线。
+上面「方向」一节是产品决定。这一阶段是它的任务。不要把 E97–E108 改成自己的。E96 的图库界面已经在应用里（4.9）。F4 的网上接口仍没有实现。
 
 - **F1 [x] 完成（Desklab，2026-11-04，f6fd7b1）** Tauri 2 壳，包着现有 Vite / React。`npm run desktop`（`tauri dev`）和 `npm run desktop:build`（`tauri build`）。网页 `npm run dev` 和 `npm run build` 仍可用。标识 `app.desklab.desktop`。Rust 钉在 `src-tauri/rust-toolchain.toml` 的 1.99.1。
 - **F2 [x] 完成（Desklab，2026-11-04，f6fd7b1）** 项目写在应用数据目录。同一 webview 里已有的 localStorage，只在文件里还没有项目时复制一次。网页仍用 localStorage，文案默认仍是「浏览器里」。
 - **F3 [x] 完成（Desklab，2026-11-04，f6fd7b1）** 本机可以 `npm run desktop`。这台 Linux 上窗口打开后第一屏是房间大小，确认后是空房间，用电竞桌之后草稿写进 `~/.local/share/app.desklab.desktop/project-draft.json`。README 写了怎么跑。CI 只检查壳的文件在不在，不装 Rust，也不打安装包。Windows 和 macOS 安装包是 F7。
-- **F4 [x] 完成（Desklab，2026-11-04）** 社区接口只写在这里，不实现，不改页面。
+- **F4 [x] 完成（Desklab，2026-11-04）** 社区接口只写在这里，不实现，不改页面。E96 的本机图库没有调用这些地址。
   - `POST /api/community/layouts`，正文 `{ layout, note? }`。`layout` 就是应用已经会导出的那份项目（房间、设备、连线）。
   - `POST /api/community/layouts/:id/photos`，multipart，一张按这个摆法拍的实拍。
   - `GET /api/community/layouts` 和 `GET /api/community/layouts/:id` 返回布局和照片。
-  - 客户端「复制到我的项目」只写本机文件。没有云端项目这种资源。账号复用邮箱验证码。
-  - 宿主可以是 Pages Functions，也可以是以后任何一个 HTTPS。图库界面是 E96。
-- **F5 [x] 完成（Desklab，2026-11-04，f6fd7b1）** 进门：整页房间大小，一个确认；然后 3D 生成这间房；然后只有「用电竞桌」和「自己摆」。已保存的项目、分享链接、正在恢复的草稿不再看到这两步。
+  - 客户端「复制到我的项目」只写本机文件。没有云端项目这种资源。账号复用邮箱验证码，只用于发布和浏览，不是同步。
+  - 宿主可以是 Pages Functions，也可以是以后任何一个 HTTPS。打包后的应用要等 F7 的基址才能打到这个宿主。不要为了本机图库先做这些接口，也不要加登录墙。
+- **F5 [x] 完成（Desklab，2026-11-04，f6fd7b1）** 进门：整页房间大小，一个确认；然后 3D 生成这间房；然后只有「用电竞桌」和「自己摆」。已保存的项目、分享链接、图库地址、正在恢复的草稿不再看到这两步。
 - **F6 [x] 暂不做（Leo 2026-11-04：只留概念）** 房间已经生成之后，以后可以把一次房间扫描交给 AI，再选预设或自己摆。不要做拍摄、上传、识别，也不要把这一条改成可领的 `[ ]`。
 - **F7 [ ]** 打出 Windows 和 macOS 安装包。第一次打开应是房间大小那一页，保存应落在应用数据目录。打包后的应用没有 Vite 的 `/api` 代理，AI 和以后的社区请求需要一个基址（可以先指向现有的 Pages）。内容安全策略现在是空的，打安装包时收紧，但不要为了收紧而挡住安装包。
 

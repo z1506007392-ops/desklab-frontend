@@ -17,6 +17,17 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E98 和 E96 完成，并合到 E71–E75 的缓存提交上。`ef50a47` 桌下理线槽，`0dca698` 本机社区图库，`29954ed` 导入的桌子文件先按 E92 筛掉站外模型地址。理线槽的 `?v=` 还要补进 `asset-revisions.js`，目录测试要求每个模型地址都带 8 位版本号。
+
+- E98：配件「桌下理线槽」，0.70×0.16×0.08 米，通用 U 形槽。贴在书桌后沿下面。穿过后沿的线只改画面，购线长度不变。清单多一行。三个模板不加。生成器和 AI 不摆它。
+- E96：应用里的「社区图库」。四张示例可以只读打开并复制到自己的项目。显示名、留下的桌子和一张实拍只在这台设备上；桌面应用写成 `community-profile.json` 和 `community-posts.json`。给别人是导出 `desklab-desk.json`。地址 `#desklab-gallery/` 只打开示例。没有公开网站，没有上传，没有跨设备同步，没有登录墙。网上接口仍是 F4，没有接。
+
+验证：合入缓存之前，`npm test` 603 通过，lint 0 问题，build 通过（three.js 分块超过 500kB 的警告照旧）。Chrome 桌面和手机 UI 249 通过 + 1 跳过。合入后再跑的数字记在补版本号的那条里。
+
+还剩：F7 由桌面线做（Windows 和 macOS 安装包，以及打包后的 AI 基址）。E97 购线跳转仍由另一条线做。E99、E100 等负责人。E69、E70 等负责人决定。发信仍等 Mailjet 或 Brevo。Git 自动部署仍等负责人关掉。桌面壳的内容安全策略仍是空的。扫描不做。E71 的线上 brotli 已经核对过。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 WebKit 上「打开分享链接」有一次没过（https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41725859846 ，只有 webkit；Chrome 四片和 static 过了，deploy 没跑）。第一次进入时保存按钮会先出现，房间页马上盖住它，`openProject` 仍要求这个按钮保持可点，5 秒后找不到。现在房间页已经在，就不再等保存按钮。外观和登录都没改。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
