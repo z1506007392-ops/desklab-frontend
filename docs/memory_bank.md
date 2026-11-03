@@ -17,6 +17,26 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E71–E75 完成（1f8b656）。只做加载和缓存，3D 画面没有改。电竞桌桌面 1440×900 和手机 390×844 的截图像素差为 0。和 E91 的安全头写在同一个 `public/_headers`：`/*` 不写 Cache-Control，缓存写在各自的路径块，同一个头的名字不会被拼成一行。预加载脚本的 sha256 加在 CSP 的 `script-src` 里，没有改成 `unsafe-inline`。模型地址只多允许 `?v=` 加 8 位小写十六进制，其它查询、远程地址和 `javascript:` 仍拒绝。目录模型仍关掉 Draco。
+
+E71：带 `?v=`（sha256 前 8 位）的模型、缩略图、轴字体，以及带哈希的 `/assets/*`，缓存一年且 immutable。改前刷新电竞桌，3 个脚本各 300 字节、模型 7200 字节都是重新验证。改后这些传输是 0。HTML 仍是短缓存。
+
+E72：`vite build` 把 16 个 GLB 压成 brotli，642624 → 284462 字节。`desktop-pc.glb` 140512 → 92664，解开后字节和魔数不变。预览里 `Content-Encoding: br`。线上要等这次部署后再用 curl 核对，避免 Cloudflare 把已经压过的文件再压一次或丢掉这个头。
+
+E73：当前项目的模型马上开始下（低优先级，不跟样式表抢），其余等空闲。目录模型不再 HEAD。电竞桌第一只模型 155ms → 17ms，最后一只 519ms → 197ms，HEAD 8 → 0，模型传输 649824 → 289262 字节，16 个地址各 1 次。空房间 243–258ms、647424 字节 → 174–199ms、289262 字节。
+
+E74：选中不再每次克隆 GLB。点「台式主机」的长任务合计 334ms → 333ms。主机只有 1 个网格，时间主要花在软件渲染那一帧。
+
+E75：Lighthouse 空房间。桌面 91 → 94（LCP 1.5s → 1.2s，总字节 1103 KiB → 756 KiB）。手机仍是 76（LCP 1.7s → 1.5s，TBT 1180ms → 1140ms）。modulepreload three.js 会把手机 FCP 从 1.5s 拉到 3.3s，没有采用。首屏包没有再拆。
+
+未登录 `POST /api/ai/layout` 这次测得 TTFB 113ms，401，登录代码没动。`desktop-pc` 的 25 张贴图（约 46KB）再压或减面会改外观，记在手册里等负责人决定，没做。E69、E70 仍等负责人决定。
+
+验证：`npm test` 596 通过（E91–E95 的 588 再加上这 8 个加载测试），lint 0 问题，build 通过（brotli 642624 → 284462）。Chrome 桌面和手机 UI 243 通过 + 1 跳过。CI 链接等这次推送的运行全绿后补上。
+
+还剩：部署后确认线上 GLB 带 `content-encoding: br` 且解开后是 glTF。E69、E70 和贴图再压缩等负责人决定。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E91–E95 的 CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41721968069 （尖端 `4be0cf3`）。static、Chrome 四片、WebKit、check、deploy 都成功。21:27–21:35 UTC（北京时间 05:27–05:35）。没有改登录代码，也没有改工作流。
 
 还剩：E95 的五条交给主线。桌面壳的内容安全策略仍是空的，留给桌面线。E69、E70 仍等负责人决定。
@@ -4413,8 +4433,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 588 domain tests (E91–E94 and the desktop shell on the same tree)
-npm run test:ui   # Chrome desktop + phone: 243 passed + 1 skipped. Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 596 domain tests (E91–E95 plus E71–E75)
+npm run test:ui   # Chrome desktop + phone: 243 passed + 1 skipped on the combined tree. Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
