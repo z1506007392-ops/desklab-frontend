@@ -21,7 +21,7 @@ E65 完成：购线清单旁可以导出布线表。Markdown 和 CSV 各一份�
 
 验证：`npm test` 516 通过，lint 0 问题，build 通过。购线清单的界面测试在桌面和手机上通过，其中包括导出文件的内容。Chrome 桌面和手机 UI 全量 195 通过 + 1 跳过，WebKit 关键用例 33 通过。电竞桌的购线清单截图：`e65-cable-export-desktop.png`、`e65-cable-export-mobile.png`。
 
-提交：`23d0610`。还剩：等 E61 的 CI 绿了，和 E64 一起推。
+提交：`23d0610`。已和 E64 一起推到 master。CI：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41608554466 全绿。E61 的 CI：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41605470157 全绿。
 
 ### 2026-11-03 · Desklab (Grok Bot) · master
 
@@ -29,9 +29,9 @@ E64 完成：布线检查会警告超规格的被动线。常量表 `src/domain/
 
 警告在走线长度超过上限时出现；记录的线长超过上限、并且比这段走线该买的常见长度还长时也出现。走线还在上限内、只是下一档商店长度跳到 5 米的，不报，所以模板和 3×1.2 米、设备拉满的生成桌子不会误报。说明里建议把设备挪近、改走更短的路径，或改用有源线、光纤线。没有新按钮，也不改 3D。E34 功耗标签、E36 常见购买长度、E60 自动接线都没重做。
 
-验证：`npm test` 511 通过，lint 0 问题。界面没有改，Playwright 在推送前再跑一遍。
+验证：`npm test` 511 通过，lint 0 问题。界面没有改。随后和 E65 一起跑过 Chrome 全量 195 通过 + 1 跳过、WebKit 关键用例 33 通过。
 
-提交：`ebb7b0f`。还剩：Playwright 通过后，等 E61 的 CI 绿了再推。E65 还没开始。
+提交：`ebb7b0f`。和 E65 一起推到 master。CI：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41608554466 全绿。
 
 ### 2026-11-03 · Desklab (Grok Bot) · master
 
@@ -45,7 +45,7 @@ E61 完成：显示器按真实比例。负责人 Leo 2026-11-03 批准，包括
 
 验证：`npm test` 509 通过，lint 0 问题，build 通过。Chrome 桌面和手机 UI 全量 192 通过 + 1 跳过（6.9 分钟）；其中「滚轮缩放」第一次只动了 0.78 像素（按需重画时滚轮可能在控制器接上之前到达），测试改成重复滚轮直到视角移动超过 8 像素，桌面和手机各连跑 4 次通过。WebKit 关键用例 33 通过。
 
-提交：`5c71280`。还剩：推送后看 CI。E64、E65 还没开始。
+提交：`5c71280`。CI：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41605470157 全绿。
 
 ### 2026-11-03 · Claude · master
 
