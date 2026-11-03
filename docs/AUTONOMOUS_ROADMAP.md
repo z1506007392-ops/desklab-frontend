@@ -456,7 +456,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E66 [x] 完成（Desklab，2026-11-04）** 线上全面验收复跑（E58–E65 之后）。https://desklab-frontend.pages.dev 上第 1 节 7 条，桌面 1440×900 和手机 390×844 都过：新手引导、电竞桌模板、3D 画面、布局和布线检查（模板都是 0）、购线清单的 Markdown/CSV 和「自带」、显示器缩略图、添加 27 寸并自动接线、拖动、Q 旋转、撤销重做、删除并撤销、改线长、重置视角、保存、刷新、备份提醒、导出再导入、损坏存档恢复上一版本、关于与隐私（本机、DeepSeek、NVIDIA SimReady、CC BY 4.0 链接）、分享链接、改进建议里的「让 AI 看看」（没有真的调用，避免扣额度）。正常操作没有控制台错误、页面异常或模型/缩略图 404。手机上「建议用电脑打开」在引导关掉之后可以点「知道了」。电竞桌模板本身没有键盘（设备清单里没有），键鼠在「按我的设备生成」里。npm audit 没有高危或严重（6 条中等，都在 eslint 开发依赖里，不进页面）。首屏 JS 已拆开：页面约 130KB、3D 场景约 140KB、three.js 约 185KB（gzip）；16 个模型合计约 643KB。没有因此改代码。主机和键盘的比例另见 E69、E70，这次不改外观。
 - **E67 [x] 完成（Desklab，2026-11-04，d95e9d5）** AI 改为登录后才能用。负责人 Leo 2026-11-04 02:49 批准，包括登录弹窗和「今日剩余次数」；02:50 修正为不设全站每日上限；02:52 确认本任务取代 E14 的 30 次连发。
   - 只做邮箱验证码（国内打不开 Google）。`POST /api/auth/request-code` 发 6 位验证码，10 分钟内有效，只存哈希。同一邮箱 60 秒内 1 次、每天最多 5 次；同一 IP 每小时 `AUTH_CODE_PER_IP_HOURLY`（默认 10）。`POST /api/auth/verify` 最多输错 5 次，通过后发 HttpOnly、Secure、SameSite=Lax 的会话 cookie，30 天。`GET /api/auth/me` 返回邮箱和今日剩余次数。`POST /api/auth/logout` 退出。验证码、会话和计数都在 KV `AI_LIMITS`。
-  - 发信用 Brevo 的 HTTP API（`POST https://api.brevo.com/v3/smtp/email`，请求头 `api-key`）。环境变量 `BREVO_API_KEY`、`MAIL_FROM`、`MAIL_FROM_NAME`（默认 DeskLab）。没配 `BREVO_API_KEY` 时发码返回「登录暂未开放」，不要 500。验证码邮件用中文，只写验证码和有效期。发信封装成可替换的模块。
+  - 发信封装在 `server/ai/mail.js`（Mailjet 请求在旁边的 `server/ai/mailjet.js`）。E67 接了 Brevo（`POST https://api.brevo.com/v3/smtp/email`，请求头 `api-key`）。两个 Mailjet 密钥都配了就改走 Mailjet，否则走 Brevo；都没配好时发码返回「登录暂未开放」，不要 500。选择顺序和切换方法见 6.9。验证码邮件用中文，只写验证码和有效期。
   - `/api/ai/layout` 没登录返回 401。每个邮箱每天 `AI_DAILY_PER_USER` 次（默认 20），按北京时间零点重置，响应里带剩余次数。不设全站上限，不用 `AI_DAILY_GLOBAL`。每 IP 每小时限流保留作兜底（`AI_PER_IP_HOURLY`，默认 20）。
   - 没登录时点「让 AI 看看」弹出登录框（先邮箱，再验证码）。登录后在这个按钮旁边显示「今日剩余 N 次」和退出。样式沿用现有弹窗。分享链接的只读模式不受影响。不登录也能用 3D 和布线。
 - **E69 [x] 等负责人决定（Desklab 记录，2026-11-04；原编号 E67，同日改号）** 台式主机按源模型比例。现在目录 `defaultScale` 是 0.25×0.50×0.50（宽×深×高，米）。SimReady `computer_desktop_tower_a01` 原始包围盒约 0.197×0.624×0.490（宽×深×高，米），生成 GLB 时适配系数是宽 1.27、高 1.02、深 0.80：横向拉宽约 27%，深度压到约八成，高度几乎不变。会明显改变 3D 画面，所以没有改模型、没有改目录、没有做迁移。建议（负责人批准外观后再做，做法同 E61）：目录改成源比例并取整到厘米（约 0.20×0.62×0.49），用 `tools/simready/build.mjs` 重新生成使适配系数接近 1，旧存档里正好是 0.25×0.50×0.50 的主机迁到新尺寸、底面不动，故意改过的不动；重测接口锚点和缩略图。批准前不要做。
@@ -561,8 +561,10 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 | `AI_PER_IP_HOURLY` | `20` | 每 IP 每小时请求上限（兜底，登录后仍生效） |
 | `AI_DAILY_PER_USER` | `20` | 每个邮箱每天的 AI 次数，按北京时间零点重置。不设全站上限 |
 | `AI_TIMEOUT_MS` | `40000` | 调 DeepSeek 的超时 |
-| `BREVO_API_KEY` | （无） | 发登录验证码。没有就返回「登录暂未开放」，不要 500 |
-| `MAIL_FROM` | （无） | 已验证的发件地址。和密钥一起才算配好 |
+| `MAILJET_API_KEY` | （无） | 和 `MAILJET_API_SECRET` 一起才走 Mailjet。只填一个不会改去 Brevo，发码仍是「登录暂未开放」 |
+| `MAILJET_API_SECRET` | （无） | Mailjet Basic Auth 的密码。不要写进仓库 |
+| `BREVO_API_KEY` | （无） | 没配 Mailjet 时用它发登录验证码。两个都没配好就返回「登录暂未开放」，不要 500 |
+| `MAIL_FROM` | （无） | 已验证的发件地址。和当前供应商的密钥一起才算配好 |
 | `MAIL_FROM_NAME` | `DeskLab` | 发件人名称 |
 | `AUTH_CODE_PER_IP_HOURLY` | `10` | 同一 IP 每小时最多发几次验证码。负责人要求有上限、没有给数字，默认 10 |
 
@@ -786,12 +788,20 @@ total = 100 × errors + 20 × warnings + 5 × hints + 1 × cableMeters
 
 | 接口 | 作用 |
 |---|---|
-| `POST /api/auth/request-code` | 6 位验证码，10 分钟，只存 `SHA-256(邮箱:验证码)`。同一邮箱 60 秒 1 次、每天 5 次；同一 IP 每小时 `AUTH_CODE_PER_IP_HOURLY`（默认 10）。没配 `BREVO_API_KEY` 或 `MAIL_FROM` 时 503「登录暂未开放」，且不扣次数。发信失败 502「邮件没有发出去，请稍后再试」，并删掉刚存的验证码 |
+| `POST /api/auth/request-code` | 6 位验证码，10 分钟，只存 `SHA-256(邮箱:验证码)`。同一邮箱 60 秒 1 次、每天 5 次；同一 IP 每小时 `AUTH_CODE_PER_IP_HOURLY`（默认 10）。发信没配好时 503「登录暂未开放」，且不扣次数。发信失败 502「邮件没有发出去，请稍后再试」，并删掉刚存的验证码 |
 | `POST /api/auth/verify` | 最多错 5 次。通过后 `desklab_session` cookie：HttpOnly、SameSite=Lax、Path=/、30 天；只有 https 才加 Secure（本地 http 开发才能存住） |
 | `GET /api/auth/me` | `{ email, remaining }`。未登录是 `{ email: null, remaining: null }` |
 | `POST /api/auth/logout` | 删掉会话 |
 
-发信在 `server/ai/mail.js`，走 Brevo `POST https://api.brevo.com/v3/smtp/email`，请求头 `api-key`。邮件只有验证码和「10 分钟内有效」。验证码、会话、发码计数、AI 次数都在 KV `AI_LIMITS`。没绑定 KV 时落在本 isolate 的内存里（Pages 上每个函数是各自的 isolate，所以生产必须有 KV）。
+发信在 `server/ai/mail.js`。选择顺序：
+
+1. `MAILJET_API_KEY` 和 `MAILJET_API_SECRET` 都有：走 Mailjet `POST https://api.mailjet.com/v3.1/send`（`server/ai/mailjet.js`）。`Authorization: Basic`，用户名是 key，密码是 secret。正文只有 `TextPart`，主题和中文句子与 Brevo 相同。Mailjet 返回的 `Messages[0].Status` 不是 `success` 算失败。缺 `MAIL_FROM`，或两个密钥只填了一个，仍是 503，不改去 Brevo。
+2. 否则有 `BREVO_API_KEY` 和 `MAIL_FROM`：走 Brevo `POST https://api.brevo.com/v3/smtp/email`，请求头 `api-key`。
+3. 都没有：503「登录暂未开放」，不要 500。不扣发码次数。
+
+生产要改用 Mailjet：在 Cloudflare Pages 项目 `desklab-frontend` 的 Production 和 Preview 里把 `MAILJET_API_KEY`、`MAILJET_API_SECRET`、`MAIL_FROM` 设成加密环境变量（`MAIL_FROM` 必须是 Mailjet 里已验证的发件地址，`MAIL_FROM_NAME` 可选，默认 DeskLab）。不要把密钥写进仓库、日志或响应。配齐之后发码走 Mailjet。想回到 Brevo，删掉两个 Mailjet 变量，留下 `BREVO_API_KEY` 和 `MAIL_FROM`。两边都没配好时，接口继续返回「登录暂未开放」。
+
+邮件只有验证码和「10 分钟内有效」。验证码、会话、发码计数、AI 次数都在 KV `AI_LIMITS`。没绑定 KV 时落在本 isolate 的内存里（Pages 上每个函数是各自的 isolate，所以生产必须有 KV）。
 
 界面：没登录时点「让 AI 看看」打开登录框（先邮箱，再验证码），登录成功不自动发起 AI 请求。登录后按钮旁是「今日剩余 N 次」和「退出」。样式用现有的 `.modal-overlay` / `.modal-container`。分享链接只读时这个按钮保持禁用。
 
