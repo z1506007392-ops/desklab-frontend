@@ -17,6 +17,12 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E98 理线槽和 E96 本机图库推上 master 后，CI 没有全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41727310082 （static 过了；Chrome 第 1 片和 WebKit 失败）。同一组失败又出现在 https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41727534037 。Chrome 把显示器往桌外拖时停在了桌旁主机上，高度 0.695 米，没有落到地板。桌面这条测试把滑动加长，让它越过主机。WebKit 是房间页和保存按钮抢先出现，已由 `27288c9` 改成重试。
+
+还剩：加长滑动这次的 CI。E97、E99、E100 仍是别的线。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 F7 完成（`a128756`）。Windows 和 macOS 安装包不在这台 Linux 上打，交给 `.github/workflows/desktop.yml`：推 master 或手动触发，矩阵是 `windows-latest` 的 NSIS `.exe` 和 `macos-latest` 的 `.dmg`。工件名 `desklab-windows-nsis`、`desklab-macos-dmg`，留 14 天，不发 GitHub Release。安装包失败不挡住 `ci.yml` 的网站部署。本机 `npm run desktop:build -- --bundles deb` 打出 `src-tauri/target/release/bundle/deb/DeskLab_0.1.0_amd64.deb`（2.69 MiB）。二进制里的内容安全策略含 blob、`wasm-unsafe-eval`、Tauri IPC 和 `https://desklab-frontend.pages.dev`。`tauri dev` 的 `devCsp` 仍是空的。网站 `public/_headers` 没改。
 
 打包后的 AI 请求不再走相对 `/api`。基址默认现有 Pages 生产站，`VITE_DESKLAB_API_BASE` 只能是另一个 https 源，打包脚本会把它写进 connect-src。网页和 `tauri dev` 仍是相对路径。以后的社区请求用同一个 `apiUrl()`，本机图库没有改，F4 的接口仍没实现。
