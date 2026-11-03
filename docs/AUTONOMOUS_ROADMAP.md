@@ -268,7 +268,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 做法：自动补线给插排找电源时，只用墙壁插座（以及适配器以外的非插排电源），不把插排插到另一个插排上；没有空的墙壁插座就不补线（没画的线不是问题）。
 - 验收：单元测试覆盖"墙插有空位→插墙插"和"墙插满了→不补线、不报错"；UI 测试：模板上加插排后布线检查无问题。
 
-**A8 [ ] 可选 — 让 Cloudflare 只部署通过测试的版本**
+**A8 [~] 进行中（Desklab，2026-11-04） 可选 — 让 Cloudflare 只部署通过测试的版本**
 - H3 已于 2026-11-04 完成。CI 全绿后用 `wrangler pages deploy dist --project-name desklab-frontend` 部署（GitHub secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）。Git 自动部署先留着，和新工作流同时存在。等 Desklab 关掉 Git 自动部署。
 
 ### 阶段 B：LLM 基础设施（DeepSeek 接入的管道）（已完成 2026-10-30；线上等待 H1 密钥）

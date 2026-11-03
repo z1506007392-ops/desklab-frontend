@@ -17,6 +17,12 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+领了 A8。H3 的 secrets 已经在。CI 全绿后用 wrangler 部署到 desklab-frontend。Git 自动部署先留着。等 Desklab 关掉 Git 自动部署。
+
+还剩：写好部署工作流并确认它至少成功部署过一次，然后做 E67。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E14 被 E67 取代，30 次连发不再做。负责人 Leo 2026-11-04 02:52：AI 改为登录后才能用，每个邮箱每天 20 次，全站不设上限。手册里 E14 标成被 E67 取代。原先记在 E67、E68 的主机和键盘比例改号为 E69、E70，仍等负责人决定，E67 留给登录。H2、H3 已在前面标完成。E66 的 CI 已全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41685018813 。H2/H3 记录和领 E14 是同一次推送，CI 跑在尖端提交：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41688354131 。限流改键那次：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41689662642 。
 
 还剩：A8，然后按修正后的需求做 E67（不要全站每日上限）。
