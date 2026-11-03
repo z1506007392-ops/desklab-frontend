@@ -26,7 +26,9 @@ E113–E116 完成（`c2de31f`，认领 `d6ba9ea`，网站 cookie 仍写 Lax 的
 
 验证：合入 E97、E99、E100 之后 `npm test` 649 通过（那条记的 645，加上登录这 4 条）。lint 0 问题。这次不改 `src/`。E97 那条的 Chrome UI 是 255 通过 + 1 跳过；房间尺寸合入后、E97 之前，这棵登录改动上的整套是 251 通过 + 1 跳过。CI 会再跑合入后的整套。
 
-还剩：推 master，CI 全绿后写链接。E69、E70 和贴图再压缩仍等负责人决定。E97、E99、E100 是别的线。验证码取模偏差、`__Host-` 前缀、一次退出全部会话、网站上核对 Origin 这次没做。
+CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41735475919 （尖端 `9f48270`，static、Chrome 四片、WebKit、check、deploy 都成功）。
+
+还剩：E69、E70 和贴图再压缩仍等负责人决定。验证码取模偏差、`__Host-` 前缀、一次退出全部会话、网站上核对 Origin 这次没做。F7 的安装包没有签名。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
