@@ -17,6 +17,12 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+`27288c9` 的重试仍把 WebKit 的 15 秒用完（https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41728145201 ，start-guide 第 23、27 条）。`isEnabled()` 会一直等到保存按钮可点，房间页中途盖住按钮时就不会再看房间页。`openProject` 改成 `count()` 和 `evaluateAll()`，只读当前页面。本机 Chrome 桌面和手机的 start-guide 12 条通过。显示器拖出桌面已由另一条线在 `20fd517` 加长滑动，这次没改摆放，也没改画面和登录。
+
+还剩：这次推送的 CI。E71–E75 的测量仍以 https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41724487289 为准。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E98 理线槽和 E96 本机图库推上 master 后，CI 没有全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41727310082 （static 过了；Chrome 第 1 片和 WebKit 失败）。同一组失败又出现在 https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41727534037 。Chrome 把显示器往桌外拖时停在了桌旁主机上，高度 0.695 米，没有落到地板。桌面这条测试把滑动加长，让它越过主机。WebKit 是房间页和保存按钮抢先出现，已由 `27288c9` 改成重试。
 
 还剩：加长滑动这次的 CI。E97、E99、E100 仍是别的线。

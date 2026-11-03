@@ -117,11 +117,13 @@ export async function openProject(page, objects, connections = [], { saved = tru
   const saveButton = page.getByRole('button', { name: '保存项目', exact: true });
   const roomPage = page.getByRole('dialog', { name: '这间房有多大' });
   // A first visit paints the toolbar, then covers it with the room page.
-  // WebKit does that between two checks, so retry until one of them has settled.
+  // isEnabled() and evaluate() wait for the button, so one call can use up
+  // the whole retry on WebKit while the room page is replacing that button.
+  // count() and evaluateAll() read whatever is on the page right now.
   await expect(async () => {
     if (await roomPage.count()) return;
-    if (await saveButton.count() && await saveButton.isEnabled()) return;
-    throw new Error('the room page or the save button is not ready');
+    const enabled = await saveButton.evaluateAll(elements => elements.some(element => !element.disabled));
+    if (!enabled) throw new Error('the room page or the save button is not ready');
   }).toPass({ timeout: 15000 });
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
   return ai ? { errors, writes, aiRequests } : { errors, writes };
