@@ -15,7 +15,44 @@ function sceneFromMessages(messages) {
 
 const cm = value => Math.round(value * 100) / 100;
 
+// The live prompt already tells the model to copy hint.fix. This stand-in
+// does that, up to five suggestions, and only falls back to the two built-in
+// moves when the scene has no ready fix. Titles stay plain Chinese: the
+// checker rejects anything that looks like an internal id.
+const HINT_CATEGORY = Object.freeze({
+  monitor_off_center: 'ergonomics',
+  monitor_too_close: 'ergonomics',
+  monitor_facing_away: 'ergonomics',
+  monitor_not_on_desk: 'ergonomics',
+  laptop_at_back: 'ergonomics',
+  lamp_blocks_work: 'ergonomics',
+  speakers_block_seat: 'ergonomics',
+  mouse_far_from_keyboard: 'ergonomics',
+  tower_on_desk_center: 'space',
+  tower_blocks_legroom: 'space',
+  console_on_desk: 'space',
+  console_blocks_legroom: 'space',
+  router_buried: 'space',
+  strip_on_desk: 'tidiness',
+  cable_too_long: 'cabling',
+});
+
+function suggestionsFromHints(scene) {
+  const hints = Array.isArray(scene?.hints) ? scene.hints : [];
+  const usable = hints.filter(hint => Array.isArray(hint.fix) && hint.fix.length > 0);
+  if (usable.length === 0) return null;
+  return usable.slice(0, 5).map((hint, index) => ({
+    id: `mock-hint-${index + 1}`,
+    title: '按摆放建议调整',
+    reason: '照现成的摆法挪一下，用起来更顺手。',
+    category: HINT_CATEGORY[hint.code] || 'ergonomics',
+    actions: hint.fix,
+  }));
+}
+
 export function mockSuggestions(scene) {
+  const fromHints = suggestionsFromHints(scene);
+  if (fromHints) return fromHints;
   const objects = Array.isArray(scene?.objects) ? scene.objects : [];
   const desks = new Map(objects.filter(object => object.kind === 'office-desk').map(desk => [desk.id, desk]));
   const suggestions = [];

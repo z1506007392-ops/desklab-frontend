@@ -18,6 +18,10 @@ const MESS_HINT = {
   'strip-on-desk': 'strip_on_desk',
   'cable-too-long': 'cable_too_long',
   'router-buried': 'router_buried',
+  'console-on-desk': 'console_on_desk',
+  'lamp-in-front': 'lamp_blocks_work',
+  'speakers-in-front': 'speakers_block_seat',
+  'mouse-far': 'mouse_far_from_keyboard',
 };
 
 test('the evaluation set has at least 15 scenes and each kind is what it claims', () => {
@@ -68,8 +72,9 @@ test('a run through the mock model produces sound metrics', async () => {
   assert.ok(metrics.acceptedSuggestions > 0, 'the mock fixes at least the off-centre monitors');
   assert.ok(metrics.averageImprovement > 0);
   assert.equal(checks.parseRate, true);
-  // The mock only knows two tricks, so it is not expected to reach 80%.
-  assert.ok(metrics.messyHelpedRate > 0 && metrics.messyHelpedRate < 1);
+  // Hint fixes are copied, so the offline mock is expected to clear the
+  // messy-desk bar. This is not a live DeepSeek score.
+  assert.ok(metrics.messyHelpedRate >= 0.8, `messyHelpedRate ${metrics.messyHelpedRate}`);
 });
 
 test('a run can skip finished pairs and stop early', async () => {

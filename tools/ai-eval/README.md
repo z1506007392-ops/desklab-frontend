@@ -12,7 +12,8 @@ npm run eval:ai                                # terminal 2
   every applicable "messy" variant of each (monitor off-centre, turned away,
   or too close; laptop at the back; tower in the legroom or in the middle of
   the desk; power strip on the desk; cable far too long; router buried under
-  the desk), old-save shapes, and an empty desk. Good desks have one goal.
+  the desk), a generated desk with the console, lamp, speakers or mouse in
+  the way, old-save shapes, and an empty desk. Good desks have one goal.
   Each messy desk has two goals, drawn from a longer list (blank, tidier,
   gaming, dual monitors, face me, keep the tower out of the legroom, shorter
   cables, leave the laptop alone).
@@ -31,5 +32,7 @@ npm run eval:ai                                # terminal 2
 | New errors after an accepted suggestion | 0 (guaranteed by validation) |
 | Suggestions whose text contains English or ids | 0 |
 
-`AI_MOCK=1 npm run dev:api` runs the harness against the rule-based mock;
-the mock is not expected to meet the thresholds.
+`AI_MOCK=1 npm run dev:api` runs the harness against the rule-based mock.
+The mock copies each hint's ready fix, so offline it can clear the messy-desk
+bar. That score is not a DeepSeek score. A live run still needs a login cookie
+and `DEEPSEEK_API_KEY`.

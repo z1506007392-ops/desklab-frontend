@@ -133,6 +133,61 @@ export function buildEvalScenes() {
 
   const deskOnly = buildDeskScene({ devices: [], desk: { length: 1.4, depth: 0.7 } });
   scenes.push({ id: 'desk-only', kind: 'good', project: deskOnly, goals: [''] });
+
+  // Comfort messes the templates do not contain: a console, lamp, speakers
+  // and a mouse that has wandered off. Built from a generated desk the
+  // heuristics already accept, then one device is moved.
+  const furnished = () => buildDeskScene({
+    devices: [
+      { modelId: 'laptop-15', count: 1 },
+      { modelId: 'monitor-24', count: 1 },
+      { modelId: 'keyboard', count: 1 },
+      { modelId: 'mouse', count: 1 },
+      { modelId: 'desk-lamp', count: 1 },
+      { modelId: 'speakers', count: 1 },
+      { modelId: 'game-console', count: 1 },
+    ],
+    desk: { length: 1.6, depth: 0.8 },
+  });
+  const onDesk = (project, modelId, localX) => {
+    const desk = deskOf(project);
+    const item = project.objects.find(object => object.modelId === modelId);
+    return edit(project, modelId, device => {
+      device.position = {
+        x: desk.position.x + localX,
+        y: desk.position.y - desk.scale.y / 2 + device.scale.y / 2 + 0.02,
+        z: deskTop(project) + device.scale.z / 2,
+      };
+      return device;
+    });
+  };
+  const comfort = [
+    ['console-on-desk', project => {
+      const desk = deskOf(project);
+      const item = project.objects.find(object => object.modelId === 'game-console');
+      return edit(project, 'game-console', device => {
+        device.position = { x: desk.position.x, y: desk.position.y, z: deskTop(project) + item.scale.z / 2 };
+        return device;
+      });
+    }],
+    ['lamp-in-front', project => onDesk(project, 'desk-lamp', 0.2)],
+    ['speakers-in-front', project => onDesk(project, 'speakers', -0.2)],
+    ['mouse-far', project => {
+      const desk = deskOf(project);
+      const mouse = project.objects.find(object => object.modelId === 'mouse');
+      return edit(project, 'mouse', device => {
+        device.position = {
+          x: desk.position.x + desk.scale.x / 2 - mouse.scale.x / 2 - 0.04,
+          y: desk.position.y,
+          z: deskTop(project) + device.scale.z / 2,
+        };
+        return device;
+      });
+    }],
+  ];
+  for (const [messId, mess] of comfort) {
+    scenes.push({ id: `comfort/${messId}`, kind: 'messy', project: mess(furnished()), goals: ['更整洁'] });
+  }
   return scenes;
 }
 
