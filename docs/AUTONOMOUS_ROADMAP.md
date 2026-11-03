@@ -217,9 +217,10 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - `App.jsx` 很大。**不要一次性大重构**；当某个任务要改到某一块时，顺手把那块抽成组件（`src/components/`），并保持测试全绿。
 
 ### 4.6 存储与后端
-- 网页上，每个访客的项目存在**自己浏览器的 localStorage**：`desklab.project.v1`（存档）、`desklab.project-backup.v1`（上一版）、`desklab.project-draft.v1`（未保存草稿）、`desklab.backup-reminder.v1`、`desklab.phone-notice-dismissed.v1`（手机上点过"知道了"）、`desklab.guide-seen.v1`（进门或新手引导已结束）。图库另用 `desklab.community-profile.v1`（显示名）和 `desklab.community-posts.v1`（留下的桌子和实拍），不写进项目存档。
-- 桌面应用用同一批键，写成应用数据目录里的文件（`project.json`、`project-backup.json`、`project-draft.json`、`backup-reminder.json`、`phone-notice.txt`、`guide-seen.txt`、`community-profile.json`、`community-posts.json`）。目录是 Tauri 的 app data：Windows `%APPDATA%\app.desklab.desktop`，macOS `~/Library/Application Support/app.desklab.desktop`，Linux `~/.local/share/app.desklab.desktop`。只有这份壳能写这些文件。没列在这份名单里的键只留在内存里，重启就没了。这个 webview 里已有的 localStorage，在文件里还没有项目时复制一次，不覆盖已有文件，浏览器里的那份留着。安装好的应用和 Chrome 不是同一份存储，网站存档不会自动出现。图库的写入要等文件写完；写失败会退回，并说明这台设备的存储空间不够。
+- 网页上，每个访客的项目存在**自己浏览器的 localStorage**：`desklab.project.v1`（存档）、`desklab.project-backup.v1`（上一版）、`desklab.project-draft.v1`（未保存草稿）、`desklab.backup-reminder.v1`、`desklab.phone-notice-dismissed.v1`（手机上点过"知道了"）、`desklab.guide-seen.v1`（进门或新手引导已结束）、`desklab.eye-height.v1`（眼睛高度）、`desklab.layout-schemes.v1`（最多 3 套摆法）。图库另用 `desklab.community-profile.v1`（显示名）和 `desklab.community-posts.v1`（留下的桌子和实拍），不写进项目存档。眼睛高度和摆法也不写进项目存档。
+- 桌面应用用同一批键，写成应用数据目录里的文件（`project.json`、`project-backup.json`、`project-draft.json`、`backup-reminder.json`、`phone-notice.txt`、`guide-seen.txt`、`eye-height.json`、`layout-schemes.json`、`community-profile.json`、`community-posts.json`）。目录是 Tauri 的 app data：Windows `%APPDATA%\app.desklab.desktop`，macOS `~/Library/Application Support/app.desklab.desktop`，Linux `~/.local/share/app.desklab.desktop`。只有这份壳能写这些文件。没列在这份名单里的键只留在内存里，重启就没了。这个 webview 里已有的 localStorage，在文件里还没有项目时复制一次，不覆盖已有文件，浏览器里的那份留着。安装好的应用和 Chrome 不是同一份存储，网站存档不会自动出现。图库、眼睛高度和摆法的写入要等文件写完；写失败会退回，并说明这台设备的存储空间不够。
 - 摆放、布线和存档不需要登录。使用 AI 时要先用邮箱验证码登录（E67）：会话是 HttpOnly cookie，验证码和次数在 KV `AI_LIMITS`。不登录也能看 3D，也能进门。后端仓库（Express，`/api/projects/default`）**前端已不再调用**；保留它，但不要在它上面加新功能。AI 代理仍放在 Cloudflare Pages Functions（见第 6 节），不放在这个后端。`tauri dev` 仍用 Vite 把 `/api` 代理到 `localhost:3001`。打包后的应用没有这个代理，AI 和以后的社区请求用 https 基址，默认 `https://desklab-frontend.pages.dev`（打包前设 `VITE_DESKLAB_API_BASE` 可换成另一个 https 源）。桌面来源的会话 cookie 是 `SameSite=None; Secure`，网站仍是 `SameSite=Lax`。
+- 私人桌面不要做跨设备同步。眼睛高度和另外留下的摆法只在这台设备，分享链接和剪贴板不带它们。购线搜索是普通 https 链接；桌面壳把站外链接交给系统浏览器，也可以设置 `globalThis.__desklabOpenExternal`。E96 的社区和 E98 的理线槽是另一条线。和这句话冲突的旧说明，以这一节为准。
 - `vite.config.js` 仍把 `/api` 代理到 `localhost:3001`，第 6 节的本地 AI 开发服务器会用到它。
 
 ### 4.7 部署
@@ -523,13 +524,13 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E78 [x] 完成（Desklab，2026-11-04，0e66c47）** 存档和分享链接的缺口：未保存的本地草稿可以恢复或放弃，已保存的项目不被覆盖；分享链接对话框里可以用键盘复制链接。
 - **E79 [x] 完成（Desklab，2026-11-04，1fb2709）** 设备目录和 AI 建议：搜索能按名称和规格找到目录里的型号，没有匹配时说明；AI 建议应用后可以撤销再重做；取消进行中的请求后，迟到的回答不再套用到桌面上。另有 d298ef2、0fe48ab。
 - **E80 [x] 完成（Desklab，2026-11-04，e568039）** 非视觉的可访问性和健壮性，不改外观样式。「更多」菜单可用方向键、Home、End、Tab、Escape，关掉后焦点回到「更多」。重复的「定位」等按钮带上对应问题的名字。页面外壳崩溃时有错误边界，刷新后本机存档还在。查看是否已登录时如果网络失败，给出失败提示，不把这当成未登录去弹登录框。
-- **E96 [x] 完成（Desklab，2026-11-04，0dca698；29954ed）** 社区图库在应用里。可以打开一张随应用带的桌子，或这台设备上留下的桌子，再复制到自己的项目。没有公开网站，没有上传，没有跨设备同步。做法见 4.9。E97 仍由另一条线做。E99、E100 由并行线 J 做。F4 的网上接口没有实现。
+- **E96 [x] 完成（Desklab，2026-11-04，0dca698；29954ed）** 社区图库在应用里。可以打开一张随应用带的桌子，或这台设备上留下的桌子，再复制到自己的项目。没有公开网站，没有上传，没有跨设备同步。做法见 4.9。E97、E99、E100 由另一条线完成。F4 的网上接口没有实现。
   - 用户问题：分享链接是一条只能发给某一个人的地址，链接里已经带上整张桌子（`#desklab-share-2.`，超过约 2000 字会提示微信可能打不开）。做完的人没有地方被别人看见，也翻不到别人怎么摆。正在用的项目仍只在本机（网页是 `desklab.project.v1`，桌面应用是应用数据目录里的文件）。
   - 竞品：[Juddesk](https://www.juddesk.com/) 免费、不注册就能摆，可选把方案发到社区图库，别人可以 remix；保存到命名槽位用 Google 登录。[Desk Setup Builder](https://www.desksetupbuilder.com/) 有社区方案和 3D 设计，2026-11-04 打开首页时写着 “490 desks designed so far”。[PCPartPicker 完成品](https://pcpartpicker.com/builds/) 按价格、日期、评分浏览别人的装机，[关于页](https://pcpartpicker.com/about/) 写可以分享零件单和论坛讨论。[Loadout](https://loadout.app/) 是上传实拍、在照片上标产品。[MySetup](https://mysetup.is/) 写的是发照片、给整套设置打分、保留升级历史。[DeskFlex HQ](https://deskflexhq.com/) 是照片图库，免费账号 1 套公开桌子、5 张照片，Premium 为每月 5 美元或每年 40 美元。Reddit 的 r/battlestations 本次打开超时，订阅人数和现行规则未查到；一条旧帖侧栏写过只收实拍、不收 CAD 或 AI 图、禁止联盟链接（见调研）。
   - 实现要点和工作量：中。这一版（`0dca698`，导入筛查 `29954ed`）做的是本机图库，见 4.9。Leo 2026-11-04 的方向是：正在用的项目不上传、不同步；社区内容是布局加一张实拍；不要假设必须打开一个公开网站。账号以后可以复用邮箱验证码，只用于发布和浏览，不是云端项目，也不做跨设备同步。宿主可以是 Pages Functions，或以后任何一个 HTTPS。接口形状见 F4，这一版没有接。不要在这里重做布线。界面沿用 `DESIGN.md`。
   - 视觉或新设备：应用里多了图库入口和只读横幅。3D 场景的背景、灯光、已有模型不变。理线槽是 E98，不是图库另加的设备。
   - 变现：DeskFlex 对更多照片和多套桌子收费；Juddesk 和 Planner 5D 的分享在免费档里。PCPartPicker 的收入在商家链接，不在图库本身（[披露](https://pcpartpicker.com/disclosure/)）。图库单独收费的把握小。它更适合把人留下来，再走到购线链接（E97）。品牌买位置要另定，和关于页「不做广告」有关。
-- **E97 [~] 进行中（Desklab，2026-11-04）** 购线清单可以跳到商店搜索。页面上不写 DeskLab 自己编的价格。Leo 2026-11-04 已批准。
+- **E97 [x] 完成（Desklab，2026-11-04，e9c478b）** 购线清单每一行打开京东和淘宝搜索。页面不写 DeskLab 自编价格，链接没有联盟参数。本地壳可以设置 `globalThis.__desklabOpenExternal`，把 https 链接交给系统浏览器。Leo 2026-11-04 已批准。
   - 用户问题：清单已经按走线算出「2 米 HDMI 线 ×1」这种行（键盘和鼠标的线标成自带，不进清单），人还是要自己去搜。E25 定过不接商城、不编价格，所以现在没有价格、也没有链接。
   - 竞品：[PCPartPicker](https://pcpartpicker.com/about/) 显示多家零售商的现价、价格历史和降价提醒；[披露页](https://pcpartpicker.com/disclosure/) 写明通过商家联盟拿报酬，并写这不影响评测和观点。德国站零件单页脚写报酬不影响展示哪些产品、什么价格、价格怎么排。Juddesk 写可以把零件单打开去买放下的那件真实商品。Planner 5D 的 Premium 含 Budget Widget，用来计划和跟踪项目花费（[定价页](https://planner5d.com/pricing)），本次没看到它接入哪家商店的实时标价。宜家的规划器用来选宜家自己的家具。
   - 实现要点和工作量：小到中。小的做法：每一行加「去商店搜」，用现成的名称打开京东或淘宝的搜索，页面上仍不出现价格。用哪一家要负责人定。中的做法：接京东联盟接口，只显示接口返回的价格和链接。联盟账号要人去注册；没有账号之前用普通搜索，不计佣。[京东联盟协议](https://union.jd.com/searchResultDetail?articleId=57251) 写服务费比例以商品页为准，推广者目前另付所收服务费的 10% 作为平台费。线材类目的具体比例未查到。
@@ -542,13 +543,13 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
   - 落地：配件「桌下理线槽」，模型 `cable-tray`，0.70×0.16×0.08 米，通用 U 形槽，朝上开口，不是任何品牌的外形。贴在书桌后沿下方。穿过该桌后沿的线，画面里落到槽中再出去（`drawCablePoints`）；`routeCable` 的购线长度不变。清单多一行「桌下理线槽」，写明收进槽里不会让要买的线变短。三个模板不加。`DESK_SCENE_DEVICE_LIMITS` 和 AI 的设备表也没加，所以「按我的设备生成」和 AI 不会摆它。删掉桌子时槽落到地上。一张 0.70 米的槽占满 1.40 米书桌的后沿，第二只落到地上。
   - 视觉或新设备：已做。新模型 `public/models/cable-tray.glb` 和后沿线的画法都进了 3D。它是家用配件，不是已经删掉的 UPS、交换机、NAS、光猫、迷你主机、一体机。
   - 变现：槽本身可以走 E97 的搜索或联盟链接。单独为这一件设备收费不合适。宜家各国标价差很多，页面上不要写死一个售价。
-- **E99 [~] 进行中（grok，2026-11-04）** 按眼睛高度看屏幕高不高、离得远不远。先只给一句建议，不加椅子。负责人 Leo 已批准。
+- **E99 [x] 完成（Desklab，2026-11-04）** 改进建议里可以填眼睛离地高度、坐着或站着、是否双光眼镜。只给一句建议，存在 `desklab.eye-height.v1`，不上传，不自动挪设备，不加椅子。0.45 米那条仍在，文案写明它量的是座位到屏幕近边。Leo 2026-11-04 已批准。并行线 J 的认领由这次实现接上。
   - 用户问题：现在每个人得到同一套摆放提示。屏幕「离人太近」的门槛是 0.45 米，量的是座位点到屏幕靠近人的那一条边（座位点在桌前沿再向外 0.35 米）。书桌桌面高 0.75 米。不问身高、坐着还是站着、戴不戴双光眼镜。目录里没有椅子，也没有升降桌。
   - 竞品：[Ergotron 工作台规划](https://www.ergotron.com/tools/workspace-planner) 让人选身高（5 英尺 0 英寸到 6 英尺 4 英寸），按 BIFMA G1 给出显示器、键盘、座椅高度和坐站调节量；[公制页](https://www.ergotron.com/portals/0/html/planner/metric-sit-stand1.html) 列出 152 到 193 厘米。各身高对应的厘米结果在本次抓到的页面文字里没有，未查到，不要抄。双光眼镜：屏幕再低 6 英寸、上倾 30° 到 40°、拉近到 16 英寸内。页末导向他们自己的升降台和显示器挂架。[工作表 PDF](https://www.ergotron.com/portals/0/literature/guidelines/workspace-planning-tool-worksheet.pdf) 写数字来自 1988 年美军人体测量，是平均值，要另加鞋高。[OSHA 显示器说明](https://www.osha.gov/etools/computer-workstations/components/monitors) 写：屏幕放在正前方，至少 20 英寸；上沿在眼睛高度或略低；眼睛到屏幕以 20 到 40 英寸（50 到 100 厘米）为宜；屏幕中心通常在水平视线下 15° 到 20°；左右不要超过 35°；双光眼镜要把屏幕放低并朝上倾。
   - 实现要点和工作量：小。改进建议里加三项，只存在本机：眼睛离地多高、坐着还是站着、是否双光眼镜。用 OSHA 上面这几句和当前屏幕位置比较，写出一句人话。0.45 米那条保留，文案写清它量的是座位到屏幕近边，OSHA 量的是眼睛到屏幕。不自动挪设备。不使用这次没读到的 Ergotron 对照表。
   - 视觉或新设备：这一版没有。不加人物、不加椅子、不改书桌高度，3D 不变。若要椅子或升降桌面，是另一件新设备，要单独批准。
   - 变现：直接为这份建议收费的把握小。Ergotron 用同一类计算导向支架和升降台。DeskLab 若以后给「屏幕太高」配一只通用挂架的购买链接，佣金比例未查到，而且现在的支架是夹桌托架，不是悬臂。
-- **E100 [~] 进行中（grok，2026-11-04）** 本机同时留下几套摆法，可以切换对比。负责人 Leo 已批准。
+- **E100 [x] 完成（Desklab，2026-11-04）** 「更多 → 我的摆法」最多留下 3 套，存在 `desklab.layout-schemes.v1`。可以切换、从当前复制、删除。3D 只画当前这一套。导出备份带上这几套；没有这个字段的旧备份照常导入，也不清掉本机已有的摆法。不上传、不同步。Leo 2026-11-04 已批准。并行线 J 的认领由这次实现接上。
   - 用户问题：浏览器里只有一份当前项目。套用模板、改成双屏或改成带鱼屏，都会盖掉刚才那张。导出的备份是一个文件，不能并排看「现在的桌子」和「想买的摆法」。
   - 竞品：[Planner 5D 定价页](https://planner5d.com/pricing) 的免费档写可以创建并分享不限数量的项目，定价说明里还写每个档位（含免费）都能用链接邀请别人查看或一起改。[宜家 Kreativ 入门说明](https://www.ikea.com/us/en/customer-service/knowledge/articles/982f84a7-5941-45a8-a34a-1727c57dcc7f.html) 写可以复制一份设计再改。Juddesk 的命名槽位是可选项，用 Google 登录；分享链接不需要账号。DeskFlex 的免费账号只有 1 套公开桌子，付费后可以有多套。
   - 实现要点和工作量：中，全在浏览器里。在现有存档旁边再留最多 3 份有名字的副本，可以切换、从当前复制、删除。打开时仍只把当前这一份画进 3D。导出备份要带上这几份，旧的单份备份仍能导入。不上传。入口放在「更多」里，不动工具栏那四组的位置。

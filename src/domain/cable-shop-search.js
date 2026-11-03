@@ -46,3 +46,22 @@ export function cableShopSearchLinks(name) {
     };
   }).filter(link => link.href);
 }
+
+/**
+ * A local shell (Tauri) can set globalThis.__desklabOpenExternal to hand the
+ * https URL to the system browser. Without that hook the caller leaves the
+ * link alone, so a normal browser tab still opens it. Never calls DeskLab.
+ */
+export function openExternalHttps(href) {
+  let url;
+  try {
+    url = new URL(href);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== 'https:') return false;
+  const opener = globalThis.__desklabOpenExternal;
+  if (typeof opener !== 'function') return false;
+  opener(url.href);
+  return true;
+}

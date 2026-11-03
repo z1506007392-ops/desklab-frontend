@@ -169,7 +169,7 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
     const nearestToSeat = local.y - monitor.scale.y / 2;
     if (nearestToSeat - frame.seatLocal.y < HEURISTIC_LIMITS.minViewingDistance) {
       const spot = clearMonitorSpot(frame, monitor, objects);
-      hints.push(hint('monitor_too_close', [monitor.id], `${monitor.name}离人太近，看久了眼睛累`, spot ? {
+      hints.push(hint('monitor_too_close', [monitor.id], `${monitor.name}离座位太近。这条量的是座位到屏幕靠近人的那条边，不到 0.45 米`, spot ? {
         fix: [move(monitor, spot)],
       } : {}));
     }

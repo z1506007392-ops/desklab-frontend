@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { cableShopSearchLinks } from '../src/domain/cable-shop-search.js';
+import { cableShopSearchLinks, openExternalHttps } from '../src/domain/cable-shop-search.js';
 
 function params(href) {
   return new URL(href).searchParams;
@@ -41,4 +41,20 @@ test('a blank name does not invent a search', () => {
   assert.deepEqual(cableShopSearchLinks(''), []);
   assert.deepEqual(cableShopSearchLinks('   '), []);
   assert.deepEqual(cableShopSearchLinks(null), []);
+});
+
+test('a local shell can open the https search without DeskLab', () => {
+  const seen = [];
+  globalThis.__desklabOpenExternal = href => seen.push(href);
+  try {
+    const [jd] = cableShopSearchLinks('2 米 HDMI 线');
+    assert.equal(openExternalHttps(jd.href), true);
+    assert.deepEqual(seen, [jd.href]);
+    assert.equal(openExternalHttps('http://search.jd.com/Search?keyword=hdmi'), false);
+    assert.equal(openExternalHttps('javascript:alert(1)'), false);
+    assert.equal(seen.length, 1);
+  } finally {
+    delete globalThis.__desklabOpenExternal;
+  }
+  assert.equal(openExternalHttps('https://search.jd.com/Search?keyword=hdmi'), false);
 });

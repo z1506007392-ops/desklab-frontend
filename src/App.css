@@ -1325,6 +1325,66 @@
   margin-left: auto;
 }
 
+.eye-height,
+.layout-schemes,
+.layout-scheme-save {
+  margin-bottom: 16px;
+}
+
+.eye-height h4,
+.layout-scheme-save label {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+
+.eye-height-fields,
+.layout-scheme-save {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eye-height-posture,
+.layout-scheme-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.eye-height-posture .ui-button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--surface);
+  font-weight: 600;
+}
+
+.eye-height-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: var(--text-sm);
+}
+
+.layout-scheme-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-scheme-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  color: var(--ink);
+  font-size: var(--text-sm);
+}
+
+
 .shopping-list-quantity {
   font-variant-numeric: tabular-nums;
 }

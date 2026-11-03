@@ -1,4 +1,5 @@
 import { AiSuggestionsPanel } from './AiSuggestions.jsx';
+import EyeHeightAdvice from './EyeHeightAdvice.jsx';
 import { CloseIcon } from './Icons.jsx';
 import { useDialogFocus } from './useDialogFocus.js';
 
@@ -74,6 +75,7 @@ export default function RecommendationsDialog({
           <p className="wiring-issue-description">
             根据当前设备、位置和连接规则生成建议；实际摆放、走线和设备规格仍需确认。
           </p>
+          <EyeHeightAdvice project={project} />
           <AiSuggestionsPanel
             ai={ai}
             project={project}

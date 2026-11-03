@@ -60,6 +60,14 @@ import { buildTemplateScene } from './domain/desk-templates.js';
 import { buildShoppingList } from './domain/shopping-list.js';
 import { buildCableShoppingList } from './domain/cable-shopping-list.js';
 import { buildCableRunSheet } from './domain/cable-run-sheet.js';
+import {
+  addLayoutScheme,
+  layoutSchemesDocument,
+  layoutSchemesInBackup,
+  loadLayoutSchemes,
+  removeLayoutScheme,
+  storeLayoutSchemes,
+} from './domain/layout-schemes.js';
 import { labelObjectsForPicker } from './domain/object-labels.js';
 import { hasSeenGuide, markGuideSeen } from './domain/onboarding.js';
 import { PHONE_MEDIA_QUERY, dismissPhoneNotice, hasDismissedPhoneNotice } from './domain/phone-notice.js';
@@ -76,6 +84,7 @@ import LayoutReportDialog from './components/LayoutReportDialog.jsx';
 import WiringReportDialog from './components/WiringReportDialog.jsx';
 import ConnectionsListDialog from './components/ConnectionsListDialog.jsx';
 import CableShoppingDialog from './components/CableShoppingDialog.jsx';
+import LayoutSchemesDialog from './components/LayoutSchemesDialog.jsx';
 import ShareLinkDialog from './components/ShareLinkDialog.jsx';
 import ShareViewBanner from './components/ShareViewBanner.jsx';
 import CommunityGalleryDialog from './components/CommunityGalleryDialog.jsx';
@@ -259,6 +268,8 @@ export default function App() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showLayoutSchemes, setShowLayoutSchemes] = useState(false);
+  const [layoutSchemes, setLayoutSchemes] = useState(() => loadLayoutSchemes(getBrowserStorage()));
   const [webglAvailable] = useState(() => canUseWebGL());
   // First-visit guide: only for a project that has never been saved, until
   // the user picks a way to start or something appears in the room.
@@ -279,6 +290,10 @@ export default function App() {
     setPurchaseGuidance(null);
     setShowRecommendations(false);
   }, []);
+
+  useEffect(() => {
+    storeLayoutSchemes(getBrowserStorage(), layoutSchemes);
+  }, [layoutSchemes]);
 
   const projectStateRef = useRef({ room, objects, connections, selectedObjectId });
   const historyRef = useRef(null);
@@ -727,6 +742,9 @@ export default function App() {
           setRoomRepick(false);
           setEntryStep('done');
         }
+        if (showLayoutSchemes) {
+          setShowLayoutSchemes(false);
+        }
         if (showTemplates) {
           setScrollTemplatesToBuilder(false);
           setShowTemplates(false);
@@ -738,7 +756,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKeyDownEsc);
     return () => window.removeEventListener('keydown', handleKeyDownEsc);
-  }, [closeRecommendations, connectionMode, entryStep, roomRepick, shareLink, showAbout, showCableShop, showGallery, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations, showSettings, showTemplates]);
+  }, [closeRecommendations, connectionMode, entryStep, roomRepick, shareLink, showAbout, showCableShop, showGallery, showGlobalConnections, showLayoutSchemes, showWiringReport, showLayoutReport, showRecommendations, showSettings, showTemplates]);
 
   useEffect(() => {
     const handleHistoryKeys = (e) => {
@@ -870,7 +888,7 @@ export default function App() {
   }, [connectionMode, objects, projectEditable, room, selectedObjectId, showStatus, updateSelectedObject]);
 
   const entryOpen = entryStep === 'room' || entryStep === 'desk';
-  const dialogOpen = showTemplates || showGallery || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || shareLink || showRecommendations || showAbout || showSettings || guideOpen || entryOpen;
+  const dialogOpen = showTemplates || showGallery || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || shareLink || showRecommendations || showAbout || showSettings || showLayoutSchemes || guideOpen || entryOpen;
 
   useLayoutEffect(() => {
     const handleKeyDown = (e) => {
@@ -1108,6 +1126,7 @@ export default function App() {
       objects,
       camera: getCurrentCamera(),
       connections,
+      layoutSchemes: layoutSchemesDocument(layoutSchemes),
     }, 'desklab-project');
     recordBackupExport(getBrowserStorage, new Date());
     setShowBackupReminder(false);
@@ -1164,6 +1183,8 @@ export default function App() {
       setConnectionMode(false);
       setConnectionDraft({});
       setHoveredDeviceId(null);
+      const incomingSchemes = layoutSchemesInBackup(parsed);
+      if (incomingSchemes) setLayoutSchemes(incomingSchemes);
       showStatus({ text: '备份已导入，尚未保存', type: 'success' }, 3000);
     } catch (error) {
       showStatus({ text: `导入失败：${describeProjectImportError(error)}`, type: 'error' }, 5000);
@@ -1411,6 +1432,68 @@ export default function App() {
       camera: desk.project.camera || null,
     }, `已复制“${desk.title}”`);
     setShowGallery(false);
+  };
+
+  const replaceWithProject = (project, message) => {
+    const importedObjects = hydrateProjectObjects(project.objects || []);
+    const importedConnections = project.connections || [];
+    if (savedLayout === null) {
+      setSavedLayout(serializeLayout(room, objects, connections));
+    }
+    recordHistory(null, {
+      includeCamera: true,
+      camera: getCurrentCamera(),
+      cameraDirty,
+    });
+    setRoom(project.room);
+    setInputRoom(project.room);
+    setObjects(importedObjects);
+    setConnections(importedConnections);
+    setCameraConfig(project.camera || null);
+    setCameraDirty(true);
+    setSelectedObjectId(null);
+    setConnectionMode(false);
+    setConnectionDraft({});
+    setHoveredDeviceId(null);
+    showStatus({ text: message, type: 'success' }, 3000);
+  };
+
+  const handleSaveLayoutScheme = (name) => {
+    if (!projectEditable) return false;
+    const result = addLayoutScheme(layoutSchemes, {
+      id: createEntityId('scheme'),
+      name,
+      savedAt: new Date().toISOString(),
+      project: { room, objects, connections, camera: getCurrentCamera() },
+    });
+    if (!result.ok) {
+      showStatus({
+        text: result.reason === 'full' ? '最多留下 3 套摆法' : '请给这套摆法起个名字',
+        type: 'error',
+      }, 4000);
+      return false;
+    }
+    setLayoutSchemes(result.schemes);
+    showStatus({ text: `已留下摆法「${result.schemes[result.schemes.length - 1].name}」`, type: 'success' }, 3000);
+    return true;
+  };
+
+  const handleSwitchLayoutScheme = (scheme) => {
+    if (!projectEditable) return;
+    const shouldSwitch = window.confirm(
+      `确定用「${scheme.name}」替换当前桌面吗？\n当前桌面如果还没留下摆法，这次替换不会留副本。替换后仍需点击“保存项目”。`
+    );
+    if (!shouldSwitch) return;
+    replaceWithProject(scheme.project, `已换成摆法「${scheme.name}」，尚未保存`);
+    setShowLayoutSchemes(false);
+  };
+
+  const handleDeleteLayoutScheme = (scheme) => {
+    if (!projectEditable) return;
+    const shouldDelete = window.confirm(`确定删除摆法「${scheme.name}」吗？当前桌面不会变。`);
+    if (!shouldDelete) return;
+    setLayoutSchemes(current => removeLayoutScheme(current, scheme.id));
+    showStatus({ text: `已删除摆法「${scheme.name}」`, type: 'success' }, 3000);
   };
 
   const handleCopyProjectToClipboard = async () => {
@@ -1933,6 +2016,7 @@ export default function App() {
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleCopyProjectToClipboard)} disabled={!projectEditable} title="复制项目，可以粘贴给别人或另一台设备">复制项目</button>
       <div className="toolbar-menu-separator" role="separator" />
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowCableShop(true))}>购线清单</button>
+      <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowLayoutSchemes(true))} disabled={!projectLoaded || projectLoadFailed}>我的摆法</button>
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleOpenShareLink)} disabled={!projectLoaded || projectLoadFailed}>复制分享链接</button>
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => { setInputRoom({ length: room.length, width: room.width, height: room.height }); setShowSettings(true); })} disabled={!projectEditable}>设置</button>
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => { setGuideStep(0); setGuideOpen(true); })}>新手引导</button>
@@ -2322,6 +2406,16 @@ export default function App() {
       </div>
 
       {showAbout && <AboutDialog fileArchive={fileArchive} onClose={() => setShowAbout(false)} />}
+      {showLayoutSchemes && (
+        <LayoutSchemesDialog
+          schemes={layoutSchemes}
+          editable={projectEditable}
+          onSave={handleSaveLayoutScheme}
+          onSwitch={handleSwitchLayoutScheme}
+          onDelete={handleDeleteLayoutScheme}
+          onClose={() => setShowLayoutSchemes(false)}
+        />
+      )}
 
       {showTemplates && (
         <TemplateDialog

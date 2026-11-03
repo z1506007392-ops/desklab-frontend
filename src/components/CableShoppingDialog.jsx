@@ -1,4 +1,4 @@
-import { cableShopSearchLinks } from '../domain/cable-shop-search.js';
+import { cableShopSearchLinks, openExternalHttps } from '../domain/cable-shop-search.js';
 import { CloseIcon } from './Icons.jsx';
 import { useDialogFocus } from './useDialogFocus.js';
 
@@ -67,6 +67,10 @@ export default function CableShoppingDialog({ items, sheet, onCopy, onClose }) {
                           target="_blank"
                           rel="noopener noreferrer"
                           aria-label={`在${link.label}搜索 ${item.name}`}
+                          onClick={event => {
+                            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                            if (openExternalHttps(link.href)) event.preventDefault();
+                          }}
                         >
                           {link.label}
                         </a>
