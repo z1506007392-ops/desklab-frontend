@@ -17,6 +17,12 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+领了 E67。负责人已批准：邮箱验证码登录后才能用 AI，每个邮箱每天 20 次，不设全站上限。发验证码的限速和每 IP 每小时的兜底限流保留。
+
+还剩：把登录、限额和弹窗做完。A8 的部署工作流已推上，等它成功部署一次。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 A8 的部署步骤写进 `.github/workflows/ci.yml`：`check` 全绿后，仅在推送到 master 时执行 `npx wrangler@4.157.0 pages deploy dist --project-name desklab-frontend`，用 secrets `CLOUDFLARE_API_TOKEN` 和 `CLOUDFLARE_ACCOUNT_ID`。在仓库根目录跑，这样 `functions/` 会一起上传。Git 自动部署没有关。等 Desklab 关掉 Git 自动部署。
 
 还剩：等这一次工作流真正部署成功，并看线上首页还在。然后做 E67。
