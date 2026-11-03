@@ -17,6 +17,18 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E106–E108 完成。E102–E105 仍是另一条线的，没有改。E76–E80、E96、E97、E98 也是别人的，没有改它们的代码。
+
+- E106：`/api/ai/layout` 的 `remaining` 必须是有限的非负数，否则不当成剩余次数。0 次仍然显示。Infinity、NaN、负数和字符串都丢掉。
+- E107：导出的安装清单和表格里，设备名、接口名里的换行改成空格，竖线改成不会切开表格的符号。CSV 仍保留原来的名字。
+- E108：空桌面打开改进建议时，写着「先放几件设备，AI 才能给建议。」，「让 AI 看看」禁用，不弹登录框，也不请求 AI。
+
+验证（rebase 到 E76–E80 之后再跑；其后 master 只多了文档）：`npm test` 547 通过，lint 0 问题，build 通过。Chrome 桌面和手机 UI 229 通过 + 1 跳过。
+
+还剩：E102–E105 由并行线 H 做。E96、E98 由并行线 I 做。E97 购线跳转由另一条线做。关 Git 自动部署仍等负责人/Desklab 在控制台关。E69、E70 等负责人决定。H4 不动。不改外观，不加设备。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E76–E80 完成。CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41714062354 （提交 5ccd306）。改前整次 22 分 47 秒、检查 22 分 10 秒（https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698980114 ）。改后整次 7 分 19 秒（20:36:00–20:43:19 UTC），检查到 check 成功 6 分 34 秒，部署 43 秒。最慢的是 Chrome 第 3 片 6 分 25 秒。WebKit 整 job 4 分 23 秒，安装 48 秒。static 48 秒。部署步骤未改。提交：E76 0b731c6，E77 5bb21e9，E78 0e66c47，E79 1fb2709 / d298ef2 / 0fe48ab，E80 e568039。
 
 还剩：Leo 2026-11-04 决定转向 Tauri 本地应用。本线按「补完 CI 分钟数即可收工」停止，没有开工下一优先。下一优先（未做）：现有前端里不改 3D 外观的应用感（操作卡顿、存档混乱、错误提示），或 Tauri 测试脚本。不要再开网页运营类任务，不做新的 Pages-only 功能。E96、E98 已由并行线 I 领走。E69、E70 仍等负责人决定。H4 不动。Git 自动部署仍等负责人关掉。发信仍等 BREVO_API_KEY 和 MAIL_FROM。
@@ -4306,8 +4318,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 545 domain tests (E76–E80; 538 after E101)
-npm run test:ui   # Chrome desktop + phone: 227 passed + 1 skipped at this tip (225 on the E76–E80 tree, plus E101's remaining-count test, desktop and phone). Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 547 domain tests (E106–E108 on top of E76–E80; 545 before these three)
+npm run test:ui   # Chrome desktop + phone: 229 passed + 1 skipped. Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
