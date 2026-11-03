@@ -17,6 +17,12 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+领了 E96 和 E98（并行线 I）。Leo 2026-11-04 批准后又改了方向：产品转向 Tauri 本地应用；社区是简单账号，内容是布局 JSON 和实拍，不要跨设备同步。E98 理线槽照原提案做。E96 做成应用里的社区图库和分享，能打开一张桌子并复制到自己的项目，不另做公开网页。E97 已由另一条线领走，E99、E100 本线不做。E101–E108 不动。
+
+还剩：实现并验证。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E76–E80 的实现已提交，等这次推送的 CI 记实际分钟数。不改外观，不加设备。E97 的认领和 E101–E108 的日志没改。
 
 - E76 `0b731c6`：检查拆成静态（test、lint、build）、Chrome 界面 4 片、WebKit 关键用例，三路并行。npm 仍由 setup-node 缓存。WebKit 浏览器缓存到 `~/.cache/ms-playwright`。`deploy` 仍 `needs: check`，里面的 checkout、标成 master、npm ci、build、`wrangler pages deploy` 没改。
@@ -35,7 +41,7 @@ E76–E80 的实现已提交，等这次推送的 CI 记实际分钟数。不改
 
 领了 E97。Leo 2026-11-04 已批准 E96–E100（含新设备与 3D）。本线先做不抢文件的购线清单跳转：京东和淘宝普通搜索，页面不写 DeskLab 自编价格，不接联盟。不改 E107 的安装清单，不改 E69、E70。E98、E96 若和别人的文件撞上，先认领再做。
 
-还剩：实现 E97 并验证，然后 E99、E100、E98、E96。
+还剩：实现 E97 并验证，然后 E99、E100。E96 和 E98 已由并行线 I 领走，这条线不再做。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
