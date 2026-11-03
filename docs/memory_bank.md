@@ -17,6 +17,20 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E91–E95 做完（安全加固，不改外观，不加设备）。登录代码没改。`functions/api/auth/*` 和 `server/ai/auth.js` 都没动。`.github/workflows/` 没动，`src-tauri` 也没动。桌面壳的内容安全策略仍是空的，留给桌面线。rebase 到本地桌面壳 `f6fd7b1` 之后的提交号：
+
+- E91 `f640186`，补丁 `0e6c445`：`public/_headers` 写了 CSP、nosniff、Referrer-Policy、Permissions-Policy 和 X-Frame-Options: DENY。没有写 Cache-Control，避免和缓存头被拼成同一个值。生产构建带上这些头之后，书桌的贴图和 meshopt 的 worker 被 CSP 拦住。worker 里的 `importScripts` 看的是 `script-src`，贴图是对 blob 地址的 `fetch`，看的是 `connect-src`。两处都加上 `blob:`。用带 `_headers` 的静态服务打开生产构建，书桌模型（灰桌面、黑桌腿）能画出来，同域的 `/api/ai/layout` 没有被 CSP 挡住。目录模型加载时关掉 Draco。没有改外观。
+- E92 `df397f0`：分享链接在解开之前就按长度拒绝过大的 hash。版本 2 里用户改过的字段改成白名单。导入文件、粘贴和打开分享链接时检查设备数量、房间和坐标；名字里的尖括号换成全角。模型地址只留本站的 `/models/*.glb`。已经存在存档里的远程地址也不会再发请求。
+- E93 `eda4edf`：`/api/ai/layout` 只收 JSON。请求体限制深度、节点数、键和字符串长度，并拒绝 `__proto__` 这类键。意外错误只回答「服务暂时不可用」，日志只记错误名。上游正文和带换行的模型名不会回到浏览器。限流地址只取第一段。E101 的 `remaining` 仍在 502、504 和看不懂的回答里。
+- E94 `8912623`：`overrides` 把 minimatch 定在 11.0.4。`npm audit` 从 6 条中等变成 0。没有把 eslint 降到 9。
+- E95：只读审查写进手册阶段 E 和 §6.9，交给主线。并发时验证码试错可以超过 5 次。没有待验证码和填错的文案不一样，发码的三句限额也能区分邮箱和 IP。Cookie 是 HttpOnly、SameSite=Lax，https 才加 Secure。主线确认生产 `Set-Cookie` 带 Secure。CSRF 在 Lax 下可以接受，不要改成 None。E102–E105 的 Mailjet 和退出改动已经在 master 上，对照过 `server/ai/auth.js`，这五条还在。
+
+验证（和桌面壳 `f6fd7b1` 在同一棵树上）：`npm test` 588 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 是预期的），`npm audit` 0。Chrome 桌面和手机 UI 243 通过 + 1 跳过（7.9 分钟）。恶意导入在桌面和手机上都过了。
+
+还剩：推 master，CI 全绿后把运行链接写上。E69、E70 仍等负责人决定。E96–E100 是别的线，没改。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 本地桌面应用的壳、文件存档和进门两步。提交 `f6fd7b1`。Leo 2026-11-04 决定从网页优先改到 Tauri 2 本机应用：不跨设备同步，账号不为同步服务。「登录后」是第一次进入应用，不是邮箱验证码，不要加登录墙。
 
 - 壳：`npm run desktop`（`tauri dev`）。网页 `npm run dev` / `npm run build` 仍在。Rust 钉在 1.99.1。CI 只检查壳的文件在不在，不装 Rust，部署步骤没改。
@@ -4393,8 +4407,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 574 domain tests (desktop entry and file archive on top of 564 at E102–E105)
-npm run test:ui   # Chrome desktop + phone: 241 passed + 1 skipped before the desktop shell. This shell re-ran start-guide and local-save only (18 passed). Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 588 domain tests (E91–E94 and the desktop shell on the same tree)
+npm run test:ui   # Chrome desktop + phone: 243 passed + 1 skipped. Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
