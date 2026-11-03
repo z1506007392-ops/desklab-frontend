@@ -17,6 +17,12 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+领了 E14。H2 的 KV 已经绑上，响应头是 `X-AI-Limit-Mode: kv`。同一计数键连发 30 次没有 429，接下来改计数方式，再连发 30 次验收。
+
+还剩：E14 验收通过后做 A8。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 手册第 7 节把 H2、H3 标成已完成。两件都是 Desklab (Grok Bot) 在 2026-11-04 01:28（UTC+8）做的，负责人同意。
 
 H2：新建 KV 命名空间 `desklab-ai-limits`（id `c129d77cfb99444fba8fbd6919eaa885`）。Pages 项目 `desklab-frontend` 的 Production 和 Preview 都绑成 `AI_LIMITS`。开工时线上 `POST /api/ai/layout` 的响应头已经是 `X-AI-Limit-Mode: kv`（cf-ray 在 PDX），所以这个绑定已经在当前部署上生效，不必为了绑定再部署一次。
