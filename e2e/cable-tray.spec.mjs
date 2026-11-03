@@ -38,7 +38,10 @@ test('a cable tray mounts under the desk and is listed to buy', async ({ page })
   await page.getByRole('button', { name: '更多', exact: true }).click();
   await page.getByRole('menu', { name: '更多', exact: true }).getByRole('menuitem', { name: '购线清单', exact: true }).click();
   const shop = page.getByRole('dialog', { name: '购线清单', exact: true });
-  await expect(shop.getByRole('listitem').filter({ hasText: '桌下理线槽' })).toHaveText(['桌下理线槽×1']);
+  const trayRow = shop.getByRole('listitem').filter({ hasText: '桌下理线槽' });
+  await expect(trayRow).toContainText('×1');
+  await expect(trayRow.getByRole('link', { name: '在京东搜索 桌下理线槽', exact: true })).toBeVisible();
+  await expect(trayRow.getByRole('link', { name: '在淘宝搜索 桌下理线槽', exact: true })).toBeVisible();
   await expect(shop).toContainText('不会因为收进槽里就变短');
   expect(evidence).toEqual({ errors: [], writes: [] });
 });

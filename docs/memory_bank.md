@@ -17,6 +17,14 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+购线清单里的桌下理线槽也可以打开京东和淘宝搜索。要买的长度仍不因收进槽里变短。
+
+验证（合入 E109 设置页 `dbf81af`、本机图库、理线槽、F7 安装包和房间页轮询 `2f0ea2d` 之后）：`npm test` 645 通过，lint 0 问题，build 通过（three.js 分块超过 500kB 是预期的，brotli 17 个 GLB 652248 → 285991）。Chrome 桌面和手机 UI 255 通过 + 1 跳过（8.7 分钟）。E97 是 `e9c478b`，眼睛高度和摆法是 `e50a55b`，快捷键是 `bbcd67f`，文件存档是 `b5d7b32`。
+
+还剩：推送后等 CI 的 check 和 deploy。E69、E70 等负责人决定。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E97、E99、E100 接到已有的本机图库、理线槽、桌面安装包和设置页上。私人桌面不做跨设备同步。眼睛高度和摆法写进同一份文件存档：`eye-height.json`、`layout-schemes.json`，和图库的 `community-profile.json`、`community-posts.json` 列在一起。网页仍走 localStorage。购线链接如果壳已经设置 `__desklabOpenExternal`，这次点击不再让文档上的监听再打开一次。本条没有改 E96 的图库，也没有改 E98 的理线槽，也没有改 F7 的安装包，也没有改 E109 的设置。并行线 J 的认领由这次实现接上。
 
 E97 完成（`e9c478b`）：购线清单每一行打开京东和淘宝搜索，页面不写价格，链接没有联盟参数。理线槽那一行同样可以搜索，要买的长度仍不因收进槽里变短。
