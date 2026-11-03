@@ -1,3 +1,4 @@
+import { placeCableTray } from './cable-tray.js';
 import { withPortAnchors } from './catalog.js';
 import { getObjectBounds, getRotatedFootprint, horizontalFootprintsOverlap, objectsOverlap, validateAndConstrainObject } from './geometry.js';
 import { createEntityId } from './identifiers.js';
@@ -11,14 +12,16 @@ const OUTLET_HEIGHT = 0.3;
 const COPY_GAP = 0.05;
 const SCREEN_GAP = 0.04; // between screens in a row, as the generator lays them
 
+const isCableTrayModel = modelTemplate => modelTemplate.modelId === 'cable-tray' || modelTemplate.type === 'cable-tray';
 const isDeskTopDevice = (categoryId, modelTemplate) =>
-  categoryId === 'display'
+  !isCableTrayModel(modelTemplate)
+  && (categoryId === 'display'
   || categoryId === 'accessory'
   || categoryId === 'entertainment'
   || categoryId === 'peripheral'
   || categoryId === 'audio'
   || categoryId === 'lighting'
-  || modelTemplate.type === 'laptop';
+  || modelTemplate.type === 'laptop');
 // Keyboard, mouse and laptop go where the hands are: the half nearer the seat.
 const prefersDeskFront = (categoryId, modelTemplate) =>
   categoryId === 'peripheral' || modelTemplate.type === 'laptop';
@@ -427,6 +430,10 @@ function findFreePlacement(object, categoryId, modelTemplate, room, objects) {
     if (preferred) return preferred;
   }
 
+  if (isCableTrayModel(modelTemplate)) {
+    const mounted = placeCableTray(object, room, objects);
+    if (mounted) return mounted;
+  }
   if (categoryId === 'display') {
     for (const stand of objects.filter(item => item.modelId === 'monitor-stand')) {
       const onStand = findOnStand(object, stand, room, objects);

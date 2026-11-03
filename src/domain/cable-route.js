@@ -114,6 +114,9 @@ function wayOffDesk(port, desk, other) {
  * (on toObject), and its length. `objects` is the whole room, so the desks
  * the devices stand on can be found.
  */
+// The length returned here is what the shop list and the "too short" check
+// use. A mounted cable tray changes only the drawn points (cable-tray.js);
+// it must not shorten this path.
 export function routeCable(from, to, fromObject, toObject, objects) {
   const fromDesk = fromObject ? findCableDesk(fromObject, objects) : null;
   const toDesk = toObject ? findCableDesk(toObject, objects) : null;

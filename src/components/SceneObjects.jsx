@@ -5,6 +5,7 @@ import { Billboard, Edges, Line, Text, useGLTF } from '@react-three/drei';
 
 import { createCameraPoseSynchronizer } from '../domain/camera-snapshot.js';
 import { catalogFontUrl, getModelDefaultScale, isCatalogModelUrl } from '../domain/catalog.js';
+import { drawCablePoints } from '../domain/cable-tray.js';
 import { evaluateConnectionLength, getConnectionEndpoints, getConnectionRoute } from '../domain/connections.js';
 import { toThreePosition, toThreeZRotation } from '../domain/coordinates.js';
 import { applySceneHighlight, cloneModelForHighlight } from '../domain/glb-highlight.js';
@@ -125,13 +126,14 @@ export function ConnectionsRenderer({ connections, objects }) {
         const endpoints = getConnectionEndpoints(connection, objects, objectById);
         const route = endpoints && getConnectionRoute(connection, objects, endpoints);
         if (!route) return null;
+        const drawn = drawCablePoints(route.points, objects);
         const lengthStatus = evaluateConnectionLength(connection, objects, endpoints);
         return (
           <CableLine
             key={connection.id}
             connection={connection}
-            points={route.points}
-            routeKey={route.points.map(point => `${point.x.toFixed(4)},${point.y.toFixed(4)},${point.z.toFixed(4)}`).join(' ')}
+            points={drawn}
+            routeKey={drawn.map(point => `${point.x.toFixed(4)},${point.y.toFixed(4)},${point.z.toFixed(4)}`).join(' ')}
             dashed={Boolean(lengthStatus && !lengthStatus.sufficient)}
           />
         );
@@ -679,10 +681,43 @@ function GenericModel({ asset, obj, materialProps }) {
   if (asset?.id === 'generic-office-desk') {
     return <GenericOfficeDeskModel obj={obj} materialProps={materialProps} />;
   }
+  if (asset?.id === 'generic-cable-tray') {
+    return <GenericCableTrayModel obj={obj} materialProps={materialProps} />;
+  }
   if (asset?.id === 'generic-keyboard' || asset?.id === 'generic-mouse' || asset?.id === 'generic-desk-lamp' || asset?.id === 'generic-speakers') {
     return <GenericBlockModel obj={obj} materialProps={materialProps} />;
   }
   return <FallbackBox obj={obj} materialProps={materialProps} />;
+}
+
+function GenericCableTrayModel({ obj, materialProps }) {
+  const width = obj.scale.x;
+  const height = obj.scale.z;
+  const depth = obj.scale.y;
+  const layout = getGenericModelLayout('cable-tray');
+  const metal = {
+    color: obj.color,
+    roughness: 0.45,
+    metalness: 0.35,
+    emissive: materialProps.emissiveColor,
+    emissiveIntensity: materialProps.emissiveIntensity,
+  };
+  return (
+    <group>
+      {(layout?.floors || []).map((part, index) => (
+        <mesh key={`floor-${index}`} position={[width * part.x, -height * 0.38, depth * part.z]}>
+          <boxGeometry args={[width * part.width, height * 0.22, depth * part.depth]} />
+          <meshStandardMaterial {...metal} />
+        </mesh>
+      ))}
+      {(layout?.walls || []).map((part, index) => (
+        <mesh key={`wall-${index}`} position={[width * part.x, height * 0.05, depth * part.z]}>
+          <boxGeometry args={[width * part.width, height * 0.7, depth * part.depth]} />
+          <meshStandardMaterial {...metal} />
+        </mesh>
+      ))}
+    </group>
+  );
 }
 
 function GenericBlockModel({ obj, materialProps }) {

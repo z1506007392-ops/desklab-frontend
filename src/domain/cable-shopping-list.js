@@ -1,3 +1,4 @@
+import { isCableTray } from './cable-tray.js';
 import { getConnectionRoute } from './connections.js';
 
 // The cable's route (over the desk edge, not through the desktop) is tight.
@@ -75,6 +76,8 @@ export function buildCableShoppingList(connections, objects) {
     items.push(item);
   }
   items.sort((first, second) => first.name.localeCompare(second.name, 'zh'));
+  const trayCount = (objects || []).filter(isCableTray).length;
+  if (trayCount > 0) items.push({ name: '桌下理线槽', length: null, quantity: trayCount });
   const text = items.length === 0
     ? '当前没有需要买的线'
     : ['要买的线', ...items.map(item => `- ${item.name} ×${item.quantity}`)].join('\n');

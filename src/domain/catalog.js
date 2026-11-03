@@ -87,6 +87,7 @@ export const DEVICE_CATALOG = [
     category: 'accessory', categoryName: '配件',
     models: [
       { type: 'monitor-stand', modelId: 'monitor-stand', displayName: '显示器支架', shape: 'rect', assetUrl: catalogModelUrl('monitor-stand'), defaultScale: { x: 0.18, y: 0.28, z: 0.45 }, color: '#2a3036' },
+      { type: 'cable-tray', modelId: 'cable-tray', displayName: '桌下理线槽', shape: 'rect', assetUrl: catalogModelUrl('cable-tray'), defaultScale: { x: 0.7, y: 0.16, z: 0.08 }, color: '#5c656d' },
     ],
   },
   {
@@ -172,6 +173,7 @@ export function describeCatalogModel(model) {
     parts.push(`${model.defaultScale.x} × ${model.defaultScale.y} m`, '尺寸可调');
   }
   if (model.type === 'monitor-stand') parts.push('夹桌', '可放显示器');
+  if (model.modelId === 'cable-tray') parts.push('桌下', '收后沿的线');
   const acOutputs = ports.filter(port => port.type === 'ac_output').length;
   const hasDcOutput = ports.some(port => port.type === 'dc_output');
   const isPluggedPowerGear = (acOutputs > 0 || hasDcOutput)

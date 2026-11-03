@@ -20,7 +20,7 @@ export const THUMBNAIL_SIZE = 112; // drawn at 56 px, so sharp on 2x screens
 
 // Camera direction (three.js x right, y up, z toward the front) for devices
 // people recognise from above: a power strip by its row of sockets.
-const VIEWS = { 'power-strip': [0.35, 1.1, 0.8] };
+const VIEWS = { 'power-strip': [0.35, 1.1, 0.8], 'cable-tray': [0.45, 1.15, 0.7] };
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const outDir = new URL('../../public/thumbnails/', import.meta.url);

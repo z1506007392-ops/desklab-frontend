@@ -125,6 +125,15 @@ const GENERIC_BLOCK_LAYOUT = Object.freeze({
   bodies: Object.freeze([Object.freeze({ x: 0, z: 0, width: 1, depth: 1 })]),
 });
 
+// A channel open upward. x/z are normalized across the footprint.
+const GENERIC_CABLE_TRAY_LAYOUT = Object.freeze({
+  floors: Object.freeze([Object.freeze({ x: 0, z: 0, width: 0.92, depth: 0.72 })]),
+  walls: Object.freeze([
+    Object.freeze({ x: 0, z: 0.4, width: 0.96, depth: 0.12 }),
+    Object.freeze({ x: 0, z: -0.4, width: 0.96, depth: 0.12 }),
+  ]),
+});
+
 const GENERIC_MODEL_LAYOUT_BY_MODEL_ID = Object.freeze({
   'office-desk': GENERIC_OFFICE_DESK_LAYOUT,
   'monitor-24': GENERIC_MONITOR_LAYOUT,
@@ -141,6 +150,7 @@ const GENERIC_MODEL_LAYOUT_BY_MODEL_ID = Object.freeze({
   'desk-lamp': GENERIC_BLOCK_LAYOUT,
   speakers: GENERIC_BLOCK_LAYOUT,
   'monitor-stand': GENERIC_BLOCK_LAYOUT,
+  'cable-tray': GENERIC_CABLE_TRAY_LAYOUT,
   'game-console': GENERIC_BLOCK_LAYOUT,
 });
 

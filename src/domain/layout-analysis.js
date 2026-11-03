@@ -1,3 +1,4 @@
+import { findHostDesk, isCableTray, remountCableTray } from './cable-tray.js';
 import {
   GEOMETRY_EPSILON,
   getObjectBounds,
@@ -115,7 +116,7 @@ const isSurface = object => object.category === 'furniture' || isDesk(object) ||
 // stand on it, so it keeps climbing to the highest such top; then the spot
 // must be clear (what stands on the device itself comes along with it).
 function liftOntoSurface(room, object, objects) {
-  if (isWallOutlet(object) || isSurface(object)) return null;
+  if (isWallOutlet(object) || isSurface(object) || isCableTray(object)) return null;
   const size = getObjectBounds(object)?.sizeZ;
   if (!size) return null;
   const surfaces = objects.filter(other => other.id !== object.id && isSurface(other));
@@ -141,6 +142,10 @@ export function settleAfterDrag(room, object, objects, startPosition) {
   if (!object?.position || !startPosition) return null;
   const moved = ['x', 'y', 'z'].some(axis => Math.abs(object.position[axis] - startPosition[axis]) > GEOMETRY_EPSILON);
   if (!moved) return null;
+  if (isCableTray(object)) {
+    const mounted = remountCableTray(room, object, objects);
+    if (mounted) return mounted;
+  }
   const lifted = liftOntoSurface(room, object, objects);
   if (lifted) return lifted;
   if (findSupportingObject(object, objects) !== null) return null;
@@ -247,6 +252,9 @@ export function analyzeProjectLayout(room, rawObjects) {
       const first = validBounds[firstIndex];
       const second = validBounds[secondIndex];
       if (!objectsOverlap(first.object, second.object)) continue;
+      const trayHost = (isCableTray(first.object) && findHostDesk(first.object, objects)?.id === second.object.id)
+        || (isCableTray(second.object) && findHostDesk(second.object, objects)?.id === first.object.id);
+      if (trayHost) continue;
       issues.push({
         id: `overlap:${first.object.id}:${second.object.id}`,
         code: 'object_overlap',
@@ -260,6 +268,7 @@ export function analyzeProjectLayout(room, rawObjects) {
 
   for (const target of validBounds) {
     if (isWallOutlet(target.object) || target.bounds.minZ <= 0.03) continue;
+    if (findHostDesk(target.object, objects)) continue;
     const supports = validBounds.filter(candidate =>
       candidate.object.id !== target.object.id
       && horizontalFootprintsOverlap(target.object, candidate.object)
@@ -315,6 +324,8 @@ const SUPPORT_TOLERANCE = 0.02;
  */
 export function findSupportingObject(object, objects) {
   if (isWallOutlet(object)) return { kind: 'wall' };
+  const host = findHostDesk(object, objects);
+  if (host) return { kind: 'object', id: host.id };
   const bounds = getObjectBounds(object);
   if (!bounds) return null;
   const supports = getRecordItems(objects)

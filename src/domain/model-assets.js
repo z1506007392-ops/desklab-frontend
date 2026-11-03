@@ -89,6 +89,13 @@ const GENERIC_MONITOR_STAND_ASSET = Object.freeze({
   license: 'DeskLab-owned',
 });
 
+const GENERIC_CABLE_TRAY_ASSET = Object.freeze({
+  id: 'generic-cable-tray',
+  category: 'accessory',
+  source: 'in-house-generated',
+  license: 'DeskLab-owned',
+});
+
 const GENERIC_GAME_CONSOLE_ASSET = Object.freeze({
   id: 'generic-game-console',
   category: 'entertainment',
@@ -112,6 +119,7 @@ const GENERIC_MODEL_ASSET_BY_MODEL_ID = Object.freeze({
   'desk-lamp': GENERIC_DESK_LAMP_ASSET,
   speakers: GENERIC_SPEAKERS_ASSET,
   'monitor-stand': GENERIC_MONITOR_STAND_ASSET,
+  'cable-tray': GENERIC_CABLE_TRAY_ASSET,
   'game-console': GENERIC_GAME_CONSOLE_ASSET,
 });
 

@@ -37,7 +37,7 @@ export default function CableShoppingDialog({ items, sheet, onCopy, onClose }) {
           </button>
         </div>
         <div className="modal-body">
-          <p className="panel-note">按线实际要走的路（桌上的设备先落到桌面，再从桌子后边或侧边绕下去，不穿过桌面），加上弯折余量，再向上取到常见的线长。键盘、鼠标的线是自带的，不算在里面。这里不标价格，也不链接商店。</p>
+          <p className="panel-note">按线实际要走的路（桌上的设备先落到桌面，再从桌子后边或侧边绕下去，不穿过桌面），加上弯折余量，再向上取到常见的线长。键盘、鼠标的线是自带的，不算在里面。桌下有理线槽时，从这张桌子后沿走的线在画面里会收进槽里再出去，要买的长度仍按原来的走法算，不会因为收进槽里就变短，清单里会多一行这只槽。这里不标价格，也不链接商店。</p>
           <div className="shopping-list" role="group" aria-label="要买的线">
             <div className="shopping-list-header">
               <span className="shopping-list-title">要买的线</span>
