@@ -1214,15 +1214,25 @@
 
 .shopping-list-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.shopping-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .shopping-list-title {
   color: var(--ink);
   font-size: var(--text-sm);
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .shopping-list-items {

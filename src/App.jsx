@@ -56,6 +56,7 @@ import { getPurchaseGuidance } from './domain/purchase-guidance.js';
 import { buildTemplateScene } from './domain/desk-templates.js';
 import { buildShoppingList } from './domain/shopping-list.js';
 import { buildCableShoppingList } from './domain/cable-shopping-list.js';
+import { buildCableRunSheet } from './domain/cable-run-sheet.js';
 import { labelObjectsForPicker } from './domain/object-labels.js';
 import { hasSeenGuide, markGuideSeen } from './domain/onboarding.js';
 import { PHONE_MEDIA_QUERY, dismissPhoneNotice, hasDismissedPhoneNotice } from './domain/phone-notice.js';
@@ -1320,6 +1321,10 @@ export default function App() {
     () => buildCableShoppingList(connections, objects),
     [connections, objects],
   );
+  const cableRunSheet = useMemo(
+    () => buildCableRunSheet(connections, objects),
+    [connections, objects],
+  );
   const handleCopyCableList = async () => {
     try {
       await navigator.clipboard.writeText(cableShoppingList.text);
@@ -2089,6 +2094,7 @@ export default function App() {
       {showCableShop && (
         <CableShoppingDialog
           items={cableShoppingList.items}
+          sheet={cableRunSheet}
           onCopy={handleCopyCableList}
           onClose={() => setShowCableShop(false)}
         />

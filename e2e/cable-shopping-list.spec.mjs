@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
 import { box, openProject } from './project-fixture.mjs';
 
@@ -69,6 +70,31 @@ test('the cable list merges matching lines and copies plain words', async ({ pag
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   expect(evidence).toEqual({ errors: [], writes: [] });
+});
+
+test('the cable list exports a markdown run sheet and a csv', async ({ page }) => {
+  const evidence = await openProject(page, objects, connections);
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('menu', { name: '更多', exact: true }).getByRole('menuitem', { name: '购线清单', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '购线清单', exact: true });
+
+  const markdownDownload = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: '导出 Markdown', exact: true }).click();
+  const markdown = await markdownDownload;
+  expect(markdown.suggestedFilename()).toBe('desklab-wiring.md');
+  const markdownText = await readFile(await markdown.path(), 'utf8');
+  expect(markdownText).toContain('| 主机甲 | HDMI 输出 | 屏幕甲 | HDMI 输入 | HDMI 线 |');
+  expect(markdownText).toContain('先接电源，再接信号');
+  expect(markdownText).not.toContain('hdmi-1');
+
+  const csvDownload = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: '导出 CSV', exact: true }).click();
+  const csv = await csvDownload;
+  expect(csv.suggestedFilename()).toBe('desklab-wiring.csv');
+  const csvText = await readFile(await csv.path(), 'utf8');
+  expect(csvText).toContain('起点设备,起点接口,终点设备,终点接口,类型,走线长度（米）,购买长度（米）');
+  expect(csvText).toContain('主机甲,HDMI 输出,屏幕甲,HDMI 输入,HDMI 线,');
+  expect(evidence.errors).toEqual([]);
 });
 
 test('the connections list opens the same cable list', async ({ page }) => {
