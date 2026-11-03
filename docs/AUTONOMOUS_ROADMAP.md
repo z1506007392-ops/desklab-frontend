@@ -460,6 +460,11 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E15 [x] 完成（claude，2026-10-30）** 界面视觉重做，按 `.claude/skills/impeccable` 的流程：负责人确认 `PRODUCT.md`，从四个真页面预览里选了"桌搭标签"（方向合同 `.impeccable/surfaces/src-app-jsx.md`）。按钮和菜单文字、整体布局、3D 场景、DeskLab 名字都没改。做了：颜色/字体/控件统一变量、行内样式搬进 CSS（E11）、emoji 换成圆点和画出来的图标、手机两行工具栏（E10）、44px 触控（E12）、桌面分组（E8）、状态动效、底部浮起的消息标签。impeccable 检查器无发现；全新子代理按 impeccable 终审，第一轮六条全部修完，复审 ship。设计规则写在根目录 `DESIGN.md` 和 `.impeccable/design.json`，以后改界面先读它。可选的后续（审查提的，没做）：把选中标签钉在 3D 画面里设备旁边（要先问负责人，因为 3D 外观冻结）；资产库卡片加设备缩略图。
 - **E16 [x] 完成（claude，2026-10-30）** 负责人同意后，把选中标签钉进 3D 画面：选中设备时，设备正上方出现白色圆点标签（drei `Html`，画在盖在画布上的一层里，不挡操作、不盖弹窗，读屏跳过）。3D 场景本身的背景、网格、灯光、模型不变。测试 `e2e/scene-tag.spec.mjs`。
 - **E17 [x] 完成（claude，2026-10-30）** 资产库卡片加设备小图：`tools/thumbnails/render-thumbnails.mjs` 用 Playwright + three.js 从 `public/models/*.glb` 渲染 112px 透明 WebP（前右上方视角，插排从上方看，按投影轮廓取景），写到 `public/thumbnails/`，每张带 `.webp.json` 来源说明（impeccable `embed-prompt --scan` 0 缺失）。卡片左边 56px 白色圆角方块放图，按钮名称不变。测试 `test/thumbnails.test.js`、`e2e/library-thumbnails.spec.mjs`。改了或加了模型要重跑脚本。
+- **E76 [~] 进行中（Desklab，2026-11-04）** CI 提速（并行线 C）。检查阶段压到 10 分钟以内。不减少测试覆盖，不改 A8 的部署步骤（`deploy` 里 checkout、把检出标成 master、npm ci、build、`wrangler pages deploy` 保持原样）。改前：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698980114 整次 22 分 47 秒，check 22 分 10 秒（Chrome 界面测试 17 分 56 秒，WebKit 2 分 53 秒）。做法：npm 缓存继续用 setup-node；缓存 Playwright 的 WebKit；单元测试、lint、build 和界面测试并行；Chrome 桌面+手机分成 4 片，WebKit 关键用例单独跑。`deploy` 仍 `needs: check`。
+- **E77 [~] 进行中（Desklab，2026-11-04）** 布线检查的操作要有测试：从布线检查延长过短的线（单根和一键），撤销、重做都回到该在的长度；无效连接可以清理并撤销；超过常见规格的被动线，警告出现在布线检查对话框里。
+- **E78 [~] 进行中（Desklab，2026-11-04）** 存档和分享链接的缺口：未保存的本地草稿可以恢复或放弃，已保存的项目不被覆盖；分享链接对话框里可以用键盘复制链接。
+- **E79 [~] 进行中（Desklab，2026-11-04）** 设备目录和 AI 建议：搜索能按名称和规格找到目录里的型号，没有匹配时说明；AI 建议应用后可以撤销再重做；取消进行中的请求后，迟到的回答不再套用到桌面上。
+- **E80 [~] 进行中（Desklab，2026-11-04）** 非视觉的可访问性和健壮性，不改外观样式。「更多」菜单可用方向键、Home、End、Tab、Escape，关掉后焦点回到「更多」。重复的「定位」等按钮带上对应问题的名字。页面外壳崩溃时有错误边界，刷新后本机存档还在。查看是否已登录时如果网络失败，给出失败提示，不把这当成未登录去弹登录框。
 - **E96 [~] 进行中（Desklab，2026-11-04）** 竞品调研提案（只写文档，不实现）。并行线 G，编号只使用 E96–E100。写完改为「等负责人决定」。
 - **E97 [~] 进行中（Desklab，2026-11-04）** 竞品调研提案（只写文档，不实现）。同上。
 - **E98 [~] 进行中（Desklab，2026-11-04）** 竞品调研提案（只写文档，不实现）。同上。

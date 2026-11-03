@@ -17,6 +17,14 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+领了 E76–E80（并行线 C）。E76 先把 CI 检查从约 22 分钟压到 10 分钟以内，不减测试、不改 A8 部署步骤。E77–E79 补布线检查、草稿/分享、设备目录搜索、AI 应用后撤销再重做，并收紧取消请求后迟到回答的测试。E80 只做键盘、读屏名称、焦点、错误边界和网络失败提示，不改外观。
+
+改前耗时（https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698980114 ，提交 `ddcfdd8`）：整次 22 分 47 秒。check 22 分 10 秒，其中 Chrome 界面测试 17 分 56 秒，WebKit 关键用例 2 分 53 秒，安装 WebKit 31 秒，npm ci 7 秒，单元测试 11 秒，lint 11 秒，build 2 秒。部署 35 秒。
+
+还剩：做完这五项再推，并记下改后的 CI 链接。E69、E70 仍等负责人决定。E96–E100 是另一条线的文档任务，不动。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E67 已部署。CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41704588154 （检查和 wrangler 部署都成功，部署地址 https://3c8daf45.desklab-frontend.pages.dev ）。实现提交 d95e9d5 和记录提交 f90245f 是同一次推送，CI 跑在尖端。线上 `POST /api/auth/request-code` 返回 503，正文是「登录暂未开放」，不是 500。首页 https://desklab-frontend.pages.dev 仍是 DeskLab。
 
 还剩：等负责人配好 `BREVO_API_KEY` 和 `MAIL_FROM`，验证码才会真正发出。E69、E70 等负责人决定。H4 不动。Git 自动部署仍开着。等 Desklab 关掉 Git 自动部署。E96–E100 仍是另一条只写文档的线，本条没有改它们。
