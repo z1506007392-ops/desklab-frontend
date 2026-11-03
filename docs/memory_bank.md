@@ -17,6 +17,12 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E67 已部署。CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41704588154 （检查和 wrangler 部署都成功，部署地址 https://3c8daf45.desklab-frontend.pages.dev ）。实现提交 d95e9d5 和记录提交 f90245f 是同一次推送，CI 跑在尖端。线上 `POST /api/auth/request-code` 返回 503，正文是「登录暂未开放」，不是 500。首页 https://desklab-frontend.pages.dev 仍是 DeskLab。
+
+还剩：等负责人配好 `BREVO_API_KEY` 和 `MAIL_FROM`，验证码才会真正发出。E69、E70 等负责人决定。H4 不动。Git 自动部署仍开着。等 Desklab 关掉 Git 自动部署。E96–E100 仍是另一条只写文档的线，本条没有改它们。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 领了 E96–E100。只写文档：先查桌面/房间规划、线材管理和桌搭分享类竞品，再在阶段 E 写 3–5 条提案，状态改为「等负责人决定」，不实现、不改代码。详细调研将写在 `docs/research/competitors-2026-11.md`。
 
 还剩：查完竞品，把五条提案和调研文档写完并推送。
