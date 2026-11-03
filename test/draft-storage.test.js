@@ -95,6 +95,36 @@ test('reports a local draft clear failure so callers cannot claim it was discard
   });
 });
 
+test('waits for a file archive before calling a draft write successful', async () => {
+  let stored = null;
+  let release;
+  const gate = new Promise(resolve => {
+    release = resolve;
+  });
+  const storage = createProjectDraftStorage(() => ({
+    setItem(_key, value) {
+      stored = value;
+      return gate.then(() => undefined);
+    },
+  }), 'draft-key');
+  const draft = {
+    version: 1,
+    savedAt: '2026-11-04T00:00:00.000Z',
+    project: { room: { length: 5, width: 4, height: 3 }, objects: [], connections: [], camera: null },
+  };
+
+  let settled = false;
+  const pending = Promise.resolve(storage.write(draft)).then(result => {
+    settled = true;
+    return result;
+  });
+  await Promise.resolve();
+  assert.equal(settled, false);
+  release();
+  assert.deepEqual(await pending, { ok: true });
+  assert.equal(stored, JSON.stringify(draft));
+});
+
 test('round-trips and clears a valid local draft through the configured key', () => {
   let storedValue = null;
   const browserStorage = {

@@ -23,3 +23,7 @@ tools/ai-eval/results/
 
 # SimReady source downloads (tools/simready/build.mjs)
 tools/simready/.cache/
+
+# Tauri build output
+src-tauri/target/
+src-tauri/gen/

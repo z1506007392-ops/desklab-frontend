@@ -3,11 +3,14 @@ import { GUIDE_STEPS } from '../domain/onboarding.js';
 import { useDialogFocus } from './useDialogFocus.js';
 
 // Five short steps. Step one can also start a template or the library.
-export default function OnboardingGuide({ stepIndex, canEdit, onStep, onClose, onStart }) {
+export default function OnboardingGuide({ stepIndex, canEdit, onStep, onClose, onStart, fileArchive = false }) {
   const dialogRef = useDialogFocus();
   const titleRef = useRef(null);
   const step = GUIDE_STEPS[stepIndex] || GUIDE_STEPS[0];
   const last = stepIndex >= GUIDE_STEPS.length - 1;
+  const body = fileArchive && step.id === 'save'
+    ? '点「保存项目」存在这台电脑上，不会同步到别的设备。换电脑前，用「更多 → 导出备份」留一份文件。'
+    : step.body;
 
   useEffect(() => {
     titleRef.current?.focus();
@@ -45,7 +48,7 @@ export default function OnboardingGuide({ stepIndex, canEdit, onStep, onClose, o
       >
         <p className="start-guide-step" id="onboarding-step">第 {stepIndex + 1} 步，共 {GUIDE_STEPS.length} 步</p>
         <h2 ref={titleRef} tabIndex={-1} id="onboarding-title" className="start-guide-title">{step.title}</h2>
-        <p className="start-guide-text">{step.body}</p>
+        <p className="start-guide-text">{body}</p>
         {stepIndex === 0 && canEdit && (
           <div className="start-guide-actions">
             <button type="button" className="ui-button ui-button-primary" onClick={() => onStart('template')}>从模板开始</button>

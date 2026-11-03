@@ -1,9 +1,10 @@
 import { isProjectEnvelope } from './project-validation.js';
 
-// Projects live in the visitor's own browser: there are no accounts, and the
-// backend no longer stores anyone's desk. The client keeps the contract the
-// HTTP client had (versioned load/save, validate, recover the previous save),
-// so a second tab cannot silently overwrite a newer save.
+// The visitor's desk stays on this computer. The web build uses localStorage.
+// The desktop shell uses the same keys as files in the app data directory.
+// There is no account and no sync. The client keeps the old contract
+// (versioned load/save, validate, recover the previous save), so a second
+// view cannot silently overwrite a newer save. getItem/setItem may be async.
 export const PROJECT_STORAGE_KEY = 'desklab.project.v1';
 export const PROJECT_BACKUP_STORAGE_KEY = 'desklab.project-backup.v1';
 export const UNSAVED_PROJECT_VERSION = '"unsaved"';
@@ -23,18 +24,18 @@ export function createLocalProjectClient(getStorage, { now = () => new Date() } 
       throw storeError(STORAGE_BLOCKED_MESSAGE, 'storage_unavailable');
     }
   };
-  const readRaw = key => {
+  const readRaw = async key => {
     try {
-      return storage().getItem(key);
+      return await storage().getItem(key);
     } catch (error) {
-      if (error.code === 'storage_unavailable') throw error;
+      if (error?.code === 'storage_unavailable' || error?.code === 'archive_write_failed') throw error;
       throw storeError(STORAGE_BLOCKED_MESSAGE, 'storage_unavailable');
     }
   };
 
   return {
     async load() {
-      const raw = readRaw(PROJECT_STORAGE_KEY);
+      const raw = await readRaw(PROJECT_STORAGE_KEY);
       if (raw === null) {
         return {
           project: buildStoredProject({ room: { length: 5, width: 4, height: 3 }, objects: [] }, now()),
@@ -52,7 +53,7 @@ export function createLocalProjectClient(getStorage, { now = () => new Date() } 
         throw new Error('项目版本尚未加载，已阻止保存以保护现有数据');
       }
       const clean = normalizeProject(project);
-      const currentRaw = readRaw(PROJECT_STORAGE_KEY);
+      const currentRaw = await readRaw(PROJECT_STORAGE_KEY);
       const currentVersion = currentRaw === null ? UNSAVED_PROJECT_VERSION : formatVersion(currentRaw);
       if (currentVersion !== version) {
         throw storeError(CONFLICT_MESSAGE, 'project_conflict');
@@ -63,23 +64,23 @@ export function createLocalProjectClient(getStorage, { now = () => new Date() } 
 
       const stored = buildStoredProject(clean, now());
       const raw = JSON.stringify(stored);
-      writeRaw(storage(), currentRaw === null ? [] : [[PROJECT_BACKUP_STORAGE_KEY, currentRaw]], [PROJECT_STORAGE_KEY, raw]);
+      await writeRaw(storage(), currentRaw === null ? [] : [[PROJECT_BACKUP_STORAGE_KEY, currentRaw]], [PROJECT_STORAGE_KEY, raw]);
       return { project: stored, version: formatVersion(raw) };
     },
     async validate(project) {
       return normalizeProject(project);
     },
     async recoverBackup() {
-      const currentRaw = readRaw(PROJECT_STORAGE_KEY);
+      const currentRaw = await readRaw(PROJECT_STORAGE_KEY);
       if (currentRaw !== null && parseStoredProject(currentRaw)) {
         throw storeError('当前项目仍可正常读取，无需恢复备份', 'recovery_not_allowed');
       }
-      const backupRaw = readRaw(PROJECT_BACKUP_STORAGE_KEY);
+      const backupRaw = await readRaw(PROJECT_BACKUP_STORAGE_KEY);
       const backup = backupRaw === null ? null : parseStoredProject(backupRaw);
       if (!backup) {
         throw storeError('当前没有可用的上一版本备份', 'backup_not_found');
       }
-      writeRaw(storage(), [], [PROJECT_STORAGE_KEY, backupRaw]);
+      await writeRaw(storage(), [], [PROJECT_STORAGE_KEY, backupRaw]);
       return { project: backup, version: formatVersion(backupRaw) };
     },
   };
@@ -158,11 +159,13 @@ function parseStoredProject(raw) {
   }
 }
 
-function writeRaw(store, backups, [key, value]) {
+async function writeRaw(store, backups, [key, value]) {
   try {
-    for (const [backupKey, backupValue] of backups) store.setItem(backupKey, backupValue);
-    store.setItem(key, value);
-  } catch {
+    for (const [backupKey, backupValue] of backups) await store.setItem(backupKey, backupValue);
+    await store.setItem(key, value);
+    if (typeof store.flush === 'function') await store.flush();
+  } catch (error) {
+    if (error?.code === 'archive_write_failed') throw error;
     throw storeError(STORAGE_FULL_MESSAGE, 'storage_write_failed');
   }
 }

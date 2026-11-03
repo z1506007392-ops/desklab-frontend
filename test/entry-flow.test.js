@@ -1,0 +1,49 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+  CORE_ESPORTS_MODEL_IDS,
+  ENTRY_PRESET_TEMPLATE_ID,
+  ENTRY_ROOM_PRESETS,
+  coreEsportsDevicesInCatalog,
+  defaultEntryPreset,
+  entryRoomFromPreset,
+  placePresetInRoom,
+  shouldShowEntry,
+} from '../src/domain/entry-flow.js';
+
+test('the first screen offers three room sizes and starts on the default', () => {
+  assert.deepEqual(ENTRY_ROOM_PRESETS.map(preset => preset.label), ['小', '默认', '大']);
+  assert.deepEqual(entryRoomFromPreset(defaultEntryPreset().id), { length: 5, width: 4, height: 3 });
+  assert.deepEqual(entryRoomFromPreset('wide'), { length: 6.5, width: 5, height: 3 });
+  assert.deepEqual(entryRoomFromPreset('missing'), entryRoomFromPreset('default'));
+});
+
+test('entry is only for a first visit with an empty unsaved room', () => {
+  assert.equal(shouldShowEntry({}), true);
+  assert.equal(shouldShowEntry({ hasSavedProject: true }), false);
+  assert.equal(shouldShowEntry({ objectCount: 1 }), false);
+  assert.equal(shouldShowEntry({ guideSeen: true }), false);
+  assert.equal(shouldShowEntry({ shareView: true }), false);
+  assert.equal(shouldShowEntry({ recoveringDraft: true }), false);
+});
+
+test('the esports preset keeps the room the visitor chose and puts a desk in it', () => {
+  const room = { length: 5, width: 4, height: 3 };
+  const placed = placePresetInRoom(ENTRY_PRESET_TEMPLATE_ID, room);
+  assert.equal(placed.ok, true);
+  assert.deepEqual(placed.room, room);
+  assert.equal(placed.objects.some(object => object.modelId === 'office-desk'), true);
+  assert.equal(placed.objects.some(object => object.modelId === 'desktop-pc'), true);
+  assert.equal(placed.objects.some(object => object.modelId === 'ultrawide-monitor'), true);
+  assert.ok(placed.connections.length > 0);
+  assert.ok(placed.camera?.position);
+});
+
+test('the core esports set is in the catalog, and this preset does not place every piece yet', () => {
+  assert.deepEqual(coreEsportsDevicesInCatalog(), [...CORE_ESPORTS_MODEL_IDS]);
+  const placed = placePresetInRoom(ENTRY_PRESET_TEMPLATE_ID, { length: 5, width: 4, height: 3 });
+  const placedIds = new Set(placed.objects.map(object => object.modelId));
+  assert.equal(placedIds.has('keyboard'), false);
+  assert.equal(placedIds.has('mouse'), false);
+});

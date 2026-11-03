@@ -112,7 +112,12 @@ export async function openProject(page, objects, connections = [], { saved = tru
   await page.addInitScript(() => performance.setResourceTimingBufferSize(5000));
   await page.goto('/');
   await expect(page).toHaveTitle('DeskLab');
-  await expect(page.getByRole('button', { name: '保存项目', exact: true })).toBeEnabled();
+  // A first visit covers the toolbar with the room page, so the save button
+  // is not on screen yet. Either that page or the save button means the app loaded.
+  const saveButton = page.getByRole('button', { name: '保存项目', exact: true });
+  const roomPage = page.getByRole('dialog', { name: '这间房有多大' });
+  await expect(saveButton.or(roomPage).first()).toBeVisible();
+  if (await saveButton.isVisible()) await expect(saveButton).toBeEnabled();
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
   return ai ? { errors, writes, aiRequests } : { errors, writes };
 }

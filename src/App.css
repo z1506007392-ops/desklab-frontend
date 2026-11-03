@@ -2093,6 +2093,7 @@
   .modal-container,
   .toolbar-menu,
   .start-guide,
+  .entry-desk-card,
   .status-toast,
   .count-badge,
   .scene-tag,
@@ -2113,4 +2114,77 @@
   .load-meter-bar {
     transition: none;
   }
+}
+
+/* First launch: the room question covers the whole window. The desk choice
+   sits on the room it just created. */
+.app-shell-entering .app-top,
+.app-shell-entering .left-panel,
+.app-shell-entering .side-panel {
+  display: none;
+}
+
+.entry-room-overlay {
+  z-index: 10001;
+  background: var(--ground);
+}
+
+.entry-room-card {
+  width: min(420px, calc(100% - 32px));
+  text-align: center;
+}
+
+.entry-room-choices {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+  text-align: left;
+}
+
+.entry-room-choice {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.entry-room-choice:has(input:checked) {
+  border-color: var(--ink);
+  background: var(--fill);
+}
+
+.entry-room-choice:focus-within {
+  box-shadow: var(--focus-ring);
+}
+
+.entry-room-choice-name {
+  font-weight: 800;
+}
+
+.entry-room-choice-size {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+
+.entry-desk-card {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  z-index: 30;
+  width: min(360px, calc(100% - 32px));
+  box-sizing: border-box;
+  padding: 20px;
+  transform: translateX(-50%);
+  border-radius: var(--radius-dialog);
+  background: var(--surface);
+  box-shadow: var(--shadow-dialog);
+  text-align: center;
+  animation: guide-in var(--dur) var(--ease-out);
 }

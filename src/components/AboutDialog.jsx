@@ -4,7 +4,7 @@ import { useDialogFocus } from './useDialogFocus.js';
 // "关于与隐私": what DeskLab keeps, where, and what the AI feature sends.
 // Keep it true to the code: saves are only in localStorage, the AI request
 // is the scene summary plus the user's goal, and there is no analytics.
-export default function AboutDialog({ onClose }) {
+export default function AboutDialog({ onClose, fileArchive = false }) {
   const dialogRef = useDialogFocus();
   return (
     <div
@@ -23,8 +23,12 @@ export default function AboutDialog({ onClose }) {
 
           <h4 className="template-section-title">你的桌面存在哪里</h4>
           <ul>
-            <li>项目只保存在你这台设备的浏览器里，不会上传到我们的服务器。</li>
-            <li>清理浏览器数据、换浏览器或换设备后就找不到了。请用“更多 → 导出备份”保存一份文件，需要时用“导入备份”恢复。</li>
+            <li>{fileArchive
+              ? '项目保存在这台电脑的应用数据里，不会上传，也不会同步到别的设备。'
+              : '项目只保存在你这台设备的浏览器里，不会上传到我们的服务器。'}</li>
+            <li>{fileArchive
+              ? '网站里保存过的桌面不会自动出现在这里。换电脑前，用“更多 → 导出备份”留一份文件，再用“导入备份”打开。'
+              : '清理浏览器数据、换浏览器或换设备后就找不到了。请用“更多 → 导出备份”保存一份文件，需要时用“导入备份”恢复。'}</li>
             <li>“复制分享链接”生成的地址里包含当前的房间、设备和连线。请不要在设备名称里写个人信息。</li>
           </ul>
 

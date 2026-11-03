@@ -1,7 +1,8 @@
 # Run the checks a contributor runs locally on every push to master and on
 # pull requests. After those checks pass on a master push, Wrangler deploys
 # the built site. Cloudflare's own Git build still deploys too, until it is
-# turned off.
+# turned off. That web deploy is transitional: the product entry is the
+# desktop app, and this workflow does not install Rust or package it.
 #
 # The checks used to be one job. On
 # https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698980114
@@ -28,6 +29,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+      - name: Desktop shell files are present
+        run: |
+          test -f src-tauri/Cargo.toml
+          test -f src-tauri/tauri.conf.json
+          test -f src-tauri/src/lib.rs
+          test -f src-tauri/capabilities/default.json
       - uses: actions/setup-node@v5
         with:
           node-version-file: .node-version

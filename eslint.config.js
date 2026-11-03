@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default [
   // Vendored skill scripts under .claude/ are third-party. Lint the app only.
-{ ignores: ['dist', '.claude/**'] },
+{ ignores: ['dist', '.claude/**', 'src-tauri/target/**', 'src-tauri/gen/**'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {

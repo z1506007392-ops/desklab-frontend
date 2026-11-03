@@ -18,7 +18,7 @@ import {
   createProjectDraft,
   isDraftDifferent,
 } from './domain/draft.js';
-import { createProjectDraftStorage } from './domain/draft-storage.js';
+import { PROJECT_DRAFT_STORAGE_KEY, createProjectDraftStorage } from './domain/draft-storage.js';
 import './App.css';
 import {
   findModelTemplate,
@@ -96,9 +96,12 @@ import { useAiLayoutAssistant } from './components/useAiLayoutAssistant.js';
 import { canUseWebGL } from './domain/webgl-support.js';
 import { CountBadge } from './components/CountBadge.jsx';
 import { CloseIcon } from './components/Icons.jsx';
+import EntryDeskStep from './components/EntryDeskStep.jsx';
+import EntryRoomPage from './components/EntryRoomPage.jsx';
+import { getAppStorage, isFileArchiveActive } from './domain/app-storage.js';
+import { ENTRY_PRESET_TEMPLATE_ID, formatEntryRoom, placePresetInRoom, shouldShowEntry } from './domain/entry-flow.js';
 
-const PROJECT_DRAFT_STORAGE_KEY = 'desklab.project-draft.v1';
-const getBrowserStorage = () => window.localStorage;
+const getBrowserStorage = () => getAppStorage();
 const projectClient = createLocalProjectClient(getBrowserStorage);
 const projectDraftStorage = createProjectDraftStorage(
   getBrowserStorage,
@@ -241,6 +244,8 @@ export default function App() {
   // the user picks a way to start or something appears in the room.
   const [hasSavedProject, setHasSavedProject] = useState(true);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [entryStep, setEntryStep] = useState('pending');
+  const fileArchive = isFileArchiveActive();
   const [guideStep, setGuideStep] = useState(0);
   const guideDismissedRef = useRef(false);
   const [scrollTemplatesToBuilder, setScrollTemplatesToBuilder] = useState(false);
@@ -298,8 +303,8 @@ export default function App() {
     return null;
   }, [showStatus]);
 
-  const clearLocalDraft = useCallback(() => {
-    const result = projectDraftStorage.clear();
+  const clearLocalDraft = useCallback(async () => {
+    const result = await Promise.resolve(projectDraftStorage.clear());
     if (result.ok) return true;
     console.warn('Unable to clear local project draft.', result.error);
     showStatus({
@@ -789,7 +794,8 @@ export default function App() {
     showStatus({ text: '已吸附到最近墙面', type: 'success' });
   }, [connectionMode, objects, projectEditable, room, selectedObjectId, showStatus, updateSelectedObject]);
 
-  const dialogOpen = showTemplates || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || shareLink || showRecommendations || showAbout || guideOpen;
+  const entryOpen = entryStep === 'room' || entryStep === 'desk';
+  const dialogOpen = showTemplates || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || shareLink || showRecommendations || showAbout || guideOpen || entryOpen;
 
   useLayoutEffect(() => {
     const handleKeyDown = (e) => {
@@ -866,14 +872,14 @@ export default function App() {
       return undefined;
     }
 
-    const timeoutId = window.setTimeout(() => {
+    const timeoutId = window.setTimeout(async () => {
       const draft = createProjectDraft({
         room,
         objects,
         connections,
         camera: getCurrentCamera(),
       });
-      const result = projectDraftStorage.write(draft);
+      const result = await Promise.resolve(projectDraftStorage.write(draft));
       if (!result.ok) {
         console.warn('Unable to save local project draft.', result.error);
         showStatus({
@@ -942,7 +948,7 @@ export default function App() {
         setCameraDirty(false);
       }
       setRecoveryDraft(null);
-      const draftCleared = !fullyCurrent || clearLocalDraft();
+      const draftCleared = !fullyCurrent || await clearLocalDraft();
       setShowBackupReminder(shouldRemindBackup({
         objectCount: saved.project.objects.length,
         state: readBackupReminderState(getBrowserStorage),
@@ -1091,11 +1097,68 @@ export default function App() {
     }
   };
 
+  const finishEntry = useCallback(() => {
+    guideDismissedRef.current = true;
+    markGuideSeen(getBrowserStorage());
+    setEntryStep('done');
+  }, []);
+
   useEffect(() => {
-    if (!projectLoaded || shareView || hasSavedProject || objects.length > 0) return;
-    if (guideDismissedRef.current || hasSeenGuide(getBrowserStorage())) return;
-    setGuideOpen(true);
-  }, [hasSavedProject, objects.length, projectLoaded, shareView]);
+    if (!projectLoaded) return;
+    const guideSeen = guideDismissedRef.current || hasSeenGuide(getBrowserStorage());
+    if (!shouldShowEntry({
+      shareView,
+      hasSavedProject,
+      objectCount: objects.length,
+      guideSeen,
+      recoveringDraft: Boolean(recoveryDraft),
+    })) {
+      if (objects.length > 0 && !hasSavedProject && !shareView && !guideSeen) finishEntry();
+      else setEntryStep('done');
+      return;
+    }
+    setEntryStep(current => (current === 'desk' ? 'desk' : 'room'));
+  }, [finishEntry, hasSavedProject, objects.length, projectLoaded, recoveryDraft, shareView]);
+
+  const handleConfirmEntryRoom = roomSize => {
+    setRoom(roomSize);
+    setInputRoom(roomSize);
+    setCameraConfig(defaultCameraPose(roomSize, []));
+    setEntryStep('desk');
+  };
+
+  const handleEntryPreset = () => {
+    if (!projectEditable) return;
+    const placed = placePresetInRoom(ENTRY_PRESET_TEMPLATE_ID, room);
+    if (!placed.ok) {
+      showStatus({ text: placed.reason || '这间房放不下这张电竞桌', type: 'error' }, 4000);
+      return;
+    }
+    if (savedLayout === null) {
+      setSavedLayout(serializeLayout(room, objects, connections));
+    }
+    recordHistory(null, {
+      includeCamera: true,
+      camera: getCurrentCamera(),
+      cameraDirty,
+    });
+    setRoom(placed.room);
+    setInputRoom(placed.room);
+    setObjects(placed.objects);
+    setConnections(placed.connections);
+    setCameraConfig(placed.camera);
+    setCameraDirty(true);
+    setSelectedObjectId(null);
+    setConnectionMode(false);
+    setConnectionDraft({});
+    finishEntry();
+    showStatus({ text: '已放上电竞桌', type: 'success' }, 3000);
+  };
+
+  const handleEntryCustom = () => {
+    finishEntry();
+    setIsLeftPanelOpen(true);
+  };
 
   const closeGuide = () => {
     guideDismissedRef.current = true;
@@ -1758,7 +1821,7 @@ export default function App() {
   };
 
   return (
-    <div className="app-shell">
+    <div className={entryOpen ? 'app-shell app-shell-entering' : 'app-shell'}>
       {/* 顶部控制栏 */}
       <div className="app-top">
         {appToolbar}
@@ -1781,7 +1844,7 @@ export default function App() {
         )}
 
         {showBackupReminder && !recoveryDraft && !projectLoadFailed && (
-          <BackupReminderBanner onExport={handleExportProject} onSnooze={handleSnoozeBackupReminder} />
+          <BackupReminderBanner fileArchive={fileArchive} onExport={handleExportProject} onSnooze={handleSnoozeBackupReminder} />
         )}
 
         <ErrorNotice />
@@ -1931,6 +1994,13 @@ export default function App() {
           )}
           </SceneErrorBoundary>
           )}
+          {entryStep === 'desk' && (
+            <EntryDeskStep
+              roomSummary={formatEntryRoom(room)}
+              onPreset={handleEntryPreset}
+              onCustom={handleEntryCustom}
+            />
+          )}
         </div>
 
         {/* 右侧：面板 */}
@@ -2047,7 +2117,7 @@ export default function App() {
 
       </div>
 
-      {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
+      {showAbout && <AboutDialog fileArchive={fileArchive} onClose={() => setShowAbout(false)} />}
 
       {showTemplates && (
         <TemplateDialog
@@ -2142,10 +2212,13 @@ export default function App() {
         />
       )}
 
+      {entryStep === 'room' && <EntryRoomPage onConfirm={handleConfirmEntryRoom} />}
+
       {guideOpen && (
         <OnboardingGuide
           stepIndex={guideStep}
           canEdit={projectEditable}
+          fileArchive={fileArchive}
           onStep={setGuideStep}
           onClose={closeGuide}
           onStart={handleStartGuideChoice}

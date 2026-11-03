@@ -1,5 +1,12 @@
 import { parseProjectDraft } from './draft.js';
 
+export const PROJECT_DRAFT_STORAGE_KEY = 'desklab.project-draft.v1';
+
+function settle(result, onOk, onError) {
+  if (result && typeof result.then === 'function') return result.then(onOk, onError);
+  return onOk();
+}
+
 export function createProjectDraftStorage(getStorage, key) {
   let safeToClear = true;
 
@@ -32,9 +39,14 @@ export function createProjectDraftStorage(getStorage, key) {
     },
     write(draft) {
       try {
-        getStorage().setItem(key, JSON.stringify(draft));
-        safeToClear = true;
-        return { ok: true };
+        const pending = getStorage().setItem(key, JSON.stringify(draft));
+        return settle(pending, () => {
+          safeToClear = true;
+          return { ok: true };
+        }, error => {
+          safeToClear = false;
+          return { ok: false, operation: 'write', error };
+        });
       } catch (error) {
         safeToClear = false;
         return { ok: false, operation: 'write', error };
@@ -50,8 +62,8 @@ export function createProjectDraftStorage(getStorage, key) {
       }
 
       try {
-        getStorage().removeItem(key);
-        return { ok: true };
+        const pending = getStorage().removeItem(key);
+        return settle(pending, () => ({ ok: true }), error => ({ ok: false, operation: 'clear', error }));
       } catch (error) {
         return { ok: false, operation: 'clear', error };
       }

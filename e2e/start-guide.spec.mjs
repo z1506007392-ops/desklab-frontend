@@ -13,49 +13,65 @@ function withoutSceneDownloadErrors(evidence) {
   };
 }
 
-test('a first-time visitor is offered three ways to start, and a template ends the guide', async ({ page }) => {
-  const evidence = await openProject(page, [], [], { saved: false });
-  await expect(guide(page)).toBeVisible();
-  await expect(guide(page)).toBeInViewport({ ratio: 1 });
-  await expect(guide(page).getByText('第 1 步，共 5 步')).toBeVisible();
+const roomStep = page => page.getByRole('dialog', { name: '这间房有多大' });
+const deskStep = page => page.getByRole('dialog', { name: '放一张桌子', exact: true });
 
+test('a first visit asks only for the room, then offers a desk on that room', async ({ page }) => {
+  const evidence = await openProject(page, [], [], { saved: false });
+  const room = roomStep(page);
+  await expect(room).toBeVisible();
+  await expect(room).toBeInViewport({ ratio: 1 });
+  await expect(room.getByRole('radio', { name: /默认/ })).toBeChecked();
+  await expect(room.getByRole('button')).toHaveCount(1);
+  await expect(guide(page)).toHaveCount(0);
+
+  await room.getByRole('button', { name: '生成这个房间', exact: true }).click();
+  await expect(room).toHaveCount(0);
+  const desk = deskStep(page);
+  await expect(desk).toBeVisible();
+  await expect(desk).toContainText('5 × 4 米的房间已经生成');
+  await expect(desk.getByRole('button')).toHaveCount(2);
+
+  await desk.getByRole('button', { name: '用电竞桌', exact: true }).click();
+  await expect(desk).toHaveCount(0);
+  await expect(page.getByText('已放上电竞桌', { exact: true })).toBeVisible();
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
+
+test('choosing to place things yourself opens the device library', async ({ page }) => {
+  const evidence = await openProject(page, [], [], { saved: false });
+  await page.getByRole('button', { name: '生成这个房间', exact: true }).click();
+  await page.getByRole('button', { name: '自己摆', exact: true }).click();
+  await expect(deskStep(page)).toHaveCount(0);
+  await expect(page.getByPlaceholder('搜索设备名称、类型、型号...')).toBeVisible();
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
+
+test('the longer guide still starts a template from the menu', async ({ page }) => {
+  const evidence = await openProject(page, []);
+  await expect(roomStep(page)).toHaveCount(0);
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('menu', { name: '更多', exact: true }).getByRole('menuitem', { name: '新手引导', exact: true }).click();
   await guide(page).getByRole('button', { name: '从模板开始', exact: true }).click();
   const picker = page.getByRole('dialog', { name: '桌面模板', exact: true });
   await expect(picker).toBeVisible();
   await picker.getByRole('button', { name: '使用模板：家庭办公', exact: true }).click();
   await expect(guide(page)).toHaveCount(0);
-
-  await page.getByRole('button', { name: '撤销', exact: true }).click();
-  await expect(guide(page), 'a dismissed guide stays away for this visit').toHaveCount(0);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
 
-test('"generate from my devices" opens the picker at the device form', async ({ page }) => {
-  const evidence = await openProject(page, [], [], { saved: false });
-  await guide(page).getByRole('button', { name: '按我的设备生成', exact: true }).click();
-  const picker = page.getByRole('dialog', { name: '桌面模板', exact: true });
-  await expect(picker.getByRole('heading', { name: '按我的设备生成', exact: true })).toBeInViewport();
-  await expect(guide(page)).toHaveCount(0);
-  expect(evidence).toEqual({ errors: [], writes: [] });
-});
-
-test('"I will place things myself" closes the guide and opens the device library', async ({ page }) => {
-  const evidence = await openProject(page, [], [], { saved: false });
-  await guide(page).getByRole('button', { name: '自己摆', exact: true }).click();
-  await expect(guide(page)).toHaveCount(0);
-  await expect(page.getByPlaceholder('搜索设备名称、类型、型号...')).toBeVisible();
-  expect(evidence).toEqual({ errors: [], writes: [] });
-});
-
-test('a user who already saved an empty room is not shown the guide', async ({ page }) => {
+test('a user who already saved an empty room is not shown the entry or the guide', async ({ page }) => {
   const evidence = await openProject(page, []);
   await expect(page.getByRole('button', { name: '桌面模板', exact: true })).toBeVisible();
+  await expect(roomStep(page)).toHaveCount(0);
   await expect(guide(page)).toHaveCount(0);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
 
 test('the guide moves by keyboard, stays dismissed, and can be reopened', async ({ page }) => {
-  const evidence = await openProject(page, [], [], { saved: false });
+  const evidence = await openProject(page, []);
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('menu', { name: '更多', exact: true }).getByRole('menuitem', { name: '新手引导', exact: true }).click();
   const dialog = guide(page);
   await expect(dialog.getByRole('heading', { name: '先放上一张桌子' })).toBeVisible();
   await dialog.getByRole('heading', { name: '先放上一张桌子' }).focus();
@@ -97,6 +113,8 @@ test('opening a share link does not show the guide or mark it seen', async ({ pa
   await waitForSceneDownloads(page); // see the reload above
   await page.reload();
   await expect(page.getByRole('region', { name: '只读分享', exact: true })).toBeVisible();
+  await expect(roomStep(page)).toHaveCount(0);
+  await expect(deskStep(page)).toHaveCount(0);
   await expect(guide(page)).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.getItem('desklab.guide-seen.v1'))).toBeNull();
   expect(withoutSceneDownloadErrors(evidence)).toEqual({ errors: [], writes: [] });
