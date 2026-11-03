@@ -1,4 +1,5 @@
 // Browser calls for the email-code login. The desk itself never goes through here.
+import { apiUrl } from './api-base.js';
 
 async function readBody(response) {
   try {
@@ -16,7 +17,7 @@ function failure(body, fallback) {
 
 export async function fetchCurrentSession(fetchImpl = (...args) => fetch(...args)) {
   try {
-    const response = await fetchImpl('/api/auth/me', {
+    const response = await fetchImpl(apiUrl('/api/auth/me'), {
       credentials: 'include',
       headers: { accept: 'application/json' },
     });
@@ -31,7 +32,7 @@ export async function fetchCurrentSession(fetchImpl = (...args) => fetch(...args
 async function postJson(path, payload, fetchImpl, fallback = '登录没有完成，请稍后再试') {
   let response;
   try {
-    response = await fetchImpl(path, {
+    response = await fetchImpl(apiUrl(path), {
       method: 'POST',
       credentials: 'include',
       headers: { 'content-type': 'application/json', accept: 'application/json' },

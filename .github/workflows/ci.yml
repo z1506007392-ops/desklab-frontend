@@ -2,7 +2,9 @@
 # pull requests. After those checks pass on a master push, Wrangler deploys
 # the built site. Cloudflare's own Git build still deploys too, until it is
 # turned off. That web deploy is transitional: the product entry is the
-# desktop app, and this workflow does not install Rust or package it.
+# desktop app. This workflow does not install Rust or package it. Windows
+# and macOS installers are built by .github/workflows/desktop.yml, so a
+# failed installer does not block this deploy.
 #
 # The checks used to be one job. On
 # https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698980114
@@ -35,6 +37,7 @@ jobs:
           test -f src-tauri/tauri.conf.json
           test -f src-tauri/src/lib.rs
           test -f src-tauri/capabilities/default.json
+          test -f .github/workflows/desktop.yml
       - uses: actions/setup-node@v5
         with:
           node-version-file: .node-version

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "desktop": "tauri dev",
-    "desktop:build": "tauri build",
+    "desktop:build": "node tools/sync-desktop-csp.mjs && tauri build",
     "tauri": "tauri",
     "dev:api": "node tools/dev-api-server.mjs",
     "eval:ai": "node tools/ai-eval/run-eval.mjs",

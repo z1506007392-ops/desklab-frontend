@@ -1,3 +1,4 @@
+import { apiUrl } from './api-base.js';
 import { AI_ERROR_MESSAGES, AI_PROTOCOL_VERSION, sanitizeSuggestions } from './ai-protocol.js';
 
 export const AI_REQUEST_TIMEOUT_MS = 45000;
@@ -39,7 +40,7 @@ export async function requestLayoutSuggestions({
   try {
     let response;
     try {
-      response = await fetchImpl('/api/ai/layout', {
+      response = await fetchImpl(apiUrl('/api/ai/layout'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

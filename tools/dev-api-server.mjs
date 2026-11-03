@@ -9,6 +9,7 @@
 import { createServer } from 'node:http';
 
 import { createAuthHandlers } from '../server/ai/auth.js';
+import { guardApiRequest } from '../server/ai/desktop-cors.js';
 import { createLayoutHandler } from '../server/ai/layout-handler.js';
 import { createMockFetch } from '../server/ai/mock-model.js';
 import { createRateLimiter } from '../server/ai/rate-limit.js';
@@ -48,27 +49,47 @@ const routes = new Map([
   ['POST /api/auth/logout', (context) => auth.logout(context)],
 ]);
 
+function writeResponse(res, response) {
+  const headers = {};
+  response.headers.forEach((value, key) => {
+    if (key === 'set-cookie') return;
+    headers[key] = value;
+  });
+  const cookies = typeof response.headers.getSetCookie === 'function' ? response.headers.getSetCookie() : [];
+  if (cookies.length === 1) headers['set-cookie'] = cookies[0];
+  else if (cookies.length > 1) headers['set-cookie'] = cookies;
+  res.writeHead(response.status, headers);
+  return response.arrayBuffer().then(body => res.end(Buffer.from(body)));
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  const handler = routes.get(`${req.method} ${url.pathname}`);
-  if (!handler) {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'not_found' }));
-    return;
-  }
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
   const headers = { 'CF-Connecting-IP': req.socket.remoteAddress || 'local' };
   if (req.headers['content-type']) headers['Content-Type'] = req.headers['content-type'];
   if (req.headers.cookie) headers.cookie = req.headers.cookie;
+  if (req.headers.origin) headers.Origin = req.headers.origin;
+  if (req.headers.accept) headers.Accept = req.headers.accept;
+  const hasBody = req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS';
   const request = new Request(url, {
     method: req.method,
     headers,
-    body: req.method === 'GET' || req.method === 'HEAD' ? undefined : Buffer.concat(chunks),
+    body: hasBody ? Buffer.concat(chunks) : undefined,
   });
-  const response = await handler({ request, env });
-  res.writeHead(response.status, Object.fromEntries(response.headers));
-  res.end(await response.text());
+  // Loopback is the Vite proxy (127.0.0.1:5173 calling this port). Production
+  // Pages does not allow that; see functions/api/_middleware.js.
+  const response = await guardApiRequest(request, () => {
+    const handler = routes.get(`${req.method} ${url.pathname}`);
+    if (!handler) {
+      return new Response(JSON.stringify({ error: 'not_found' }), {
+        status: 404,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    return handler({ request, env });
+  }, { allowLoopback: true });
+  await writeResponse(res, response);
 });
 
 server.listen(port, () => {

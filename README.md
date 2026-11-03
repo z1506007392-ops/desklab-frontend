@@ -39,7 +39,11 @@ still answers.
 It needs the Rust toolchain named in `src-tauri/rust-toolchain.toml` (1.99.1;
 the opener plugin needs Rust 1.90 or newer) and the platform WebView
 libraries (on Linux, WebKitGTK 4.1). `npm run desktop:build` packages the
-app for the OS you are on. Windows and macOS installers are not built here.
+app for the OS you are on. Windows (NSIS `.exe`) and macOS (`.dmg`)
+installers are built on those runners by `.github/workflows/desktop.yml`
+and uploaded as workflow artifacts named `desklab-windows-nsis` and
+`desklab-macos-dmg` (kept 14 days). That workflow does not publish a GitHub
+Release, and it does not gate the website deploy.
 
 The first launch is only a room-size page. Confirming it builds that empty
 room; the next step is the existing gaming desk or an empty room you fill
@@ -54,7 +58,17 @@ no project yet. A save made in Chrome does not appear in the installed app;
 export a backup and import it. `npm run dev` is unchanged.
 
 `tauri dev` still proxies `/api` to port 3001. A packaged build serves
-`dist` with no proxy, so AI calls need a base URL before they work there.
+`dist` with no proxy. AI calls (and any later community calls) then use
+`https://desklab-frontend.pages.dev`. Set `VITE_DESKLAB_API_BASE` to another
+https origin before `npm run desktop:build` to point them somewhere else;
+the packaging script writes that origin into the app content security
+policy. The website policy is unchanged and stays same-origin. `tauri dev`
+does not apply the packaged policy, so the dev server and hot reload keep
+working. The packaged policy still allows the blob workers meshopt and the
+axis labels need, and it allows Tauri IPC. The Pages API accepts the
+desktop origins (`tauri://localhost`, `http://tauri.localhost`,
+`https://tauri.localhost`) with a `SameSite=None` session cookie. A browser
+on the website still gets `SameSite=Lax`.
 
 ## Deployment
 

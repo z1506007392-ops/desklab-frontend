@@ -1,0 +1,52 @@
+# Windows and macOS installers. Separate from ci.yml so a packaging failure
+# does not block the website deploy. This does not publish a GitHub Release;
+# the installers are workflow artifacts kept for 14 days.
+name: Desktop
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installers:
+    name: ${{ matrix.artifact }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            bundles: nsis
+            artifact: windows-nsis
+            path: src-tauri/target/release/bundle/nsis/*.exe
+          - os: macos-latest
+            bundles: dmg
+            artifact: macos-dmg
+            path: src-tauri/target/release/bundle/dmg/*.dmg
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.99.1
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - run: npm ci
+      # sync-desktop-csp runs first and writes the committed Pages origin
+      # unless VITE_DESKLAB_API_BASE is set to another https origin.
+      - run: npm run desktop:build -- --bundles ${{ matrix.bundles }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desklab-${{ matrix.artifact }}
+          path: ${{ matrix.path }}
+          retention-days: 14
+          if-no-files-found: error
