@@ -33,17 +33,20 @@ export function useAiLayoutAssistant() {
         followUp: feedback ? { previousSuggestions: lastSuggestionsRef.current, feedback } : null,
         signal: controller.signal,
       });
-      if (controllerRef.current === controller) {
+      setState(previous => {
+        if (controllerRef.current !== controller || controller.signal.aborted || previous.status !== 'loading') {
+          return previous;
+        }
         lastSuggestionsRef.current = suggestions;
-        setState(previous => ({
+        return {
           ...previous,
           status: 'done',
           suggestions,
           error: null,
           errorCode: null,
           remaining: typeof remaining === 'number' ? remaining : previous.remaining,
-        }));
-      }
+        };
+      });
     } catch (error) {
       if (controllerRef.current !== controller) return;
       if (error.code === 'cancelled') {
@@ -62,7 +65,14 @@ export function useAiLayoutAssistant() {
   }, []);
 
   const cancel = useCallback(() => {
-    controllerRef.current?.abort();
+    const current = controllerRef.current;
+    controllerRef.current = null;
+    current?.abort();
+    setState(previous => (
+      previous.status === 'loading'
+        ? { ...previous, status: 'idle', error: null, errorCode: null }
+        : previous
+    ));
   }, []);
 
   return { ...state, request, cancel, dismissError };
