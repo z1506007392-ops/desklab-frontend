@@ -17,6 +17,12 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+领了 E101。已登录的 AI 请求在扣次之后如果上游失败，要把剩余次数带回页面。查看是否已登录时的网络失败仍是 E80，不动。
+
+还剩：改响应并补测试。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E67 线上验收（https://desklab-frontend.pages.dev ，2026-11-04 04:08 UTC+8 前后，各请求一次）：
 
 - 首页 200，标题 DeskLab。未登录套用「家庭办公」模板后，3D 画面直接出来（桌子、显示器、笔记本），没有要求登录。截图 `live_e67_desk.png`。
