@@ -509,12 +509,12 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E92 [x] 完成（Desklab，2026-11-04，df397f0）** 分享链接的 URL hash 和导入存档做输入校验。解开之前按长度拒绝过大的 hash，解压有字节上限。版本 2 里用户改过的字段改成白名单。导入文件、粘贴和打开分享链接时限制设备数、连接数、房间和坐标；名字里的尖括号换成全角。模型地址只留本站 `/models/*.glb`，远程地址和 `javascript:` 丢掉，已知型号仍用水合后的目录模型。已经存在存档里的远程地址也不再发请求。本机正常保存不走这道筛子。不改外观。
 - **E93 [x] 完成（Desklab，2026-11-04，eda4edf）** `/api/ai/layout` 只收 `application/json`。请求体限制深度、节点数、键和字符串长度，并拒绝 `__proto__`、`constructor`、`prototype`。意外错误只回答「服务暂时不可用」，日志只记错误名。上游正文和带换行的模型名不会回到浏览器。限流用的地址只取第一段。502、504 和看不懂的回答仍带回 `remaining`（E101）。不改 `functions/api/auth/*`，也不改 `server/ai/auth.js`。
 - **E94 [x] 完成（Desklab，2026-11-04，8912623）** `package.json` 的 `overrides.minimatch` 定为 11.0.4。`npm audit` 从 6 条中等（都在 eslint 用的 minimatch 10，不进页面）变成 0。没有把 eslint 降到 9，也没有升级 three、react、vite。lint 仍然通过。
-- **E95 [x] 完成（Desklab，2026-11-04，4be0cf3）** 登录流程只读安全审查。没有改 `functions/api/auth/*`，也没有改 `server/ai/auth.js`。下面交给主线，本线不修：
-  1. 验证码错误次数不是原子的。`verify` 先读 `attempts`，再写入加一后的数。并发请求可以读到同一个数，实际试错可以超过 5 次（`MAX_ATTEMPTS`）。单线程下是 6 位、10 分钟、同一邮箱每天最多发 5 次，硬猜不划算；「最多 5 次」在并发下保不住。验证接口没有按 IP 限流（发码才有，默认每小时 10 次）。建议主线用 KV 原子更新或加锁。生成验证码是 `Uint32 % 1000000`，有很小的取模偏差，可选改成拒绝采样。比对是 SHA-256 再逐字节异或。验证码不进日志。
-  2. 没有用户库，任意合法邮箱都能要验证码，不存在「这个邮箱有没有账号」。但没有待验证的码时 `verify` 返回 `code_expired`（验证码已失效），码还在但填错返回 `code_wrong`（验证码不对），错满返回 `code_locked`。发码的 `send_lock`、`send_daily`、`send_ip` 是三句不同的话，能看出是这个邮箱刚发过、今天发满，还是这个 IP 发满。建议主线对外用同一句，也不要把邮箱限额和 IP 限额说成两句。
-  3. Cookie `desklab_session`：HttpOnly、SameSite=Lax、Path=/、Max-Age 30 天。`request.url` 是 https 才加 Secure。令牌是 32 字节随机数，KV 只存它的 SHA-256。没有 Domain，也没有 `__Host-` 前缀。退出只删当前这一条会话，同一邮箱的其他会话要等 30 天。主线上线后确认生产的 `Set-Cookie` 带 Secure。可选：加上 `__Host-` 前缀，退出时清掉这个邮箱的全部会话。
+- **E95 [x] 完成（Desklab，2026-11-04，4be0cf3）** 登录流程只读安全审查。审查当时没有改 `functions/api/auth/*`，也没有改 `server/ai/auth.js`。E113–E116（c693a6a）补上了第 1 条的加锁和验证 IP 限流、第 2 条的对外文案、第 3 条的 https Secure（网站 SameSite 仍是 Lax）、第 5 条的 nosniff。E109 是房间尺寸，不是这四条。下面是当时的发现。这次没做的：验证码 `Uint32 % 1000000` 的取模偏差、`__Host-` 前缀、退出时清掉这个邮箱的全部会话、核对 Origin。
+  1. 审查时验证码错误次数不是原子的。`verify` 先读 `attempts`，再写入加一后的数。并发请求可以读到同一个数，实际试错可以超过 5 次（`MAX_ATTEMPTS`）。单线程下是 6 位、10 分钟、同一邮箱每天最多发 5 次，硬猜不划算。验证接口当时没有按 IP 限流（发码才有，默认每小时 10 次）。E113 在同一个 Worker 里把这一次读和写排队，并给验证加上每 IP 每小时上限。KV 没有比较并交换，另一个 isolate 仍可能看到旧次数。生成验证码是 `Uint32 % 1000000`，有很小的取模偏差，可选改成拒绝采样，这次没改。比对是 SHA-256 再逐字节异或。验证码不进日志。
+  2. 没有用户库，任意合法邮箱都能要验证码，不存在「这个邮箱有没有账号」。审查时没有待验证的码返回 `code_expired`（验证码已失效），码还在但填错返回 `code_wrong`（验证码不对），错满返回 `code_locked`。发码的 `send_lock`、`send_daily`、`send_ip` 是三句不同的话。E114 把这两组收成两句，错误码也收成 `code_rejected` 和 `send_limited`。
+  3. Cookie `desklab_session`：HttpOnly、SameSite=Lax、Path=/、Max-Age 30 天。`request.url` 是 https 才加 Secure。令牌是 32 字节随机数，KV 只存它的 SHA-256。没有 Domain，也没有 `__Host-` 前缀。退出只删当前这一条会话，同一邮箱的其他会话要等 30 天。E115 用测试锁住：https 的 `Set-Cookie` 带 Secure，本地 http 不带，网站的 SameSite 保持 Lax。`__Host-` 和一次退出全部会话这次没做。
   4. 改状态的接口都是 POST。SameSite=Lax 在现行浏览器上会挡住跨站 POST 带上这个 cookie。没有 CSRF 令牌，也没有核对 Origin。JSON 的 Content-Type 会触发预检，响应没有 CORS 头。普通表单 POST 不是合法 JSON，发码会当成无效邮箱，不会发信。保持 Lax 就可以接受。不要改成 SameSite=None。以后可以再对一下 Origin。
-  5. `CF-Connecting-IP` 在 Pages 上由 Cloudflare 写入，客户端改不了。本地开发服务器用套接字地址覆盖，不抄客户端送来的这个头。登录代码仍读原始头，在 Pages 上可以。登录的 JSON 响应不经过 `public/_headers`，自己也没写 nosniff。可选，不挡上线。
+  5. `CF-Connecting-IP` 在 Pages 上由 Cloudflare 写入，客户端改不了。本地开发服务器用套接字地址覆盖，不抄客户端送来的这个头。登录代码只取第一段，并且必须像一个地址，否则记成 `unknown`。登录的 JSON 不经过 `public/_headers`。E116 在登录响应上自己写了 nosniff。
 - **E14 [x] 被 E67 取代（Desklab，2026-11-04）** 不再做「线上连发 30 次、确认出现 429」。负责人 Leo 2026-11-04 02:52：AI 改为登录后才能用，每个邮箱每天 20 次，全站不设上限，由 E67 实现。H2 的 KV 绑定留给 E67 存验证码、会话和次数。此前同一计数键连发 30 次都是 200（响应头仍是 `X-AI-Limit-Mode: kv`），那次验收作废，不再重跑。
 - **E15 [x] 完成（claude，2026-10-30）** 界面视觉重做，按 `.claude/skills/impeccable` 的流程：负责人确认 `PRODUCT.md`，从四个真页面预览里选了"桌搭标签"（方向合同 `.impeccable/surfaces/src-app-jsx.md`）。按钮和菜单文字、整体布局、3D 场景、DeskLab 名字都没改。做了：颜色/字体/控件统一变量、行内样式搬进 CSS（E11）、emoji 换成圆点和画出来的图标、手机两行工具栏（E10）、44px 触控（E12）、桌面分组（E8）、状态动效、底部浮起的消息标签。impeccable 检查器无发现；全新子代理按 impeccable 终审，第一轮六条全部修完，复审 ship。设计规则写在根目录 `DESIGN.md` 和 `.impeccable/design.json`，以后改界面先读它。可选的后续（审查提的，没做）：把选中标签钉在 3D 画面里设备旁边（要先问负责人，因为 3D 外观冻结）；资产库卡片加设备缩略图。
 - **E16 [x] 完成（claude，2026-10-30）** 负责人同意后，把选中标签钉进 3D 画面：选中设备时，设备正上方出现白色圆点标签（drei `Html`，画在盖在画布上的一层里，不挡操作、不盖弹窗，读屏跳过）。3D 场景本身的背景、网格、灯光、模型不变。测试 `e2e/scene-tag.spec.mjs`。
@@ -569,10 +569,10 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
   - 进入工作台之后，「更多 → 设置」可以改宽，布局仍跟着墙走。
   - 「重新选择房间」回到整页。只有这次有「返回」，Escape 也只在这次离开。
   - 已保存的项目、分享链接、新手引导保持原样。不做扫描，不加设备，不改 3D，不改登录接口。
-- **E113 [~] 进行中（Desklab，2026-11-04）** 验证码错误次数先加锁再写回 KV，同一个 Worker 里并发不能超过 5 次。验证接口按 IP 限流，超限不增加这个邮箱的错误次数。不改外观，不加设备，不改桌面壳。原拟 E109，该号已被房间尺寸用掉。
-- **E114 [~] 进行中（Desklab，2026-11-04）** 登录和发码对外用同一类句子：没有待验证码和填错看不出差别；邮箱刚发过、今天发满、这个 IP 发满也看不出差别。无效邮箱和不是 6 位验证码仍用原来的句子。
-- **E115 [~] 进行中（Desklab，2026-11-04）** 生产 https 的 `Set-Cookie` 带 Secure，本地 http 不带。网站的 SameSite 保持 Lax，不改成 None。桌面来源仍由 F7 改成 None。
-- **E116 [~] 进行中（Desklab，2026-11-04）** 登录接口的 JSON 响应加上 `X-Content-Type-Options: nosniff`。
+- **E113 [x] 完成（Desklab，2026-11-04，c693a6a）** 验证码错误次数在同一个 Worker 里先排队再写回 KV。叠在一起的请求不会读到同一个次数再各自加一，所以这一侧不会超过 5 次；错满之后，对的码也用同一句拒绝。KV 没有比较并交换，另一个 isolate 在缓存追上之前仍可能看到旧次数。验证接口按 IP 每小时 `AUTH_VERIFY_PER_IP_HOURLY`（默认 30）限流，超限不增加这个邮箱的错误次数。默认不取 10：一家网络里几个人各试几次，10 次会把正常登录锁住，30 次仍挡住一个地址往邮箱上撒验证码。不改外观，不加设备，不改桌面壳。原拟 E109，该号已被房间尺寸用掉。
+- **E114 [x] 完成（Desklab，2026-11-04，c693a6a）** 登录和发码对外用同一类句子。没有待验证码、填错、错满都是 `code_rejected`：「验证码不对或已失效，请重新获取」。邮箱刚发过、今天发满、这个 IP 发满都是 `send_limited`：「发送太频繁，请稍后再试」。验证接口按 IP 超限是 `verify_limited`，句子与发码限额相同，状态 429。无效邮箱和不是 6 位验证码仍用原来的句子。
+- **E115 [x] 完成（Desklab，2026-11-04，c693a6a）** 生产 https 的 `Set-Cookie` 带 Secure。Pages 传入的 `request.url` 是 https 才加；本地 http 不加，否则浏览器不存。网站这条 cookie 仍是 SameSite=Lax，没有改成 None。F7 的 `server/ai/desktop-cors.js` 只对桌面来源把这句 Lax 改成 None 并补上 Secure。退出清 cookie 用同一条规则。
+- **E116 [x] 完成（Desklab，2026-11-04，c693a6a）** 登录接口的 JSON 响应（成功和失败）加上 `X-Content-Type-Options: nosniff`。`public/_headers` 盖不到 Pages Functions。
 
 ### 阶段 F：本地桌面应用（Leo 2026-11-04）
 
@@ -650,6 +650,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 | `MAIL_FROM` | （无） | 已验证的发件地址。和当前供应商的密钥一起才算配好 |
 | `MAIL_FROM_NAME` | `DeskLab` | 发件人名称 |
 | `AUTH_CODE_PER_IP_HOURLY` | `10` | 同一 IP 每小时最多发几次验证码。负责人要求有上限、没有给数字，默认 10 |
+| `AUTH_VERIFY_PER_IP_HOURLY` | `30` | 同一 IP 每小时最多验证几次。默认 30：一家网络里几个人各试几次，10 次会把正常登录锁住；30 次仍挡住一个地址撒验证码。超限不增加该邮箱的错误次数 |
 
 ### 6.3 服务端 `POST /api/ai/layout`
 
@@ -863,7 +864,7 @@ total = 100 × errors + 20 × warnings + 5 × hints + 1 × cableMeters
 - 服务端日志不记录请求体、模型输出全文、密钥；只记状态码、耗时、token 用量。
 - 用户可编辑的设备名称被当作数据处理（提示词第 8 条 + 输出强校验）；即使模型被诱导，最坏结果也只是一些被校验拒绝的建议。
 - 前端明确告知会把布局数据发给 DeepSeek（C5 第 5 点、D1）。
-- 登录验证码只存哈希，不写进日志，也不写进响应。会话 cookie 是 HttpOnly。邮箱存在 KV 里，用来发验证码和计算每天的次数。E95 的只读审查（并发试错、文案能区分邮箱、生产 cookie 要确认带 Secure）写在阶段 E，登录代码没改。
+- 登录验证码只存哈希，不写进日志，也不写进响应。会话 cookie 是 HttpOnly、SameSite=Lax，https 才加 Secure（E115）。同一个 Worker 里验证错误次数先排队再写，叠在一起的请求不会超过 5 次；KV 没有比较并交换，另一个 isolate 仍可能看到旧次数。验证接口另有每 IP 每小时上限（E113，默认 30）。没有待验证码和填错，以及发码的三种限额，对外都看不出差别（E114）。登录 JSON 带 nosniff（E116）。
 - 静态站的安全响应头在 `public/_headers`（E91）。分享链接和导入存档先筛再进画面（E92）。`/api/ai/layout` 的请求体有上限，意外错误不带回内部细节（E93）。
 
 ### 6.9 邮箱登录（E67）
@@ -872,8 +873,8 @@ total = 100 × errors + 20 × warnings + 5 × hints + 1 × cableMeters
 
 | 接口 | 作用 |
 |---|---|
-| `POST /api/auth/request-code` | 6 位验证码，10 分钟，只存 `SHA-256(邮箱:验证码)`。同一邮箱 60 秒 1 次、每天 5 次；同一 IP 每小时 `AUTH_CODE_PER_IP_HOURLY`（默认 10）。发信没配好时 503「登录暂未开放」，且不扣次数。发信失败 502「邮件没有发出去，请稍后再试」，并删掉刚存的验证码 |
-| `POST /api/auth/verify` | 最多错 5 次。通过后 `desklab_session` cookie：HttpOnly、SameSite=Lax、Path=/、30 天；只有 https 才加 Secure（本地 http 开发才能存住） |
+| `POST /api/auth/request-code` | 6 位验证码，10 分钟，只存 `SHA-256(邮箱:验证码)`。同一邮箱 60 秒 1 次、每天 5 次；同一 IP 每小时 `AUTH_CODE_PER_IP_HOURLY`（默认 10）。刚发过、今天发满、这个 IP 发满都是 429「发送太频繁，请稍后再试」。发信没配好时 503「登录暂未开放」，且不扣次数。发信失败 502「邮件没有发出去，请稍后再试」，并删掉刚存的验证码。JSON 带 nosniff |
+| `POST /api/auth/verify` | 同一个 Worker 里先排队，错误次数不会被并发请求盖过 5。没有待验证码、填错、错满都是「验证码不对或已失效，请重新获取」。同一 IP 每小时 `AUTH_VERIFY_PER_IP_HOURLY`（默认 30），超限是「发送太频繁，请稍后再试」，不增加错误次数。通过后 `desklab_session`：HttpOnly、SameSite=Lax、Path=/、30 天；只有 https 才加 Secure（本地 http 不加） |
 | `GET /api/auth/me` | `{ email, remaining }`。未登录是 `{ email: null, remaining: null }` |
 | `POST /api/auth/logout` | 删掉会话 |
 
@@ -889,7 +890,7 @@ total = 100 × errors + 20 × warnings + 5 × hints + 1 × cableMeters
 
 界面：没登录时点「让 AI 看看」打开登录框（先邮箱，再验证码），登录成功不自动发起 AI 请求。登录后按钮旁是「今日剩余 N 次」和「退出」。样式用现有的 `.modal-overlay` / `.modal-container`。分享链接只读时这个按钮保持禁用。
 
-E95（2026-11-04，只读，没有改登录代码）交给主线：并发时验证码试错可以超过 5 次；没有待验证码和填错的文案不一样，发码的三句限额也能区分是邮箱还是 IP。生产要确认 `Set-Cookie` 带 Secure。CSRF 在 SameSite=Lax 下可以接受，不要改成 None。详情在阶段 E 的 E95。
+E113–E116（2026-11-04，c693a6a）做了 E95 交给主线的修复：验证错误次数在同一个 Worker 里加锁；验证按 IP 限流；对外文案不再区分没有待验证码和填错，也不再区分三种发码限额；https 的 `Set-Cookie` 带 Secure。网站的 SameSite 保持 Lax。F7 只对桌面来源把这枚 cookie 改成 None，这次没有改掉。登录 JSON 带 nosniff。KV 没有原子更新，锁只覆盖这个 isolate 里叠在一起的请求。CSRF 在网站的 Lax 下可以接受。E109 是房间尺寸。详情在阶段 E 的 E95、E113–E116。
 
 ---
 

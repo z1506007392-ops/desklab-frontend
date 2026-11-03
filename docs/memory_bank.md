@@ -17,6 +17,19 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E113–E116 完成（`c693a6a`，认领 `1be76e8`）。E95 交给主线的登录修复，原拟 E109–E112；E109 已被房间尺寸 `dbf81af` 用掉。不改外观，不加设备。没改 `src-tauri`，没改 E109 的房间尺寸，没改工作流，没改 `public/_headers`。
+
+- E113：验证码错误次数在同一个 Worker 里排队后再写回。12 个并发错码只记下 5 次，之后对的码也拒绝。KV 没有比较并交换，另一个 isolate 在缓存追上之前仍可能看到旧次数。验证接口按 IP 限流（`AUTH_VERIFY_PER_IP_HOURLY`，默认 30），超限不增加这个邮箱的错误次数。默认不取 10，是因为一家网络共用一个地址，10 次会把正常登录锁住。
+- E114：没有待验证码、填错、错满都是「验证码不对或已失效，请重新获取」（`code_rejected`）。邮箱刚发过、今天发满、这个 IP 发满都是「发送太频繁，请稍后再试」（`send_limited`）。验证太频繁用同一句，错误码是 `verify_limited`，状态 429。无效邮箱和不是 6 位验证码仍是原来的句子。
+- E115：`request.url` 是 https 时 Set-Cookie 带 Secure，http 不带。网站仍写出 SameSite=Lax。F7 只对桌面来源把这句改成 None 并补上 Secure。
+- E116：登录 JSON（成功和失败）带 `X-Content-Type-Options: nosniff`。
+
+验证数在推送前按合入后的树再记。
+
+还剩：推 master，CI 全绿后写链接。E69、E70 和贴图再压缩仍等负责人决定。E97、E99、E100 是别的线。验证码取模偏差、`__Host-` 前缀、一次退出全部会话、网站上核对 Origin 这次没做。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 领了 E113–E116（E95 交给主线的登录修复，原拟 E109–E112；E109 已被房间尺寸 `dbf81af` 用掉）。E113 给验证码错误次数加锁，并给验证接口加 IP 限流。E114 统一发码和验证的对外文案。E115 确认 https 的会话 cookie 带 Secure，网站的 SameSite 仍是 Lax。E116 给登录 JSON 加 nosniff。不改 `src-tauri`，不改 E96、E97、E98，不改工作流，不改 E109 的房间尺寸。
 
 还剩：实现并验证，然后推 master。
@@ -4542,8 +4555,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 628 domain tests (F7 packaged API base, and E109 on the same tree)
-npm run test:ui   # Chrome desktop + phone: 251 passed + 1 skipped. CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 628 domain tests before the login lock; recount after E113–E116
+npm run test:ui   # Chrome desktop + phone: 251 passed + 1 skipped on the room-size tree. CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
