@@ -173,7 +173,7 @@ test('modelId matching wins over shared legacy type matching', () => {
   assert.equal(template.modelId, 'monitor-27');
   const staleCategoryTemplate = findModelTemplate({ category: 'computer', modelId: 'monitor-27', type: 'monitor' });
   assert.equal(staleCategoryTemplate.modelId, 'monitor-27');
-  assert.deepEqual(getModelDefaultScale('display', 'monitor-27'), { x: 0.62, y: 0.06, z: 0.37 });
+  assert.deepEqual(getModelDefaultScale('display', 'monitor-27'), { x: 0.62, y: 0.2, z: 0.45 });
 });
 
 test('project hydration adds current ports and anchors without overwriting custom anchors', () => {
@@ -297,6 +297,28 @@ test('legacy closed-lid laptop heights are restored and the laptop stays on the 
   }
   assert.equal(custom.scale.z, 0.2, 'heights close to the open-lid default are left alone');
   assert.equal(custom.position.z, deskTop + 0.1);
+
+  const [panel, resized] = hydrateProjectObjects([
+    {
+      id: 'old-24', type: 'monitor', modelId: 'monitor-24',
+      position: { x: 0.3, y: 0.2, z: deskTop + 0.32 / 2 },
+      scale: { x: 0.54, y: 0.05, z: 0.32 },
+      rotation: { x: 0, y: 0, z: 180 },
+    },
+    {
+      id: 'custom-24', type: 'monitor', modelId: 'monitor-24',
+      position: { x: 0, y: 0, z: 1 },
+      scale: { x: 0.5, y: 0.12, z: 0.36 },
+    },
+  ]);
+  assert.deepEqual(panel.scale, { x: 0.54, y: 0.17, z: 0.39 });
+  assert.ok(Math.abs(panel.position.z - panel.scale.z / 2 - deskTop) < 1e-9);
+  assert.deepEqual([panel.position.x, panel.position.y], [0.3, 0.2]);
+  assert.equal(panel.rotation.z, 180);
+  assert.deepEqual(resized.scale, { x: 0.5, y: 0.12, z: 0.36 }, 'a resized monitor is left alone');
+  const [panelAgain] = hydrateProjectObjects([panel]);
+  assert.deepEqual(panelAgain.scale, panel.scale);
+  assert.deepEqual(panelAgain.position, panel.position);
 
   const [again] = hydrateProjectObjects([thin]);
   assert.deepEqual(again.scale, thin.scale, 'migration is idempotent');

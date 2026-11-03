@@ -97,9 +97,12 @@ test('a monitor let go outside the 3D view still drops, and one undo puts it bac
   await addDevice(page, '显示器', '24 英寸显示器');
   const before = await readPosition(page);
 
-  // Off the desk, then up onto the toolbar before letting go.
+  // Off the desk, then up onto the toolbar before letting go. Keep the
+  // sideways offset: a taller monitor's tag sits higher, and sliding straight
+  // up from the start would raycast back onto the desktop.
   const from = await grabPoint(page);
-  await drag(page, from, testIsPhone(page) ? -150 : -250, 40, { releaseAt: { x: from.x, y: 20 } });
+  const dx = testIsPhone(page) ? -220 : -280;
+  await drag(page, from, dx, 40, { releaseAt: { x: from.x + dx, y: 8 } });
   const after = await readPosition(page);
   expect(after.x).not.toBeCloseTo(before.x, 2);
   await expectDropped(page, after);
@@ -299,7 +302,11 @@ test('arrow keys move a monitor onto the desk and off its far end like a drag wo
   expect(await readPosition(page)).toEqual({ x: 0.75, y: 0, z: onFloor.position.z });
   // The sixth puts its middle over the desk: it stands on top.
   await press('ArrowRight', 1);
-  expect(await readPosition(page)).toEqual({ x: 0.65, y: 0, z: deskTopZ });
+  const stood = await readPosition(page);
+  expect(stood.x).toBeCloseTo(0.65, 3);
+  expect(stood.y).toBeCloseTo(0, 3);
+  // The height field shows three decimals, so 0.75 + 0.195 is 0.945.
+  expect(stood.z).toBeCloseTo(deskTopZ, 3);
   await expect(page.getByRole('button', { name: /^布局检查/ })).toHaveAccessibleName('布局检查');
 
   // Across the desk and off the other end: it drops to the floor.

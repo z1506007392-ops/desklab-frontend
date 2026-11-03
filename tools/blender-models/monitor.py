@@ -7,7 +7,7 @@ from common import *
 CATALOG = {  # defaultScale {x: width, y: depth, z: height} in metres, body colour
     'monitor-24':        ((0.54, 0.05, 0.32), '#212121'),
     'monitor-27':        ((0.62, 0.06, 0.37), '#111111'),
-    'ultrawide-monitor': ((0.82, 0.10, 0.36), '#000000'),
+    'ultrawide-monitor': ((0.82, 0.24, 0.46), '#000000'),
 }
 mid = sys.argv[sys.argv.index('--') + 1] if '--' in sys.argv else 'monitor-24'
 (W, D, H), body_hex = CATALOG[mid]

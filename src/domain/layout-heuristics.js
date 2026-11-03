@@ -113,7 +113,9 @@ function floorSpotBesideDesk(room, frame, object, preferredSide) {
 // rejected because a monitor has to stay on the desk.
 function clearMonitorSpot(frame, monitor, objects) {
   const halfY = monitor.scale.y / 2;
-  const minY = frame.seatLocal.y + HEURISTIC_LIMITS.minViewingDistance + 0.02;
+  // Distance is to the screen, the face toward the seat, not the centre of a
+  // stand that now reaches back behind the panel.
+  const minY = frame.seatLocal.y + HEURISTIC_LIMITS.minViewingDistance + halfY + 0.02;
   const maxY = frame.halfDepth - halfY - 0.02;
   if (maxY < minY) return null;
   const localX = frame.toLocal(monitor.position).x;
@@ -164,7 +166,8 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
     if (!monitorsByDesk.has(frame)) monitorsByDesk.set(frame, []);
     monitorsByDesk.get(frame).push(monitor);
     const local = frame.toLocal(monitor.position);
-    if (local.y - frame.seatLocal.y < HEURISTIC_LIMITS.minViewingDistance) {
+    const nearestToSeat = local.y - monitor.scale.y / 2;
+    if (nearestToSeat - frame.seatLocal.y < HEURISTIC_LIMITS.minViewingDistance) {
       const spot = clearMonitorSpot(frame, monitor, objects);
       hints.push(hint('monitor_too_close', [monitor.id], `${monitor.name}离人太近，看久了眼睛累`, spot ? {
         fix: [move(monitor, spot)],

@@ -46,9 +46,9 @@ export const DEVICE_CATALOG = [
   {
     category: 'display', categoryName: '显示器',
     models: [
-      { type: 'monitor', modelId: 'monitor-24', displayName: '24 英寸显示器', shape: 'rect', assetUrl: catalogModelUrl('monitor-24'), defaultScale: { x: 0.54, y: 0.05, z: 0.32 }, color: '#212121', wattage: 30, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-in', name: 'HDMI 输入', type: 'hdmi', direction: 'input' }, { id: 'dp-in', name: 'DP 输入', type: 'displayport', direction: 'input' }] },
-      { type: 'monitor', modelId: 'monitor-27', displayName: '27 英寸显示器', shape: 'rect', assetUrl: catalogModelUrl('monitor-27'), defaultScale: { x: 0.62, y: 0.06, z: 0.37 }, color: '#111111', wattage: 45, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-in', name: 'HDMI 输入', type: 'hdmi', direction: 'input' }, { id: 'dp-in', name: 'DP 输入', type: 'displayport', direction: 'input' }] },
-      { type: 'monitor', modelId: 'ultrawide-monitor', displayName: '带鱼屏显示器', shape: 'rect', assetUrl: catalogModelUrl('ultrawide-monitor'), defaultScale: { x: 0.82, y: 0.1, z: 0.36 }, color: '#000000', wattage: 60, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-in', name: 'HDMI 输入', type: 'hdmi', direction: 'input' }, { id: 'dp-in', name: 'DP 输入', type: 'displayport', direction: 'input' }] },
+      { type: 'monitor', modelId: 'monitor-24', displayName: '24 英寸显示器', shape: 'rect', assetUrl: catalogModelUrl('monitor-24'), defaultScale: { x: 0.54, y: 0.17, z: 0.39 }, color: '#212121', wattage: 30, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-in', name: 'HDMI 输入', type: 'hdmi', direction: 'input' }, { id: 'dp-in', name: 'DP 输入', type: 'displayport', direction: 'input' }] },
+      { type: 'monitor', modelId: 'monitor-27', displayName: '27 英寸显示器', shape: 'rect', assetUrl: catalogModelUrl('monitor-27'), defaultScale: { x: 0.62, y: 0.20, z: 0.45 }, color: '#111111', wattage: 45, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-in', name: 'HDMI 输入', type: 'hdmi', direction: 'input' }, { id: 'dp-in', name: 'DP 输入', type: 'displayport', direction: 'input' }] },
+      { type: 'monitor', modelId: 'ultrawide-monitor', displayName: '带鱼屏显示器', shape: 'rect', assetUrl: catalogModelUrl('ultrawide-monitor'), defaultScale: { x: 0.82, y: 0.24, z: 0.46 }, color: '#000000', wattage: 60, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-in', name: 'HDMI 输入', type: 'hdmi', direction: 'input' }, { id: 'dp-in', name: 'DP 输入', type: 'displayport', direction: 'input' }] },
     ],
   },
   {
@@ -211,19 +211,19 @@ const PORT_ANCHOR_BY_MODEL = {
     'ac-in': { x: 0.38, y: -0.5, z: -0.12 },
   },
   'monitor-24': {
-    'ac-in': { x: -0.12, y: -0.16, z: 0.05 },
-    'hdmi-in': { x: 0, y: -0.16, z: 0.05 },
-    'dp-in': { x: 0.12, y: -0.16, z: 0.05 },
+    'ac-in': { x: -0.12, y: -0.18, z: -0.18 },
+    'hdmi-in': { x: 0, y: -0.18, z: -0.18 },
+    'dp-in': { x: 0.12, y: -0.18, z: -0.18 },
   },
   'monitor-27': {
-    'ac-in': { x: -0.12, y: -0.16, z: 0.05 },
-    'hdmi-in': { x: 0, y: -0.16, z: 0.05 },
-    'dp-in': { x: 0.12, y: -0.16, z: 0.05 },
+    'ac-in': { x: -0.12, y: -0.18, z: -0.18 },
+    'hdmi-in': { x: 0, y: -0.18, z: -0.18 },
+    'dp-in': { x: 0.12, y: -0.18, z: -0.18 },
   },
   'ultrawide-monitor': {
-    'ac-in': { x: -0.1, y: -0.42, z: 0.05 },
-    'hdmi-in': { x: 0, y: -0.42, z: 0.05 },
-    'dp-in': { x: 0.1, y: -0.42, z: 0.05 },
+    'ac-in': { x: -0.1, y: -0.35, z: -0.12 },
+    'hdmi-in': { x: 0, y: -0.35, z: -0.12 },
+    'dp-in': { x: 0.1, y: -0.35, z: -0.12 },
   },
   router: {
     'dc-in': { x: -0.257, y: 0.5, z: -0.295 },
@@ -278,6 +278,32 @@ export function withPortAnchors(ports, modelId) {
 // flat tray, so heights below this share of the default are restored.
 const LEGACY_LAPTOP_HEIGHT_RATIO = 0.6;
 
+// Catalog sizes from when a monitor was only its panel. The mesh includes a
+// stand, so those saves squash the new GLB. Depth and height are restored;
+// the bottom stays on whatever it was resting on. Width is unchanged.
+const LEGACY_MONITOR_SCALES = {
+  'monitor-24': { y: 0.05, z: 0.32 },
+  'monitor-27': { y: 0.06, z: 0.37 },
+  'ultrawide-monitor': { y: 0.1, z: 0.36 },
+};
+
+function migrateLegacyMonitorSize(object, template) {
+  const legacy = LEGACY_MONITOR_SCALES[template?.modelId];
+  if (!legacy || !object.scale || !object.position) return object;
+  const storedY = Number(object.scale.y);
+  const storedZ = Number(object.scale.z);
+  if (!Number.isFinite(storedY) || !Number.isFinite(storedZ)) return object;
+  if (Math.abs(storedY - legacy.y) > 1e-6 || Math.abs(storedZ - legacy.z) > 1e-6) return object;
+  const targetY = template.defaultScale.y;
+  const targetZ = template.defaultScale.z;
+  const bottom = Number(object.position.z) - storedZ / 2;
+  return {
+    ...object,
+    scale: { ...object.scale, y: targetY, z: targetZ },
+    position: { ...object.position, z: bottom + targetZ / 2 },
+  };
+}
+
 function migrateLegacyLaptopHeight(object, template) {
   if (template?.modelId !== 'laptop-15' || !object.scale || !object.position) return object;
   const targetZ = template.defaultScale.z;
@@ -309,7 +335,7 @@ export function hydrateProjectObjects(objects) {
       ? JSON.parse(JSON.stringify(template.ports))
       : (object.ports || []);
     return {
-      ...migrateLegacyLaptopHeight(object, template),
+      ...migrateLegacyMonitorSize(migrateLegacyLaptopHeight(object, template), template),
       assetUrl: template ? template.assetUrl : object.assetUrl,
       ports: withCurrentPortAnchors(ports, object.modelId || template?.modelId),
     };

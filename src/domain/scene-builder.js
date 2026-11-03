@@ -246,7 +246,27 @@ export function buildDeskScene({ devices = [], desk = {} } = {}) {
         : { x: 0, y: deskY });
     laptop = createObject('laptop-15', 'laptop', template.displayName,
       { ...position, z: deskTop + size.z / 2 }, 180);
-    objects.push(laptop);
+    // A deeper screen reaches the front row. Nudge the screens just enough to
+    // clear the laptop, and only while they stay fully on the desk.
+    if (monitorObjects.some(monitor => objectsOverlap(laptop, monitor))) {
+      const edge = deskScale.x / 2 - FRONT_MARGIN;
+      const laptopX = Math.min(Math.max(laptop.position.x, -edge + size.x / 2), edge - size.x / 2);
+      laptop.position.x = laptopX;
+      const toward = laptopX >= 0 ? 1 : -1;
+      const allowed = laptopX - toward * (size.x / 2 + ROW_GAP);
+      const overflow = Math.max(...monitorObjects.map(monitor => toward * (monitor.position.x + toward * monitor.scale.x / 2 - allowed)));
+      const room = Math.min(...monitorObjects.map(monitor => edge - monitor.scale.x / 2 + toward * monitor.position.x));
+      const shift = Math.min(Math.max(overflow, 0), Math.max(room, 0));
+      if (shift > 0) {
+        for (const monitor of monitorObjects) monitor.position.x -= toward * shift;
+      }
+    }
+    if (monitorObjects.some(monitor => objectsOverlap(laptop, monitor))) {
+      notes.push(`桌面上放不下${template.displayName}，已跳过。`);
+      laptop = null;
+    } else {
+      objects.push(laptop);
+    }
   }
 
   let pc = null;

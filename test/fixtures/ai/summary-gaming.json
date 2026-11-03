@@ -39,12 +39,12 @@
       "center": [
         0,
         1.45,
-        0.93
+        0.98
       ],
       "size": [
         0.82,
-        0.1,
-        0.36
+        0.24,
+        0.46
       ],
       "rotationZ": 180,
       "restingOn": "desk",
@@ -406,7 +406,7 @@
       "to": "ultrawide-monitor-1:ac-in",
       "type": "power",
       "length": 1.5,
-      "needed": 1.18
+      "needed": 1.11
     },
     {
       "id": "c-power-strip-ac-out-3-power-adapter-laptop-ac-in",
@@ -446,7 +446,7 @@
       "to": "ultrawide-monitor-1:dp-in",
       "type": "displayport",
       "length": 1.8,
-      "needed": 1.58
+      "needed": 1.53
     },
     {
       "id": "c-laptop-hdmi-out-ultrawide-monitor-1-hdmi-in",
@@ -454,7 +454,7 @@
       "to": "ultrawide-monitor-1:hdmi-in",
       "type": "hdmi",
       "length": 1,
-      "needed": 0.82
+      "needed": 0.83
     },
     {
       "id": "c-router-lan-1-desktop-pc-eth-1",

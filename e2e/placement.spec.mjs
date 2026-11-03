@@ -107,7 +107,7 @@ test('on a turned desk, devices from the library go to its back and its seat hal
     return { x: await value('左右 X'), y: await value('前后 Y') };
   };
   const screen = await positionOf('27 英寸显示器');
-  expect(screen.x).toBeLessThan(-0.2); // at the back
+  expect(screen.x).toBeLessThanOrEqual(-0.2); // at the back
   expect(screen.y).toBeCloseTo(0, 2); // centred along the desk
   expect((await positionOf('15 英寸笔记本')).x).toBeGreaterThan(0); // on the seat half
   expect((await positionOf('台式主机')).x).toBeLessThan(-desk.scale.y / 2); // behind the desk

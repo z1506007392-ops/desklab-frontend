@@ -226,13 +226,13 @@ test('does not snap onto an AABB-only support under a rotated object', () => {
 test('a dragged object that ends up in the air drops to what is below it', () => {
   const desk = object('desk', { position: { x: 0, y: 0, z: 0.375 }, scale: { x: 1.4, y: 0.7, z: 0.75 } });
   const box = object('box', { position: { x: 1.6, y: 0, z: 0.2 }, scale: { x: 0.4, y: 0.4, z: 0.4 } });
-  const monitor = (x, z = 0.91) => object('monitor', { position: { x, y: 0, z }, scale: { x: 0.54, y: 0.05, z: 0.32 } });
+  const monitor = (x, z = 0.945) => object('monitor', { position: { x, y: 0, z }, scale: { x: 0.54, y: 0.17, z: 0.39 } });
   const start = monitor(0).position;
 
   assert.equal(settleAfterDrag(room, monitor(0.3), [desk, box, monitor(0.3)], start), null, 'still on the desk');
   assert.equal(settleAfterDrag(room, monitor(0), [desk, box, monitor(0)], start), null, 'a click without moving changes nothing');
-  assert.equal(settleAfterDrag(room, monitor(-1.6), [desk, box, monitor(-1.6)], start).position.z, 0.16, 'off the desk: onto the floor');
-  assert.equal(settleAfterDrag(room, monitor(1.6), [desk, box, monitor(1.6)], start).position.z, 0.56, 'over a lower box: onto the box');
+  assert.equal(settleAfterDrag(room, monitor(-1.6), [desk, box, monitor(-1.6)], start).position.z, 0.195, 'off the desk: onto the floor');
+  assert.equal(settleAfterDrag(room, monitor(1.6), [desk, box, monitor(1.6)], start).position.z, 0.595, 'over a lower box: onto the box');
 
   const outlet = object('outlet', { modelId: 'wall-outlet', type: 'outlet', position: { x: 2.48, y: 0, z: 0.3 }, scale: { x: 0.08, y: 0.02, z: 0.08 } });
   assert.equal(settleAfterDrag(room, outlet, [outlet], { x: 2.48, y: 0.5, z: 0.3 }), null, 'wall outlets stay on the wall');
@@ -241,11 +241,11 @@ test('a dragged object that ends up in the air drops to what is below it', () =>
 
 test('a device dragged at floor height onto a desk or stand is let go standing on its top', () => {
   const desk = object('desk', { category: 'furniture', modelId: 'office-desk', position: { x: 0, y: 0, z: 0.375 }, scale: { x: 1.4, y: 0.7, z: 0.75 } });
-  const onFloor = (x, y = 0) => object('monitor', { category: 'display', position: { x, y, z: 0.16 }, scale: { x: 0.54, y: 0.05, z: 0.32 } });
-  const start = { x: 2, y: 0, z: 0.16 };
+  const onFloor = (x, y = 0) => object('monitor', { category: 'display', position: { x, y, z: 0.195 }, scale: { x: 0.54, y: 0.17, z: 0.39 } });
+  const start = { x: 2, y: 0, z: 0.195 };
 
   const lifted = settleAfterDrag(room, onFloor(0.2), [desk, onFloor(0.2)], start);
-  assert.equal(lifted.position.z, 0.75 + 0.16, 'onto the desk top');
+  assert.equal(lifted.position.z, 0.75 + 0.195, 'onto the desk top');
   assert.equal(lifted.position.x, 0.2);
   assert.deepEqual(analyzeProjectLayout(room, [desk, lifted]), []);
 
@@ -259,7 +259,7 @@ test('a device dragged at floor height onto a desk or stand is let go standing o
   // Onto a stand on the desk: the higher top wins.
   const stand = object('stand', { category: 'accessory', modelId: 'monitor-stand', position: { x: -0.3, y: 0.2, z: 0.8 }, scale: { x: 0.3, y: 0.2, z: 0.1 } });
   const onStand = settleAfterDrag(room, onFloor(-0.3, 0.2), [desk, stand, onFloor(-0.3, 0.2)], start);
-  assert.ok(Math.abs(onStand.position.z - (0.85 + 0.16)) < 1e-9, 'onto the stand top');
+  assert.ok(Math.abs(onStand.position.z - (0.85 + 0.195)) < 1e-9, 'onto the stand top');
 
   // A tower is not a surface, and a desk does not climb onto a desk.
   const tower = object('tower', { category: 'computer', modelId: 'desktop-pc', position: { x: 1.5, y: 0, z: 0.25 }, scale: { x: 0.2, y: 0.45, z: 0.5 } });

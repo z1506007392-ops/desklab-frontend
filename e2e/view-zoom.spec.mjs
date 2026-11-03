@@ -22,11 +22,14 @@ test('the wheel zooms the view and leaves the selected device the same size', as
   const tagBefore = await page.locator('.scene-tag').boundingBox();
   const canvas = page.locator('canvas');
   const box = await canvas.boundingBox();
-  await canvas.dispatchEvent('wheel', { deltaY: -200, clientX: box.x + box.width / 2, clientY: box.y + box.height / 2 });
+  // The scene draws on demand, so a wheel that arrives before the control is
+  // listening is dropped. Repeat the gesture until the view actually moves.
+  const wheel = { deltaY: -200, clientX: box.x + box.width / 2, clientY: box.y + box.height / 2 };
   await expect.poll(async () => {
+    await canvas.dispatchEvent('wheel', wheel);
     const tag = await page.locator('.scene-tag').boundingBox();
     return Math.hypot(tag.x - tagBefore.x, tag.y - tagBefore.y);
-  }).toBeGreaterThan(1);
+  }).toBeGreaterThan(8);
   expect(await readLength(page)).toBeCloseTo(lengthBefore, 5);
   expect(evidence.errors).toEqual([]);
 });
