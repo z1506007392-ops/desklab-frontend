@@ -17,6 +17,12 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+A8 的部署步骤写进 `.github/workflows/ci.yml`：`check` 全绿后，仅在推送到 master 时执行 `npx wrangler@4.157.0 pages deploy dist --project-name desklab-frontend`，用 secrets `CLOUDFLARE_API_TOKEN` 和 `CLOUDFLARE_ACCOUNT_ID`。在仓库根目录跑，这样 `functions/` 会一起上传。Git 自动部署没有关。等 Desklab 关掉 Git 自动部署。
+
+还剩：等这一次工作流真正部署成功，并看线上首页还在。然后做 E67。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 领了 A8。H3 的 secrets 已经在。CI 全绿后用 wrangler 部署到 desklab-frontend。Git 自动部署先留着。等 Desklab 关掉 Git 自动部署。
 
 还剩：写好部署工作流并确认它至少成功部署过一次，然后做 E67。

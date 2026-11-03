@@ -200,8 +200,8 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - `vite.config.js` 仍把 `/api` 代理到 `localhost:3001`，第 6 节的本地 AI 开发服务器会用到它。
 
 ### 4.7 部署
-- **Cloudflare Pages** 从 `master` 自动构建部署：构建命令 `npm run build`，输出 `dist`，Node 版本读 `.node-version`。线上：`https://desklab-frontend.pages.dev`。
-- **GitHub Actions**（`.github/workflows/ci.yml`）只跑检查，不部署。注意：Cloudflare 不会等 CI；CI 红了站点照样会更新。所以**本地验证全绿才推送**。
+- **Cloudflare Pages** 从 `master` 自动构建部署：构建命令 `npm run build`，输出 `dist`，Node 版本读 `.node-version`。线上：`https://desklab-frontend.pages.dev`。Git 自动部署仍然开着。
+- **GitHub Actions**（`.github/workflows/ci.yml`）先跑检查。推送到 `master` 且检查全绿后，再用 `wrangler pages deploy dist --project-name desklab-frontend` 部署（A8）。两套部署同时存在。等 Desklab 关掉 Git 自动部署。注意：Cloudflare 的 Git 构建不会等 CI；CI 红了，Git 那条仍可能更新站点。所以**本地验证全绿才推送**。
 - 线上验证方法：用 Playwright 打开线上网址（云端环境需要走 `HTTPS_PROXY` 代理：`chromium.launch({ proxy: { server: process.env.HTTPS_PROXY } })`；`waitUntil` 用 `'load'`，不要用 `'networkidle'`，后者在代理下会超时）。检查：标题、模板加载、所有 `/models/*.glb` 返回 200、保存刷新、控制台无报错。
 
 ### 4.8 已知坑

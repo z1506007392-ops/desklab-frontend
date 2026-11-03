@@ -28,7 +28,10 @@ optional settings: `DEEPSEEK_MODEL`, `DEEPSEEK_BASE_URL`, `AI_ENABLED`,
 Cloudflare Pages builds `master` on every push (`npm run build`, output
 `dist`, Node version from `.node-version`) and serves
 https://desklab-frontend.pages.dev. GitHub Actions (`.github/workflows/ci.yml`)
-runs the checks below on pushes and pull requests.
+runs the checks below on pushes and pull requests. After those checks pass
+on `master`, the same workflow deploys with
+`wrangler pages deploy dist --project-name desklab-frontend`. Git auto-deploy
+stays on as well until it is turned off.
 
 ## 3D models
 
