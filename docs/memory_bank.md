@@ -17,6 +17,22 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E76–E80 的实现已提交，等这次推送的 CI 记实际分钟数。不改外观，不加设备。E97 的认领和 E101–E108 的日志没改。
+
+- E76 `0b731c6`：检查拆成静态（test、lint、build）、Chrome 界面 4 片、WebKit 关键用例，三路并行。npm 仍由 setup-node 缓存。WebKit 浏览器缓存到 `~/.cache/ms-playwright`。`deploy` 仍 `needs: check`，里面的 checkout、标成 master、npm ci、build、`wrangler pages deploy` 没改。
+- E77 `5bb21e9`：布线检查里单根延长、一键延长、清理指向缺失设备的连接（可撤销）、超长被动 HDMI 的警告。测试用的悬空连接标志和 E80 的外壳崩溃标志在同一个文件里，随 `e568039`。
+- E78 `0e66c47`：本地草稿可以恢复或放弃，已保存的项目不被覆盖，恢复可以撤销。分享对话框里对「复制链接」按 Enter 会复制。
+- E79 `1fb2709` 目录搜索（名称、种类、规格；空白和没有匹配都不算命中），`d298ef2` 取消后迟到的 AI 回答不再套用，`0fe48ab` 应用后撤销再重做、取消要等回答落下、请求中断可以重试。
+- E80 `e568039`：「更多」可用方向键、Home、End、Tab、Escape，关掉后焦点回到「更多」。重复的「定位 / 推回去 / 照做 / 延长到推荐长度」读屏名称带上那一条问题，按钮上的字不变。页面外壳崩溃用现有错误条，刷新后本机存档还在。查看登录状态时网络失败给出「网络连接失败」，不打开登录框。
+
+改前（https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698980114 ，`ddcfdd8`）：整次 22 分 47 秒，check 22 分 10 秒（Chrome 界面 17 分 56 秒，随后 WebKit 2 分 53 秒，安装 WebKit 31 秒）。部署 35 秒。
+
+验证：`npm test` 545 通过（rebase 前 543，加上 master 上 E101 的 2 个）。lint 0 问题，build 通过。Chrome 桌面和手机在实现上 225 通过 + 1 跳过（改前这条线看到的是 201 通过 + 1 跳过）。rebase 期间 master 多了「失败的 AI 回答更新剩余次数」，桌面和手机都跑过。WebKit 本机缺系统库，装上之后 `library-browse` 3 个都过（这条也在 CI 的 WebKit 名单里）。
+
+还剩：等这次 CI 全绿，把运行链接和检查耗时写上。若检查超过 10 分钟再拆。E69、E70 等负责人决定。E97 由另一条线做。H4 不动。Git 自动部署仍等负责人关掉。发信仍等 `BREVO_API_KEY` 和 `MAIL_FROM`。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 领了 E97。Leo 2026-11-04 已批准 E96–E100（含新设备与 3D）。本线先做不抢文件的购线清单跳转：京东和淘宝普通搜索，页面不写 DeskLab 自编价格，不接联盟。不改 E107 的安装清单，不改 E69、E70。E98、E96 若和别人的文件撞上，先认领再做。
 
 还剩：实现 E97 并验证，然后 E99、E100、E98、E96。
@@ -4278,8 +4294,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 538 domain tests (E101 remaining on upstream failure; 536 at E67)
-npm run test:ui   # Chrome desktop + phone: 203 passed + 1 skipped. Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 545 domain tests (E76–E80; 538 after E101)
+npm run test:ui   # Chrome desktop + phone: 227 passed + 1 skipped at this tip (225 on the E76–E80 tree, plus E101's remaining-count test, desktop and phone). Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
