@@ -4,6 +4,7 @@ import {
   getObjectBounds,
   getRotatedFootprint,
   horizontalFootprintsOverlap,
+  isHungUnderDesk,
   objectsOverlap,
   safeClamp,
   validateAndConstrainObject,
@@ -30,6 +31,7 @@ export function snapObjectToSupport(room, object, objects) {
     .map(candidate => ({ candidate, bounds: getObjectBounds(candidate) }))
     .filter(entry => entry.bounds
       && horizontalFootprintsOverlap(object, entry.candidate)
+      && isOverTopOf(object.position, entry.candidate)
       && entry.bounds.maxZ < bounds.maxZ + GEOMETRY_EPSILON)
     .map(entry => entry.bounds.maxZ)
     .sort((first, second) => second - first);
@@ -274,6 +276,8 @@ export function analyzeProjectLayout(room, rawObjects) {
       && horizontalFootprintsOverlap(target.object, candidate.object)
       && Math.abs(target.bounds.minZ - candidate.bounds.maxZ) <= 0.03
     );
+    if (objects.some(other => isHungUnderDesk(target.object, other))) continue;
+
     if (supports.length > 0) {
       // Touching is not enough: with its centre past the edge of everything
       // under it, it tips over and falls (more than half hangs off).
@@ -328,6 +332,8 @@ export function findSupportingObject(object, objects) {
   if (host) return { kind: 'object', id: host.id };
   const bounds = getObjectBounds(object);
   if (!bounds) return null;
+  const hung = getRecordItems(objects).find(candidate => isHungUnderDesk(object, candidate));
+  if (hung) return { kind: 'under-desk', id: hung.id };
   const supports = getRecordItems(objects)
     .filter(candidate => candidate.id !== object.id)
     .map(candidate => ({ candidate, top: getObjectBounds(candidate)?.maxZ }))

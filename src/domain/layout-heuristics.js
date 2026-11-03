@@ -1,5 +1,5 @@
 import { evaluateConnectionLength, standardCableLength } from './connections.js';
-import { getRotatedFootprint, horizontalFootprintsOverlap } from './geometry.js';
+import { getRotatedFootprint, horizontalFootprintsOverlap, hungUnderDeskPosition, isHungUnderDesk } from './geometry.js';
 import { isDesk } from './desks.js';
 import { findSupportingObject } from './layout-analysis.js';
 import { getRecordItems } from './record-collections.js';
@@ -154,6 +154,53 @@ function clearMonitorSpot(frame, monitor, objects) {
   return null;
 }
 
+// The laptop covers a monitor: their widths overlap, and the laptop sits
+// closer to the seat. A laptop beside the screens, or one used as the only
+// keyboard, does not.
+function laptopBlocksScreen(frame, laptop, monitor) {
+  const laptopLocal = frame.toLocal(laptop.position);
+  const monitorLocal = frame.toLocal(monitor.position);
+  const overlap = Math.min(laptopLocal.x + laptop.scale.x / 2, monitorLocal.x + monitor.scale.x / 2)
+    - Math.max(laptopLocal.x - laptop.scale.x / 2, monitorLocal.x - monitor.scale.x / 2);
+  return overlap > 0.02 && laptopLocal.y < monitorLocal.y - 0.05;
+}
+
+function laptopBesideMonitors(frame, laptop, monitors, objects) {
+  const ys = monitors.map(monitor => frame.toLocal(monitor.position).y + monitor.scale.y / 2);
+  const y = Math.min(Math.max(...ys), frame.halfDepth - 0.06) - laptop.scale.y / 2;
+  if (y - laptop.scale.y / 2 < -frame.halfDepth + 0.02) return null;
+  const xs = monitors.flatMap(monitor => {
+    const local = frame.toLocal(monitor.position);
+    return [local.x - monitor.scale.x / 2, local.x + monitor.scale.x / 2];
+  });
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  // Seat's left is +x. Try that side first, then the other.
+  for (const x of [maxX + 0.08 + laptop.scale.x / 2, minX - 0.08 - laptop.scale.x / 2]) {
+    if (Math.abs(x) + laptop.scale.x / 2 > frame.halfLength - 0.05) continue;
+    const world = frame.toWorld({ x, y });
+    const candidate = { ...laptop, position: { ...laptop.position, ...world } };
+    const blocked = objects.some(other => other.id !== laptop.id && !isDesk(other)
+      && horizontalFootprintsOverlap(candidate, other));
+    if (!blocked) return world;
+  }
+  return null;
+}
+
+function hungStripFix(frame, strip, objects) {
+  const localY = frame.halfDepth - strip.scale.y / 2 - 0.005;
+  for (const localX of [0, 0.2, -0.2, 0.4, -0.4]) {
+    const point = hungUnderDeskPosition(frame.desk, localX, localY, strip);
+    const candidate = { ...strip, position: point, rotation: { ...strip.rotation, z: frame.desk.rotation?.z ?? 0 } };
+    if (!isHungUnderDesk(candidate, frame.desk)) continue;
+    const blocked = objects.some(other => other.id !== strip.id && !isDesk(other) && horizontalFootprintsOverlap(candidate, other)
+      && Math.abs((other.position.z) - point.z) < (other.scale.z + strip.scale.z) / 2);
+    if (blocked) continue;
+    return move(strip, { x: point.x, y: point.y }, point.z);
+  }
+  return null;
+}
+
 export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
   const objects = getRecordItems(rawObjects).filter(object => object?.position && object?.scale);
   const connections = getRecordItems(rawConnections);
@@ -183,7 +230,7 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
       if (frames.size > 0) {
         const [frame] = frames.values();
         hints.push(hint('monitor_not_on_desk', [monitor.id], `${monitor.name}没有放在桌面上`, {
-          fix: [move(monitor, frame.toWorld({ x: 0, y: frame.halfDepth / 2 }))],
+          fix: [move(monitor, frame.toWorld({ x: 0, y: frame.halfDepth - monitor.scale.y / 2 - 0.06 }))],
         }));
       }
       continue;
@@ -229,6 +276,15 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
         fix: [move(laptop, frame.toWorld({ x: local.x, y: -frame.halfDepth + laptop.scale.y / 2 + 0.05 }))],
       }));
     }
+    if (!frame || !keyboardDesks.has(frame.desk.id)) continue;
+    const monitors = objects.filter(isMonitor).filter(monitor => deskUnder(monitor)?.desk.id === frame.desk.id);
+    const blocking = monitors.filter(monitor => laptopBlocksScreen(frame, laptop, monitor));
+    if (blocking.length === 0) continue;
+    const spot = laptopBesideMonitors(frame, laptop, monitors, objects);
+    if (!spot) continue;
+    hints.push(hint('laptop_blocks_screen', [laptop.id], `${laptop.name}挡在屏幕前面，看着挤`, {
+      fix: [move(laptop, spot)],
+    }));
   }
 
   for (const tower of objects.filter(isTower)) {
@@ -308,22 +364,29 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
     if (nearestDistance > HEURISTIC_LIMITS.mouseKeyboardDistance) {
       hints.push(hint('mouse_far_from_keyboard', [mouse.id], `${mouse.name}离键盘太远，手要挪很远才能点`, {
         fix: [move(mouse, frame.toWorld({
-          x: nearest.local.x - (nearest.keyboard.scale.x / 2 + 0.06 + mouse.scale.x / 2),
-          y: nearest.local.y,
+          x: nearest.local.x - (nearest.keyboard.scale.x / 2 + 0.04 + mouse.scale.x / 2),
+          y: nearest.local.y - nearest.keyboard.scale.y / 2 + mouse.scale.y / 2,
         }))],
       }));
     }
   }
 
   for (const strip of objects.filter(isStrip)) {
-    const frame = deskUnder(strip);
-    if (frame) {
-      // On the floor under the back edge, out of the way of feet.
-      const spot = frame.toWorld({ x: 0, y: frame.halfDepth - strip.scale.y / 2 - 0.02 });
-      hints.push(hint('strip_on_desk', [strip.id], `${strip.name}放在桌面上，显得乱也容易碰到`, {
-        fix: [move(strip, spot, strip.scale.z / 2)],
-      }));
+    const onTop = deskUnder(strip);
+    if (onTop) {
+      const fix = hungStripFix(onTop, strip, objects);
+      hints.push(hint('strip_on_desk', [strip.id], `${strip.name}放在桌面上，显得乱也容易碰到`, fix ? { fix: [fix] } : {}));
+      continue;
     }
+    if (!onFloor(strip) || frames.size === 0) continue;
+    let nearest = null;
+    for (const frame of frames.values()) {
+      const local = frame.toLocal(strip.position);
+      const distance = Math.hypot(local.x, local.y);
+      if (!nearest || distance < nearest.distance) nearest = { frame, distance };
+    }
+    const fix = nearest && hungStripFix(nearest.frame, strip, objects);
+    hints.push(hint('strip_on_floor', [strip.id], `${strip.name}放在地上，光脚容易踢到`, fix ? { fix: [fix] } : {}));
   }
 
   for (const router of objects.filter(isRouter)) {

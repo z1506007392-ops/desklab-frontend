@@ -7,7 +7,7 @@ const isPhone = page => page.viewportSize().width < 900;
 async function addMonitorToGamingDesk(page) {
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
   await page.getByRole('dialog', { name: '桌面模板', exact: true })
-    .getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+    .getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   const openLibrary = page.getByRole('button', { name: '展开资产库', exact: true });
   if (await openLibrary.isVisible()) await openLibrary.click();
   await page.getByRole('button', { name: '显示器', exact: true }).click();

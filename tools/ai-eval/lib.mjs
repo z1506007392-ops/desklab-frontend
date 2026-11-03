@@ -37,9 +37,28 @@ const MESSES = [
     return edit(project, monitor.modelId, m => { m.rotation.z = 120; return m; });
   }],
   ['laptop-at-back', project => {
-    if (!project.objects.some(object => object.modelId === 'laptop-15')) return null;
     const desk = deskOf(project);
-    return edit(project, 'laptop-15', l => { l.position.y = desk.position.y + desk.scale.y / 2 - l.scale.y / 2 - 0.02; return l; });
+    // The photographed presets have no open laptop. The recorded scene id
+    // still needs one, sitting at the back with nothing to type on.
+    let base = project;
+    if (!base.objects.some(object => object.modelId === 'laptop-15')) {
+      base = buildDeskScene({
+        devices: [{ modelId: 'laptop-15', count: 1 }, { modelId: 'monitor-27', count: 1 }],
+        desk: { length: desk.scale.x, depth: desk.scale.y },
+      });
+    }
+    const objects = base.objects.filter(object => object.modelId !== 'keyboard' && object.modelId !== 'mouse');
+    const ids = new Set(objects.map(object => object.id));
+    const next = {
+      ...base,
+      objects,
+      connections: base.connections.filter(connection => ids.has(connection.fromObjectId) && ids.has(connection.toObjectId)),
+    };
+    const seatDesk = deskOf(next);
+    return edit(next, 'laptop-15', laptop => {
+      laptop.position.y = seatDesk.position.y + seatDesk.scale.y / 2 - laptop.scale.y / 2 - 0.02;
+      return laptop;
+    });
   }],
   ['tower-in-legroom', project => {
     if (!project.objects.some(object => object.modelId === 'desktop-pc')) return null;
@@ -101,7 +120,10 @@ export function buildEvalScenes() {
 
   // Old-save shapes: a closed-lid laptop height, a removed device, and a
   // generated desk with an off-centre screen; all go through hydration.
-  const legacy = buildTemplateScene('home-office');
+  const legacy = buildDeskScene({
+    devices: [{ modelId: 'laptop-15', count: 1 }, { modelId: 'keyboard', count: 1 }],
+    desk: { length: 1.2, depth: 0.7 },
+  });
   scenes.push({
     id: 'legacy/closed-lid-laptop',
     kind: 'legacy',

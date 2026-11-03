@@ -16,7 +16,7 @@ test('the 3D view really draws the room and the devices', async ({ page }) => {
   const evidence = await openProject(page, []);
   await expectCanvasDrawn(page);
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
-  await page.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  await page.getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   await expectCanvasDrawn(page);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
@@ -38,7 +38,7 @@ test('the 3D view draws only when something changes', async ({ page }) => {
   });
   const evidence = await openProject(page, []);
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
-  await page.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  await page.getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   await waitForSceneDownloads(page);
   await expectCanvasDrawn(page);
   const draws = () => page.evaluate(() => window.desklabDrawCalls);

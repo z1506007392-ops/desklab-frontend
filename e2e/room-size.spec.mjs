@@ -44,7 +44,7 @@ test('after a template, a narrower or wider room keeps the desk against its wall
   const evidence = await openProject(page, [], [], { room: ROOM });
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
   await page.getByRole('dialog', { name: '桌面模板', exact: true })
-    .getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+    .getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   const names = ['书桌', '带鱼屏显示器', '插排', '墙壁插座'];
   const before = await ysOf(page, names);
 

@@ -15,7 +15,7 @@ test('without WebGL the page explains it and everything else still works', async
   await expect(page.locator('canvas')).toHaveCount(0);
 
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
-  await page.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  await page.getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   await page.getByRole('button', { name: '所有连接', exact: true }).click();
   const list = page.getByRole('dialog', { name: '全部连接清单', exact: true });
   await expect(list).toContainText('台式主机网线');
@@ -29,7 +29,7 @@ test('missing model files fall back to simple shapes without breaking the 3D vie
   await page.route(/\/models\/[^/?#]+\.glb(?:\?.*)?$/, route => route.fulfill({ status: 404, body: '' }));
   const evidence = await openProject(page, []);
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
-  await page.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  await page.getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   await page.waitForTimeout(1500);
   await expect(page.locator('canvas')).toBeVisible();
   await expect(page.getByRole('alert').filter({ hasText: '3D 画面' })).toHaveCount(0);
@@ -59,7 +59,7 @@ test('if the 3D view crashes, the rest of the page survives and the view can be 
   const fallback = page.getByRole('alert').filter({ hasText: '3D 画面出了点问题' });
   await expect(fallback).toBeVisible();
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
-  await page.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  await page.getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   await expect(page.getByRole('button', { name: '保存项目', exact: true })).toBeEnabled();
 
   await fallback.getByRole('button', { name: '重新加载 3D 画面', exact: true }).click();

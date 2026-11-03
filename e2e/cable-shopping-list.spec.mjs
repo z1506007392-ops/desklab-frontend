@@ -134,7 +134,7 @@ test('a cable from the floor to the desk is bought long enough to go over the de
   const evidence = await openProject(page, [], [], { room: { length: 4, width: 3.5, height: 2.7 } });
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
   await page.getByRole('dialog', { name: '桌面模板', exact: true })
-    .getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+    .getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   await page.getByRole('button', { name: '更多', exact: true }).click();
   await page.getByRole('menu', { name: '更多', exact: true }).getByRole('menuitem', { name: '购线清单', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '购线清单', exact: true });

@@ -53,11 +53,11 @@ test('a change that does not improve the layout is not shown', () => {
 test('a change that fixes one thing but breaks another is refused', () => {
   const project = messyGaming();
   const monitor = find(project, 'ultrawide-monitor');
-  const laptop = find(project, 'laptop-15');
-  // Centre the monitor (fixes the hint) but drop it onto the laptop's spot.
+  const keyboard = find(project, 'keyboard');
+  // Centre the monitor (fixes the hint) but drop the keyboard onto its spot.
   const result = evaluateSuggestion(project, suggestion([
     { type: 'move', objectId: monitor.id, x: 0, y: monitor.position.y },
-    { type: 'move', objectId: laptop.id, x: 0, y: monitor.position.y, z: deskTop(project) + laptop.scale.z / 2 },
+    { type: 'move', objectId: keyboard.id, x: 0, y: monitor.position.y, z: deskTop(project) + keyboard.scale.z / 2 },
   ]));
   assert.equal(result.accepted, false);
   assert.ok(result.reasons.includes('会产生新的提醒'), result.reasons.join());
@@ -277,10 +277,11 @@ test('moving or turning a loaded desk takes what stands on it along', () => {
   const project = gaming();
   const desk = find(project, 'office-desk');
   const monitor = find(project, 'ultrawide-monitor');
-  const laptop = find(project, 'laptop-15');
+  const keyboard = find(project, 'keyboard');
+  const mouse = find(project, 'mouse');
   const moved = applyAiActions(project, [{ type: 'move', objectId: desk.id, x: desk.position.x, y: desk.position.y - 0.3 }]);
   assert.notEqual(moved.project, null, moved.rejected.map(item => item.reason).join());
-  for (const device of [monitor, laptop]) {
+  for (const device of [monitor, keyboard, mouse]) {
     const after = find(moved.project, device.modelId);
     assert.ok(Math.abs(after.position.y - (device.position.y - 0.3)) < 1e-9, `${device.id} moved with the desk`);
     assert.equal(after.position.z, device.position.z, `${device.id} still on the desk`);

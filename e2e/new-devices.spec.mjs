@@ -51,7 +51,7 @@ test('a monitor rests on the clamp stand, and the console lives under 娱乐', a
 test('a keyboard is added on the desk and a monitor is added facing the seat', async ({ page }) => {
   const evidence = await openProject(page, []);
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
-  await page.getByRole('dialog', { name: '桌面模板', exact: true }).getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  await page.getByRole('dialog', { name: '桌面模板', exact: true }).getByRole('button', { name: '使用模板：超宽', exact: true }).click();
 
   await openLibrary(page);
   await page.getByPlaceholder('搜索设备名称、类型、型号...').fill('键盘');

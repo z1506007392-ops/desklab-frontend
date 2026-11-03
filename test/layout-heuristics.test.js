@@ -17,13 +17,14 @@ test('every built-in template is a good desk with no hints', () => {
   }
 });
 
-test('support finder tells desk, floor, wall, and floating apart', () => {
+test('support finder tells desk, floor, wall, under-desk, and floating apart', () => {
   const { objects } = scene('desktop-dual');
   const desk = byModel(objects, 'office-desk');
-  assert.deepEqual(findSupportingObject(byModel(objects, 'monitor-24'), objects), { kind: 'object', id: desk.id });
+  assert.deepEqual(findSupportingObject(byModel(objects, 'monitor-27'), objects), { kind: 'object', id: desk.id });
+  assert.deepEqual(findSupportingObject(byModel(objects, 'power-strip'), objects), { kind: 'under-desk', id: desk.id });
   assert.deepEqual(findSupportingObject(byModel(objects, 'desktop-pc'), objects), { kind: 'floor' });
   assert.deepEqual(findSupportingObject(byModel(objects, 'wall-outlet'), objects), { kind: 'wall' });
-  const floating = { ...byModel(objects, 'router'), position: { x: -0.93, y: 1.6, z: 1.5 } };
+  const floating = { ...byModel(objects, 'keyboard'), id: 'up-in-the-air', position: { x: 0, y: 0, z: 1.5 } };
   assert.equal(findSupportingObject(floating, objects), null);
 });
 
@@ -58,7 +59,7 @@ test('an off-centre single monitor, or a monitor group off to one side, is hinte
   assert.deepEqual(codes(room, moved(objects, 'monitor-27', m => { m.position.x += 0.3; return m; })), ['monitor_off_center']);
   assert.deepEqual(codes(room, moved(objects, 'monitor-27', m => { m.position.x += 0.1; return m; })), []);
   const dual = scene('desktop-dual');
-  const shifted = dual.objects.map(o => (o.modelId === 'monitor-24' ? { ...o, position: { ...o.position, x: o.position.x + 0.25 } } : o));
+  const shifted = dual.objects.map(o => (o.modelId === 'monitor-27' ? { ...o, position: { ...o.position, x: o.position.x + 0.25 } } : o));
   assert.deepEqual(codes(dual.room, shifted), ['monitor_off_center']);
 });
 
@@ -73,10 +74,19 @@ test('a monitor too close, turned away, or off the desk is hinted', () => {
   assert.deepEqual(codes(room, onFloor), ['monitor_not_on_desk']);
 });
 
-test('a laptop at the back of the desk is hinted', () => {
-  const { room, objects } = scene('home-office');
-  const desk = byModel(objects, 'office-desk');
-  assert.deepEqual(codes(room, moved(objects, 'laptop-15', l => { l.position.x = 0.4; l.position.y = desk.position.y + 0.15; return l; })), ['laptop_at_back']);
+test('a laptop at the back of the desk is hinted', async () => {
+  const { buildDeskScene } = await import('../src/domain/scene-builder.js');
+  const built = buildDeskScene({
+    devices: [{ modelId: 'laptop-15', count: 1 }],
+    desk: { length: 1.4, depth: 0.75 },
+  });
+  const desk = byModel(built.objects, 'office-desk');
+  const atBack = moved(built.objects, 'laptop-15', laptop => {
+    laptop.position.x = 0.4;
+    laptop.position.y = desk.position.y + 0.15;
+    return laptop;
+  });
+  assert.deepEqual(codes(built.room, atBack), ['laptop_at_back']);
 });
 
 test('a laptop at the back is fine when a keyboard on the same desk does the typing', async () => {
@@ -173,8 +183,20 @@ test('every hint carries a fix that the AI checks would accept', async () => {
   })));
   add('monitor off centre', withObjects('home-office', moved(base('home-office').objects, 'monitor-27', m => { m.position.x += 0.3; return m; })));
   add('monitor turned away', withObjects('gaming', moved(base('gaming').objects, 'ultrawide-monitor', m => { m.rotation.z = 90; return m; })));
-  const homeDesk = byModel(base('home-office').objects, 'office-desk');
-  add('laptop at back', withObjects('home-office', moved(base('home-office').objects, 'laptop-15', l => { l.position.y = homeDesk.position.y + 0.15; l.position.x = 0.4; return l; })));
+  const { buildDeskScene } = await import('../src/domain/scene-builder.js');
+  const typing = buildDeskScene({
+    devices: [{ modelId: 'laptop-15', count: 1 }],
+    desk: { length: 1.4, depth: 0.75 },
+  });
+  const typingDesk = byModel(typing.objects, 'office-desk');
+  add('laptop at back', {
+    ...typing,
+    objects: moved(typing.objects, 'laptop-15', laptop => {
+      laptop.position.y = typingDesk.position.y + 0.15;
+      laptop.position.x = 0.4;
+      return laptop;
+    }),
+  });
   const dual = base('desktop-dual');
   const dualDesk = byModel(dual.objects, 'office-desk');
   const dualTop = dualDesk.position.z + dualDesk.scale.z / 2;
@@ -184,11 +206,36 @@ test('every hint carries a fix that the AI checks would accept', async () => {
   const gamingDesk = byModel(gaming.objects, 'office-desk');
   const gamingTop = gamingDesk.position.z + gamingDesk.scale.z / 2;
   add('strip on desk', withObjects('gaming', moved(gaming.objects, 'power-strip', st => { st.position = { x: 0, y: gamingDesk.position.y - 0.25, z: gamingTop + st.scale.z / 2 }; return st; })));
+  add('strip on floor', withObjects('gaming', moved(gaming.objects, 'power-strip', st => {
+    st.position = { x: 0, y: gamingDesk.position.y - gamingDesk.scale.y / 2 - 0.2, z: st.scale.z / 2 };
+    return st;
+  })));
   add('router buried', withObjects('gaming', moved(gaming.objects, 'router', r => { r.position.x = 0.2; r.position.y = gamingDesk.position.y; return r; })));
   const hdmi = gaming.connections.find(c => c.cableType !== 'power');
   add('cable too long', { ...gaming, connections: gaming.connections.map(c => (c.id === hdmi.id ? { ...c, length: 10 } : c)) });
 
-  const { buildDeskScene } = await import('../src/domain/scene-builder.js');
+  const blocking = buildDeskScene({
+    devices: [
+      { modelId: 'monitor-27', count: 1 },
+      { modelId: 'laptop-15', count: 1 },
+      { modelId: 'keyboard', count: 1 },
+    ],
+    desk: { length: 1.6, depth: 0.8 },
+  });
+  const blockingMonitor = byModel(blocking.objects, 'monitor-27');
+  const blockingLaptop = byModel(blocking.objects, 'laptop-15');
+  add('laptop in front of the screen', {
+    ...blocking,
+    objects: blocking.objects.map(object => (object.id === blockingLaptop.id ? {
+      ...object,
+      position: {
+        x: blockingMonitor.position.x,
+        y: blockingMonitor.position.y - 0.28,
+        z: blockingLaptop.position.z,
+      },
+    } : object)),
+  });
+
   const furnished = extras => buildDeskScene({
     devices: [{ modelId: 'monitor-24', count: 1 }, ...extras],
     desk: { length: 1.6, depth: 0.8 },
@@ -241,6 +288,8 @@ test('every hint carries a fix that the AI checks would accept', async () => {
   expectCode('lamp in front', 'lamp_blocks_work');
   expectCode('speakers in front', 'speakers_block_seat');
   expectCode('mouse far from keyboard', 'mouse_far_from_keyboard');
+  expectCode('strip on floor', 'strip_on_floor');
+  expectCode('laptop in front of the screen', 'laptop_blocks_screen');
 
   for (const [name, project] of cases) {
     const hints = analyzeLayoutHeuristics(project.room, project.objects, project.connections);

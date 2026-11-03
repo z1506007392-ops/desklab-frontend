@@ -25,6 +25,7 @@ const HINT_CATEGORY = Object.freeze({
   monitor_facing_away: 'ergonomics',
   monitor_not_on_desk: 'ergonomics',
   laptop_at_back: 'ergonomics',
+  laptop_blocks_screen: 'ergonomics',
   lamp_blocks_work: 'ergonomics',
   speakers_block_seat: 'ergonomics',
   mouse_far_from_keyboard: 'ergonomics',
@@ -34,6 +35,7 @@ const HINT_CATEGORY = Object.freeze({
   console_blocks_legroom: 'space',
   router_buried: 'space',
   strip_on_desk: 'tidiness',
+  strip_on_floor: 'safety',
   cable_too_long: 'cabling',
 });
 

@@ -16,9 +16,9 @@ function overloadedGamingDesk(stripLimit) {
 }
 
 test('an overloaded strip carries a tag, and once selected its load is in the panel instead', async ({ page }) => {
-  const { objects, connections, strip } = overloadedGamingDesk(450);
+  const { objects, connections, strip } = overloadedGamingDesk(400);
   const [expected] = findPowerTags(objects, connections);
-  expect(expected.text).toMatch(/^超载 \d+W \/ 450W$/);
+  expect(expected.text).toMatch(/^超载 \d+W \/ 400W$/);
   const evidence = await openProject(page, objects, connections, { room: ROOM });
 
   const powerTag = page.locator('.power-tag');
@@ -30,7 +30,7 @@ test('an overloaded strip carries a tag, and once selected its load is in the pa
     .getByRole('button', { name: /^定位/ }).click();
   await expect(page.locator('.scene-tag')).toHaveText(strip.name);
   await expect(powerTag).toHaveCount(0);
-  await expect(page.getByText(/^已接负载：/)).toHaveText(`已接负载：${expected.load}W / 450W`);
+  await expect(page.getByText(/^已接负载：/)).toHaveText(`已接负载：${expected.load}W / 400W`);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
 
@@ -38,7 +38,7 @@ test('a desk whose power is fine shows no power tags', async ({ page }) => {
   const evidence = await openProject(page, [], [], { room: ROOM });
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
   await page.getByRole('dialog', { name: '桌面模板', exact: true })
-    .getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+    .getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   const openLibrary = page.getByRole('button', { name: '展开资产库', exact: true });
   if (await openLibrary.isVisible()) await openLibrary.click();
   await page.getByRole('button', { name: '显示器', exact: true }).click();

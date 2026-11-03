@@ -14,6 +14,7 @@ import { buildRecommendations } from '../src/domain/recommendations.js';
 import { isProjectEnvelope } from '../src/domain/project-validation.js';
 import { buildCableShoppingList } from '../src/domain/cable-shopping-list.js';
 import { evaluateConnectionLength } from '../src/domain/connections.js';
+import { getRotatedFootprint, isHungUnderDesk } from '../src/domain/geometry.js';
 
 const actionable = issues => issues.filter(issue => issue.severity === 'error' || issue.severity === 'warning');
 
@@ -33,12 +34,75 @@ const byModel = (scene, modelId) => scene.objects.filter(object => object.modelI
 const connectionsTo = (scene, objectId) => scene.connections.filter(connection => connection.toObjectId === objectId);
 
 test('every built-in desk template is placed, wired, and clean out of the box', () => {
-  assert.ok(DESK_TEMPLATES.length >= 2);
+  assert.ok(DESK_TEMPLATES.length >= 3);
   for (const template of DESK_TEMPLATES) {
     const scene = buildTemplateScene(template.id);
     assertReadyToUse(scene, template.name);
     assert.deepEqual(scene.notes, [], `${template.name}: no placement notes expected`);
   }
+});
+
+test('the three presets sit like a photographed desk, with the strip under the top', () => {
+  const minimal = buildTemplateScene('home-office');
+  const dual = buildTemplateScene('desktop-dual');
+  const wide = buildTemplateScene('gaming');
+  assert.deepEqual(DESK_TEMPLATES.map(template => template.name), ['极简单屏', '电竞双屏', '超宽']);
+  assert.equal(byModel(minimal, 'monitor-27').length, 1);
+  assert.equal(byModel(minimal, 'laptop-15').length, 0);
+  assert.equal(byModel(wide, 'ultrawide-monitor').length, 1);
+  assert.equal(byModel(wide, 'laptop-15').length, 0);
+
+  const screens = byModel(dual, 'monitor-27');
+  assert.equal(screens.length, 2);
+  const onLeft = screens.find(screen => screen.position.x > 0);
+  const onRight = screens.find(screen => screen.position.x < 0);
+  assert.equal(onLeft.rotation.z, 162);
+  assert.equal(onRight.rotation.z, 198);
+  assert.ok(Math.abs(onLeft.position.x + onRight.position.x) < 1e-6, 'the seam stays on the centre line');
+  assert.ok(Math.abs(byModel(dual, 'keyboard')[0].position.x) < 1e-6, 'the keyboard is on that line');
+
+  // Forearm room: the keyboard's far edge stays at least 8 cm clear of the
+  // nearest screen. A turned pair used to land almost on the keys.
+  for (const scene of [minimal, dual, wide]) {
+    const desk = byModel(scene, 'office-desk')[0];
+    const front = desk.position.y - desk.scale.y / 2;
+    const keyboard = byModel(scene, 'keyboard')[0];
+    const keyboardBack = keyboard.position.y + keyboard.scale.y / 2;
+    for (const screen of scene.objects.filter(object => object.category === 'display')) {
+      const { sizeY } = getRotatedFootprint(screen.scale, screen.rotation.z);
+      const screenFront = screen.position.y - sizeY / 2;
+      assert.ok(screenFront - keyboardBack >= 0.08, `${scene === dual ? 'dual' : 'preset'} screen clears the keyboard`);
+      assert.ok(keyboard.position.y - keyboard.scale.y / 2 - front >= 0.09, 'keyboard sits about 10 cm in from the front edge');
+    }
+  }
+
+  for (const scene of [minimal, dual, wide]) {
+    const desk = byModel(scene, 'office-desk')[0];
+    const hung = scene.objects.filter(object => object.modelId === 'power-strip' || object.modelId === 'power-adapter');
+    assert.ok(hung.length >= 1, 'a strip is part of the desk');
+    for (const device of hung) {
+      assert.equal(isHungUnderDesk(device, desk), true, `${device.name} hangs under the desk`);
+      assert.ok(device.position.z > 0.4, `${device.name} is not on the floor`);
+    }
+  }
+
+  const busy = buildDeskScene({
+    devices: [
+      { modelId: 'desktop-pc', count: 1 },
+      { modelId: 'laptop-15', count: 1 },
+      { modelId: 'monitor-27', count: 2 },
+      { modelId: 'router', count: 1 },
+      { modelId: 'desk-lamp', count: 1 },
+      { modelId: 'speakers', count: 1 },
+      { modelId: 'game-console', count: 1 },
+    ],
+    desk: { length: 2, depth: 0.8 },
+  });
+  const strips = byModel(busy, 'power-strip');
+  assert.ok(strips.length >= 2, 'a full desk uses a second strip instead of daisy-chaining');
+  const busyDesk = byModel(busy, 'office-desk')[0];
+  for (const strip of strips) assert.equal(isHungUnderDesk(strip, busyDesk), true, strip.id);
+  assertReadyToUse(busy, 'two strips');
 });
 
 test('templates have unique ids and describe their devices', () => {
@@ -211,7 +275,10 @@ test('a keyboard sits in front of the seat with the mouse to its right, a laptop
   const [laptop] = byModel(scene, 'laptop-15');
   const at = object => relativeToDesk(scene, object);
   assert.ok(Math.abs(at(keyboard).x) < 1e-9, 'the keyboard is in front of the seat');
-  assert.ok(at(keyboard).y < -0.2 && at(mouse).y < -0.2, 'both near the front edge');
+  const desk = byModel(scene, 'office-desk')[0];
+  const frontGap = object => (object.position.y - object.scale.y / 2) - (desk.position.y - desk.scale.y / 2);
+  assert.ok(Math.abs(frontGap(keyboard) - 0.10) < 1e-9 && Math.abs(frontGap(mouse) - 0.10) < 1e-9, 'a palm of space in front of both');
+  assert.ok(at(laptop).y > 0, 'the laptop sits with the screens, not in the keyboard row');
   assert.ok(Math.abs(at(keyboard).z) < 1e-9 && Math.abs(at(mouse).z) < 1e-9, 'both on the desktop');
   assert.ok(seatRightOf(at(mouse), at(keyboard)) && seatRightOf(at(keyboard), at(laptop)));
   assert.equal(keyboard.rotation.z, 180);
@@ -249,11 +316,12 @@ test('every device combination on an ordinary desk takes a keyboard and mouse cl
   }
 });
 
-test('a desk too small for the keyboard leaves it out with a note instead of putting it behind the screen', () => {
+test('a desk too narrow for a side laptop keeps the keyboard and leaves the laptop out', () => {
   const scene = withPeripherals([{ modelId: 'monitor-27', count: 1 }, { modelId: 'laptop-15', count: 1 }], { length: 0.8, depth: 0.6 });
-  assert.equal(byModel(scene, 'keyboard').length, 0);
-  assert.ok(scene.notes.includes('桌面上放不下键盘，已跳过。'));
-  for (const object of [...byModel(scene, 'mouse')]) assert.ok(relativeToDesk(scene, object).y <= 0, 'anything placed is on the seat half');
+  assert.equal(byModel(scene, 'keyboard').length, 1);
+  assert.equal(byModel(scene, 'laptop-15').length, 0);
+  assert.ok(scene.notes.includes('桌面上放不下15 英寸笔记本，已跳过。'));
+  assert.ok(relativeToDesk(scene, byModel(scene, 'keyboard')[0]).y < 0, 'the keyboard stays on the seat half');
 });
 
 const allExtras = ['keyboard', 'mouse', 'desk-lamp', 'speakers', 'game-console'].map(modelId => ({ modelId, count: 1 }));
@@ -337,11 +405,13 @@ test('on the shallowest desk a laptop in front and the screens behind it do not 
       assertReadyToUse(scene, `${monitorId}${extras.length ? ' with keyboard and mouse' : ''}`);
     }
   }
-  // Deeper desks keep the screens 15 cm in from the back edge.
+  // The back of the screen sits 10 cm in from the back edge, clear of the
+  // strip that hangs under that edge.
   const deep = buildDeskScene({ devices: [{ modelId: 'laptop-15', count: 1 }, { modelId: 'monitor-27', count: 1 }], desk: { length: 1.4, depth: 0.7 } });
   const desk = byModel(deep, 'office-desk')[0];
   const monitor = byModel(deep, 'monitor-27')[0];
-  assert.ok(Math.abs(desk.position.y + desk.scale.y / 2 - 0.15 - monitor.position.y) < 1e-9);
+  const backGap = desk.position.y + desk.scale.y / 2 - (monitor.position.y + monitor.scale.y / 2);
+  assert.ok(Math.abs(backGap - 0.10) < 1e-9);
 });
 
 // E60: the keyboard, mouse and speakers are on the computer like everything else.

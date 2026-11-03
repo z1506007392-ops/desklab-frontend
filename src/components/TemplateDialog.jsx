@@ -4,6 +4,7 @@ import { DEVICE_CATALOG, findModelTemplate } from '../domain/catalog.js';
 import { DESK_TEMPLATES } from '../domain/desk-templates.js';
 import { preloadModelUrls } from '../domain/model-preload.js';
 import DeskBuilderForm from './DeskBuilderForm.jsx';
+import TemplateSketch, { PresetSources } from './TemplateSketch.jsx';
 import { CloseIcon } from './Icons.jsx';
 import { useDialogFocus } from './useDialogFocus.js';
 
@@ -66,6 +67,7 @@ export default function TemplateDialog({
           <div className="template-list">
             {DESK_TEMPLATES.map(template => (
               <div key={template.id} className="template-card">
+                <TemplateSketch templateId={template.id} />
                 <div className="template-card-content">
                   <div className="template-card-title">{template.name}</div>
                   <div className="template-card-description">{template.description}</div>
@@ -88,6 +90,7 @@ export default function TemplateDialog({
               </div>
             ))}
           </div>
+          <PresetSources />
           <h4 className="template-section-title" ref={builderHeadingRef}>按我的设备生成</h4>
           <DeskBuilderForm
             disabled={!editable}

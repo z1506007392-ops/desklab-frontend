@@ -10,9 +10,9 @@ test('a new user can start from a desk template that is ready to use, and undo i
   const picker = page.getByRole('dialog', { name: '桌面模板', exact: true });
   await expect(picker).toBeVisible();
   await expect(picker).not.toContainText('替换当前场景');
-  await expect(picker).toContainText('家庭办公');
-  await expect(picker).toContainText('台式机双屏');
-  await picker.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  await expect(picker).toContainText('极简单屏');
+  await expect(picker).toContainText('电竞双屏');
+  await picker.getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
   // A template is placed and wired so that every check comes back clean.
@@ -82,7 +82,7 @@ test('the template picker warns before replacing an existing scene', async ({ pa
 test('the connections list names cables in plain words', async ({ page }) => {
   const evidence = await openProject(page, []);
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
-  await page.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  await page.getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   await page.getByRole('button', { name: '所有连接', exact: true }).click();
   const list = page.getByRole('dialog', { name: '全部连接清单', exact: true });
   await expect(list).toContainText('网线（');

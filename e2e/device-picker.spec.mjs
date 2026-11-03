@@ -12,7 +12,7 @@ test('a device can be selected from the panel list instead of the 3D view', asyn
   const evidence = await openProject(page, [], [], { room: ROOM });
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
   await page.getByRole('dialog', { name: '桌面模板', exact: true })
-    .getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+    .getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
   if (await openPanel.isVisible()) await openPanel.click();
 
@@ -39,7 +39,7 @@ test('a duplicated device lands beside the original and is cabled like a new one
   const evidence = await openProject(page, [], [], { room: ROOM });
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
   await page.getByRole('dialog', { name: '桌面模板', exact: true })
-    .getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+    .getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
   if (await openPanel.isVisible()) await openPanel.click();
 
@@ -58,7 +58,7 @@ test('a second screen is lined up beside the first instead of hiding it, and one
   const evidence = await openProject(page, [], [], { room: ROOM });
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
   await page.getByRole('dialog', { name: '桌面模板', exact: true })
-    .getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+    .getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
   const readX = async name => {
     if (await openPanel.isVisible()) await openPanel.click();

@@ -119,7 +119,7 @@ test('the cable list buys the gaming desk a display cable long enough to go over
   const objects = hydrateProjectObjects(scene.objects);
   const display = scene.connections.filter(connection => connection.cableType === 'displayport');
   const { items } = buildCableShoppingList(display, objects);
-  // Straight from the tower to the screen is 1.21 m (1.5 m to buy); over the
-  // back edge and across the desktop it is 1.44 m.
+  // Straight through the desktop would buy 1.5 m. Over the back edge the
+  // route is about 1.51 m, and 0.2 m of shop slack buys 2 m.
   assert.deepEqual(items.map(item => item.name), ['2 米 DP 线']);
 });

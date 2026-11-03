@@ -1,4 +1,63 @@
+import { isDesk } from './desks.js';
+
 export const GEOMETRY_EPSILON = 1e-5;
+
+// The desk's bounding box fills the leg space. A strip or adapter hung just
+// under the board, in the back half, is in that empty space: it is not
+// inside the desktop, and it is not on the floor where a bare foot can kick it.
+const UNDER_DESK_MODELS = new Set(['power-strip', 'power-adapter']);
+
+function isUnderDeskDevice(object) {
+  return UNDER_DESK_MODELS.has(object?.modelId)
+    || object?.type === 'power_strip'
+    || object?.type === 'power-adapter';
+}
+
+function deskLocalPoint(desk, point) {
+  const radians = ((desk.rotation?.z ?? 0) * Math.PI) / 180;
+  const dx = point.x - desk.position.x;
+  const dy = point.y - desk.position.y;
+  return {
+    x: dx * Math.cos(radians) + dy * Math.sin(radians),
+    y: -dx * Math.sin(radians) + dy * Math.cos(radians),
+  };
+}
+
+// Centre height for a device hung just under the desktop board. The generic
+// desk draws that board as the top 12% of the box.
+export function underDeskHangZ(desk, object) {
+  const deskTop = desk.position.z + desk.scale.z / 2;
+  return deskTop - desk.scale.z * 0.12 - 0.015 - object.scale.z / 2;
+}
+
+export function hungUnderDeskPosition(desk, localX, localY, object) {
+  const radians = ((desk.rotation?.z ?? 0) * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  return {
+    x: desk.position.x + localX * cos - localY * sin,
+    y: desk.position.y + localX * sin + localY * cos,
+    z: underDeskHangZ(desk, object),
+  };
+}
+
+export function isHungUnderDesk(object, desk) {
+  if (!isDesk(desk) || !isUnderDeskDevice(object)) return false;
+  const values = [object.position?.x, object.position?.y, object.position?.z, object.scale?.x, object.scale?.y, object.scale?.z,
+    desk.position?.x, desk.position?.y, desk.position?.z, desk.scale?.x, desk.scale?.y, desk.scale?.z];
+  if (!values.every(Number.isFinite)) return false;
+  const top = object.position.z + object.scale.z / 2;
+  const bottom = object.position.z - object.scale.z / 2;
+  const deskTop = desk.position.z + desk.scale.z / 2;
+  const gap = deskTop - top;
+  if (gap < 0.005 || gap > 0.14) return false;
+  if (bottom < 0.25) return false;
+  const local = deskLocalPoint(desk, object.position);
+  const { sizeX, sizeY } = getRotatedFootprint(object.scale, (object.rotation?.z ?? 0) - (desk.rotation?.z ?? 0));
+  const inside = Math.abs(local.x) + sizeX / 2 <= desk.scale.x / 2 + 0.02
+    && Math.abs(local.y) + sizeY / 2 <= desk.scale.y / 2 + 0.02;
+  return inside && local.y > desk.scale.y * 0.08;
+}
 
 export function safeClamp(value, min, max) {
   if (min > max) return 0;
@@ -70,6 +129,7 @@ export function horizontalFootprintsOverlap(firstObject, secondObject, epsilon =
 }
 
 export function objectsOverlap(firstObject, secondObject, epsilon = GEOMETRY_EPSILON) {
+  if (isHungUnderDesk(firstObject, secondObject) || isHungUnderDesk(secondObject, firstObject)) return false;
   const firstBounds = getObjectBounds(firstObject);
   const secondBounds = getObjectBounds(secondObject);
   if (!firstBounds || !secondBounds) return false;

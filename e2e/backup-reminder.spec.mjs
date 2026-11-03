@@ -3,7 +3,7 @@ import { openProject } from './project-fixture.mjs';
 
 async function addTemplateAndSave(page) {
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
-  await page.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  await page.getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   await page.getByRole('button', { name: '保存项目', exact: true }).click();
   await expect(page.getByText(/^已保存$/)).toBeVisible();
 }

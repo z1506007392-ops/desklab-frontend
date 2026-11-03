@@ -1262,6 +1262,49 @@
   border: 0;
 }
 
+.template-sketch {
+  flex: none;
+  width: 132px;
+  margin: 0;
+}
+
+.template-sketch svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.template-sketch-desk {
+  fill: var(--surface);
+  stroke: var(--line);
+}
+
+.template-sketch-screen {
+  fill: var(--ink);
+}
+
+.template-sketch-input,
+.template-sketch-tower {
+  fill: var(--ink-3);
+}
+
+.template-sketch-strip {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-dasharray: 2 1.5;
+}
+
+.template-card-sources {
+  margin: 2px 0 14px;
+  color: var(--ink-3);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.template-card-sources a {
+  color: inherit;
+}
+
 .shopping-list {
   margin-bottom: 12px;
   padding: 12px 14px;
@@ -1482,6 +1525,10 @@
 
   .gallery-card-actions {
     justify-content: flex-start;
+  }
+
+  .template-sketch {
+    width: min(160px, 100%);
   }
 
   .desk-builder-submit {

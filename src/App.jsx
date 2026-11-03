@@ -785,9 +785,14 @@ export default function App() {
     // What stands on it falls to what is below once it is gone (E53).
     const riderCount = findRiders(obj, objects).length;
 
+    const riderLine = riderCount === 0
+      ? ''
+      : obj.modelId === 'office-desk'
+        ? `跟着这张桌子的 ${riderCount} 件设备会落到下面。`
+        : `上面放着的 ${riderCount} 件设备会落到下面。`;
     const confirmMessage = [
       `确定要删除设备“${obj.name}”吗？`,
-      riderCount > 0 ? `上面放着的 ${riderCount} 件设备会落到下面。` : '',
+      riderLine,
       relatedConnections.length > 0 ? `删除该设备将同时删除 ${relatedConnections.length} 条关联连接。` : '',
     ].filter(Boolean).join('\n');
 

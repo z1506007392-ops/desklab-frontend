@@ -15,7 +15,9 @@ export function findRiders(base, objects) {
     for (const object of objects) {
       if (carried.has(object.id)) continue;
       const support = supportOf.get(object.id);
-      if (support?.kind === 'object' && carried.has(support.id)) {
+      // under-desk: a strip or adapter hung on this desk rides it and falls
+      // with it. It is not standing on the top.
+      if ((support?.kind === 'object' || support?.kind === 'under-desk') && carried.has(support.id)) {
         carried.add(object.id);
         riders.push(object);
         added = true;

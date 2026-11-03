@@ -31,7 +31,9 @@ function answer(scene) {
 }
 
 async function openAiSection(page) {
-  await page.getByRole('button', { name: '改进建议', exact: true }).click();
+  // The badge is part of the accessible name ("改进建议 (3)") whenever a
+  // check has something to say. Match the words, not the count.
+  await page.getByRole('button', { name: /^改进建议/ }).click();
   const dialog = page.getByRole('dialog', { name: '自动检查与改进建议', exact: true });
   return { dialog, section: dialog.getByRole('region', { name: 'AI 建议', exact: true }) };
 }
@@ -215,11 +217,11 @@ test('the user can tell the AI what to change and get a new answer', async ({ pa
 });
 
 // The desk pushed 0.3 m right, with what stands on it, runs into the tower.
-// Moving the desk back is now a suggestion the app can take: its screen and
-// laptop go along, as when the user moves it (E48), instead of being refused.
+// Moving the desk back is now a suggestion the app can take: the screen,
+// keyboard and mouse go along, as when the user moves it (E48).
 test('an AI suggestion to move a desk with things on it takes them along', async ({ page }) => {
   const base = buildTemplateScene('gaming');
-  const onDesk = new Set(['office-desk', 'ultrawide-monitor', 'laptop-15']);
+  const onDesk = new Set(['office-desk', 'ultrawide-monitor', 'keyboard', 'mouse', 'power-strip', 'power-adapter']);
   const objects = base.objects.map(object => (onDesk.has(object.modelId)
     ? { ...object, position: { ...object.position, x: object.position.x + 0.3 } }
     : object));
@@ -247,7 +249,7 @@ test('an AI suggestion to move a desk with things on it takes them along', async
   const stored = () => page.evaluate(key => JSON.parse(localStorage.getItem(key)).objects, PROJECT_STORAGE_KEY);
   await expect.poll(async () => (await stored()).find(object => object.modelId === 'office-desk').position.x).toBeCloseTo(0, 6);
   const saved = await stored();
-  for (const modelId of ['ultrawide-monitor', 'laptop-15']) {
+  for (const modelId of ['ultrawide-monitor', 'keyboard', 'mouse']) {
     const before = base.objects.find(object => object.modelId === modelId);
     expect(saved.find(object => object.modelId === modelId).position.x, `${modelId} came along`).toBeCloseTo(before.position.x, 6);
   }

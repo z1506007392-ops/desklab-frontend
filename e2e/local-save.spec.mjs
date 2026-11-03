@@ -6,7 +6,7 @@ async function applyGamingTemplate(page) {
   await page.getByRole('button', { name: '改进建议', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: '使用桌面模板', exact: true }).click();
   await page.getByRole('dialog', { name: '桌面模板', exact: true })
-    .getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+    .getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 }
 

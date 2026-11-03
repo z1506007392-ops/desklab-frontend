@@ -91,7 +91,7 @@ export function buildSceneSummary(project = {}) {
 
   return {
     units: '米；角度为度',
-    axes: 'x=左右(长)，y=前后(深)，z=高度；position 是物体包围盒中心。设备正面是自身的 +y 方向，rotationZ=180 时朝 -y。人坐在 seats 给出的位置，面向桌子。',
+    axes: 'x=左右(长)，y=前后(深)，z=高度；position 是物体包围盒中心。设备正面是自身的 +y 方向，rotationZ=180 时朝 -y。人坐在 seats 给出的位置，面向桌子。restingOn 为 under-desk 表示插排或适配器挂在桌面下靠后，不是放在地上。',
     room: { length: round(room.length), width: round(room.width), height: round(room.height) },
     seats: objects.filter(isDesk).map(desk => {
       const seat = getDeskSeat(desk);

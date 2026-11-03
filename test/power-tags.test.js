@@ -20,13 +20,13 @@ test('a desk whose power is fine gets no power tags', () => {
 test('a strip over its limit is tagged as overloaded, and only the strip', () => {
   const { objects, connections } = template('gaming');
   const strip = objects.find(object => object.modelId === 'power-strip');
-  strip.maxLoad = 450;
+  strip.maxLoad = 400;
   const tags = findPowerTags(objects, connections);
   assert.equal(tags.length, 1);
   assert.equal(tags[0].objectId, strip.id);
   assert.equal(tags[0].status, 'overload');
-  assert.match(tags[0].text, /^超载 \d+W \/ 450W$/);
-  assert.ok(tags[0].load > 450);
+  assert.match(tags[0].text, /^超载 \d+W \/ 400W$/);
+  assert.ok(tags[0].load > 400);
 });
 
 test('a strip close to its limit is tagged as near it', () => {
@@ -34,10 +34,10 @@ test('a strip close to its limit is tagged as near it', () => {
   const strip = objects.find(object => object.modelId === 'power-strip');
   const { load } = findPowerTags(objects, connections).find(() => true) ?? {};
   assert.equal(load, undefined, 'nothing tagged before the change');
-  strip.maxLoad = 540;
+  strip.maxLoad = 450;
   const [tag] = findPowerTags(objects, connections);
   assert.equal(tag.status, 'warning');
-  assert.match(tag.text, /^接近上限 \d+W \/ 540W$/);
+  assert.match(tag.text, /^接近上限 \d+W \/ 450W$/);
 });
 
 test('missing or broken data gives no tags instead of throwing', () => {

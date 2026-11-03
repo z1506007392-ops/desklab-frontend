@@ -1,6 +1,6 @@
 {
   "units": "米；角度为度",
-  "axes": "x=左右(长)，y=前后(深)，z=高度；position 是物体包围盒中心。设备正面是自身的 +y 方向，rotationZ=180 时朝 -y。人坐在 seats 给出的位置，面向桌子。",
+  "axes": "x=左右(长)，y=前后(深)，z=高度；position 是物体包围盒中心。设备正面是自身的 +y 方向，rotationZ=180 时朝 -y。人坐在 seats 给出的位置，面向桌子。restingOn 为 under-desk 表示插排或适配器挂在桌面下靠后，不是放在地上。",
   "room": {
     "length": 4,
     "width": 3.5,
@@ -38,7 +38,7 @@
       "name": "带鱼屏显示器",
       "center": [
         0,
-        1.45,
+        1.38,
         0.98
       ],
       "size": [
@@ -59,7 +59,7 @@
           "id": "hdmi-in",
           "type": "hdmi",
           "dir": "input",
-          "linkedTo": "laptop:hdmi-out"
+          "linkedTo": null
         },
         {
           "id": "dp-in",
@@ -70,67 +70,12 @@
       ]
     },
     {
-      "id": "laptop",
-      "kind": "laptop-15",
-      "name": "15 英寸笔记本",
-      "center": [
-        0.54,
-        1.02,
-        0.86
-      ],
-      "size": [
-        0.36,
-        0.28,
-        0.22
-      ],
-      "rotationZ": 180,
-      "restingOn": "desk",
-      "ports": [
-        {
-          "id": "dc-in",
-          "type": "dc_input",
-          "dir": "input",
-          "linkedTo": "power-adapter-laptop:dc-out"
-        },
-        {
-          "id": "usb-c",
-          "type": "usb_c",
-          "dir": "bidirectional",
-          "linkedTo": null
-        },
-        {
-          "id": "usb-1",
-          "type": "usb",
-          "dir": "bidirectional",
-          "linkedTo": null
-        },
-        {
-          "id": "usb-2",
-          "type": "usb",
-          "dir": "bidirectional",
-          "linkedTo": null
-        },
-        {
-          "id": "audio-out",
-          "type": "audio",
-          "dir": "output",
-          "linkedTo": null
-        },
-        {
-          "id": "hdmi-out",
-          "type": "hdmi",
-          "dir": "output",
-          "linkedTo": "ultrawide-monitor-1:hdmi-in"
-        }
-      ]
-    },
-    {
       "id": "desktop-pc",
       "kind": "desktop-pc",
       "name": "台式主机",
       "center": [
         0.98,
-        1.2,
+        1.35,
         0.25
       ],
       "size": [
@@ -163,13 +108,13 @@
           "id": "usb-1",
           "type": "usb",
           "dir": "bidirectional",
-          "linkedTo": null
+          "linkedTo": "mouse:usb-1"
         },
         {
           "id": "usb-2",
           "type": "usb",
           "dir": "bidirectional",
-          "linkedTo": null
+          "linkedTo": "keyboard:usb-1"
         },
         {
           "id": "audio-out",
@@ -229,13 +174,63 @@
       ]
     },
     {
+      "id": "keyboard",
+      "kind": "keyboard",
+      "name": "键盘",
+      "center": [
+        0,
+        0.98,
+        0.77
+      ],
+      "size": [
+        0.44,
+        0.15,
+        0.03
+      ],
+      "rotationZ": 180,
+      "restingOn": "desk",
+      "ports": [
+        {
+          "id": "usb-1",
+          "type": "usb",
+          "dir": "bidirectional",
+          "linkedTo": "desktop-pc:usb-2"
+        }
+      ]
+    },
+    {
+      "id": "mouse",
+      "kind": "mouse",
+      "name": "鼠标",
+      "center": [
+        -0.29,
+        0.96,
+        0.77
+      ],
+      "size": [
+        0.06,
+        0.12,
+        0.04
+      ],
+      "rotationZ": 180,
+      "restingOn": "desk",
+      "ports": [
+        {
+          "id": "usb-1",
+          "type": "usb",
+          "dir": "bidirectional",
+          "linkedTo": "desktop-pc:usb-1"
+        }
+      ]
+    },
+    {
       "id": "power-strip",
       "kind": "power-strip",
       "name": "插排",
       "center": [
         0,
-        1.7,
-        0.03
+        1.56,
+        0.62
       ],
       "size": [
         0.8,
@@ -243,7 +238,7 @@
         0.05
       ],
       "rotationZ": 0,
-      "restingOn": "floor",
+      "restingOn": "under-desk",
       "ports": [
         {
           "id": "ac-in",
@@ -267,13 +262,13 @@
           "id": "ac-out-3",
           "type": "ac_output",
           "dir": "output",
-          "linkedTo": "power-adapter-laptop:ac-in"
+          "linkedTo": "power-adapter-router:ac-in"
         },
         {
           "id": "ac-out-4",
           "type": "ac_output",
           "dir": "output",
-          "linkedTo": "power-adapter-router:ac-in"
+          "linkedTo": null
         },
         {
           "id": "ac-out-5",
@@ -321,13 +316,13 @@
       ]
     },
     {
-      "id": "power-adapter-laptop",
+      "id": "power-adapter-router",
       "kind": "power-adapter",
-      "name": "15 英寸笔记本电源适配器",
+      "name": "路由器电源适配器",
       "center": [
-        0.53,
-        1.72,
-        0.02
+        0.45,
+        1.57,
+        0.63
       ],
       "size": [
         0.1,
@@ -335,44 +330,13 @@
         0.03
       ],
       "rotationZ": 0,
-      "restingOn": "floor",
+      "restingOn": "under-desk",
       "ports": [
         {
           "id": "ac-in",
           "type": "ac_input",
           "dir": "input",
           "linkedTo": "power-strip:ac-out-3"
-        },
-        {
-          "id": "dc-out",
-          "type": "dc_output",
-          "dir": "output",
-          "linkedTo": "laptop:dc-in"
-        }
-      ]
-    },
-    {
-      "id": "power-adapter-router",
-      "kind": "power-adapter",
-      "name": "路由器电源适配器",
-      "center": [
-        0.68,
-        1.72,
-        0.02
-      ],
-      "size": [
-        0.1,
-        0.05,
-        0.03
-      ],
-      "rotationZ": 0,
-      "restingOn": "floor",
-      "ports": [
-        {
-          "id": "ac-in",
-          "type": "ac_input",
-          "dir": "input",
-          "linkedTo": "power-strip:ac-out-4"
         },
         {
           "id": "dc-out",
@@ -390,7 +354,7 @@
       "to": "power-strip:ac-in",
       "type": "power",
       "length": 0.5,
-      "needed": 0.34
+      "needed": 0.44
     },
     {
       "id": "c-power-strip-ac-out-1-desktop-pc-ac-in",
@@ -398,39 +362,23 @@
       "to": "desktop-pc:ac-in",
       "type": "power",
       "length": 1.5,
-      "needed": 1.31
+      "needed": 1.39
     },
     {
       "id": "c-power-strip-ac-out-2-ultrawide-monitor-1-ac-in",
       "from": "power-strip:ac-out-2",
       "to": "ultrawide-monitor-1:ac-in",
       "type": "power",
-      "length": 1.5,
-      "needed": 1.11
-    },
-    {
-      "id": "c-power-strip-ac-out-3-power-adapter-laptop-ac-in",
-      "from": "power-strip:ac-out-3",
-      "to": "power-adapter-laptop:ac-in",
-      "type": "power",
       "length": 1,
-      "needed": 0.59
+      "needed": 0.6
     },
     {
-      "id": "c-power-strip-ac-out-4-power-adapter-router-ac-in",
-      "from": "power-strip:ac-out-4",
+      "id": "c-power-strip-ac-out-3-power-adapter-router-ac-in",
+      "from": "power-strip:ac-out-3",
       "to": "power-adapter-router:ac-in",
       "type": "power",
-      "length": 1,
-      "needed": 0.62
-    },
-    {
-      "id": "c-power-adapter-laptop-dc-out-laptop-dc-in",
-      "from": "power-adapter-laptop:dc-out",
-      "to": "laptop:dc-in",
-      "type": "power",
-      "length": 1.5,
-      "needed": 1.25
+      "length": 0.5,
+      "needed": 0.5
     },
     {
       "id": "c-power-adapter-router-dc-out-router-dc-in",
@@ -438,7 +386,7 @@
       "to": "router:dc-in",
       "type": "power",
       "length": 2,
-      "needed": 1.97
+      "needed": 1.86
     },
     {
       "id": "c-desktop-pc-dp-out-ultrawide-monitor-1-dp-in",
@@ -446,15 +394,7 @@
       "to": "ultrawide-monitor-1:dp-in",
       "type": "displayport",
       "length": 1.8,
-      "needed": 1.53
-    },
-    {
-      "id": "c-laptop-hdmi-out-ultrawide-monitor-1-hdmi-in",
-      "from": "laptop:hdmi-out",
-      "to": "ultrawide-monitor-1:hdmi-in",
-      "type": "hdmi",
-      "length": 1,
-      "needed": 0.83
+      "needed": 1.66
     },
     {
       "id": "c-router-lan-1-desktop-pc-eth-1",
@@ -462,7 +402,23 @@
       "to": "desktop-pc:eth-1",
       "type": "ethernet",
       "length": 3,
-      "needed": 2.24
+      "needed": 2.23
+    },
+    {
+      "id": "c-desktop-pc-usb-2-keyboard-usb-1",
+      "from": "desktop-pc:usb-2",
+      "to": "keyboard:usb-1",
+      "type": "usb",
+      "length": 1.8,
+      "needed": 1.77
+    },
+    {
+      "id": "c-desktop-pc-usb-1-mouse-usb-1",
+      "from": "desktop-pc:usb-1",
+      "to": "mouse:usb-1",
+      "type": "usb",
+      "length": 2,
+      "needed": 1.97
     }
   ],
   "findings": [],

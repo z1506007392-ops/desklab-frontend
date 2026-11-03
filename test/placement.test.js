@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { hidesAnotherScreen, lineUpScreens, placeCatalogObject, placeCopy } from '../src/domain/placement.js';
+import { isHungUnderDesk } from '../src/domain/geometry.js';
 import { DEVICE_CATALOG } from '../src/domain/catalog.js';
 import { isPortDirectionConsistent } from '../src/domain/connections.js';
 import { analyzeProjectLayout } from '../src/domain/layout-analysis.js';
@@ -132,8 +133,11 @@ test('devices added to a desk scene land in free, supported spots', () => {
     const object = byId[modelId];
     assert.ok(Math.abs(object.position.z - object.scale.z / 2 - deskTop) < 1e-9, `${modelId} sits on the desk`);
   }
-  for (const modelId of ['desktop-pc', 'router', 'power-strip', 'power-adapter']) {
+  for (const modelId of ['desktop-pc', 'router']) {
     assert.ok(Math.abs(byId[modelId].position.z - byId[modelId].scale.z / 2) < 1e-9, `${modelId} sits on the floor`);
+  }
+  for (const modelId of ['power-strip', 'power-adapter']) {
+    assert.equal(isHungUnderDesk(byId[modelId], byId['office-desk']), true, `${modelId} hangs under the desk`);
   }
 });
 
@@ -202,7 +206,8 @@ test('floor devices stay out of the space in front of the desk', () => {
     assert.ok(boundsOf(object).minY >= deskFront - 1e-9, `${object.modelId} should not sit in front of the desk`);
   }
   const strip = objects.find(object => object.modelId === 'power-strip');
-  assert.ok(boundsOf(strip).minY >= boundsOf(desk).maxY - 1e-9, 'a small strip tucks in behind the desk');
+  assert.equal(isHungUnderDesk(strip, desk), true, 'the strip hangs under the back of the desk');
+  assert.ok(strip.position.y > desk.position.y, 'under the back half, not in the footwell');
 });
 
 test('keyboards, mice, lamps and speakers are added on the desk top', () => {
@@ -355,7 +360,14 @@ test('a copy of any template device goes beside it, on the same surface, without
       assert.ok(placed, `${label} has a place`);
       const problems = analyzeProjectLayout(scene.room, [...objects, placed]).filter(issue => issue.severity !== 'info').map(issue => issue.title);
       assert.deepEqual(problems, [], label);
-      assert.deepEqual(findSupportingObject(placed, objects), findSupportingObject(original, objects), `${label} rests on the same thing`);
+      const originalSupport = findSupportingObject(original, objects);
+      const copySupport = findSupportingObject(placed, objects);
+      // Two angled 27-inch panels, or one ultrawide, already fill the preset.
+      // A display copy that cannot stay on that top may rest on the floor.
+      const fullDeskDisplay = original.category === 'display' && originalSupport?.kind === 'object' && copySupport?.kind === 'floor';
+      if (!fullDeskDisplay) {
+        assert.deepEqual(copySupport, originalSupport, `${label} rests on the same thing`);
+      }
       assert.deepEqual(placed.scale, original.scale, `${label} keeps its size`);
       assert.deepEqual(placed.rotation, original.rotation, `${label} keeps its turn`);
     }

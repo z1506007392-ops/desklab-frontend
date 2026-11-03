@@ -15,7 +15,7 @@ test('the 3D view draws with jsDelivr unreachable, and the page fetches nothing 
   await page.route('**/cdn.jsdelivr.net/**', route => route.abort());
   const evidence = await openProject(page, []);
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
-  await page.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  await page.getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   const canvas = page.locator('canvas');
   await expect(canvas).toBeVisible();
   await expect.poll(async () => (await canvas.screenshot()).length, { timeout: 15000 }).toBeGreaterThan(DRAWN_MIN_BYTES);
@@ -27,7 +27,7 @@ test('if the axis letters cannot load, only the letters are missing', async ({ p
   await page.route(/\/fonts\/axis-label\.woff(?:\?.*)?$/, route => route.abort());
   const evidence = await openProject(page, []);
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
-  await page.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
+  await page.getByRole('button', { name: '使用模板：超宽', exact: true }).click();
   const canvas = page.locator('canvas');
   await expect(canvas).toBeVisible();
   await expect.poll(async () => (await canvas.screenshot()).length, { timeout: 15000 }).toBeGreaterThan(DRAWN_MIN_BYTES);

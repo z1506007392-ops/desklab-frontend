@@ -60,7 +60,7 @@ test('the longer guide still starts a template from the menu', async ({ page }) 
   await guide(page).getByRole('button', { name: '从模板开始', exact: true }).click();
   const picker = page.getByRole('dialog', { name: '桌面模板', exact: true });
   await expect(picker).toBeVisible();
-  await picker.getByRole('button', { name: '使用模板：家庭办公', exact: true }).click();
+  await picker.getByRole('button', { name: '使用模板：极简单屏', exact: true }).click();
   await expect(guide(page)).toHaveCount(0);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });

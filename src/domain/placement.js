@@ -1,6 +1,6 @@
 import { placeCableTray } from './cable-tray.js';
 import { withPortAnchors } from './catalog.js';
-import { getObjectBounds, getRotatedFootprint, horizontalFootprintsOverlap, objectsOverlap, validateAndConstrainObject } from './geometry.js';
+import { getObjectBounds, getRotatedFootprint, horizontalFootprintsOverlap, isHungUnderDesk, objectsOverlap, underDeskHangZ, validateAndConstrainObject } from './geometry.js';
 import { createEntityId } from './identifiers.js';
 import { findSupportingObject, snapWallOutletToNearestWall } from './layout-analysis.js';
 
@@ -288,9 +288,26 @@ function preferredSpots(modelTemplate, frame, objects) {
       return corners(SEAT_RIGHT).map(([x, y]) => [x, y, 'desk']);
     case 'game-console':
       return [SEAT_RIGHT, -SEAT_RIGHT].map(sign => [sign * (frame.halfX + DESK_SIDE_GAP + width / 2), 0, 'floor']);
+    case 'power-strip':
+    case 'power-adapter':
+      return underDeskSpots(frame, width, depth);
     default:
       return [];
   }
+}
+
+// Back of the underside first, then a step toward the seat, still out of the
+// footwell. Sideways offsets let a second strip or adapter sit beside the first.
+function underDeskSpots(frame, width, depth) {
+  const spots = [];
+  for (let row = 0; row < 4; row += 1) {
+    const y = frame.halfY - depth / 2 - 0.005 - row * (depth + 0.03);
+    if (y <= frame.halfY * 0.16) break;
+    const xs = [0];
+    for (let x = 0.05; x + width / 2 <= frame.halfX - 0.01 + 1e-9; x += 0.05) xs.push(x, -x);
+    for (const x of xs) spots.push([x, y, 'under']);
+  }
+  return spots;
 }
 
 function findPreferredSpot(object, modelTemplate, desk, room, objects) {
@@ -299,8 +316,15 @@ function findPreferredSpot(object, modelTemplate, desk, room, objects) {
   for (const [x, y, level] of preferredSpots(modelTemplate, frame, objects)) {
     // On the desk means wholly on its top, not hanging over an edge.
     if (level === 'desk' && (Math.abs(x) + width / 2 > frame.halfX + 1e-9 || Math.abs(y) + depth / 2 > frame.halfY + 1e-9)) continue;
-    const z = level === 'desk' ? frame.top + object.scale.z / 2 : object.scale.z / 2;
-    const candidate = { ...object, position: { ...frame.toWorld(x, y), z } };
+    const z = level === 'desk' ? frame.top + object.scale.z / 2
+      : level === 'under' ? underDeskHangZ(desk, object)
+      : object.scale.z / 2;
+    const candidate = {
+      ...object,
+      position: { ...frame.toWorld(x, y), z },
+      rotation: level === 'under' ? { ...object.rotation, z: desk.rotation?.z ?? 0 } : object.rotation,
+    };
+    if (level === 'under' && !isHungUnderDesk(candidate, desk)) continue;
     if (fitsFreely(candidate, room, objects)) return candidate;
   }
   return null;
