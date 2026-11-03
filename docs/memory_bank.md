@@ -17,6 +17,14 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E101 完成。已经扣过当日次数之后，DeepSeek 超时是 504，上游失败或回答看不懂是 502，这三种响应都带 `remaining`。页面沿用原来的错误处理，把这个数字写回「今日剩余」。没开限流时仍是 `null`。查看是否已登录时的网络失败仍是 E80，没有改。
+
+验证：`npm test` 538 通过，lint 0 问题，build 通过。Chrome 桌面和手机 UI 203 通过 + 1 跳过。
+
+E102–E105 已被另一条线领走（并行线 H）。本线不实现这四条，也不做他们记下的 Mailjet 发信适配。关 Git 自动部署仍等负责人/Desklab 在控制台关。E69、E70 等负责人决定。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 领了 E102–E105（并行线 H）。E101 已在 `56e5c5e` 被领走（上游失败要把剩余次数带回页面），本线不改那条，也不改 E80 的「查看是否已登录」失败提示。
 
 E102：小时限流拒绝时不扣这个邮箱的当日次数。E103：分享链接和登录互不干扰。E104：退出失败留在已登录并给出中文。E105：登录框的错误文案。任务书里的 Mailjet 发信适配和 E101 的编号撞上了，仍由本线做，写进手册 §6.9，不改 E101 的状态。不改外观，不加设备。E69、E70、E76–E80、E96–E100 不动。
@@ -4258,8 +4266,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 536 domain tests (E67 login and per-email limit; 520 at the E14 key change)
-npm run test:ui   # Chrome desktop + phone: 201 passed + 1 skipped. Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 538 domain tests (E101 remaining on upstream failure; 536 at E67)
+npm run test:ui   # Chrome desktop + phone: 203 passed + 1 skipped. Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

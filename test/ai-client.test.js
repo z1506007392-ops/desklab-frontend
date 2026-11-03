@@ -49,6 +49,20 @@ test('server errors keep their code and Chinese message', async () => {
   }
 });
 
+test('a spent attempt still hands its remaining count back with the error', async () => {
+  await assert.rejects(
+    requestLayoutSuggestions({
+      summary,
+      fetchImpl: async () => jsonResponse(502, {
+        error: 'ai_upstream_error',
+        message: 'AI 服务暂时没有响应，请稍后再试',
+        remaining: 19,
+      }),
+    }),
+    error => error.code === 'ai_upstream_error' && error.remaining === 19,
+  );
+});
+
 test('a 200 without suggestions is treated as an unreadable answer', async () => {
   await assert.rejects(
     requestLayoutSuggestions({ summary, fetchImpl: async () => jsonResponse(200, { nope: true }) }),

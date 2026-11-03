@@ -86,6 +86,23 @@ test('when mail is not configured, the login dialog says so', async ({ page }) =
   expect(evidence.writes).toEqual([]);
 });
 
+test('a failed AI answer updates the remaining count from that response', async ({ page }) => {
+  const evidence = await openProject(page, [box('桌子')], [], {
+    ai: () => ({
+      status: 502,
+      json: { error: 'ai_upstream_error', message: 'AI 服务暂时没有响应，请稍后再试', remaining: 19 },
+    }),
+  });
+  const { section } = await openAi(page);
+  await expect(section.getByText('今日剩余 20 次')).toBeVisible();
+  await section.getByRole('button', { name: '让 AI 看看', exact: true }).click();
+  await expect(section.getByRole('alert')).toContainText('AI 服务暂时没有响应，请稍后再试');
+  await expect(section.getByText('今日剩余 19 次')).toBeVisible();
+  expect(evidence.aiRequests).toHaveLength(1);
+  expect(evidence.errors.filter(message => !/Failed to load resource/.test(message))).toEqual([]);
+  expect(evidence.writes).toEqual([]);
+});
+
 test('a rejected session opens the login dialog again', async ({ page }) => {
   const evidence = await openProject(page, [box('桌子')], [], {
     ai: () => ({ status: 401, json: { error: 'auth_required', message: '请先登录后再使用 AI' } }),

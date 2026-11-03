@@ -117,6 +117,33 @@ test('DeepSeek failures map to plain error codes', async () => {
   }
 });
 
+test('an upstream failure still reports the daily count that attempt spent', async () => {
+  const rateLimiter = {
+    async take() { return { allowed: true, mode: 'kv' }; },
+    async takeUser() { return { allowed: true, mode: 'kv', remaining: 19 }; },
+  };
+  const cases = [
+    [async () => new Response('busy', { status: 503 }), 502, 'ai_upstream_error'],
+    [async () => { throw new TypeError('fetch failed'); }, 502, 'ai_upstream_error'],
+    [async () => new Response('not json', { status: 200 }), 502, 'ai_bad_output'],
+    [async () => completion('{"answer":1}'), 502, 'ai_bad_output'],
+  ];
+  for (const [fetchImpl, status, error] of cases) {
+    const { response, json } = await call({ rateLimiter, fetchImpl });
+    assert.equal(response.status, status, error);
+    assert.equal(json.error, error);
+    assert.equal(json.remaining, 19);
+    assert.equal(response.headers.get('X-AI-Limit-Mode'), 'kv');
+  }
+  const hang = (url, init) => new Promise((resolve, reject) => {
+    init.signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+  });
+  const timed = await call({ rateLimiter, environment: { ...env, AI_TIMEOUT_MS: '20' }, fetchImpl: hang });
+  assert.equal(timed.response.status, 504);
+  assert.equal(timed.json.error, 'ai_timeout');
+  assert.equal(timed.json.remaining, 19);
+});
+
 test('a slow DeepSeek is cut off with a timeout error', async () => {
   const hang = (url, init) => new Promise((resolve, reject) => {
     init.signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));

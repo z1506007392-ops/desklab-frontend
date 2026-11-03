@@ -500,7 +500,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
   - 实现要点和工作量：中，全在浏览器里。在现有存档旁边再留最多 3 份有名字的副本，可以切换、从当前复制、删除。打开时仍只把当前这一份画进 3D。导出备份要带上这几份，旧的单份备份仍能导入。不上传。入口放在「更多」里，不动工具栏那四组的位置。
   - 视觉或新设备：3D 不变，没有新设备。多一个菜单项，算界面改动。工具栏和整体布局曾经由负责人定过，这个入口要负责人点头。
   - 变现：不适合单独收费。Planner 5D 免费档就是不限项目数。留下多套方案的好处，是人会多试几次，购线清单和 AI 会被多用。详细对照见 `docs/research/competitors-2026-11.md`。
-- **E101 [~] 进行中（Desklab，2026-11-04）** 已登录的 AI 请求如果上游失败（502、504、看不懂的回答），而且这次已经扣了当日次数，响应里带 `remaining`，页面上的「今日剩余」跟着变。查看是否已登录时的网络失败是 E80，这里不动。
+- **E101 [x] 完成（Desklab，2026-11-04）** 已登录的 AI 请求如果上游失败（502、504、看不懂的回答），而且这次已经扣了当日次数，响应里带 `remaining`，页面上的「今日剩余」跟着变。查看是否已登录时的网络失败是 E80，这里不动。
 - **E102 [~] 进行中（Desklab，2026-11-04）** 小时限流拒绝时不扣这个邮箱的当日次数。单测锁住：地址额度已用完时不调用 `takeUser`，响应里的 `remaining` 是 `readUser` 的原值。
 - **E103 [~] 进行中（Desklab，2026-11-04）** 分享链接和登录互不干扰。只读分享里「让 AI 看看」保持禁用，不弹出登录框，不请求 `/api/ai/layout`。复制到自己的项目之后，未登录可以打开登录框，已登录可以正常请求。不改 E78 的分享对话框。
 - **E104 [~] 进行中（Desklab，2026-11-04）** 退出失败时用一句中文说明，并留在已登录状态，可以再点一次。不改样式。不改 E80 的「查看是否已登录」失败提示。
@@ -592,10 +592,10 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 | 401 | `auth_required` | 请先登录后再使用 AI |
 | 413 | `too_large` | 桌面内容太多，暂时无法交给 AI 分析 |
 | 429 | `ai_rate_limited` | 这个邮箱今天用完：今天的 AI 次数用完了，明天再试；每地址每小时上限：用得太频繁了，请一小时后再试。两种都带 `remaining` |
-| 502 | `ai_upstream_error` | AI 服务暂时没有响应，请稍后再试 |
-| 502 | `ai_bad_output` | AI 这次的回答看不懂，请再试一次 |
+| 502 | `ai_upstream_error` | AI 服务暂时没有响应，请稍后再试。已经扣过当日次数时带 `remaining` |
+| 502 | `ai_bad_output` | AI 这次的回答看不懂，请再试一次。已经扣过当日次数时带 `remaining` |
 | 503 | `ai_unavailable` | AI 功能暂未开放 |
-| 504 | `ai_timeout` | AI 想得太久了，请再试一次 |
+| 504 | `ai_timeout` | AI 想得太久了，请再试一次。已经扣过当日次数时带 `remaining` |
 
 #### 6.3.4 处理步骤（按顺序）
 1. `AI_ENABLED === 'false'` 或无 `DEEPSEEK_API_KEY` → 503。这一步在登录检查之前，这样「AI 暂未开放」和本地无密钥的测试保持原样。
@@ -605,8 +605,8 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 5. 每 IP 每小时（`AI_PER_IP_HOURLY`，默认 20）→ 超限 429，提示「用得太频繁了，请一小时后再试」，`remaining` 用该邮箱当天还剩的次数（没有用户计数时为 `null`）。
 6. 每个邮箱每天（`AI_DAILY_PER_USER`，默认 20，北京时间零点重置）→ 超限 429，提示「今天的 AI 次数用完了，明天再试」。不设全站上限，没有 `AI_DAILY_GLOBAL` / `AI_DAILY_TOTAL`。
 7. `buildMessages(summary, goal)`。
-8. `fetchImpl` 调 DeepSeek，`AbortController` 超时 `AI_TIMEOUT_MS` → 504；非 2xx → 502 `ai_upstream_error`（日志只记状态码，**不记请求体和密钥**）。
-9. 取 `choices[0].message.content`，`JSON.parse`；失败、为空、或没有 `suggestions` 数组 → 502 `ai_bad_output`。
+8. `fetchImpl` 调 DeepSeek，`AbortController` 超时 `AI_TIMEOUT_MS` → 504；非 2xx → 502 `ai_upstream_error`（日志只记状态码，**不记请求体和密钥**）。这两步已经扣过当日次数，响应带上 `remaining`。
+9. 取 `choices[0].message.content`，`JSON.parse`；失败、为空、或没有 `suggestions` 数组 → 502 `ai_bad_output`，同样带上 `remaining`。
 10. 白名单过滤，最多 5 条建议、每条最多 6 个动作；返回 200，带 `remaining`。
 
 ### 6.4 场景摘要格式（客户端 `buildSceneSummary`）

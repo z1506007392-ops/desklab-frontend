@@ -125,20 +125,24 @@ export function createLayoutHandler({
       clearTimeout(timer);
       const timedOut = controller.signal.aborted;
       logger.log('ai/layout upstream', timedOut ? 'timeout' : 'network error', `${Date.now() - started}ms`);
-      return timedOut ? fail(504, 'ai_timeout', limitHeaders) : fail(502, 'ai_upstream_error', limitHeaders);
+      // The daily allowance was already spent. Tell the browser, or the
+      // "今日剩余" count stays a step behind until the next visit.
+      return timedOut
+        ? fail(504, 'ai_timeout', limitHeaders, undefined, { remaining })
+        : fail(502, 'ai_upstream_error', limitHeaders, undefined, { remaining });
     }
     clearTimeout(timer);
 
     if (!upstream.ok) {
       logger.log('ai/layout upstream status', upstream.status, `${Date.now() - started}ms`);
-      return fail(502, 'ai_upstream_error', limitHeaders);
+      return fail(502, 'ai_upstream_error', limitHeaders, undefined, { remaining });
     }
 
     let completion;
     try {
       completion = await upstream.json();
     } catch {
-      return fail(502, 'ai_bad_output', limitHeaders);
+      return fail(502, 'ai_bad_output', limitHeaders, undefined, { remaining });
     }
     const content = completion?.choices?.[0]?.message?.content;
     let parsed;
@@ -147,7 +151,7 @@ export function createLayoutHandler({
     } catch {
       parsed = null;
     }
-    if (!parsed || !Array.isArray(parsed.suggestions)) return fail(502, 'ai_bad_output', limitHeaders);
+    if (!parsed || !Array.isArray(parsed.suggestions)) return fail(502, 'ai_bad_output', limitHeaders, undefined, { remaining });
 
     const usage = completion.usage || {};
     logger.log('ai/layout ok', `${Date.now() - started}ms`, 'tokens', usage.prompt_tokens, usage.completion_tokens);
