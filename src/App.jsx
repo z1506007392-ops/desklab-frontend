@@ -102,6 +102,7 @@ import { CountBadge } from './components/CountBadge.jsx';
 import { CloseIcon } from './components/Icons.jsx';
 import EntryDeskStep from './components/EntryDeskStep.jsx';
 import EntryRoomPage from './components/EntryRoomPage.jsx';
+import SettingsDialog from './components/SettingsDialog.jsx';
 import { getAppStorage, isFileArchiveActive } from './domain/app-storage.js';
 import { ENTRY_PRESET_TEMPLATE_ID, formatEntryRoom, placePresetInRoom, shouldShowEntry } from './domain/entry-flow.js';
 
@@ -223,7 +224,10 @@ export default function App() {
   // A phone (small touch screen) is told once that a computer works better (E59).
   const [onPhone, setOnPhone] = useState(() => window.matchMedia?.(PHONE_MEDIA_QUERY).matches ?? false);
   const [phoneNoticeDismissed, setPhoneNoticeDismissed] = useState(() => hasDismissedPhoneNotice(getBrowserStorage()));
-  const [isRoomEditorOpen, setIsRoomEditorOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  // Returning to the room page from 设置. The first visit must not be cancelled
+  // by the same effect that skips entry for someone who already finished it.
+  const [roomRepick, setRoomRepick] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(window.innerWidth >= 900);
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(window.innerWidth >= 900);
   const [activeTab, setActiveTab] = useState('properties'); // 'properties' | 'connections'
@@ -716,6 +720,13 @@ export default function App() {
         if (showAbout) {
           setShowAbout(false);
         }
+        if (showSettings) {
+          setShowSettings(false);
+        }
+        if (roomRepick && entryStep === 'room') {
+          setRoomRepick(false);
+          setEntryStep('done');
+        }
         if (showTemplates) {
           setScrollTemplatesToBuilder(false);
           setShowTemplates(false);
@@ -727,7 +738,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKeyDownEsc);
     return () => window.removeEventListener('keydown', handleKeyDownEsc);
-  }, [closeRecommendations, connectionMode, shareLink, showAbout, showCableShop, showGallery, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations, showTemplates]);
+  }, [closeRecommendations, connectionMode, entryStep, roomRepick, shareLink, showAbout, showCableShop, showGallery, showGlobalConnections, showWiringReport, showLayoutReport, showRecommendations, showSettings, showTemplates]);
 
   useEffect(() => {
     const handleHistoryKeys = (e) => {
@@ -859,7 +870,7 @@ export default function App() {
   }, [connectionMode, objects, projectEditable, room, selectedObjectId, showStatus, updateSelectedObject]);
 
   const entryOpen = entryStep === 'room' || entryStep === 'desk';
-  const dialogOpen = showTemplates || showGallery || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || shareLink || showRecommendations || showAbout || guideOpen || entryOpen;
+  const dialogOpen = showTemplates || showGallery || showLayoutReport || showWiringReport || showGlobalConnections || showCableShop || shareLink || showRecommendations || showAbout || showSettings || guideOpen || entryOpen;
 
   useLayoutEffect(() => {
     const handleKeyDown = (e) => {
@@ -1168,7 +1179,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!projectLoaded) return;
+    if (!projectLoaded || roomRepick) return;
     const guideSeen = guideDismissedRef.current || hasSeenGuide(getBrowserStorage());
     if (!shouldShowEntry({
       shareView,
@@ -1183,9 +1194,29 @@ export default function App() {
       return;
     }
     setEntryStep(current => (current === 'desk' ? 'desk' : 'room'));
-  }, [finishEntry, galleryView, hasSavedProject, objects.length, projectLoaded, recoveryDraft, shareView]);
+  }, [finishEntry, galleryView, hasSavedProject, objects.length, projectLoaded, recoveryDraft, roomRepick, shareView]);
 
   const handleConfirmEntryRoom = roomSize => {
+    if (roomRepick) {
+      if (!projectEditable) return;
+      const result = refitLayoutToRoom(room, roomSize, objects);
+      if (!result.valid) {
+        showStatus({ text: result.reason || '这间房放不下现在的摆法', type: 'error' }, 4000);
+        return;
+      }
+      const unchanged = JSON.stringify(room) === JSON.stringify(result.room)
+        && JSON.stringify(objects) === JSON.stringify(result.objects);
+      if (!unchanged) {
+        recordHistory();
+        setRoom(result.room);
+        setInputRoom(result.room);
+        setObjects(result.objects);
+        showStatus({ text: '房间尺寸已更新', type: 'success' }, 3000);
+      }
+      setRoomRepick(false);
+      setEntryStep('done');
+      return;
+    }
     setRoom(roomSize);
     setInputRoom(roomSize);
     setCameraConfig(defaultCameraPose(roomSize, []));
@@ -1841,17 +1872,6 @@ export default function App() {
   };
 
   // 工具栏里的每个控件只定义一次，桌面和手机各自排布（E10、E8）。
-  const roomFields = (
-    <div className="toolbar-cluster toolbar-room" id="toolbar-room">
-      <label htmlFor="room-length" className="toolbar-field-label">长:</label>
-      <input id="room-length" type="number" min="0.1" step="0.1" className="ui-input toolbar-room-input" value={inputRoom.length} onChange={e => setInputRoom({ ...inputRoom, length: Number(e.target.value) })} disabled={!projectEditable} />
-      <label htmlFor="room-width" className="toolbar-field-label">宽:</label>
-      <input id="room-width" type="number" min="0.1" step="0.1" className="ui-input toolbar-room-input" value={inputRoom.width} onChange={e => setInputRoom({ ...inputRoom, width: Number(e.target.value) })} disabled={!projectEditable} />
-      <label htmlFor="room-height" className="toolbar-field-label">高:</label>
-      <input id="room-height" type="number" min="0.1" step="0.1" className="ui-input toolbar-room-input" value={inputRoom.height} onChange={e => setInputRoom({ ...inputRoom, height: Number(e.target.value) })} disabled={!projectEditable} />
-      <button className="ui-button" onClick={handleUpdateRoom} disabled={!projectEditable}>更新房间</button>
-    </div>
-  );
   const titleLabel = <span className="toolbar-label">DeskLab</span>;
   const templatesButton = <button className="ui-button" onClick={() => { setScrollTemplatesToBuilder(false); setShowTemplates(true); }} disabled={!projectEditable}>桌面模板</button>;
   const galleryButton = <button className="ui-button" onClick={() => setShowGallery(true)} disabled={!projectEditable && !galleryView}>社区图库</button>;
@@ -1914,6 +1934,7 @@ export default function App() {
       <div className="toolbar-menu-separator" role="separator" />
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowCableShop(true))}>购线清单</button>
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(handleOpenShareLink)} disabled={!projectLoaded || projectLoadFailed}>复制分享链接</button>
+      <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => { setInputRoom({ length: room.length, width: room.width, height: room.height }); setShowSettings(true); })} disabled={!projectEditable}>设置</button>
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => { setGuideStep(0); setGuideOpen(true); })}>新手引导</button>
       <button type="button" className="toolbar-menu-item" role="menuitem" onClick={() => runMoreMenuAction(() => setShowAbout(true))}>关于与隐私</button>
     </div>
@@ -1960,10 +1981,7 @@ export default function App() {
   const appToolbar = (
     <AppToolbar
       isMobile={isMobile}
-      isRoomEditorOpen={isRoomEditorOpen}
-      onToggleRoom={() => setIsRoomEditorOpen(open => !open)}
       titleLabel={titleLabel}
-      roomFields={roomFields}
       templatesButton={templatesButton}
       galleryButton={galleryButton}
       undoButton={undoButton}
@@ -2409,7 +2427,33 @@ export default function App() {
         />
       )}
 
-      {entryStep === 'room' && <EntryRoomPage onConfirm={handleConfirmEntryRoom} />}
+      {showSettings && entryStep === 'done' && (
+        <SettingsDialog
+          length={inputRoom.length}
+          width={inputRoom.width}
+          height={inputRoom.height}
+          disabled={!projectEditable}
+          onChange={setInputRoom}
+          onUpdate={handleUpdateRoom}
+          onRepick={() => {
+            setShowSettings(false);
+            setRoomRepick(true);
+            setEntryStep('room');
+          }}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
+
+      {entryStep === 'room' && (
+        <EntryRoomPage
+          repick={roomRepick}
+          onConfirm={handleConfirmEntryRoom}
+          onCancel={() => {
+            setRoomRepick(false);
+            setEntryStep('done');
+          }}
+        />
+      )}
 
       {guideOpen && (
         <OnboardingGuide

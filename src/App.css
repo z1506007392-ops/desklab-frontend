@@ -144,11 +144,6 @@
   flex-shrink: 0;
 }
 
-.toolbar-compact .toolbar-room {
-  flex-wrap: wrap;
-  padding: 4px 12px 6px;
-}
-
 @media (max-width: 359px) {
   .toolbar-compact .toolbar-label {
     display: none;
@@ -163,21 +158,13 @@
   letter-spacing: -0.01em;
 }
 
-.toolbar-field-label {
-  color: var(--ink-2);
-  font-size: var(--text-sm);
-}
-
-.toolbar-room-input {
-  width: 64px;
-}
-
-/* 保存、导入等结果：屏幕下方居中浮起的标签，几秒后消失；不挤动工具栏，也不挡点击。 */
+/* 保存、导入等结果：屏幕下方居中浮起的标签，几秒后消失；不挤动工具栏，也不挡点击。
+   层级高于设置和进门页，改房间时这句话能被看见。 */
 .status-toast {
   position: fixed;
   left: 50%;
   bottom: 24px;
-  z-index: 2000;
+  z-index: 10002;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -2205,7 +2192,33 @@
 
 .entry-room-card {
   width: min(420px, calc(100% - 32px));
+  box-sizing: border-box;
+  padding: 24px;
   text-align: center;
+}
+
+.settings-dialog {
+  width: min(420px, calc(100% - 32px));
+}
+
+.settings-room-fields {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0 0 16px;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+
+.settings-room-fields .ui-input {
+  width: 100%;
+}
+
+.settings-room-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .entry-room-choices {

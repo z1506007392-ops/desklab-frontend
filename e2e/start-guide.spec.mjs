@@ -23,6 +23,9 @@ test('a first visit asks only for the room, then offers a desk on that room', as
   await expect(room).toBeInViewport({ ratio: 1 });
   await expect(room.getByRole('radio', { name: /默认/ })).toBeChecked();
   await expect(room.getByRole('button')).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await expect(room).toBeVisible();
+  await expect(room.getByRole('button', { name: '返回', exact: true })).toHaveCount(0);
   await expect(guide(page)).toHaveCount(0);
 
   await room.getByRole('button', { name: '生成这个房间', exact: true }).click();
@@ -35,6 +38,8 @@ test('a first visit asks only for the room, then offers a desk on that room', as
   await desk.getByRole('button', { name: '用电竞桌', exact: true }).click();
   await expect(desk).toHaveCount(0);
   await expect(page.getByText('已放上电竞桌', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '房间尺寸', exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('长:', { exact: true })).toHaveCount(0);
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
 

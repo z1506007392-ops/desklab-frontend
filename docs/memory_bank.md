@@ -17,6 +17,20 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E109：主界面不再放房间大小。Leo 说房间只在第一次进入时选，之后要改就放到设置里。没有加登录墙。「登录后」仍是第一次进入应用，不是邮箱验证码。进门仍是 `f6fd7b1` 的两步：整页「这间房有多大」，然后「放一张桌子」。合入时留下了已经在 master 上的社区图库和桌下理线槽。
+
+- 桌面和手机的工具栏去掉了长、宽、高，也去掉了「房间尺寸」。社区图库还在工具栏上。
+- 「更多 → 设置」里改这三个数，仍用 `refitLayoutToRoom`，成功时提示「房间尺寸已更新」。
+- 「重新选择房间」回到那一整页。只有这一次有「返回」，Escape 也只在这次离开。第一次进入按 Escape 关不掉，也不能跳过。
+- 已保存的项目、分享链接、图库地址、新手引导保持原样。没有做扫描，没有再加设备，没有改 3D 外观，没有改登录接口。
+- 打开项目的轮询留在已经全绿的 `2f0ea2d`（`count()` 和 `evaluateAll()`），没有改回会干等的 `isEnabled()`。
+
+验证（合入图库、理线槽、缓存、F7 安装包和房间页轮询之后）：`npm test` 628 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 是预期的，brotli 照旧，17 个 GLB 652248 → 285991）。Chrome 桌面和手机 UI 251 通过 + 1 跳过（8.2 分钟）。WebKit 上进门和手机工具栏 8 通过。
+
+还剩：F7 已完成（`a128756`）。E99、E100 仍由并行线 J 做。E97 仍是另一条线。E69、E70 等负责人决定。发信仍等 Mailjet 或 Brevo。Git 自动部署仍等负责人关掉。扫描不做。安装包没有签名，也没有公证。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 理线槽、本机图库，以及把显示器拖过主机的测试，CI 已绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41730626779 （头 `ddbb862`，static、Chrome 四片、WebKit、check、deploy 都过了）。随后房间页轮询 `2f0ea2d` 也过了：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41731274728 。
 
 还剩：E97、E99、E100 仍是别的线。网上社区接口仍是 F4，没有实现。
@@ -4502,8 +4516,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 628 domain tests (F7: packaged API base, desktop CSP, desktop-origin cookie)
-npm run test:ui   # Chrome desktop + phone. F7 re-ran the room page and local save only: 18 passed. The last full run recorded in the progress log is 249 passed + 1 skipped. CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 628 domain tests (F7 packaged API base, and E109 on the same tree)
+npm run test:ui   # Chrome desktop + phone: 251 passed + 1 skipped. CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

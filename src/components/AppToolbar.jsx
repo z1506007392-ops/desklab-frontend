@@ -1,11 +1,9 @@
 // Desktop and phone toolbars. Each control is built once by App and placed here,
-// so the two layouts cannot drift apart (E8, E10).
+// so the two layouts cannot drift apart (E8, E10). Room size is not one of
+// these controls: the first visit asks for it, and later edits live in 设置.
 export default function AppToolbar({
   isMobile,
-  isRoomEditorOpen,
-  onToggleRoom,
   titleLabel,
-  roomFields,
   templatesButton,
   galleryButton,
   undoButton,
@@ -38,21 +36,11 @@ export default function AppToolbar({
           {wiringButton}
           {templatesButton}
           {galleryButton}
-          <button
-            type="button"
-            className="ui-button"
-            aria-expanded={isRoomEditorOpen}
-            aria-controls="toolbar-room"
-            onClick={onToggleRoom}
-          >
-            房间尺寸
-          </button>
           {connectionsButton}
           {resetViewButton}
           {rightPanelButton}
           {moreButton}
         </div>
-        {isRoomEditorOpen && roomFields}
         {moreMenu}
         {importInput}
       </div>
@@ -63,7 +51,6 @@ export default function AppToolbar({
     <div className="toolbar">
       <div className="toolbar-group">
         {titleLabel}
-        {roomFields}
         {templatesButton}
         {galleryButton}
       </div>

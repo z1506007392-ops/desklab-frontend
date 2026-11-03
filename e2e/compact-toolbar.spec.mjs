@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { box, openProject } from './project-fixture.mjs';
 
 // Everything that used to wrap into five rows on a phone (E10).
-const STRIP = ['展开资产库', /^改进建议/, /^布局检查/, /^布线检查/, '桌面模板', '社区图库', '房间尺寸', '所有连接', '重置视角', '展开属性面板', '更多'];
+const STRIP = ['展开资产库', /^改进建议/, /^布局检查/, /^布线检查/, '桌面模板', '社区图库', '所有连接', '重置视角', '展开属性面板', '更多'];
 
 test('on a phone the toolbar is two rows and every action can still be reached', async ({ page }, testInfo) => {
   test.skip(testInfo.project.use.viewport.width >= 900, 'the compact toolbar is the phone layout');
@@ -21,16 +21,17 @@ test('on a phone the toolbar is two rows and every action can still be reached',
     await expect(button).toBeInViewport({ ratio: 1 });
   }
 
-  // The room size sits behind its own button.
+  // Room size is not on the phone toolbar. Later edits are in 设置.
+  await expect(page.getByRole('button', { name: '房间尺寸', exact: true })).toHaveCount(0);
   await expect(page.getByLabel('长:', { exact: true })).toHaveCount(0);
-  const roomToggle = strip.getByRole('button', { name: '房间尺寸', exact: true });
-  await expect(roomToggle).toHaveAttribute('aria-expanded', 'false');
-  await roomToggle.click();
-  await expect(roomToggle).toHaveAttribute('aria-expanded', 'true');
-  await page.getByLabel('长:', { exact: true }).fill('6');
-  await page.getByRole('button', { name: '更新房间', exact: true }).click();
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('menu', { name: '更多', exact: true }).getByRole('menuitem', { name: '设置', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: '设置', exact: true });
+  await settings.getByLabel('长:', { exact: true }).fill('6');
+  await settings.getByRole('button', { name: '更新房间', exact: true }).click();
   await expect(page.getByText('房间尺寸已更新', { exact: true })).toBeVisible();
-  await roomToggle.click();
+  await settings.getByRole('button', { name: '关闭设置', exact: true }).click();
+  await expect(settings).toHaveCount(0);
   await expect(page.getByLabel('长:', { exact: true })).toHaveCount(0);
 
   expect(evidence).toEqual({ errors: [], writes: [] });
