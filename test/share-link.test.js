@@ -154,6 +154,38 @@ test('links in the first format still open', async () => {
   assert.deepEqual(asOpened(decoded.project), asOpened(project));
 });
 
+async function gzipPayload(payload) {
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  const gzipped = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+  return `#desklab-share-2.${Buffer.from(gzipped).toString('base64url')}`;
+}
+
+test('a huge hash is refused before it is decoded', async () => {
+  const hash = `#desklab-share-2.${'A'.repeat(20)}`;
+  assert.equal((await decodeShareLink(hash, { maxBytes: 8 })).kind, 'tooBig');
+});
+
+test('a packed link cannot rename the id, run a script name, or point at someone else\'s model', async () => {
+  const payload = JSON.parse('{"r":[4,3,2.6],"o":[{"m":"office-desk","p":[0,0,0.4],"n":"<script>alert(1)</script>","x":{"assetUrl":"https://evil.example/steal.glb","name":"<img>","id":"pwn","__proto__":{"polluted":true}}}],"c":[]}');
+  const opened = await decodeShareLink(await gzipPayload(payload));
+  assert.equal(opened.kind, 'ok');
+  assert.equal(opened.project.objects[0].id, 'shared-1');
+  assert.equal(opened.project.objects[0].name, '＜script＞alert(1)＜/script＞');
+  assert.equal(opened.project.objects[0].assetUrl, null);
+  assert.equal(Object.prototype.polluted, undefined);
+  assert.equal(hydrateProjectObjects(opened.project.objects)[0].assetUrl, '/models/office-desk.glb');
+});
+
+test('a free-form packed device cannot carry a script address', async () => {
+  const hostile = JSON.parse('{"r":[4,3,2.6],"o":[{"f":{"id":"pwn","type":"furniture","name":"<script>alert(1)</script>","shape":"box","assetUrl":"javascript:alert(1)","position":{"x":0,"y":0,"z":0.4},"rotation":{"x":0,"y":0,"z":0},"scale":{"x":1,"y":1,"z":1},"__proto__":{"polluted":true}}}],"c":[]}');
+  const opened = await decodeShareLink(await gzipPayload(hostile));
+  assert.equal(opened.kind, 'ok');
+  assert.equal(opened.project.objects[0].id, 'shared-1');
+  assert.equal(opened.project.objects[0].name, '＜script＞alert(1)＜/script＞');
+  assert.equal(opened.project.objects[0].assetUrl, null);
+  assert.equal(Object.prototype.polluted, undefined);
+});
+
 test('a link naming a device this page does not know is treated as damaged', async () => {
   const payload = { r: [4, 3, 2.6], o: [{ m: 'hologram-desk', p: [0, 0, 0.4] }], c: [] };
   const bytes = new TextEncoder().encode(JSON.stringify(payload));

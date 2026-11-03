@@ -1,6 +1,7 @@
 import { DEVICE_CATALOG, hydrateProjectObjects } from './catalog.js';
 import { normalizeProject } from './local-project-store.js';
 import { MAX_PROJECT_IMPORT_BYTES } from './project-import-limits.js';
+import { screenUntrustedProject } from './untrusted-project.js';
 
 // The hash is `#desklab-share-<version>.<payload>`, the payload gzipped, then
 // base64url. Version 1 is the same project JSON an imported backup has to
@@ -23,6 +24,13 @@ export const SHARE_LINK_MESSAGES = Object.freeze({
 
 const HASH_PATTERN = /^#desklab-share-(\d+)\.([A-Za-z0-9_-]*)$/;
 
+// base64url uses 4 characters for 3 bytes. Refuse a longer hash before
+// allocating the decoded buffer. `#desklab-share-` is 15 characters; the
+// version is only one or two digits in practice, so a few extra are enough.
+function payloadCharLimit(maxBytes) {
+  return Math.ceil((maxBytes * 4) / 3);
+}
+
 export async function encodeShareLink(project, locationLike) {
   const bytes = new TextEncoder().encode(JSON.stringify(packProject(project)));
   const compressed = await gzip(bytes);
@@ -34,8 +42,11 @@ export async function encodeShareLink(project, locationLike) {
 export async function decodeShareLink(hash, { maxBytes = MAX_PROJECT_IMPORT_BYTES } = {}) {
   if (typeof hash !== 'string' || hash.length === 0 || hash === '#') return { kind: 'absent' };
   if (!hash.startsWith('#desklab-share-')) return { kind: 'absent' };
+  const payloadLimit = payloadCharLimit(maxBytes);
+  if (hash.length > 15 + 3 + 1 + payloadLimit) return { kind: 'tooBig' };
   const match = HASH_PATTERN.exec(hash);
   if (!match || match[2].length === 0) return { kind: 'damaged' };
+  if (match[2].length > payloadLimit) return { kind: 'tooBig' };
   const version = Number(match[1]);
   if (!READABLE_VERSIONS.has(version)) return { kind: 'unsupported' };
   try {
@@ -43,10 +54,10 @@ export async function decodeShareLink(hash, { maxBytes = MAX_PROJECT_IMPORT_BYTE
     if (compressed.byteLength > maxBytes) return { kind: 'tooBig' };
     const jsonBytes = await gunzip(compressed, maxBytes);
     const payload = JSON.parse(new TextDecoder().decode(jsonBytes));
-    const project = normalizeProject(version === 1 ? payload : unpackProject(payload));
+    const project = screenUntrustedProject(normalizeProject(version === 1 ? payload : unpackProject(payload)));
     return { kind: 'ok', project };
   } catch (error) {
-    if (error?.message === 'too big') return { kind: 'tooBig' };
+    if (error?.message === 'too big' || error?.code === 'too_big') return { kind: 'tooBig' };
     return { kind: 'damaged' };
   }
 }
@@ -60,6 +71,9 @@ export async function decodeShareLink(hash, { maxBytes = MAX_PROJECT_IMPORT_BYTE
 const CATALOG = new Map(DEVICE_CATALOG.flatMap(({ category, models }) =>
   models.map(model => [model.modelId, { model, category }])));
 const RESTORED_FIELDS = ['type', 'category', 'shape', 'color', 'assetUrl'];
+// Fields a version-2 link may override. Anything else in the packed "x"
+// object (a different name, id, or __proto__) is ignored.
+const PACKED_CHANGE_FIELDS = [...RESTORED_FIELDS, 'wattage', 'maxLoad'];
 
 const round = (value, places = 3) => Number(value.toFixed(places)) || 0;
 const packVector = ({ x, y, z }) => [round(x), round(y), round(z)];
@@ -102,6 +116,16 @@ function packObject(object) {
   return packed;
 }
 
+function applyPackedChanges(object, changed) {
+  if (!changed || typeof changed !== 'object' || Array.isArray(changed)) return object;
+  const out = { ...object };
+  for (const field of PACKED_CHANGE_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(changed, field)) out[field] = changed[field];
+  }
+  if (Array.isArray(changed.ports)) out.ports = changed.ports;
+  return out;
+}
+
 function unpackObject(packed, index) {
   const id = `shared-${index + 1}`;
   if (packed.f) return { ...packed.f, id };
@@ -109,7 +133,8 @@ function unpackObject(packed, index) {
   if (!entry) throw new Error('unknown device');
   const { model } = entry;
   const base = catalogBase(entry);
-  return {
+  if (packed.n !== undefined && typeof packed.n !== 'string') throw new Error('bad name');
+  return applyPackedChanges({
     ...base,
     ports: restoredPorts(base),
     id,
@@ -117,8 +142,7 @@ function unpackObject(packed, index) {
     position: unpackVector(packed.p),
     rotation: packed.r ? unpackVector(packed.r) : { x: 0, y: 0, z: packed.a ?? 0 },
     scale: packed.s ? unpackVector(packed.s) : { ...model.defaultScale },
-    ...packed.x,
-  };
+  }, packed.x);
 }
 
 export function packProject(project) {

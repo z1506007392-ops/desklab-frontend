@@ -79,6 +79,50 @@ test('the more menu can be used from the keyboard and returns focus', async ({ p
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
 
+test('an imported backup cannot keep a script name or a remote model address', async ({ page }) => {
+  const evidence = await openProject(page, [box('桌子 A')]);
+  const remote = [];
+  page.on('request', request => {
+    if (request.url().includes('evil.example')) remote.push(request.url());
+  });
+  const dialogs = [];
+  page.on('dialog', dialog => {
+    dialogs.push(dialog.message());
+    dialog.accept();
+  });
+  const backup = {
+    room: { length: 4, width: 3, height: 2.6 },
+    objects: [{
+      id: 'desk',
+      type: 'furniture',
+      name: '<img src=x onerror=alert(1)>',
+      shape: 'box',
+      modelId: 'office-desk',
+      assetUrl: 'https://evil.example/steal.glb',
+      position: { x: 0, y: 0, z: 0.4 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 1.4, y: 0.7, z: 0.75 },
+    }],
+    connections: [],
+  };
+  await page.getByLabel('导入 DeskLab 备份文件', { exact: true }).setInputFiles({
+    name: 'hostile.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(backup)),
+  });
+  await expect(page.getByText('备份已导入，尚未保存')).toBeVisible();
+  expect(dialogs).toHaveLength(1);
+  expect(dialogs[0]).toContain('确定导入');
+  expect(remote).toEqual([]);
+
+  const openPanel = page.getByRole('button', { name: '展开属性面板', exact: true });
+  if (await openPanel.isVisible()) await openPanel.click();
+  const safeName = '＜img src=x onerror=alert(1)＞';
+  await page.getByLabel('设备', { exact: true }).selectOption({ label: safeName });
+  await expect(page.getByLabel('名称', { exact: true })).toHaveValue(safeName);
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
+
 test('importing a file that is not a backup explains it in plain words', async ({ page }) => {
   const evidence = await openProject(page, [box('桌子 A')]);
   await page.getByLabel('导入 DeskLab 备份文件', { exact: true }).setInputFiles({

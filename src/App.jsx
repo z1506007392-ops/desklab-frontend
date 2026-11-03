@@ -54,6 +54,7 @@ import {
   describeProjectImportError,
   getProjectImportByteLength,
 } from './domain/project-import-limits.js';
+import { screenUntrustedProject } from './domain/untrusted-project.js';
 import { getPurchaseGuidance } from './domain/purchase-guidance.js';
 import { buildTemplateScene } from './domain/desk-templates.js';
 import { buildShoppingList } from './domain/shopping-list.js';
@@ -1062,7 +1063,7 @@ export default function App() {
     try {
       assertProjectImportSize(file.size);
       const parsed = JSON.parse(await file.text());
-      const result = await projectClient.validate(parsed);
+      const result = screenUntrustedProject(await projectClient.validate(parsed));
 
       const shouldImport = window.confirm(
         `确定导入“${file.name}”并替换当前的桌面吗？\n导入后仍需点击“保存项目”才会保存。`
@@ -1228,7 +1229,7 @@ export default function App() {
       }
       assertProjectImportSize(getProjectImportByteLength(text));
       const parsed = JSON.parse(text);
-      const result = await projectClient.validate(parsed);
+      const result = screenUntrustedProject(await projectClient.validate(parsed));
 
       const shouldImport = window.confirm(
         '确定从剪贴板导入项目并替换当前的桌面吗？\n导入后仍需点击“保存项目”才会保存。'

@@ -1,3 +1,5 @@
+import { isSafeModelAssetUrl } from './safe-model-url.js';
+
 // R3F reports every model load error through window.reportError, even when
 // an error boundary catches it, so a missing GLB shows up as an uncaught page
 // error although the device correctly falls back to a simple shape. Check
@@ -15,6 +17,10 @@ export function createModelAvailabilityChecker(fetchImpl = (...args) => fetch(..
   const results = new Map();
   return {
     check(url) {
+      if (!isSafeModelAssetUrl(url)) {
+        results.set(url, false);
+        return Promise.resolve(false);
+      }
       if (!checks.has(url)) {
         checks.set(url, fetchImpl(url, { method: 'HEAD' })
           .then(isUsableModelResponse, () => false)

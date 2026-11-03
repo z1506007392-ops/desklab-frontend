@@ -29,6 +29,14 @@ test('each model is checked once with a HEAD request and the result is remembere
   assert.equal(checker.peek('/models/missing.glb'), 'missing');
 });
 
+test('a remote or script model address is missing and is never fetched', async () => {
+  const checker = createModelAvailabilityChecker(async () => { throw new Error('fetch must not run'); });
+  for (const url of ['https://evil.test/models/x.glb', 'javascript:alert(1)']) {
+    assert.equal(await checker.check(url), false);
+    assert.equal(checker.peek(url), 'missing');
+  }
+});
+
 test('a network failure counts as missing instead of throwing', async () => {
   const checker = createModelAvailabilityChecker(async () => { throw new TypeError('Failed to fetch'); });
   assert.equal(await checker.check('/models/desk.glb'), false);
