@@ -460,6 +460,11 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E15 [x] 完成（claude，2026-10-30）** 界面视觉重做，按 `.claude/skills/impeccable` 的流程：负责人确认 `PRODUCT.md`，从四个真页面预览里选了"桌搭标签"（方向合同 `.impeccable/surfaces/src-app-jsx.md`）。按钮和菜单文字、整体布局、3D 场景、DeskLab 名字都没改。做了：颜色/字体/控件统一变量、行内样式搬进 CSS（E11）、emoji 换成圆点和画出来的图标、手机两行工具栏（E10）、44px 触控（E12）、桌面分组（E8）、状态动效、底部浮起的消息标签。impeccable 检查器无发现；全新子代理按 impeccable 终审，第一轮六条全部修完，复审 ship。设计规则写在根目录 `DESIGN.md` 和 `.impeccable/design.json`，以后改界面先读它。可选的后续（审查提的，没做）：把选中标签钉在 3D 画面里设备旁边（要先问负责人，因为 3D 外观冻结）；资产库卡片加设备缩略图。
 - **E16 [x] 完成（claude，2026-10-30）** 负责人同意后，把选中标签钉进 3D 画面：选中设备时，设备正上方出现白色圆点标签（drei `Html`，画在盖在画布上的一层里，不挡操作、不盖弹窗，读屏跳过）。3D 场景本身的背景、网格、灯光、模型不变。测试 `e2e/scene-tag.spec.mjs`。
 - **E17 [x] 完成（claude，2026-10-30）** 资产库卡片加设备小图：`tools/thumbnails/render-thumbnails.mjs` 用 Playwright + three.js 从 `public/models/*.glb` 渲染 112px 透明 WebP（前右上方视角，插排从上方看，按投影轮廓取景），写到 `public/thumbnails/`，每张带 `.webp.json` 来源说明（impeccable `embed-prompt --scan` 0 缺失）。卡片左边 56px 白色圆角方块放图，按钮名称不变。测试 `test/thumbnails.test.js`、`e2e/library-thumbnails.spec.mjs`。改了或加了模型要重跑脚本。
+- **E96 [~] 进行中（Desklab，2026-11-04）** 竞品调研提案（只写文档，不实现）。并行线 G，编号只使用 E96–E100。写完改为「等负责人决定」。
+- **E97 [~] 进行中（Desklab，2026-11-04）** 竞品调研提案（只写文档，不实现）。同上。
+- **E98 [~] 进行中（Desklab，2026-11-04）** 竞品调研提案（只写文档，不实现）。同上。
+- **E99 [~] 进行中（Desklab，2026-11-04）** 竞品调研提案（只写文档，不实现）。同上。
+- **E100 [~] 进行中（Desklab，2026-11-04）** 竞品调研提案（只写文档，不实现）。同上。
 
 ---
 

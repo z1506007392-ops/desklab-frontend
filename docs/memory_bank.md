@@ -17,6 +17,12 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+领了 E96–E100。只写文档：先查桌面/房间规划、线材管理和桌搭分享类竞品，再在阶段 E 写 3–5 条提案，状态改为「等负责人决定」，不实现、不改代码。详细调研将写在 `docs/research/competitors-2026-11.md`。
+
+还剩：查完竞品，把五条提案和调研文档写完并推送。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E67 完成（d95e9d5）。AI 改为登录后才能用：邮箱验证码，每个邮箱每天 20 次（`AI_DAILY_PER_USER`），不设全站上限，也不再用 `AI_DAILY_TOTAL` / `AI_DAILY_GLOBAL`。每 IP 每小时 20 次仍作兜底。发验证码：同一邮箱 60 秒 1 次、每天 5 次；同一 IP 每小时默认 10 次（`AUTH_CODE_PER_IP_HOURLY`，负责人只要求有上限、没有给数字）。没配 `BREVO_API_KEY` 或 `MAIL_FROM` 时发码返回「登录暂未开放」，不扣次数。验证码只存哈希。会话 cookie 30 天，HttpOnly、SameSite=Lax，只有 https 才加 Secure。
 
 没登录时点「让 AI 看看」先出登录框，登录成功不自动请求。登录后按钮旁是「今日剩余 N 次」和退出。分享链接只读时这个按钮仍禁用。关于页改成摆放和布线不需要登录。3D 和布线不登录也能用。
