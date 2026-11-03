@@ -535,16 +535,16 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 
 上面「方向」一节是产品决定。这一阶段是它的任务。不要把 E96–E108 改成自己的；E96 的界面仍归已领走的那条线。
 
-- **F1 [x] 完成（Desklab，2026-11-04，7cfb95c）** Tauri 2 壳，包着现有 Vite / React。`npm run desktop`（`tauri dev`）和 `npm run desktop:build`（`tauri build`）。网页 `npm run dev` 和 `npm run build` 仍可用。标识 `app.desklab.desktop`。Rust 钉在 `src-tauri/rust-toolchain.toml` 的 1.99.1。
-- **F2 [x] 完成（Desklab，2026-11-04，7cfb95c）** 项目写在应用数据目录。同一 webview 里已有的 localStorage，只在文件里还没有项目时复制一次。网页仍用 localStorage，文案默认仍是「浏览器里」。
-- **F3 [x] 完成（Desklab，2026-11-04，7cfb95c）** 本机可以 `npm run desktop`。这台 Linux 上窗口打开后第一屏是房间大小，确认后是空房间，用电竞桌之后草稿写进 `~/.local/share/app.desklab.desktop/project-draft.json`。README 写了怎么跑。CI 只检查壳的文件在不在，不装 Rust，也不打安装包。Windows 和 macOS 安装包是 F7。
+- **F1 [x] 完成（Desklab，2026-11-04，f6fd7b1）** Tauri 2 壳，包着现有 Vite / React。`npm run desktop`（`tauri dev`）和 `npm run desktop:build`（`tauri build`）。网页 `npm run dev` 和 `npm run build` 仍可用。标识 `app.desklab.desktop`。Rust 钉在 `src-tauri/rust-toolchain.toml` 的 1.99.1。
+- **F2 [x] 完成（Desklab，2026-11-04，f6fd7b1）** 项目写在应用数据目录。同一 webview 里已有的 localStorage，只在文件里还没有项目时复制一次。网页仍用 localStorage，文案默认仍是「浏览器里」。
+- **F3 [x] 完成（Desklab，2026-11-04，f6fd7b1）** 本机可以 `npm run desktop`。这台 Linux 上窗口打开后第一屏是房间大小，确认后是空房间，用电竞桌之后草稿写进 `~/.local/share/app.desklab.desktop/project-draft.json`。README 写了怎么跑。CI 只检查壳的文件在不在，不装 Rust，也不打安装包。Windows 和 macOS 安装包是 F7。
 - **F4 [x] 完成（Desklab，2026-11-04）** 社区接口只写在这里，不实现，不改页面。
   - `POST /api/community/layouts`，正文 `{ layout, note? }`。`layout` 就是应用已经会导出的那份项目（房间、设备、连线）。
   - `POST /api/community/layouts/:id/photos`，multipart，一张按这个摆法拍的实拍。
   - `GET /api/community/layouts` 和 `GET /api/community/layouts/:id` 返回布局和照片。
   - 客户端「复制到我的项目」只写本机文件。没有云端项目这种资源。账号复用邮箱验证码。
   - 宿主可以是 Pages Functions，也可以是以后任何一个 HTTPS。图库界面是 E96。
-- **F5 [x] 完成（Desklab，2026-11-04，7cfb95c）** 进门：整页房间大小，一个确认；然后 3D 生成这间房；然后只有「用电竞桌」和「自己摆」。已保存的项目、分享链接、正在恢复的草稿不再看到这两步。
+- **F5 [x] 完成（Desklab，2026-11-04，f6fd7b1）** 进门：整页房间大小，一个确认；然后 3D 生成这间房；然后只有「用电竞桌」和「自己摆」。已保存的项目、分享链接、正在恢复的草稿不再看到这两步。
 - **F6 [x] 暂不做（Leo 2026-11-04：只留概念）** 房间已经生成之后，以后可以把一次房间扫描交给 AI，再选预设或自己摆。不要做拍摄、上传、识别，也不要把这一条改成可领的 `[ ]`。
 - **F7 [ ]** 打出 Windows 和 macOS 安装包。第一次打开应是房间大小那一页，保存应落在应用数据目录。打包后的应用没有 Vite 的 `/api` 代理，AI 和以后的社区请求需要一个基址（可以先指向现有的 Pages）。内容安全策略现在是空的，打安装包时收紧，但不要为了收紧而挡住安装包。
 

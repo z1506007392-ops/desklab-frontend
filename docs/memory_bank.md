@@ -17,7 +17,7 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
-本地桌面应用的壳、文件存档和进门两步。提交 `7cfb95c`。Leo 2026-11-04 决定从网页优先改到 Tauri 2 本机应用：不跨设备同步，账号不为同步服务。「登录后」是第一次进入应用，不是邮箱验证码，不要加登录墙。
+本地桌面应用的壳、文件存档和进门两步。提交 `f6fd7b1`。Leo 2026-11-04 决定从网页优先改到 Tauri 2 本机应用：不跨设备同步，账号不为同步服务。「登录后」是第一次进入应用，不是邮箱验证码，不要加登录墙。
 
 - 壳：`npm run desktop`（`tauri dev`）。网页 `npm run dev` / `npm run build` 仍在。Rust 钉在 1.99.1。CI 只检查壳的文件在不在，不装 Rust，部署步骤没改。
 - 存档：桌面应用写在应用数据目录 `app.desklab.desktop`。这个 webview 里已有的 localStorage 只在文件还没有项目时复制一次。网页文案仍是「浏览器里」。
