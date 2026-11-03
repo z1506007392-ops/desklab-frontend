@@ -2199,6 +2199,42 @@ test('does not suggest a second video cable to a monitor the computer already fe
     'the spare output goes to the screen that still needs a signal');
 });
 
+test('a free output prefers a screen with no picture over a nearer screen that already has one', () => {
+  const laptop = object('laptop', {
+    type: 'laptop', modelId: 'laptop-15', position: { x: 0, y: 0, z: 0.5 },
+    ports: [{ id: 'hdmi-out', name: 'HDMI', type: 'hdmi', direction: 'output' }],
+  });
+  const pc = object('pc', {
+    type: 'desktop-pc', modelId: 'desktop-pc', position: { x: 0.2, y: 0, z: 0.5 },
+    ports: [{ id: 'dp-out', name: 'DP', type: 'displayport', direction: 'output' }],
+  });
+  const near = object('near', {
+    type: 'monitor', modelId: 'monitor-24', position: { x: 0.4, y: 0, z: 0.5 },
+    ports: [
+      { id: 'hdmi-in', name: 'HDMI', type: 'hdmi', direction: 'input' },
+      { id: 'dp-in', name: 'DP', type: 'displayport', direction: 'input' },
+    ],
+  });
+  const far = object('far', {
+    type: 'monitor', modelId: 'monitor-27', position: { x: 2, y: 0, z: 0.5 },
+    ports: [{ id: 'dp-in', name: 'DP', type: 'displayport', direction: 'input' }],
+  });
+  const connections = [{
+    id: 'lap-hdmi', name: '笔记本HDMI线', cableType: 'hdmi', length: 2,
+    fromObjectId: 'laptop', fromPortId: 'hdmi-out', toObjectId: 'near', toPortId: 'hdmi-in',
+  }];
+  const suggestions = buildFreeImprovements(room, [laptop, pc, near, far], connections)
+    .filter(item => item.code === 'auto_connect_display');
+  assert.equal(suggestions.length, 1);
+  assert.equal(suggestions[0].patch.newConnection.toObjectId, 'far');
+  assert.equal(suggestions[0].patch.newConnection.cableType, 'displayport');
+
+  const project = { room, objects: [laptop, pc, near], connections };
+  const added = buildConnectionCompletion({ ...project, objects: [...project.objects, far] }, 'far');
+  assert.equal(added.length, 1);
+  assert.equal(added[0].toObjectId, 'far', 'the new screen is an end of the cable, so completion keeps it');
+});
+
 test('suggests connecting USB-C display output to nearby monitor with USB-C input', () => {
   const laptop = object('laptop', {
     type: 'laptop',
@@ -2530,4 +2566,13 @@ test('with the tower\'s USB ports taken, another keyboard goes to the laptop, or
   const spare = await addFromLibrary(dual, 'keyboard', 'peripheral');
   assert.deepEqual(spare.lines, [], 'no free USB port, so no line and no complaint');
   assert.equal(buildRecommendations(spare.project).total, 0);
+
+  let home = buildTemplateScene('home-office');
+  for (const modelId of ['keyboard', 'mouse']) home = (await addFromLibrary(home, modelId, 'peripheral')).project;
+  const third = await addFromLibrary(home, 'keyboard', 'peripheral');
+  const laptop = home.objects.find(item => item.modelId === 'laptop-15');
+  assert.equal(third.lines.length, 1);
+  assert.equal(third.lines[0].fromObjectId, laptop.id);
+  assert.equal(third.lines[0].fromPortId, 'usb-c', 'the USB-A ports are taken, so the USB-C port is used');
+  assert.equal(third.lines[0].cableType, 'usb');
 });

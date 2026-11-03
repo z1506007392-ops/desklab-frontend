@@ -418,9 +418,15 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
   const DISPLAY_PORT_TYPES = new Set(['hdmi', 'displayport', 'usb_c']);
   // One video cable per computer-monitor pair is enough; a spare output should
   // only be offered to a screen this computer does not already feed.
-  const linkedDisplayPairs = new Set(connections
-    .filter(connection => !invalidConnectionIds.has(connection.id) && DISPLAY_PORT_TYPES.has(connection.cableType))
-    .map(connection => `${connection.fromObjectId}\u0000${connection.toObjectId}`));
+  // A screen that already has a video cable from anyone is fed: prefer a
+  // screen that still has no picture, then the nearest.
+  const linkedDisplayPairs = new Set();
+  const fedDisplays = new Set();
+  for (const connection of connections) {
+    if (invalidConnectionIds.has(connection.id) || !DISPLAY_PORT_TYPES.has(connection.cableType)) continue;
+    linkedDisplayPairs.add(`${connection.fromObjectId}\u0000${connection.toObjectId}`);
+    fedDisplays.add(connection.toObjectId);
+  }
   for (const object of actionableObjects) {
     for (const port of getActionablePortRecords(object)) {
       if (!DISPLAY_PORT_TYPES.has(port.type)) continue;
@@ -430,9 +436,11 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
       const isOccupied = occupiedPorts.get(object.id)?.has(port.id);
       if (isOccupied) continue;
 
-      // Find nearest display with a matching input port
+      // Matching input, exact type only (USB-C is not treated as HDMI).
+      // An unfed screen beats a nearer screen that already has a picture.
       let bestDisplay = null;
       let minDistance = Number.MAX_VALUE;
+      let bestFed = true;
 
       for (const candidate of actionableObjects) {
         if (candidate.id === object.id) continue;
@@ -451,8 +459,12 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
           if (isPortOccupied) continue;
 
           const dist = calculatePositionDistance(object.position, candidate.position);
-          if (dist !== null && dist < minDistance) {
+          if (dist === null) continue;
+          const fed = fedDisplays.has(candidate.id);
+          const better = !bestDisplay || (fed !== bestFed ? bestFed : dist < minDistance);
+          if (better) {
             minDistance = dist;
+            bestFed = fed;
             bestDisplay = { device: candidate, port: candidatePort, distance: dist };
           }
         }
@@ -491,6 +503,7 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
         }
         localPorts.add(bestDisplay.port.id);
         linkedDisplayPairs.add(`${object.id}\u0000${bestDisplay.device.id}`);
+        fedDisplays.add(bestDisplay.device.id);
       }
     }
   }
@@ -509,21 +522,27 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
       if (port.type !== portType || port.direction === 'output') continue;
       if (occupiedPorts.get(object.id)?.has(port.id)) continue;
 
-      // The port with the shortest route (a laptop has one on each side).
+      // The tower before a laptop, the same port type before a USB-C host
+      // standing in for USB-A, then the shortest route.
       let best = null;
       for (const candidate of actionableObjects) {
         if (candidate.id === object.id || !isComputer(candidate)) continue;
         const rank = computerRank(candidate);
         for (const candidatePort of getActionablePortRecords(candidate)) {
-          if (candidatePort.type !== portType || candidatePort.direction === 'input') continue;
+          if (candidatePort.direction === 'input') continue;
+          const cross = candidatePort.type === portType ? 0
+            : (portType === 'usb' && candidatePort.type === 'usb_c' ? 1 : -1);
+          if (cross < 0) continue;
           if (occupiedPorts.get(candidate.id)?.has(candidatePort.id)) continue;
           const distance = evaluateConnectionLength({
             fromObjectId: candidate.id, fromPortId: candidatePort.id, toObjectId: object.id, toPortId: port.id, length: 1,
           }, actionableObjects)?.distance ?? calculatePositionDistance(object.position, candidate.position);
           if (distance === null || distance === undefined) continue;
-          if (!best || rank < best.rank || (rank === best.rank && distance < best.distance)) {
-            best = { device: candidate, port: candidatePort, distance, rank };
-          }
+          const closer = !best
+            || rank < best.rank
+            || (rank === best.rank && cross < best.cross)
+            || (rank === best.rank && cross === best.cross && distance < best.distance);
+          if (closer) best = { device: candidate, port: candidatePort, distance, rank, cross };
         }
       }
       if (!best) continue;
