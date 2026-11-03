@@ -94,6 +94,7 @@ test('a missing origin is unchanged, and a foreign or broken origin is refused',
   );
   assert.equal(called, false);
   assert.equal(refused.status, 403);
+  assert.equal(refused.headers.get('x-content-type-options'), 'nosniff');
   assert.equal((await refused.json()).error, 'forbidden_origin');
   assert.equal(refused.headers.get('access-control-allow-origin'), null);
 

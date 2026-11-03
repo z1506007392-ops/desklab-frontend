@@ -103,7 +103,8 @@ function cookieValue(request, name) {
 }
 
 function sessionCookie(token, { secure, maxAge }) {
-  // Lax, never None: a cross-site POST must not carry this cookie.
+  // The website cookie stays Lax. desktop-cors.js rewrites this SameSite=Lax
+  // token to None, and only for the packaged app's origins.
   const parts = [`${COOKIE}=${token}`, 'HttpOnly', 'SameSite=Lax', 'Path=/', `Max-Age=${maxAge}`];
   if (secure) parts.push('Secure');
   return parts.join('; ');
