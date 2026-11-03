@@ -11,13 +11,14 @@ export const ENTRY_ROOM_PRESETS = Object.freeze([
   Object.freeze({ id: 'wide', label: '大', detail: '6.5 × 5 米', length: 6.5, width: 5, height: 3 }),
 ]);
 
-// The second step's preset. It is the existing 电竞桌, placed into the room
-// the visitor just chose, not a new room of the template's own size.
+// The second step's preset. The button still says 用电竞桌; the template it
+// places is 超宽 (id gaming), into the room the visitor just chose, not a
+// new room of the template's own size.
 export const ENTRY_PRESET_TEMPLATE_ID = 'gaming';
 
-// What "a gaming desk" means for the product. The entry preset does not yet
-// place every one of these: keyboard, mouse, speakers and the console stay
-// in the catalog until a later change that is allowed to alter that picture.
+// What "a gaming desk" means for the product. The entry preset places the
+// desk, tower, ultrawide, keyboard, mouse and router, and hangs the strip
+// under the back of the desktop. Speakers and the console stay in the catalog.
 export const CORE_ESPORTS_MODEL_IDS = Object.freeze([
   'desktop-pc',
   'ultrawide-monitor',

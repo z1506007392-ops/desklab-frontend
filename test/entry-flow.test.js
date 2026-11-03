@@ -11,6 +11,7 @@ import {
   placePresetInRoom,
   shouldShowEntry,
 } from '../src/domain/entry-flow.js';
+import { isHungUnderDesk } from '../src/domain/geometry.js';
 
 test('the first screen offers three room sizes and starts on the default', () => {
   assert.deepEqual(ENTRY_ROOM_PRESETS.map(preset => preset.label), ['小', '默认', '大']);
@@ -41,10 +42,22 @@ test('the esports preset keeps the room the visitor chose and puts a desk in it'
   assert.ok(placed.camera?.position);
 });
 
-test('the core esports set is in the catalog, and this preset does not place every piece yet', () => {
+test('the entry desk places a keyboard and mouse, hangs the strip, and leaves speakers and the console in the catalog', () => {
   assert.deepEqual(coreEsportsDevicesInCatalog(), [...CORE_ESPORTS_MODEL_IDS]);
   const placed = placePresetInRoom(ENTRY_PRESET_TEMPLATE_ID, { length: 5, width: 4, height: 3 });
+  assert.equal(placed.ok, true);
   const placedIds = new Set(placed.objects.map(object => object.modelId));
-  assert.equal(placedIds.has('keyboard'), false);
-  assert.equal(placedIds.has('mouse'), false);
+  assert.equal(placedIds.has('keyboard'), true);
+  assert.equal(placedIds.has('mouse'), true);
+  assert.equal(placedIds.has('router'), true);
+  assert.equal(placedIds.has('laptop-15'), false);
+  assert.equal(placedIds.has('speakers'), false);
+  assert.equal(placedIds.has('game-console'), false);
+  const desk = placed.objects.find(object => object.modelId === 'office-desk');
+  const strips = placed.objects.filter(object => object.modelId === 'power-strip');
+  assert.ok(strips.length >= 1);
+  for (const strip of strips) {
+    assert.equal(isHungUnderDesk(strip, desk), true);
+    assert.ok(strip.position.z > 0.4);
+  }
 });
