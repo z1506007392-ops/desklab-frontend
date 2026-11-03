@@ -116,11 +116,13 @@ export async function openProject(page, objects, connections = [], { saved = tru
   // is not on screen yet. Either that page or the save button means the app loaded.
   const saveButton = page.getByRole('button', { name: '保存项目', exact: true });
   const roomPage = page.getByRole('dialog', { name: '这间房有多大' });
-  await expect(saveButton.or(roomPage).first()).toBeVisible();
-  // The room page can replace the toolbar a moment after the save button
-  // first appears. Requiring that button to stay enabled then fails on
-  // WebKit. When the room page is up, it is the signal that the app loaded.
-  if (!(await roomPage.isVisible())) await expect(saveButton).toBeEnabled();
+  // A first visit paints the toolbar, then covers it with the room page.
+  // WebKit does that between two checks, so retry until one of them has settled.
+  await expect(async () => {
+    if (await roomPage.count()) return;
+    if (await saveButton.count() && await saveButton.isEnabled()) return;
+    throw new Error('the room page or the save button is not ready');
+  }).toPass({ timeout: 15000 });
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
   return ai ? { errors, writes, aiRequests } : { errors, writes };
 }

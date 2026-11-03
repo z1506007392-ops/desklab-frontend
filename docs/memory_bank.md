@@ -17,6 +17,10 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+WebKit 上「打开分享链接」没过（https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41725859846 和 https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41726808879 ，都只有 webkit；Chrome 四片和 static 过了）。第一次进入时保存按钮会先出现，房间页随后盖住它。`openProject` 现在重试，直到房间页在，或保存按钮一直可点。外观和登录都没改。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 领了 F7（桌面线，阶段 F 里唯一还没做的）。Windows 和 macOS 安装包放在 GitHub Actions 矩阵里出产物，本机 Linux 只验证配置和 `desktop:build`。打包后的 AI（以及以后的社区）请求用可配置的 HTTPS 基址，默认指向现有 Pages 生产站。安装包的内容安全策略收紧，但要留住网页 CSP 里给 blob worker 和 meshopt 的口子，也不能挡住安装包。第一次打开仍是房间大小，保存仍在应用数据目录，只回归 F2/F5。E96–E108、E97、E99、E100 是别的线，不动。
 
 还剩：实现并全量验证后推 master。
@@ -45,10 +49,6 @@ E98 和 E96 完成，并合到 E71–E75 的缓存提交上。`ef50a47` 桌下�
 验证：合入缓存之前，`npm test` 603 通过，lint 0 问题，build 通过（three.js 分块超过 500kB 的警告照旧）。Chrome 桌面和手机 UI 249 通过 + 1 跳过。合入后再跑的数字记在补版本号的那条里。
 
 还剩：F7 由桌面线做（Windows 和 macOS 安装包，以及打包后的 AI 基址）。E97 购线跳转仍由另一条线做。E99、E100 等负责人。E69、E70 等负责人决定。发信仍等 Mailjet 或 Brevo。Git 自动部署仍等负责人关掉。桌面壳的内容安全策略仍是空的。扫描不做。E71 的线上 brotli 已经核对过。
-
-### 2026-11-04 · Desklab (Grok Bot) · master
-
-WebKit 上「打开分享链接」有一次没过（https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41725859846 ，只有 webkit；Chrome 四片和 static 过了，deploy 没跑）。第一次进入时保存按钮会先出现，房间页马上盖住它，`openProject` 仍要求这个按钮保持可点，5 秒后找不到。现在房间页已经在，就不再等保存按钮。外观和登录都没改。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
