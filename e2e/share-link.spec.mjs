@@ -108,6 +108,23 @@ test('a share link is read-only and does not replace the saved desk', async ({ p
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
 
+test('Enter on the copy button copies the share link', async ({ page, context, browserName }) => {
+  await rememberClipboard(page, context, browserName);
+  const evidence = await openProject(page, sharedObjects, sharedConnections);
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('menu', { name: '更多', exact: true }).getByRole('menuitem', { name: '复制分享链接', exact: true }).click();
+  const copy = page.getByRole('dialog', { name: '分享链接', exact: true }).getByRole('button', { name: '复制链接', exact: true });
+  await copy.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('分享链接已复制', { exact: true })).toBeVisible();
+  const url = await page.evaluate(async () => {
+    try { return await navigator.clipboard.readText(); }
+    catch { return window.__deskLabCopied || ''; }
+  });
+  expect(url).toContain('#desklab-share-2.');
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
+
 test('a damaged share link explains itself and leaves the saved desk', async ({ page }) => {
   const evidence = await openProject(page, [box('我的桌子')]);
   const before = await readStorage(page);
