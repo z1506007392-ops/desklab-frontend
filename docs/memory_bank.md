@@ -17,6 +17,12 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+理线槽、本机图库，以及把显示器拖过主机的测试，CI 已绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41730626779 （头 `ddbb862`，static、Chrome 四片、WebKit、check、deploy 都过了）。随后房间页轮询 `2f0ea2d` 也过了：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41731274728 。
+
+还剩：E97、E99、E100 仍是别的线。网上社区接口仍是 F4，没有实现。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 `27288c9` 的重试仍把 WebKit 的 15 秒用完（https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41728145201 ，start-guide 第 23、27 条）。`isEnabled()` 会一直等到保存按钮可点，房间页中途盖住按钮时就不会再看房间页。`openProject` 改成 `count()` 和 `evaluateAll()`，只读当前页面。本机 Chrome 桌面和手机的 start-guide 12 条通过。显示器拖出桌面已由另一条线在 `20fd517` 加长滑动，这次没改摆放，也没改画面和登录。
 
 还剩：这次推送的 CI。E71–E75 的测量仍以 https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41724487289 为准。
