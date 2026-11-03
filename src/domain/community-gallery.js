@@ -23,10 +23,10 @@ const PHOTO_PATTERN = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$
 const STORAGE_FULL_MESSAGE = '这台设备的存储空间不够，桌子没有放进图库。';
 
 const BUILTIN_DESKS = Object.freeze([
-  Object.freeze({ id: 'home-office', title: '家庭办公', summary: '笔记本外接一台显示器。' }),
-  Object.freeze({ id: 'desktop-dual', title: '台式机双屏', summary: '主机配两台显示器。' }),
-  Object.freeze({ id: 'gaming', title: '电竞桌', summary: '主机、带鱼屏和一台笔记本。' }),
-  Object.freeze({ id: 'managed-cables', title: '线收进桌下槽', summary: '家庭办公的桌子，后沿下面加了一只理线槽。' }),
+  Object.freeze({ id: 'home-office', title: '极简单屏', summary: '27 英寸居中，键盘和鼠标在正前方。' }),
+  Object.freeze({ id: 'desktop-dual', title: '电竞双屏', summary: '两台 27 英寸向内转，主机在桌旁地上。' }),
+  Object.freeze({ id: 'gaming', title: '超宽', summary: '带鱼屏、键盘、鼠标和主机。插排在桌下。' }),
+  Object.freeze({ id: 'managed-cables', title: '线收进桌下槽', summary: '极简单屏的桌子，后沿下面加了一只理线槽。' }),
 ]);
 
 function sceneProject(templateId) {

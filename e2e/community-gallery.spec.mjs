@@ -43,8 +43,8 @@ test('a local gallery opens an example, copies it, and keeps a desk file on this
 
   await page.getByRole('button', { name: '社区图库', exact: true }).click();
   await page.getByRole('dialog', { name: '社区图库', exact: true })
-    .getByRole('button', { name: '复制到我的项目：家庭办公', exact: true }).click();
-  await expect(page.getByText(/已复制“家庭办公”/)).toBeVisible();
+    .getByRole('button', { name: '复制到我的项目：极简单屏', exact: true }).click();
+  await expect(page.getByText(/已复制“极简单屏”/)).toBeVisible();
   await page.getByRole('button', { name: '撤销', exact: true }).click();
 
   await page.getByRole('button', { name: '社区图库', exact: true }).click();
@@ -86,7 +86,7 @@ test('a built-in gallery address is read-only and an unknown one opens your own 
   const saved = await readStorage(page);
   await page.evaluate(() => { window.location.hash = '#desklab-gallery/gaming'; });
   await page.reload();
-  await expect(page.getByRole('region', { name: '社区图库', exact: true })).toContainText('电竞桌');
+  await expect(page.getByRole('region', { name: '社区图库', exact: true })).toContainText('超宽');
   await expect(page.getByRole('button', { name: '保存项目', exact: true })).toBeDisabled();
   await expect(page.getByRole('region', { name: '只读分享', exact: true })).toHaveCount(0);
   expect(await readStorage(page)).toBe(saved);

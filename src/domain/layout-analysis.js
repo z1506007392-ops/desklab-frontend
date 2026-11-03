@@ -257,6 +257,10 @@ export function analyzeProjectLayout(room, rawObjects) {
       const trayHost = (isCableTray(first.object) && findHostDesk(first.object, objects)?.id === second.object.id)
         || (isCableTray(second.object) && findHostDesk(second.object, objects)?.id === first.object.id);
       if (trayHost) continue;
+      const tray = isCableTray(first.object) ? first.object : isCableTray(second.object) ? second.object : null;
+      const other = tray === first.object ? second.object : tray === second.object ? first.object : null;
+      const host = tray ? findHostDesk(tray, objects) : null;
+      if (host && other && isHungUnderDesk(other, host)) continue;
       issues.push({
         id: `overlap:${first.object.id}:${second.object.id}`,
         code: 'object_overlap',

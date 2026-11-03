@@ -1,5 +1,5 @@
 import { isDesk } from './desks.js';
-import { getRotatedFootprint, objectsOverlap, validateAndConstrainObject } from './geometry.js';
+import { getRotatedFootprint, isHungUnderDesk, objectsOverlap, validateAndConstrainObject } from './geometry.js';
 import { getRecordItems } from './record-collections.js';
 
 // A plain under-desk channel. It has no ports and uses no power. The mesh is
@@ -70,8 +70,11 @@ function fits(candidate, room, objects, desk) {
   if (!constrained.valid) return false;
   const moved = ['x', 'y', 'z'].some(axis => Math.abs(constrained.object.position[axis] - candidate.position[axis]) > 1e-4);
   if (moved) return false;
+  // A strip or adapter already hung under this desk shares the channel.
+  // It must not push the tray onto the floor.
   return !objects.some(other => other.id !== candidate.id
     && other.id !== desk.id
+    && !isHungUnderDesk(other, desk)
     && objectsOverlap(candidate, other));
 }
 

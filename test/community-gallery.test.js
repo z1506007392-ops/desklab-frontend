@@ -38,6 +38,9 @@ const now = () => new Date('2026-11-04T00:00:00.000Z');
 test('the app ships four example desks, including one with a cable tray', () => {
   const desks = listBuiltinDesks();
   assert.deepEqual(desks.map(desk => desk.id), ['home-office', 'desktop-dual', 'gaming', 'managed-cables']);
+  assert.deepEqual(desks.map(desk => desk.title), ['极简单屏', '电竞双屏', '超宽', '线收进桌下槽']);
+  assert.equal(desks.find(desk => desk.id === 'home-office').project.objects.some(object => object.modelId === 'laptop-15'), false);
+  assert.equal(desks.find(desk => desk.id === 'gaming').project.objects.some(object => object.modelId === 'laptop-15'), false);
   assert.ok(desks.every(desk => desk.authorName === 'DeskLab' && desk.builtin && desk.project.objects.length > 0));
   const managed = desks.find(desk => desk.id === 'managed-cables');
   const tray = managed.project.objects.find(object => object.modelId === 'cable-tray');

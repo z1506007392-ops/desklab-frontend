@@ -17,7 +17,7 @@ test('a cable tray mounts under the desk and is listed to buy', async ({ page })
   const evidence = await openProject(page, []);
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
   await page.getByRole('dialog', { name: '桌面模板', exact: true })
-    .getByRole('button', { name: '使用模板：家庭办公', exact: true }).click();
+    .getByRole('button', { name: '使用模板：极简单屏', exact: true }).click();
 
   await openLibrary(page);
   await page.getByRole('button', { name: '配件', exact: true }).click();

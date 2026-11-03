@@ -87,6 +87,26 @@ test('the three templates do not come with a tray', () => {
   }
 });
 
+test('a tray added to a preset still hangs under the back, beside the strip', () => {
+  for (const id of ['home-office', 'desktop-dual', 'gaming']) {
+    const scene = buildTemplateScene(id);
+    const tray = placeCatalogObject({
+      modelTemplate: trayTemplate(),
+      categoryId: 'accessory',
+      room: scene.room,
+      id: 'tray',
+      objects: scene.objects,
+    });
+    assert.equal(tray.valid, true, id);
+    const deskObject = scene.objects.find(object => object.modelId === 'office-desk');
+    const objects = [...scene.objects, tray.object];
+    assert.equal(findHostDesk(tray.object, objects)?.id, deskObject.id, id);
+    assert.ok(tray.object.position.z > 0.4, id);
+    const issues = analyzeProjectLayout(scene.room, objects);
+    assert.equal(issues.some(issue => issue.code === 'object_overlap' || issue.code === 'floating_object'), false, id);
+  }
+});
+
 test('letting the tray go over the desk snaps it back underneath, and off the desk it can drop', () => {
   const deskObject = desk();
   const tray = addTray([deskObject]);
