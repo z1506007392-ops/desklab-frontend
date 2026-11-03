@@ -19,9 +19,9 @@ Last updated: 2026-10-30, Asia/Singapore
 
 E65 完成：购线清单旁可以导出布线表。Markdown 和 CSV 各一份，每一根已画的线写明起点设备、起点接口、终点设备、终点接口、类型、走线长度、购买长度。键盘和鼠标的线购买长度写「自带」。Markdown 后面附安装清单：先接电源（上游那根在前，比如墙插到插排，再插排到设备），再接信号。按钮是现成的次要按钮，放在「复制清单」旁边；窄屏时按钮换行，标题不拆开。3D 场景没有改。
 
-验证：`npm test` 516 通过，lint 0 问题，build 通过。购线清单的界面测试在桌面和手机上 10 个通过，其中包括导出文件的内容。电竞桌的购线清单截图：`e65-cable-export-desktop.png`、`e65-cable-export-mobile.png`。全量 Playwright 在推送前再跑。
+验证：`npm test` 516 通过，lint 0 问题，build 通过。购线清单的界面测试在桌面和手机上通过，其中包括导出文件的内容。Chrome 桌面和手机 UI 全量 195 通过 + 1 跳过，WebKit 关键用例 33 通过。电竞桌的购线清单截图：`e65-cable-export-desktop.png`、`e65-cable-export-mobile.png`。
 
-提交：`23d0610`。还剩：全量 Playwright 通过后，等 E61 的 CI 绿了，和 E64 一起推。
+提交：`23d0610`。还剩：等 E61 的 CI 绿了，和 E64 一起推。
 
 ### 2026-11-03 · Desklab (Grok Bot) · master
 
