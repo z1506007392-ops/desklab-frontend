@@ -17,9 +17,19 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
-领取 E66：E58–E65 之后的线上全面验收。开工前任务板上没有别人的 `[~]`。A8（等 H3）和 E14（等 H2）不碰。
+E66 完成：E58–E65 之后在 https://desklab-frontend.pages.dev 按第 1 节 7 条复跑。桌面 1440×900 和手机 390×844 都过。电竞桌模板套上后 3D 有画面，布局检查和布线检查都是 0。购线清单能导出 Markdown 和 CSV，说明里有「自带」。显示器三张缩略图都能显示（第一次读像素时图还没解码完，等 `naturalWidth` 之后是好的，不是坏图）。新加的 27 寸会自动接上电源和 HDMI。拖动、Q 旋转、撤销、重做、删除再撤销都做过。带鱼屏的线长从 1.5 米改成 2 米后能撤销。重置视角后画面还在。保存后出现备份提醒，导出的文件能再导入。把本机存档改坏后，能恢复上一版本。关于页写了项目在浏览器里、AI 才发给 DeepSeek、NVIDIA SimReady，CC BY 4.0 指向 https://creativecommons.org/licenses/by/4.0/ 。分享链接能生成。改进建议里有「让 AI 看看」，没有真的点，避免扣额度。正常操作没有控制台错误、页面异常，模型和解缩略图没有 404。手机上「建议用电脑打开」在新手引导关掉之后可以点「知道了」。电竞桌模板的设备清单里没有键盘和鼠标（在「按我的设备生成」里才默认有）。
 
-还剩：在 https://desklab-frontend.pages.dev 按第 1 节 7 条，桌面 1440×900 和手机 390×844 逐条看，并查控制台、页面错误和 404。
+没有改产品代码。手册 4.3 把目录从过时的 14 个模型改成 16 个（补上游戏主机和显示器支架），并写上显示器的旧尺寸迁移。
+
+量过、但没有改：`npm audit` 0 条高危、0 条严重，6 条中等都在 eslint 开发依赖里，不进页面，也没有安全的小版本修复（提示要把 `@eslint/js` 降到 9）。首屏脚本 gzip 大约是页面 130KB、场景 140KB、three.js 185KB（`npm run build`），16 个模型合计约 643KB；three.js 已经单独成块，场景也是后加载，不再拆。
+
+E67、E68 只记录、不改外观。A8（等 H3）和 E14（等 H2）不碰。H2、H3、H4 仍是要花钱或要人操作的事。
+
+验收截图（当前线上外观，不是改比例的对比图）：`e66-desktop-gaming.png`、`e66-desktop-thumbs.png`、`e66-desktop-shop.png`、`e66-desktop-about.png`、`e66-desktop-advice.png`、`e66-mobile-gaming.png`、`e66-mobile-phone-notice.png`。
+
+验证：`npm test` 516 通过，lint 0 问题，build 通过（three.js 那块超过 500KB 的警告还在，不算失败）。Chrome 桌面和手机 UI 全量 195 通过 + 1 跳过，WebKit 关键用例 33 通过。
+
+还剩：推送后看 CI。E67、E68 等负责人决定。
 
 ### 2026-11-03 · Desklab (Grok Bot) · master
 
@@ -4130,7 +4140,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 416 domain tests
+npm test          # 516 domain tests (E65, still 516 at E66)
 npm run test:ui   # Chrome desktop + phone. Cross-browser: npx playwright test (272 cases: 270 passed + 2 skipped). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
@@ -4163,7 +4173,7 @@ templates, device-list builder, and shopping list (2026-10-28).
    - LLM explanations of each suggestion and grounded Q&A.
    - Simpler manual connection flow (today: pick ports, cable type, length).
    - Launch basics: multiple projects/accounts, deployment, LLM cost limits.
-   - Code-splitting the 1.46MB bundle.
+   - Code-splitting the old 1.46MB bundle. Already done: three.js is its own chunk and Scene3D loads after the page (E66 measured gzip about 130KB + 140KB + 185KB). Do not split it again unless a profile says the first screen is actually slow.
 
 3. **Always start from current evidence**:
 ```bash
