@@ -1,6 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { applySuggestionsInOrder, changedObjectIds, evaluateSuggestions } from '../domain/ai-actions.js';
+import { fetchCurrentSession, logoutSession } from '../domain/auth-client.js';
+import { LoginDialog } from './LoginDialog.jsx';
 
 function deviceNames(project, ids) {
   const names = new Map(project.objects.map(object => [object.id, object.name || '未命名设备']));
@@ -15,12 +17,54 @@ function deviceNames(project, ids) {
 export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }) {
   const [goal, setGoal] = useState('');
   const [feedback, setFeedback] = useState('');
+  const [session, setSession] = useState({ status: 'loading', email: null, remaining: null });
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [authPromptSeen, setAuthPromptSeen] = useState(false);
   // Click can land in the same turn as the input event, before React stores
   // the new text. Read the box itself so the request matches what is visible.
   const goalRef = useRef(null);
   const feedbackRef = useRef(null);
   const typedGoal = () => (goalRef.current?.value ?? goal).trim();
   const typedFeedback = () => (feedbackRef.current?.value ?? feedback).trim();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCurrentSession().then(next => {
+      if (!cancelled) setSession({ status: 'ready', email: next.email, remaining: next.remaining });
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const sessionRejected = ai.errorCode === 'auth_required';
+  if (!sessionRejected && authPromptSeen) setAuthPromptSeen(false);
+  const signedInEmail = sessionRejected ? null : session.email;
+
+  const ask = (withFeedback = false) => {
+    if (!signedInEmail) {
+      setLoginOpen(true);
+      return;
+    }
+    if (withFeedback) {
+      ai.request(project, typedGoal(), typedFeedback());
+      setFeedback('');
+      return;
+    }
+    ai.request(project, typedGoal());
+  };
+
+  const logout = async () => {
+    try {
+      await logoutSession();
+    } catch {
+      // Leave the signed-in controls up so the user can try again.
+      return;
+    }
+    setSession({ status: 'ready', email: null, remaining: null });
+  };
+
+  const remaining = typeof ai.remaining === 'number' ? ai.remaining : session.remaining;
+  const signedIn = session.status === 'ready' && Boolean(signedInEmail);
+  const showLogin = loginOpen || (sessionRejected && !authPromptSeen);
   const accepted = useMemo(() => evaluateSuggestions(project, ai.suggestions).map(result => ({
     ...result,
     changedIds: changedObjectIds(project, result.nextProject),
@@ -55,11 +99,17 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
         <button
           type="button"
           className="ui-button ui-button-primary"
-          onClick={() => ai.request(project, typedGoal())}
-          disabled={!editable || loading || empty}
+          onClick={() => ask(false)}
+          disabled={!editable || loading || empty || session.status !== 'ready'}
         >
           让 AI 看看
         </button>
+        {signedIn && typeof remaining === 'number' && (
+          <span className="ai-suggestions-remaining">今日剩余 {remaining} 次</span>
+        )}
+        {signedIn && (
+          <button type="button" className="ui-button" onClick={logout} disabled={loading}>退出</button>
+        )}
       </div>
       {empty && <p className="ai-suggestions-note">先放几件设备，AI 才能给建议。</p>}
 
@@ -70,10 +120,10 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
         </div>
       )}
 
-      {ai.status === 'error' && (
+      {ai.status === 'error' && ai.errorCode !== 'auth_required' && (
         <div className="ai-suggestions-status ai-suggestions-error" role="alert">
           <span>{ai.error}</span>
-          <button type="button" className="ui-button" onClick={() => ai.request(project, typedGoal())} disabled={!editable}>
+          <button type="button" className="ui-button" onClick={() => ask(false)} disabled={!editable}>
             再试一次
           </button>
         </div>
@@ -141,10 +191,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
           <button
             type="button"
             className="ui-button"
-            onClick={() => {
-              ai.request(project, typedGoal(), typedFeedback());
-              setFeedback('');
-            }}
+            onClick={() => ask(true)}
             disabled={!editable || !feedback.trim()}
           >
             按我的意见再来一次
@@ -153,6 +200,20 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
       )}
 
       <p className="ai-suggestions-privacy">使用 AI 时，桌面布局（包括你起的设备名称和填写的要求）会发送给 DeepSeek 处理，请不要填写个人信息。详见“更多 → 关于与隐私”。</p>
+      {showLogin && (
+        <LoginDialog
+          onClose={() => {
+            setLoginOpen(false);
+            if (sessionRejected) setAuthPromptSeen(true);
+          }}
+          onSignedIn={next => {
+            ai.dismissError();
+            setAuthPromptSeen(false);
+            setLoginOpen(false);
+            setSession({ status: 'ready', email: next.email, remaining: next.remaining });
+          }}
+        />
+      )}
     </section>
   );
 }

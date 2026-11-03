@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createLayoutHandler } from '../server/ai/layout-handler.js';
+import { createRateLimiter } from '../server/ai/rate-limit.js';
 
 const KEY = 'sk-test-secret-key';
 const env = { DEEPSEEK_API_KEY: KEY };
@@ -29,9 +30,9 @@ const goodContent = JSON.stringify({
   }],
 });
 
-async function call({ body = { version: 1, summary, goal: '更整洁' }, environment = env, fetchImpl, rateLimiter, headers } = {}) {
+async function call({ body = { version: 1, summary, goal: '更整洁' }, environment = env, fetchImpl, rateLimiter, headers, sessionOf = async () => ({ email: 'tester@example.com' }) } = {}) {
   const logger = { lines: [], log(...args) { this.lines.push(args.join(' ')); } };
-  const handler = createLayoutHandler({ fetchImpl, rateLimiter, logger });
+  const handler = createLayoutHandler({ fetchImpl, rateLimiter, logger, sessionOf });
   const response = await handler({ request: request(body, headers), env: environment });
   const text = await response.text();
   return { response, text, json: JSON.parse(text), logger };
@@ -73,6 +74,7 @@ test('a good answer is filtered to the allowed fields and actions', async () => 
       actions: [{ type: 'move', objectId: 'monitor-1', x: 0, y: 0.18 }],
     }],
     usage: { promptTokens: 900, completionTokens: 120 },
+    remaining: null,
   });
 
   assert.equal(sent.url, 'https://api.deepseek.com/chat/completions');
@@ -140,7 +142,37 @@ test('the rate limiter is asked per client address and can refuse', async () => 
   assert.deepEqual(seen, ['203.0.113.7']);
   assert.equal(response.status, 429);
   assert.equal(response.headers.get('X-AI-Limit-Mode'), 'memory');
-  assert.deepEqual(json, { error: 'ai_rate_limited', message: '今天的 AI 次数用完了，明天再试' });
+  assert.deepEqual(json, { error: 'ai_rate_limited', message: '用得太频繁了，请一小时后再试', remaining: null });
+});
+
+test('AI layout requires a signed-in email', async () => {
+  const { response, json } = await call({
+    sessionOf: async () => null,
+    fetchImpl: async () => assert.fail('DeepSeek must not be called'),
+  });
+  assert.equal(response.status, 401);
+  assert.deepEqual(json, { error: 'auth_required', message: '请先登录后再使用 AI' });
+});
+
+test('each email gets its own daily allowance and there is no site-wide cap', async () => {
+  const rateLimiter = createRateLimiter({ now: () => Date.parse('2026-10-30T02:10:00Z') });
+  const environment = { ...env, AI_DAILY_PER_USER: '1', AI_PER_IP_HOURLY: '100' };
+  const ask = email => call({
+    environment,
+    rateLimiter,
+    sessionOf: async () => ({ email }),
+    fetchImpl: async () => completion('{"suggestions": []}'),
+  });
+  const first = await ask('a@b.cn');
+  assert.equal(first.response.status, 200);
+  assert.equal(first.json.remaining, 0);
+  const blocked = await ask('a@b.cn');
+  assert.equal(blocked.response.status, 429);
+  assert.equal(blocked.json.message, '今天的 AI 次数用完了，明天再试');
+  assert.equal(blocked.json.remaining, 0);
+  const other = await ask('c@b.cn');
+  assert.equal(other.response.status, 200);
+  assert.equal(other.json.remaining, 0);
 });
 
 test('the Pages Function route uses the handler', async () => {

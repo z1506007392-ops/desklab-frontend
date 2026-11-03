@@ -25,6 +25,7 @@ export const AI_ERROR_MESSAGES = Object.freeze({
   ai_bad_output: 'AI 这次的回答看不懂，请再试一次',
   ai_unavailable: 'AI 功能暂未开放',
   ai_timeout: 'AI 想得太久了，请再试一次',
+  auth_required: '请先登录后再使用 AI',
 });
 
 export const SUGGESTION_CATEGORIES = Object.freeze(['ergonomics', 'tidiness', 'safety', 'space', 'cabling']);

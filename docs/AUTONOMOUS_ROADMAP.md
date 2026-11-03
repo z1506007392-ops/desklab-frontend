@@ -196,7 +196,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 
 ### 4.6 存储与后端
 - 每个访客的项目存在**自己浏览器的 localStorage**：`desklab.project.v1`（存档）、`desklab.project-backup.v1`（上一版）、`desklab.project-draft.v1`（未保存草稿）、`desklab.backup-reminder.v1`、`desklab.phone-notice-dismissed.v1`（手机上点过"知道了"）。
-- 没有账号。后端仓库（Express，`/api/projects/default`）**前端已不再调用**；保留它，但不要在它上面加新功能。AI 代理放在 Cloudflare Pages Functions（见第 6 节），不放在这个后端。
+- 摆放、布线和存档不需要登录，项目仍只在这台浏览器的 localStorage。使用 AI 时要先用邮箱验证码登录（E67）：会话是 HttpOnly cookie，验证码和次数在 KV `AI_LIMITS`。不登录也能看 3D。后端仓库（Express，`/api/projects/default`）**前端已不再调用**；保留它，但不要在它上面加新功能。AI 代理放在 Cloudflare Pages Functions（见第 6 节），不放在这个后端。
 - `vite.config.js` 仍把 `/api` 代理到 `localhost:3001`，第 6 节的本地 AI 开发服务器会用到它。
 
 ### 4.7 部署
@@ -268,8 +268,8 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 做法：自动补线给插排找电源时，只用墙壁插座（以及适配器以外的非插排电源），不把插排插到另一个插排上；没有空的墙壁插座就不补线（没画的线不是问题）。
 - 验收：单元测试覆盖"墙插有空位→插墙插"和"墙插满了→不补线、不报错"；UI 测试：模板上加插排后布线检查无问题。
 
-**A8 [~] 进行中（Desklab，2026-11-04） 可选 — 让 Cloudflare 只部署通过测试的版本**
-- H3 已于 2026-11-04 完成。CI 全绿后用 `wrangler pages deploy dist --project-name desklab-frontend` 部署（GitHub secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）。Git 自动部署先留着，和新工作流同时存在。等 Desklab 关掉 Git 自动部署。
+**A8 [x] 完成（Desklab，2026-11-04） 可选 — 让 Cloudflare 只部署通过测试的版本**
+- H3 已于 2026-11-04 完成。CI 全绿后用 `wrangler pages deploy dist --project-name desklab-frontend` 部署（`.github/workflows/ci.yml` 的 `deploy`，GitHub secrets：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`）。第一次成功：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698923327 ，部署到 https://79dc0a72.desklab-frontend.pages.dev 。线上 https://desklab-frontend.pages.dev 首页仍是 DeskLab。Git 自动部署先留着，和新工作流同时存在。等 Desklab 关掉 Git 自动部署。
 
 ### 阶段 B：LLM 基础设施（DeepSeek 接入的管道）（已完成 2026-10-30；线上等待 H1 密钥）
 
@@ -288,9 +288,9 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - 测试：消息结构、包含 "json" 字样（DeepSeek JSON 模式要求）、用户目标被放在数据字段而不是拼进指令、超长目标被截断到 200 字。
 
 **B3 [x] 完成（claude，2026-10-30，202c2c8） 必做 — 防滥用与成本控制**
-- 做法（按 6.3.4）：请求体 ≤ 64KB；用户目标 ≤ 200 字；`max_tokens` ≤ 2000；每 IP 每小时次数限制、全站每日次数上限；环境变量 `AI_ENABLED=false` 时一律 503（总开关）。
-- 计数存储：如果绑定了 KV 命名空间 `AI_LIMITS`（H2 已于 2026-11-04 完成）就用 KV；没绑定就用 isolate 内存计数（弱限制，但不报错），并在响应头 `X-AI-Limit-Mode: memory|kv` 标明。KV 每次放行写入一个新键，按前缀 `list` 计数；同一机房的 Cache API 记下同一个数，取较大的那个（E14）。每小时 20、每天 2000 不变。
-- 测试：两种模式都覆盖；超限返回 429 `ai_rate_limited`，中文提示"今天的 AI 次数用完了，明天再试"。
+- 做法（按 6.3.4，E67 起）：请求体 ≤ 64KB；用户目标 ≤ 200 字；`max_tokens` ≤ 2000；必须先登录；每个邮箱每天 `AI_DAILY_PER_USER` 次（默认 20）；每 IP 每小时仍是兜底；不设全站每日上限。环境变量 `AI_ENABLED=false` 时一律 503（总开关，这一步在登录检查之前）。
+- 计数存储：如果绑定了 KV 命名空间 `AI_LIMITS`（H2 已于 2026-11-04 完成）就用 KV；没绑定就用 isolate 内存计数（弱限制，但不报错），并在响应头 `X-AI-Limit-Mode: memory|kv` 标明。KV 每次放行写入一个新键，按前缀 `list` 计数；同一机房的 Cache API 记下同一个数，取较大的那个。每 IP 每小时 20。每个登录邮箱每天 20，按北京时间零点重置。原来的全站每天 2000 已取消。
+- 测试：两种模式都覆盖；超限返回 429 `ai_rate_limited`。每小时：「用得太频繁了，请一小时后再试」。每个邮箱的每日次数：「今天的 AI 次数用完了，明天再试」。
 
 **B4 [x] 完成（claude，2026-10-30，ea51b15） 必做 — 本地开发服务器**
 - 新建 `tools/dev-api-server.mjs`：Node 原生 `http` 监听 3001，把 `POST /api/ai/layout` 转给 `createLayoutHandler`，`env` 取 `process.env`（`DEEPSEEK_API_KEY` 等）。这样 `npm run dev` 的 `/api` 代理就能用。
@@ -449,7 +449,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E64 [x] 完成（Desklab，2026-11-03，ebb7b0f）** 接口线长上限检查。布线检查里，被动线的走线超过常见规格，或记录的线长既超过规格、又比这段走线该买的常见长度更长时，给一条警告，并建议把设备挪近、改走更短的路径，或改用有源线、光纤线。走线本身还在规格内、只是商店下一档卖到 5 米的，不报。常量表 `PASSIVE_CABLE_LIMITS`（`src/domain/cable-limits.js`）：HDMI 3 米、DP 3 米、USB-C 2 米、USB 3 米、网线 100 米，出处写在文件头。电源线和音频线没有这项。三个模板和最大的「按我的设备生成」不误报。E34、E36、E60 没重做。
 - **E65 [x] 完成（Desklab，2026-11-03，23d0610）** 导出布线表和安装清单。购线清单里、复制按钮旁边可以导出 Markdown 和 CSV：每一根线的起点设备、起点接口、终点设备、终点接口、类型、走线长度、购买长度。键盘和鼠标的线标成「自带」。文件末尾（Markdown）是安装清单，先电源（给别的电源供电的那根在前）、后信号。3D 外观没改，按钮用现成的样式。`buildCableRunSheet`。
 - **E66 [x] 完成（Desklab，2026-11-04）** 线上全面验收复跑（E58–E65 之后）。https://desklab-frontend.pages.dev 上第 1 节 7 条，桌面 1440×900 和手机 390×844 都过：新手引导、电竞桌模板、3D 画面、布局和布线检查（模板都是 0）、购线清单的 Markdown/CSV 和「自带」、显示器缩略图、添加 27 寸并自动接线、拖动、Q 旋转、撤销重做、删除并撤销、改线长、重置视角、保存、刷新、备份提醒、导出再导入、损坏存档恢复上一版本、关于与隐私（本机、DeepSeek、NVIDIA SimReady、CC BY 4.0 链接）、分享链接、改进建议里的「让 AI 看看」（没有真的调用，避免扣额度）。正常操作没有控制台错误、页面异常或模型/缩略图 404。手机上「建议用电脑打开」在引导关掉之后可以点「知道了」。电竞桌模板本身没有键盘（设备清单里没有），键鼠在「按我的设备生成」里。npm audit 没有高危或严重（6 条中等，都在 eslint 开发依赖里，不进页面）。首屏 JS 已拆开：页面约 130KB、3D 场景约 140KB、three.js 约 185KB（gzip）；16 个模型合计约 643KB。没有因此改代码。主机和键盘的比例另见 E69、E70，这次不改外观。
-- **E67 [~] 进行中（Desklab，2026-11-04）** AI 改为登录后才能用。负责人 Leo 2026-11-04 02:49 批准，包括登录弹窗和「今日剩余次数」；02:50 修正为不设全站每日上限；02:52 确认本任务取代 E14 的 30 次连发。
+- **E67 [x] 完成（Desklab，2026-11-04）** AI 改为登录后才能用。负责人 Leo 2026-11-04 02:49 批准，包括登录弹窗和「今日剩余次数」；02:50 修正为不设全站每日上限；02:52 确认本任务取代 E14 的 30 次连发。
   - 只做邮箱验证码（国内打不开 Google）。`POST /api/auth/request-code` 发 6 位验证码，10 分钟内有效，只存哈希。同一邮箱 60 秒内 1 次、每天最多 5 次；同一 IP 每小时 `AUTH_CODE_PER_IP_HOURLY`（默认 10）。`POST /api/auth/verify` 最多输错 5 次，通过后发 HttpOnly、Secure、SameSite=Lax 的会话 cookie，30 天。`GET /api/auth/me` 返回邮箱和今日剩余次数。`POST /api/auth/logout` 退出。验证码、会话和计数都在 KV `AI_LIMITS`。
   - 发信用 Brevo 的 HTTP API（`POST https://api.brevo.com/v3/smtp/email`，请求头 `api-key`）。环境变量 `BREVO_API_KEY`、`MAIL_FROM`、`MAIL_FROM_NAME`（默认 DeskLab）。没配 `BREVO_API_KEY` 时发码返回「登录暂未开放」，不要 500。验证码邮件用中文，只写验证码和有效期。发信封装成可替换的模块。
   - `/api/ai/layout` 没登录返回 401。每个邮箱每天 `AI_DAILY_PER_USER` 次（默认 20），按北京时间零点重置，响应里带剩余次数。不设全站上限，不用 `AI_DAILY_GLOBAL`。每 IP 每小时限流保留作兜底（`AI_PER_IP_HOURLY`，默认 20）。
@@ -469,13 +469,14 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 
 ```
 浏览器（React）
+  ├─ 登录：邮箱验证码（LoginDialog）  ── /api/auth/* ──►  Pages Functions（验证码哈希、会话 cookie）
   ├─ buildSceneSummary(project)            src/domain/ai-scene-summary.js
   ├─ requestLayoutSuggestions(...)  ──POST /api/ai/layout──►  Cloudflare Pages Function
   │                                                          functions/api/ai/layout.js
-  │                                                            ├─ 校验请求、限流、总开关
+  │                                                            ├─ 总开关、必须登录、每人每天限流、每 IP 每小时兜底
   │                                                            ├─ buildMessages()  (prompt.js)
   │                                                            ├─ 调 DeepSeek chat/completions（JSON 模式）
-  │                                                            └─ 解析 JSON，白名单字段返回
+  │                                                            └─ 解析 JSON，白名单字段返回（带剩余次数）
   ├─ parseAiResponse → evaluateSuggestion（规则引擎校验+评分） src/domain/ai-actions.js
   └─ AiSuggestions 界面：只展示通过校验的建议；预览 / 应用（可撤销）
 ```
@@ -509,9 +510,13 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 | `DEEPSEEK_BASE_URL` | `https://api.deepseek.com` | |
 | `DEEPSEEK_MODEL` | `deepseek-chat` | |
 | `AI_ENABLED` | `true` | `false` 时总开关关闭 |
-| `AI_PER_IP_HOURLY` | `20` | 每 IP 每小时请求上限 |
-| `AI_DAILY_TOTAL` | `2000` | 全站每日请求上限 |
+| `AI_PER_IP_HOURLY` | `20` | 每 IP 每小时请求上限（兜底，登录后仍生效） |
+| `AI_DAILY_PER_USER` | `20` | 每个邮箱每天的 AI 次数，按北京时间零点重置。不设全站上限 |
 | `AI_TIMEOUT_MS` | `40000` | 调 DeepSeek 的超时 |
+| `BREVO_API_KEY` | （无） | 发登录验证码。没有就返回「登录暂未开放」，不要 500 |
+| `MAIL_FROM` | （无） | 已验证的发件地址。和密钥一起才算配好 |
+| `MAIL_FROM_NAME` | `DeskLab` | 发件人名称 |
+| `AUTH_CODE_PER_IP_HOURLY` | `10` | 同一 IP 每小时最多发几次验证码。负责人要求有上限、没有给数字，默认 10 |
 
 ### 6.3 服务端 `POST /api/ai/layout`
 
@@ -529,31 +534,35 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
   "version": 1,
   "model": "deepseek-chat",
   "suggestions": [ ...6.5.3 的结构，未经语义校验... ],
-  "usage": { "promptTokens": 1234, "completionTokens": 456 }
+  "usage": { "promptTokens": 1234, "completionTokens": 456 },
+  "remaining": 19
 }
 ```
-服务端只保留白名单字段（`suggestions[].id/title/reason/category/actions[]`，动作只保留 6.6.3 定义的字段），其余丢弃。
+`remaining` 是这个邮箱今天还剩几次。本地没开限流时可以是 `null`。服务端只保留白名单字段（`suggestions[].id/title/reason/category/actions[]`，动作只保留 6.6.3 定义的字段），其余丢弃。
 
 #### 6.3.3 错误响应（统一 `{ "error": "<code>", "message": "<中文>" }`）
 | HTTP | error | 前端显示 |
 |---|---|---|
 | 400 | `bad_request` | 请求内容不完整，请刷新页面后重试 |
+| 401 | `auth_required` | 请先登录后再使用 AI |
 | 413 | `too_large` | 桌面内容太多，暂时无法交给 AI 分析 |
-| 429 | `ai_rate_limited` | 全站每日上限：今天的 AI 次数用完了，明天再试；每地址每小时上限：用得太频繁了，请一小时后再试 |
+| 429 | `ai_rate_limited` | 这个邮箱今天用完：今天的 AI 次数用完了，明天再试；每地址每小时上限：用得太频繁了，请一小时后再试。两种都带 `remaining` |
 | 502 | `ai_upstream_error` | AI 服务暂时没有响应，请稍后再试 |
 | 502 | `ai_bad_output` | AI 这次的回答看不懂，请再试一次 |
 | 503 | `ai_unavailable` | AI 功能暂未开放 |
 | 504 | `ai_timeout` | AI 想得太久了，请再试一次 |
 
 #### 6.3.4 处理步骤（按顺序）
-1. `AI_ENABLED === 'false'` 或无 `DEEPSEEK_API_KEY` → 503。
-2. 读请求体文本，> 64KB → 413；`JSON.parse` 失败或 `version !== 1` 或 `summary` 不是对象 → 400。
-3. `goal` 非字符串则视为空；截断到 200 字；去掉控制字符。
-4. 限流（KV 或内存，见 B3）：IP 取 `request.headers.get('CF-Connecting-IP')`；超限 → 429。
-5. `buildMessages(summary, goal)`。
-6. `fetchImpl` 调 DeepSeek，`AbortController` 超时 `AI_TIMEOUT_MS` → 504；非 2xx → 502 `ai_upstream_error`（日志只记状态码，**不记请求体和密钥**）。
-7. 取 `choices[0].message.content`，`JSON.parse`；失败、为空、或没有 `suggestions` 数组 → 502 `ai_bad_output`。
-8. 白名单过滤，最多 5 条建议、每条最多 6 个动作；返回 200。
+1. `AI_ENABLED === 'false'` 或无 `DEEPSEEK_API_KEY` → 503。这一步在登录检查之前，这样「AI 暂未开放」和本地无密钥的测试保持原样。
+2. 没有会话邮箱 → 401 `auth_required`。
+3. 读请求体文本，> 64KB → 413；`JSON.parse` 失败或 `version !== 1` 或 `summary` 不是对象 → 400。
+4. `goal` 非字符串则视为空；截断到 200 字；去掉控制字符（在 `buildMessages` 里做）。
+5. 每 IP 每小时（`AI_PER_IP_HOURLY`，默认 20）→ 超限 429，提示「用得太频繁了，请一小时后再试」，`remaining` 用该邮箱当天还剩的次数（没有用户计数时为 `null`）。
+6. 每个邮箱每天（`AI_DAILY_PER_USER`，默认 20，北京时间零点重置）→ 超限 429，提示「今天的 AI 次数用完了，明天再试」。不设全站上限，没有 `AI_DAILY_GLOBAL` / `AI_DAILY_TOTAL`。
+7. `buildMessages(summary, goal)`。
+8. `fetchImpl` 调 DeepSeek，`AbortController` 超时 `AI_TIMEOUT_MS` → 504；非 2xx → 502 `ai_upstream_error`（日志只记状态码，**不记请求体和密钥**）。
+9. 取 `choices[0].message.content`，`JSON.parse`；失败、为空、或没有 `suggestions` 数组 → 502 `ai_bad_output`。
+10. 白名单过滤，最多 5 条建议、每条最多 6 个动作；返回 200，带 `remaining`。
 
 ### 6.4 场景摘要格式（客户端 `buildSceneSummary`）
 ```json
@@ -721,6 +730,22 @@ total = 100 × errors + 20 × warnings + 5 × hints + 1 × cableMeters
 - 服务端日志不记录请求体、模型输出全文、密钥；只记状态码、耗时、token 用量。
 - 用户可编辑的设备名称被当作数据处理（提示词第 8 条 + 输出强校验）；即使模型被诱导，最坏结果也只是一些被校验拒绝的建议。
 - 前端明确告知会把布局数据发给 DeepSeek（C5 第 5 点、D1）。
+- 登录验证码只存哈希，不写进日志，也不写进响应。会话 cookie 是 HttpOnly。邮箱存在 KV 里，用来发验证码和计算每天的次数。
+
+### 6.9 邮箱登录（E67）
+
+摆放和布线不登录。只有 AI 要登录。
+
+| 接口 | 作用 |
+|---|---|
+| `POST /api/auth/request-code` | 6 位验证码，10 分钟，只存 `SHA-256(邮箱:验证码)`。同一邮箱 60 秒 1 次、每天 5 次；同一 IP 每小时 `AUTH_CODE_PER_IP_HOURLY`（默认 10）。没配 `BREVO_API_KEY` 或 `MAIL_FROM` 时 503「登录暂未开放」，且不扣次数。发信失败 502「邮件没有发出去，请稍后再试」，并删掉刚存的验证码 |
+| `POST /api/auth/verify` | 最多错 5 次。通过后 `desklab_session` cookie：HttpOnly、SameSite=Lax、Path=/、30 天；只有 https 才加 Secure（本地 http 开发才能存住） |
+| `GET /api/auth/me` | `{ email, remaining }`。未登录是 `{ email: null, remaining: null }` |
+| `POST /api/auth/logout` | 删掉会话 |
+
+发信在 `server/ai/mail.js`，走 Brevo `POST https://api.brevo.com/v3/smtp/email`，请求头 `api-key`。邮件只有验证码和「10 分钟内有效」。验证码、会话、发码计数、AI 次数都在 KV `AI_LIMITS`。没绑定 KV 时落在本 isolate 的内存里（Pages 上每个函数是各自的 isolate，所以生产必须有 KV）。
+
+界面：没登录时点「让 AI 看看」打开登录框（先邮箱，再验证码），登录成功不自动发起 AI 请求。登录后按钮旁是「今日剩余 N 次」和「退出」。样式用现有的 `.modal-overlay` / `.modal-container`。分享链接只读时这个按钮保持禁用。
 
 ---
 

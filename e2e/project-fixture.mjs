@@ -26,9 +26,13 @@ export function box(id, x = 0) {
  * - ai: (requestBody) => responseJson | { status, json } answers
  *   POST /api/ai/layout; each request body is collected in
  *   evidence.aiRequests. Without it, an AI request fails the test like any
- *   other /api call.
+ *   other /api call. When ai is set and session is omitted, the panel is
+ *   already signed in as tester@example.com.
+ * - session: { email, remaining } | null. Omit it to stay signed out, unless
+ *   ai is set. GET /api/auth/me is answered and is not a write.
+ * - auth: { requestCode, verify, logout } answers those POSTs and is not a write.
  */
-export async function openProject(page, objects, connections = [], { saved = true, ai = null, room = { length: 10, width: 10, height: 3 }, camera = null, phoneNotice = false } = {}) {
+export async function openProject(page, objects, connections = [], { saved = true, ai = null, session, auth = null, room = { length: 10, width: 10, height: 3 }, camera = null, phoneNotice = false } = {}) {
   const project = {
     id: 'default', updatedAt: '2026-09-09T00:00:00.000Z',
     room, objects, connections,
@@ -65,6 +69,33 @@ export async function openProject(page, objects, connections = [], { saved = tru
     return route.abort();
   });
   // Registered later, so Playwright tries it before the catch-all above.
+  // Opening the AI panel asks who is signed in. That read is not a write.
+  const signedIn = session !== undefined ? session : (ai ? { email: 'tester@example.com', remaining: 20 } : null);
+  await page.route('**/api/auth/me', route => {
+    if (route.request().method() !== 'GET') return route.fallback();
+    const body = signedIn
+      ? { email: signedIn.email, remaining: signedIn.remaining ?? null }
+      : { email: null, remaining: null };
+    return route.fulfill({ json: body });
+  });
+  const fulfillAuth = (route, answer) => {
+    const payload = answer && typeof answer === 'object' && ('status' in answer || 'json' in answer) ? answer : { json: answer ?? { ok: true } };
+    return route.fulfill({ status: payload.status ?? 200, json: payload.json ?? { ok: true } });
+  };
+  if (auth) {
+    await page.route('**/api/auth/request-code', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      return fulfillAuth(route, await auth.requestCode?.(route.request().postDataJSON()));
+    });
+    await page.route('**/api/auth/verify', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      return fulfillAuth(route, await auth.verify?.(route.request().postDataJSON()));
+    });
+    await page.route('**/api/auth/logout', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      return fulfillAuth(route, await auth.logout?.());
+    });
+  }
   const aiRequests = [];
   if (ai) {
     await page.route('**/api/ai/layout', async route => {

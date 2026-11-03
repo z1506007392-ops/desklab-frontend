@@ -36,6 +36,7 @@ export async function requestLayoutSuggestions({
     try {
       response = await fetchImpl('/api/ai/layout', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(followUp
           ? { version: AI_PROTOCOL_VERSION, summary, goal, followUp }
@@ -58,12 +59,15 @@ export async function requestLayoutSuggestions({
     if (!response.ok) {
       const code = typeof body?.error === 'string' ? body.error : 'ai_upstream_error';
       const message = typeof body?.message === 'string' && body.message ? body.message : AI_ERROR_MESSAGES[code];
-      throw aiError(code, message);
+      const error = aiError(code, message);
+      if (typeof body?.remaining === 'number') error.remaining = body.remaining;
+      throw error;
     }
     if (!body || !Array.isArray(body.suggestions)) throw aiError('ai_bad_output');
     return {
       suggestions: sanitizeSuggestions(body),
       model: typeof body.model === 'string' ? body.model : null,
+      remaining: typeof body.remaining === 'number' ? body.remaining : null,
     };
   } finally {
     clearTimeout(timer);

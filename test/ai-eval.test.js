@@ -44,7 +44,11 @@ test('the evaluation set has at least 15 scenes and each kind is what it claims'
 });
 
 test('a run through the mock model produces sound metrics', async () => {
-  const handler = createLayoutHandler({ fetchImpl: createMockFetch({ delayMs: 0 }), logger: { log() {} } });
+  const handler = createLayoutHandler({
+    fetchImpl: createMockFetch({ delayMs: 0 }),
+    logger: { log() {} },
+    sessionOf: async () => ({ email: 'eval@localhost' }),
+  });
   const post = async body => {
     const response = await handler({
       request: new Request('https://desklab.test/api/ai/layout', { method: 'POST', body: JSON.stringify(body) }),

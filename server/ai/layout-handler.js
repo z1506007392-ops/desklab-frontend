@@ -19,8 +19,8 @@ function json(status, body, headers = {}) {
   });
 }
 
-function fail(status, error, headers, message = AI_ERROR_MESSAGES[error]) {
-  return json(status, { error, message }, headers);
+function fail(status, error, headers, message = AI_ERROR_MESSAGES[error], extra = {}) {
+  return json(status, { error, message, ...extra }, headers);
 }
 
 // An optional follow-up: the suggestions the user saw last time (filtered
@@ -58,13 +58,22 @@ async function readJsonBody(request) {
 /**
  * @param {object} options
  * @param {typeof fetch} [options.fetchImpl] how to reach DeepSeek (tests pass a fake)
- * @param {{ take(key: string, env: object): Promise<{ allowed: boolean, mode: string }> }} [options.rateLimiter]
+ * @param {{ take(key: string, env: object): Promise<{ allowed: boolean, mode: string }>, takeUser?: Function, readUser?: Function }} [options.rateLimiter]
  * @param {{ log(...args: unknown[]): void }} [options.logger]
+ * @param {(request: Request, env: object) => Promise<{ email: string } | null>} [options.sessionOf]
  */
-export function createLayoutHandler({ fetchImpl = (...args) => fetch(...args), rateLimiter = null, logger = console } = {}) {
+export function createLayoutHandler({
+  fetchImpl = (...args) => fetch(...args),
+  rateLimiter = null,
+  logger = console,
+  sessionOf = async () => null,
+} = {}) {
   return async function handleLayoutRequest({ request, env }) {
     const config = readConfig(env);
     if (!config.enabled || !config.apiKey) return fail(503, 'ai_unavailable');
+
+    const session = await sessionOf(request, env);
+    if (!session?.email) return fail(401, 'auth_required');
 
     const { body, tooLarge } = await readJsonBody(request);
     if (tooLarge) return fail(413, 'too_large');
@@ -75,13 +84,22 @@ export function createLayoutHandler({ fetchImpl = (...args) => fetch(...args), r
     }
 
     let limitHeaders = {};
+    let remaining = null;
     if (rateLimiter) {
       const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
       const limit = await rateLimiter.take(ip, env);
       limitHeaders = { 'X-AI-Limit-Mode': limit.mode };
       if (!limit.allowed) {
-        const message = limit.scope === 'hour' ? AI_ERROR_MESSAGES.ai_rate_limited_hour : AI_ERROR_MESSAGES.ai_rate_limited;
-        return fail(429, 'ai_rate_limited', limitHeaders, message);
+        if (rateLimiter.readUser) remaining = (await rateLimiter.readUser(session.email, env)).remaining;
+        return fail(429, 'ai_rate_limited', limitHeaders, AI_ERROR_MESSAGES.ai_rate_limited_hour, { remaining });
+      }
+      if (rateLimiter.takeUser) {
+        const userLimit = await rateLimiter.takeUser(session.email, env);
+        remaining = userLimit.remaining;
+        limitHeaders = { 'X-AI-Limit-Mode': userLimit.mode };
+        if (!userLimit.allowed) {
+          return fail(429, 'ai_rate_limited', limitHeaders, AI_ERROR_MESSAGES.ai_rate_limited, { remaining });
+        }
       }
     }
 
@@ -141,6 +159,7 @@ export function createLayoutHandler({ fetchImpl = (...args) => fetch(...args), r
         promptTokens: Number.isFinite(usage.prompt_tokens) ? usage.prompt_tokens : null,
         completionTokens: Number.isFinite(usage.completion_tokens) ? usage.completion_tokens : null,
       },
+      remaining,
     }, limitHeaders);
   };
 }

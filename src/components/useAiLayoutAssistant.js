@@ -6,12 +6,18 @@ import { buildSceneSummary } from '../domain/ai-scene-summary.js';
 // State of one AI request. It lives in App (not in the dialog) so that the
 // suggestions survive closing the dialog for a 3D preview.
 export function useAiLayoutAssistant() {
-  const [state, setState] = useState({ status: 'idle', suggestions: [], error: null, unavailable: false });
+  const [state, setState] = useState({
+    status: 'idle', suggestions: [], error: null, errorCode: null, remaining: null, unavailable: false,
+  });
   const controllerRef = useRef(null);
   // The suggestions of the last answer, sent back with a follow-up.
   const lastSuggestionsRef = useRef([]);
 
   useEffect(() => () => controllerRef.current?.abort(), []);
+
+  const dismissError = useCallback(() => {
+    setState(previous => ({ ...previous, status: 'idle', error: null, errorCode: null }));
+  }, []);
 
   // feedback: what the user thinks of the last answer ("不要动主机"); empty
   // for a fresh request.
@@ -19,9 +25,9 @@ export function useAiLayoutAssistant() {
     controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
-    setState(previous => ({ ...previous, status: 'loading', error: null }));
+    setState(previous => ({ ...previous, status: 'loading', error: null, errorCode: null }));
     try {
-      const { suggestions } = await requestLayoutSuggestions({
+      const { suggestions, remaining } = await requestLayoutSuggestions({
         summary: buildSceneSummary(project),
         goal,
         followUp: feedback ? { previousSuggestions: lastSuggestionsRef.current, feedback } : null,
@@ -29,19 +35,28 @@ export function useAiLayoutAssistant() {
       });
       if (controllerRef.current === controller) {
         lastSuggestionsRef.current = suggestions;
-        setState(previous => ({ ...previous, status: 'done', suggestions, error: null }));
+        setState(previous => ({
+          ...previous,
+          status: 'done',
+          suggestions,
+          error: null,
+          errorCode: null,
+          remaining: typeof remaining === 'number' ? remaining : previous.remaining,
+        }));
       }
     } catch (error) {
       if (controllerRef.current !== controller) return;
       if (error.code === 'cancelled') {
-        setState(previous => ({ ...previous, status: 'idle', error: null }));
+        setState(previous => ({ ...previous, status: 'idle', error: null, errorCode: null }));
         return;
       }
       setState(previous => ({
         ...previous,
         status: 'error',
         error: error.message,
+        errorCode: error.code || null,
         unavailable: previous.unavailable || error.code === 'ai_unavailable',
+        remaining: typeof error.remaining === 'number' ? error.remaining : previous.remaining,
       }));
     }
   }, []);
@@ -50,5 +65,5 @@ export function useAiLayoutAssistant() {
     controllerRef.current?.abort();
   }, []);
 
-  return { ...state, request, cancel };
+  return { ...state, request, cancel, dismissError };
 }

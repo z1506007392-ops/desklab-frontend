@@ -1853,6 +1853,12 @@
   min-width: 0;
 }
 
+.ai-suggestions-remaining {
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
 /* 手机上输入框独占一行，例句不会被截断。 */
 @media (max-width: 599px) {
   .ai-suggestions-form .ui-input {
@@ -1921,6 +1927,37 @@
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--line);
+}
+
+.login-dialog {
+  max-width: 420px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+
+.login-form .ui-button {
+  align-self: flex-start;
+}
+
+.login-note {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
+
+.login-error {
+  margin: 0;
+  color: var(--bad);
+  font-size: var(--text-sm);
 }
 
 .about-dialog {

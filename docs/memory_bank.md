@@ -17,6 +17,18 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E67 完成。AI 改为登录后才能用：邮箱验证码，每个邮箱每天 20 次（`AI_DAILY_PER_USER`），不设全站上限，也不再用 `AI_DAILY_TOTAL` / `AI_DAILY_GLOBAL`。每 IP 每小时 20 次仍作兜底。发验证码：同一邮箱 60 秒 1 次、每天 5 次；同一 IP 每小时默认 10 次（`AUTH_CODE_PER_IP_HOURLY`，负责人只要求有上限、没有给数字）。没配 `BREVO_API_KEY` 或 `MAIL_FROM` 时发码返回「登录暂未开放」，不扣次数。验证码只存哈希。会话 cookie 30 天，HttpOnly、SameSite=Lax，只有 https 才加 Secure。
+
+没登录时点「让 AI 看看」先出登录框，登录成功不自动请求。登录后按钮旁是「今日剩余 N 次」和退出。分享链接只读时这个按钮仍禁用。关于页改成摆放和布线不需要登录。3D 和布线不登录也能用。
+
+验证：`npm test` 536 通过，lint 0 问题，build 通过。Chrome 桌面和手机 UI 201 通过 + 1 跳过。
+
+A8 完成。`.github/workflows/ci.yml` 在 master 的检查全绿后执行 `npx wrangler@4.157.0 pages deploy dist --project-name desklab-frontend`。第一次成功的运行：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698923327 ，部署地址 https://79dc0a72.desklab-frontend.pages.dev 。线上首页 https://desklab-frontend.pages.dev 返回 200，标题是 DeskLab。Git 自动部署没有关。等 Desklab 关掉 Git 自动部署。
+
+还剩：这版推上去并部署之后，在还没配 Brevo 时确认发码返回「登录暂未开放」而不是 500。E69、E70 等负责人决定。H4 不动。生产要配的变量：`BREVO_API_KEY`、`MAIL_FROM`，可选 `MAIL_FROM_NAME`（默认 DeskLab）、`AI_DAILY_PER_USER`（默认 20）、`AI_PER_IP_HOURLY`（默认 20）、`AUTH_CODE_PER_IP_HOURLY`（默认 10）。KV `AI_LIMITS` 已经绑上。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 领了 E67。负责人已批准：邮箱验证码登录后才能用 AI，每个邮箱每天 20 次，不设全站上限。发验证码的限速和每 IP 每小时的兜底限流保留。
 
 还剩：把登录、限额和弹窗做完。A8 的部署工作流已推上，等它成功部署一次。
@@ -4192,8 +4204,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 520 domain tests (E14 rate-limit keys; 516 at E66)
-npm run test:ui   # Chrome desktop + phone. Cross-browser: npx playwright test (272 cases: 270 passed + 2 skipped). CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 536 domain tests (E67 login and per-email limit; 520 at the E14 key change)
+npm run test:ui   # Chrome desktop + phone: 201 passed + 1 skipped. Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

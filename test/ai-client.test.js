@@ -25,23 +25,25 @@ test('posts the summary and goal and returns the clean suggestions', async () =>
   });
   assert.equal(sent.url, '/api/ai/layout');
   assert.equal(sent.init.method, 'POST');
+  assert.equal(sent.init.credentials, 'include');
   assert.deepEqual(sent.body, { version: 1, summary, goal: '更整洁' });
   assert.deepEqual(result, {
     model: 'deepseek-chat',
     suggestions: [{ id: 's1', title: '显示器居中', reason: '看着更舒服。', category: 'ergonomics', actions: [move] }],
+    remaining: null,
   });
 });
 
 test('server errors keep their code and Chinese message', async () => {
   for (const [status, body, code, message] of [
     [503, { error: 'ai_unavailable', message: 'AI 功能暂未开放' }, 'ai_unavailable', 'AI 功能暂未开放'],
-    [429, { error: 'ai_rate_limited', message: '用得太频繁了，请一小时后再试' }, 'ai_rate_limited', '用得太频繁了，请一小时后再试'],
+    [429, { error: 'ai_rate_limited', message: '用得太频繁了，请一小时后再试', remaining: 3 }, 'ai_rate_limited', '用得太频繁了，请一小时后再试'],
     [504, { error: 'ai_timeout' }, 'ai_timeout', 'AI 想得太久了，请再试一次'],
     [500, 'not json', 'ai_upstream_error', 'AI 服务暂时没有响应，请稍后再试'],
   ]) {
     await assert.rejects(
       requestLayoutSuggestions({ summary, fetchImpl: async () => (typeof body === 'string' ? new Response(body, { status }) : jsonResponse(status, body)) }),
-      error => error.code === code && error.message === message,
+      error => error.code === code && error.message === message && (code === 'ai_rate_limited' ? error.remaining === 3 : error.remaining === undefined),
       code,
     );
   }

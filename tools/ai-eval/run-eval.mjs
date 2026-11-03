@@ -1,6 +1,8 @@
 // Run the AI evaluation against a running /api/ai/layout and record results.
 //   DEEPSEEK_API_KEY=sk-... npm run dev:api     (in another terminal)
 //   node tools/ai-eval/run-eval.mjs [--url http://localhost:3001/api/ai/layout]
+// Against a server that requires login, set AI_EVAL_COOKIE to the session
+// cookie value. AI_MOCK=1 on the dev server skips login.
 //   node tools/ai-eval/run-eval.mjs --url ... --resume tools/ai-eval/results/<run>
 // Raw answers and metrics go to tools/ai-eval/results/<timestamp>/ (or the
 // --resume folder). On a rate limit (429) the run stops, saves what it has,
@@ -20,8 +22,14 @@ const flag = name => {
 const url = flag('--url') || 'http://localhost:3001/api/ai/layout';
 const resume = flag('--resume');
 
+const headers = { 'Content-Type': 'application/json' };
+if (process.env.AI_EVAL_COOKIE) {
+  const token = process.env.AI_EVAL_COOKIE.trim();
+  headers.cookie = token.startsWith('desklab_session=') ? token : `desklab_session=${token}`;
+}
+
 const post = async body => {
-  const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
   return { status: response.status, json: await response.json().catch(() => null) };
 };
 
@@ -43,6 +51,10 @@ if (!resume) {
   }
   if (probe.status === 503) {
     console.error('The endpoint says AI is not available: no DEEPSEEK_API_KEY (roadmap H1). Nothing to evaluate yet.');
+    process.exit(2);
+  }
+  if (probe.status === 401) {
+    console.error('AI requires a signed-in session. Set AI_EVAL_COOKIE, or start the dev server with AI_MOCK=1.');
     process.exit(2);
   }
 }

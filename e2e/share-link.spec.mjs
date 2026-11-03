@@ -81,6 +81,11 @@ test('a share link is read-only and does not replace the saved desk', async ({ p
   await expect(page.getByRole('button', { name: '桌面模板', exact: true })).toBeDisabled();
   await expect(page.getByRole('region', { name: '开始搭建', exact: true })).toHaveCount(0);
   await expect(page.getByText(/只读分享，可以转视角查看/)).toBeVisible();
+  await page.getByRole('button', { name: /^改进建议/ }).click();
+  const advice = page.getByRole('dialog', { name: '自动检查与改进建议', exact: true });
+  await expect(advice.getByRole('button', { name: '让 AI 看看', exact: true })).toBeDisabled();
+  await page.keyboard.press('Escape');
+  await expect(advice).toHaveCount(0);
   expect(await readStorage(page)).toBe(mine);
 
   await page.getByRole('button', { name: '更多', exact: true }).click();

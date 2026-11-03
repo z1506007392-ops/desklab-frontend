@@ -46,6 +46,9 @@ test('the local dev server answers like the Cloudflare function', async () => {
     const response = await post(noKey.url, { version: 1, summary: {} });
     assert.equal(response.status, 503);
     assert.equal((await response.json()).error, 'ai_unavailable');
+    const code = await post(noKey.url.replace('/api/ai/layout', '/api/auth/request-code'), { email: 'a@b.cn' });
+    assert.equal(code.status, 503);
+    assert.equal((await code.json()).message, '登录暂未开放');
   } finally {
     noKey.stop();
   }
@@ -61,6 +64,9 @@ test('the local dev server answers like the Cloudflare function', async () => {
     const body = await response.json();
     assert.equal(body.model, 'mock');
     assert.equal(body.suggestions[0].actions[0].objectId, 'mon');
+    const me = await fetch(mock.url.replace('/api/ai/layout', '/api/auth/me'));
+    assert.equal(me.status, 200);
+    assert.equal((await me.json()).email, 'dev@localhost');
     assert.equal((await fetch(mock.url.replace('/api/ai/layout', '/other'))).status, 404);
   } finally {
     mock.stop();

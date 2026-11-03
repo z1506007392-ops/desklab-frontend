@@ -7,11 +7,12 @@ DeskLab is a connected 3D room desktop layout and cabling tool.
 Run `npm ci`, then `npm run dev` from this repository. The frontend normally
 uses port 5173.
 
-There are no accounts. Each visitor's project is saved in their own browser
-(`localStorage`, see `src/domain/local-project-store.js`), together with the
-previous save as a backup, so the backend is not needed to load or save. The
-dev server proxies `/api` to port 3001, where `npm run dev:api` serves the AI
-endpoint locally (the same handler Cloudflare runs from `functions/`):
+The desk itself has no account. Each visitor's project is saved in their own
+browser (`localStorage`, see `src/domain/local-project-store.js`), together
+with the previous save as a backup, so the backend is not needed to load or
+save. AI suggestions require an email login code. The dev server proxies
+`/api` to port 3001, where `npm run dev:api` serves the AI and auth endpoints
+locally (the same handlers Cloudflare runs from `functions/`):
 
 - `AI_MOCK=1 npm run dev:api`: offline mock answers, no key needed.
 - `DEEPSEEK_API_KEY=sk-... npm run dev:api`: real DeepSeek. Never commit the
@@ -20,8 +21,12 @@ endpoint locally (the same handler Cloudflare runs from `functions/`):
 
 In production the key is the Cloudflare Pages secret `DEEPSEEK_API_KEY`;
 optional settings: `DEEPSEEK_MODEL`, `DEEPSEEK_BASE_URL`, `AI_ENABLED`,
-`AI_TIMEOUT_MS`, `AI_PER_IP_HOURLY`, `AI_DAILY_TOTAL`, and a KV binding
-`AI_LIMITS` for shared rate-limit counts.
+`AI_TIMEOUT_MS`, `AI_PER_IP_HOURLY`, `AI_DAILY_PER_USER` (per email, default
+20; there is no site-wide daily cap), and a KV binding `AI_LIMITS` for
+sessions, login codes, and those counts. Login mail needs `BREVO_API_KEY`
+and `MAIL_FROM` (`MAIL_FROM_NAME` defaults to DeskLab). Until those are set,
+`POST /api/auth/request-code` returns “登录暂未开放”. `AI_MOCK=1` treats a
+missing cookie as a local developer so the mock still answers.
 
 ## Deployment
 
