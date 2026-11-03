@@ -82,7 +82,9 @@ test('a monitor dragged off the desk drops down instead of hanging in the air, a
   const before = await readPosition(page);
   expect(before.z).toBeGreaterThan(0.7); // stands on the desk
 
-  await drag(page, await grabPoint(page), testIsPhone(page) ? -150 : -250, 40);
+  // Far enough to clear the tower beside the desk. A shorter slide can stop
+  // on that tower, and the monitor then sits on it (0.695 m) instead of the floor.
+  await drag(page, await grabPoint(page), testIsPhone(page) ? -150 : -320, 40);
   const after = await readPosition(page);
   expect(after.x).not.toBeCloseTo(before.x, 2);
   await expectDropped(page, after);
