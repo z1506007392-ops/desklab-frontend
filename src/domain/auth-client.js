@@ -24,7 +24,7 @@ export async function fetchCurrentSession(fetchImpl = (...args) => fetch(...args
     if (!response.ok || typeof body?.email !== 'string' || !body.email) return { email: null, remaining: null };
     return { email: body.email, remaining: typeof body.remaining === 'number' ? body.remaining : null };
   } catch {
-    return { email: null, remaining: null };
+    return { email: null, remaining: null, offline: true };
   }
 }
 

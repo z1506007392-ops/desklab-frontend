@@ -2,6 +2,10 @@ import { AiSuggestionsPanel } from './AiSuggestions.jsx';
 import { CloseIcon } from './Icons.jsx';
 import { useDialogFocus } from './useDialogFocus.js';
 
+function actionLabel(action, title) {
+  return `${action}：${title}`;
+}
+
 // The "自动检查与改进建议" dialog. Applying a suggestion stays in App so it
 // shares the undo history with the rest of the editor.
 export default function RecommendationsDialog({
@@ -312,11 +316,12 @@ export default function RecommendationsDialog({
                                 加购插排分流
                               </button>
                               {issue.objectIds?.length > 0 && (
-                                <button
-                                  type="button"
-                                  className="ui-button"
-                                  onClick={() => onLocate(issue.objectIds[0])}
-                                >
+                              <button
+                                type="button"
+                                className="ui-button"
+                                aria-label={actionLabel('定位', issue.title)}
+                                onClick={() => onLocate(issue.objectIds[0])}
+                              >
                                   定位
                                 </button>
                               )}
@@ -346,12 +351,13 @@ export default function RecommendationsDialog({
                       <button
                         type="button"
                         className="ui-button ui-button-primary"
+                        aria-label={actionLabel('照做', tip.title)}
                         onClick={() => onApplyTip(tip)}
                         disabled={!editable}
                       >
                         照做
                       </button>
-                      <button type="button" className="ui-button" onClick={() => onLocate(tip.objectIds[0])}>
+                      <button type="button" className="ui-button" aria-label={actionLabel('定位', tip.title)} onClick={() => onLocate(tip.objectIds[0])}>
                         定位
                       </button>
                     </div>

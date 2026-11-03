@@ -1,6 +1,10 @@
 import { CloseIcon } from './Icons.jsx';
 import { useDialogFocus } from './useDialogFocus.js';
 
+function actionLabel(action, title) {
+  return `${action}：${title}`;
+}
+
 function severityLabel(severity) {
   if (severity === 'error') return '严重';
   if (severity === 'warning') return '警告';
@@ -95,6 +99,7 @@ export default function LayoutReportDialog({
                       <button
                         type="button"
                         className="ui-button ui-button-primary"
+                        aria-label={actionLabel('推回去', issue.title)}
                         onClick={() => onPushOntoSupport(issue.objectIds[0])}
                       >
                         推回去
@@ -121,6 +126,7 @@ export default function LayoutReportDialog({
                     <button
                       type="button"
                       className="ui-button"
+                      aria-label={actionLabel('定位', issue.title)}
                       onClick={() => onLocate(issue.objectIds[0])}
                     >
                       定位

@@ -43,6 +43,42 @@ test('project data tools and axes live behind the more menu', async ({ page }) =
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
 
+test('the more menu can be used from the keyboard and returns focus', async ({ page }) => {
+  const evidence = await openProject(page, [box('桌子 A')]);
+  const more = page.getByRole('button', { name: '更多', exact: true });
+  await more.click();
+  const menu = page.getByRole('menu', { name: '更多', exact: true });
+  const axes = menu.getByRole('menuitemcheckbox', { name: '显示坐标轴' });
+  await expect(axes).toBeFocused();
+  await expect(axes).toBeChecked();
+
+  await page.keyboard.press('ArrowDown');
+  await expect(menu.getByRole('menuitem', { name: '导入备份', exact: true })).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(menu.getByRole('menuitem', { name: '关于与隐私', exact: true })).toBeFocused();
+  await page.keyboard.press('Home');
+  await expect(axes).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await expect(menu.getByRole('menuitem', { name: '关于与隐私', exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(menu).toHaveCount(0);
+  await expect(more).toBeFocused();
+
+  await more.click();
+  await expect(axes).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(axes).not.toBeChecked();
+  await expect(menu).toBeVisible();
+  await page.keyboard.press('End');
+  await page.keyboard.press('Enter');
+  const about = page.getByRole('dialog', { name: '关于与隐私', exact: true });
+  await expect(about).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(about).toHaveCount(0);
+  await expect(more).toBeFocused();
+  expect(evidence).toEqual({ errors: [], writes: [] });
+});
+
 test('importing a file that is not a backup explains it in plain words', async ({ page }) => {
   const evidence = await openProject(page, [box('桌子 A')]);
   await page.getByLabel('导入 DeskLab 备份文件', { exact: true }).setInputFiles({

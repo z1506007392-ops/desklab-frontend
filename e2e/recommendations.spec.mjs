@@ -138,7 +138,7 @@ test('a screen off to one side gets an optional tip that centres it with one cli
   await expect(dialog.getByRole('heading', { name: '摆放小建议（可选）', exact: true })).toBeVisible();
   const tip = dialog.getByRole('group', { name: '带鱼屏显示器挪到座位正前方', exact: true });
   await expect(tip).toContainText('带鱼屏显示器偏离了座位正前方。');
-  await tip.getByRole('button', { name: '照做', exact: true }).click();
+  await tip.getByRole('button', { name: /^照做/ }).click();
   await expect(page.getByText('已调整：带鱼屏显示器挪到座位正前方', { exact: true })).toBeVisible();
   await expect(dialog.getByRole('heading', { name: '摆放小建议（可选）', exact: true })).toHaveCount(0);
 

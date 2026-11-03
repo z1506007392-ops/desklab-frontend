@@ -13,6 +13,21 @@ const IGNORED = [
   /AbortError|The user aborted a request|signal is aborted/i,
 ];
 
+// UI tests set this before load so a crash outside the 3D view can be
+// checked. A normal visit never sets it.
+export function shellCrashRequested() {
+  return typeof window !== 'undefined' && window.__DESKLAB_E2E_CRASH_SHELL__ === true;
+}
+
+// A saved project cannot contain a connection to a missing device. UI tests
+// set this so cleanup and undo can be checked. A normal visit never sets it.
+export function e2eDanglingConnection() {
+  if (typeof window === 'undefined') return null;
+  const extra = window.__DESKLAB_E2E_DANGLING_CABLE__;
+  if (!extra || typeof extra !== 'object' || Array.isArray(extra)) return null;
+  return extra;
+}
+
 export function shouldReportError(error) {
   const message = String(error?.message ?? error ?? '');
   if (!message) return false;

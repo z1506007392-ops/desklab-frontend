@@ -7,6 +7,10 @@ function severityLabel(severity) {
   return '提示';
 }
 
+function actionLabel(action, title) {
+  return `${action}：${title}`;
+}
+
 // The "布线检查" dialog. Actions stay in App; this only renders the report.
 export default function WiringReportDialog({
   summary,
@@ -95,6 +99,7 @@ export default function WiringReportDialog({
                     <button
                       type="button"
                       className="ui-button ui-button-primary"
+                      aria-label={actionLabel('延长到推荐长度', issue.title)}
                       onClick={() => onExtendCable(issue.connectionIds[0])}
                     >
                       延长到推荐长度
@@ -104,6 +109,7 @@ export default function WiringReportDialog({
                     <button
                       type="button"
                       className="ui-button"
+                      aria-label={actionLabel('换孔位更多的插排', issue.title)}
                       onClick={() => onAddPowerStrip('chain')}
                       title="向场景中加入一个孔位更多的插排，替代串联的插排"
                     >
@@ -114,6 +120,7 @@ export default function WiringReportDialog({
                     <button
                       type="button"
                       className="ui-button"
+                      aria-label={actionLabel('加购插排分流', issue.title)}
                       onClick={() => onAddPowerStrip('split')}
                       title="加购插排以将部分用电器分流到其他电源"
                     >
@@ -124,6 +131,7 @@ export default function WiringReportDialog({
                     <button
                       type="button"
                       className="ui-button"
+                      aria-label={actionLabel('定位', issue.title)}
                       onClick={() => onLocate(issue)}
                     >
                       定位
@@ -133,6 +141,7 @@ export default function WiringReportDialog({
                     <button
                       type="button"
                       className="ui-button"
+                      aria-label={actionLabel('查看连接', issue.title)}
                       onClick={onShowConnections}
                     >
                       查看连接

@@ -33,6 +33,8 @@ import { refitLayoutToRoom } from './domain/room-resize.js';
 import { applyLayoutTip, buildLayoutTips } from './domain/layout-tips.js';
 import { createEntityId } from './domain/identifiers.js';
 import { describeKeyTarget, getObjectKeyboardUpdate, shouldIgnoreDeviceShortcut } from './domain/keyboard-controls.js';
+import { menuClosesOnKey, nextMenuIndex } from './domain/menu-keyboard.js';
+import { e2eDanglingConnection, shellCrashRequested } from './domain/error-report.js';
 import { cameraZoomEnabled } from './domain/view-controls.js';
 import {
   canEditProject,
@@ -134,6 +136,9 @@ function downloadProject(project, prefix) {
 }
 
 export default function App() {
+  if (shellCrashRequested()) {
+    throw new Error('页面外壳在渲染时出错');
+  }
   const [room, setRoom] = useState({ length: 10, width: 10, height: 3 });
   const [objects, setObjects] = useState([]);
   const [connections, setConnections] = useState([]);
@@ -555,7 +560,9 @@ export default function App() {
       const data = stored.result.project;
       const loadedRoom = data.room || { length: 10, width: 10, height: 3 };
       const hydratedObjects = hydrateProjectObjects(data.objects || []);
-      const loadedConnections = data.connections || [];
+      const storedConnections = data.connections || [];
+      const extraConnection = e2eDanglingConnection();
+      const loadedConnections = extraConnection ? [...storedConnections, extraConnection] : storedConnections;
       setProjectLoadFailed(false);
       setRoom(loadedRoom);
       setInputRoom(loadedRoom);
@@ -1534,18 +1541,42 @@ export default function App() {
   };
 
   const runMoreMenuAction = (action) => {
-    closeMoreMenu();
+    closeMoreMenu({ restoreFocus: true });
     action();
   };
 
   useEffect(() => {
     if (!moreMenuPosition) return undefined;
+    const menu = moreMenuRef.current;
+    if (!menu) return undefined;
+    const itemList = () => [...menu.querySelectorAll('[role="menuitem"], [role="menuitemcheckbox"]')]
+      .filter(element => !element.disabled);
+    const focusAt = (index) => {
+      const items = itemList();
+      if (items.length === 0) return;
+      items[(index + items.length) % items.length].focus();
+    };
+    focusAt(0);
     const handlePointerDown = (event) => {
-      if (moreMenuRef.current?.contains(event.target) || moreButtonRef.current?.contains(event.target)) return;
+      if (menu.contains(event.target) || moreButtonRef.current?.contains(event.target)) return;
       closeMoreMenu();
     };
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') closeMoreMenu({ restoreFocus: true });
+      if (menuClosesOnKey(event.key)) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeMoreMenu({ restoreFocus: true });
+        return;
+      }
+      const next = nextMenuIndex({
+        key: event.key,
+        index: itemList().indexOf(document.activeElement),
+        count: itemList().length,
+      });
+      if (next === null) return;
+      event.preventDefault();
+      event.stopPropagation();
+      focusAt(next);
     };
     document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
@@ -1611,6 +1642,7 @@ export default function App() {
       onClick={handleToggleMoreMenu}
       aria-haspopup="menu"
       aria-expanded={moreMenuPosition !== null}
+      aria-controls="toolbar-more-menu"
     >
       更多
     </button>
@@ -1618,6 +1650,7 @@ export default function App() {
   const moreMenu = moreMenuPosition && (
     <div
       ref={moreMenuRef}
+      id="toolbar-more-menu"
       className="toolbar-menu"
       role="menu"
       aria-label="更多"

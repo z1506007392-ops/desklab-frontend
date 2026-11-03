@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 
 import { applySuggestionsInOrder, changedObjectIds, evaluateSuggestions } from '../domain/ai-actions.js';
 import { fetchCurrentSession, logoutSession } from '../domain/auth-client.js';
@@ -27,13 +27,23 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
   const typedGoal = () => (goalRef.current?.value ?? goal).trim();
   const typedFeedback = () => (feedbackRef.current?.value ?? feedback).trim();
 
+  const loadSession = useCallback(() => {
+    setSession({ status: 'loading', email: null, remaining: null });
+  }, []);
+
   useEffect(() => {
+    if (session.status !== 'loading') return undefined;
     let cancelled = false;
     fetchCurrentSession().then(next => {
-      if (!cancelled) setSession({ status: 'ready', email: next.email, remaining: next.remaining });
+      if (cancelled) return;
+      if (next.offline) {
+        setSession({ status: 'offline', email: null, remaining: null });
+        return;
+      }
+      setSession({ status: 'ready', email: next.email, remaining: next.remaining });
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [session.status]);
 
   const sessionRejected = ai.errorCode === 'auth_required';
   if (!sessionRejected && authPromptSeen) setAuthPromptSeen(false);
@@ -112,6 +122,13 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
         )}
       </div>
       {empty && <p className="ai-suggestions-note">先放几件设备，AI 才能给建议。</p>}
+
+      {session.status === 'offline' && (
+        <div className="ai-suggestions-status ai-suggestions-error" role="alert">
+          <span>网络连接失败，请检查网络后再试</span>
+          <button type="button" className="ui-button" onClick={loadSession}>再试一次</button>
+        </div>
+      )}
 
       {loading && (
         <div className="ai-suggestions-status" role="status">

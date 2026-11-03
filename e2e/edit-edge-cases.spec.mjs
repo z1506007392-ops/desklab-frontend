@@ -229,7 +229,7 @@ test('a screen pushed mostly off the desk edge is reported and can be pushed bac
   await page.getByRole('button', { name: /^布局检查/ }).click();
   const report = page.getByRole('dialog', { name: '布局检查', exact: true });
   await expect(report).toContainText('带鱼屏显示器 大半悬在书桌外面，会掉下去');
-  await report.getByRole('button', { name: '推回去', exact: true }).click();
+  await report.getByRole('button', { name: /^推回去/ }).click();
   await expect(page.getByText('已推回去，放稳了', { exact: true })).toBeVisible();
   await expect(report).toContainText('当前未发现可识别的布局问题');
   await page.keyboard.press('Escape');
