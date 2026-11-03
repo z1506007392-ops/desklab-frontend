@@ -63,6 +63,33 @@ test('a spent attempt still hands its remaining count back with the error', asyn
   );
 });
 
+test('only a finite non-negative remaining count is kept', async () => {
+  for (const remaining of [Infinity, -1, Number.NaN, '19']) {
+    const result = await requestLayoutSuggestions({
+      summary,
+      fetchImpl: async () => jsonResponse(200, { version: 1, model: 'm', suggestions: [], remaining }),
+    });
+    assert.equal(result.remaining, null, String(remaining));
+    await assert.rejects(
+      requestLayoutSuggestions({
+        summary,
+        fetchImpl: async () => jsonResponse(429, {
+          error: 'ai_rate_limited',
+          message: '今天的 AI 次数用完了，明天再试',
+          remaining,
+        }),
+      }),
+      error => error.code === 'ai_rate_limited' && error.remaining === undefined,
+      String(remaining),
+    );
+  }
+  const noneLeft = await requestLayoutSuggestions({
+    summary,
+    fetchImpl: async () => jsonResponse(200, { version: 1, model: 'm', suggestions: [], remaining: 0 }),
+  });
+  assert.equal(noneLeft.remaining, 0);
+});
+
 test('a 200 without suggestions is treated as an unreadable answer', async () => {
   await assert.rejects(
     requestLayoutSuggestions({ summary, fetchImpl: async () => jsonResponse(200, { nope: true }) }),

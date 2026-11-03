@@ -8,6 +8,11 @@ function aiError(code, message = AI_ERROR_MESSAGES[code]) {
   return error;
 }
 
+// Infinity, NaN, and a negative count are not a number of tries left.
+function dailyRemaining(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
 /**
  * Ask /api/ai/layout for suggestions. Resolves to { suggestions, model };
  * rejects with an Error whose message is a Chinese sentence for the user and
@@ -60,14 +65,15 @@ export async function requestLayoutSuggestions({
       const code = typeof body?.error === 'string' ? body.error : 'ai_upstream_error';
       const message = typeof body?.message === 'string' && body.message ? body.message : AI_ERROR_MESSAGES[code];
       const error = aiError(code, message);
-      if (typeof body?.remaining === 'number') error.remaining = body.remaining;
+      const remaining = dailyRemaining(body?.remaining);
+      if (remaining !== null) error.remaining = remaining;
       throw error;
     }
     if (!body || !Array.isArray(body.suggestions)) throw aiError('ai_bad_output');
     return {
       suggestions: sanitizeSuggestions(body),
       model: typeof body.model === 'string' ? body.model : null,
-      remaining: typeof body.remaining === 'number' ? body.remaining : null,
+      remaining: dailyRemaining(body.remaining),
     };
   } finally {
     clearTimeout(timer);
