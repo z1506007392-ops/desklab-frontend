@@ -13,6 +13,7 @@ import {
   hydrateProjectObjects,
   withPortAnchors,
 } from '../src/domain/catalog.js';
+import { CATALOG_POWER } from '../src/domain/catalog-specs.js';
 import { isPortDirectionConsistent, getPortWorldPosition } from '../src/domain/connections.js';
 import { snapWallOutletToNearestWall } from '../src/domain/layout-analysis.js';
 
@@ -192,6 +193,24 @@ test('catalog models have a short user-facing spec line instead of internal ids'
       assert.equal(line.includes(model.modelId), false, `${model.modelId} spec line should not show internal ids`);
     }
   }
+});
+
+test('catalog wattage and max load stay on the cited figures', () => {
+  const cited = new Set(Object.keys(CATALOG_POWER));
+  for (const category of DEVICE_CATALOG) {
+    for (const model of category.models) {
+      const spec = CATALOG_POWER[model.modelId];
+      if (!spec) {
+        assert.equal(model.wattage, undefined, `${model.modelId} has no cited wattage`);
+        assert.equal(model.maxLoad, undefined, `${model.modelId} has no cited max load`);
+        continue;
+      }
+      cited.delete(model.modelId);
+      assert.equal(model.wattage, spec.wattage, model.modelId);
+      assert.equal(model.maxLoad, spec.maxLoad, model.modelId);
+    }
+  }
+  assert.deepEqual([...cited], [], 'every cited model is still in the catalog');
 });
 
 test('modelId matching wins over shared legacy type matching', () => {

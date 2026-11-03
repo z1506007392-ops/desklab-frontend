@@ -10,7 +10,7 @@ import {
   classifyPowerLoad,
 } from '../src/domain/analysis.js';
 import { placeCatalogObject } from '../src/domain/placement.js';
-import { DEVICE_CATALOG } from '../src/domain/catalog.js';
+import { DEVICE_CATALOG, findModelTemplate } from '../src/domain/catalog.js';
 import { PASSIVE_CABLE_LIMITS } from '../src/domain/cable-limits.js';
 import { DESK_TEMPLATES, buildTemplateScene } from '../src/domain/desk-templates.js';
 import { buildDeskScene } from '../src/domain/scene-builder.js';
@@ -46,6 +46,20 @@ test('reports short cables and unconnected power inputs', () => {
   assert.ok(issues.some(issue => issue.id === 'unpowered:unpowered:in'));
   // A missing power line is only a note: the real device is plugged in.
   assert.deepEqual(summarizeWiringIssues(issues), { error: 0, warning: 1, info: 1 });
+});
+
+test('the catalog wall outlet overloads above 2500W and warns above 90 percent', () => {
+  const outletPorts = findModelTemplate({ modelId: 'wall-outlet' }).ports;
+  const outlet = object('墙壁插座', outletPorts, { type: 'outlet', modelId: 'wall-outlet', name: '墙壁插座' });
+  const load = watts => object('大功率设备', [port('in', 'ac_input', 'input')], { name: '大功率设备', wattage: watts });
+  const wired = watts => analyzeProjectWiring([outlet, load(watts)], [
+    connection('c1', '墙壁插座', 'ac-out-1', '大功率设备', 'in', 2),
+  ]).map(issue => issue.code);
+  assert.equal(wired(2000).includes('power_overload'), false);
+  assert.equal(wired(2000).includes('power_warning'), false);
+  assert.equal(wired(2400).includes('power_overload'), false);
+  assert.equal(wired(2400).includes('power_warning'), true);
+  assert.equal(wired(3000).includes('power_overload'), true);
 });
 
 test('reports cables that can connect but lack recommended service slack', () => {

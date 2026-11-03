@@ -112,7 +112,7 @@ export const DEVICE_CATALOG = [
     category: 'power', categoryName: '供电',
     models: [
       { type: 'power_strip', modelId: 'power-strip', displayName: '插排', shape: 'rect', assetUrl: catalogModelUrl('power-strip'), defaultScale: { x: 0.8, y: 0.08, z: 0.05 }, color: '#f44336', maxLoad: 2500, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, ...Array(6).fill(0).map((_, i) => ({ id: `ac-out-${i + 1}`, name: `插孔 ${i + 1}`, type: 'ac_output', direction: 'output' }))] },
-      { type: 'outlet', modelId: 'wall-outlet', displayName: '墙壁插座', shape: 'rect', assetUrl: catalogModelUrl('wall-outlet'), defaultScale: { x: 0.08, y: 0.02, z: 0.08 }, color: '#ffeb3b', maxLoad: 3500, ports: [{ id: 'ac-out-1', name: '插座 1', type: 'ac_output', direction: 'output' }, { id: 'ac-out-2', name: '插座 2', type: 'ac_output', direction: 'output' }] },
+      { type: 'outlet', modelId: 'wall-outlet', displayName: '墙壁插座', shape: 'rect', assetUrl: catalogModelUrl('wall-outlet'), defaultScale: { x: 0.08, y: 0.02, z: 0.08 }, color: '#ffeb3b', maxLoad: 2500, ports: [{ id: 'ac-out-1', name: '插座 1', type: 'ac_output', direction: 'output' }, { id: 'ac-out-2', name: '插座 2', type: 'ac_output', direction: 'output' }] },
       { type: 'power-adapter', modelId: 'power-adapter', displayName: '电源适配器', shape: 'rect', assetUrl: catalogModelUrl('power-adapter'), defaultScale: { x: 0.1, y: 0.05, z: 0.03 }, color: '#263238', wattage: 5, maxLoad: 150, ports: [{ id: 'ac-in', name: 'AC 插头', type: 'ac_input', direction: 'input' }, { id: 'dc-out', name: 'DC 输出', type: 'dc_output', direction: 'output' }] },
     ],
   },
