@@ -29,7 +29,7 @@ Last updated: 2026-11-04, Asia/Singapore
 
 验证：合入 origin/master `27288c9` 之后，`npm test` 619 通过，lint 0 问题，build 通过（brotli 652248 → 285991，17 个 GLB，three.js 分块超过 500KB 的警告还在）。Chrome 桌面和手机 UI 251 通过 + 1 跳过。本地看过进门「用电竞桌」、三套模板和手机上的模板对话框：插排 Z 都是 0.62，键盘在桌面上（0.766），布局检查和布线检查都没有条数，没有控制台错误。
 
-还剩：推 master，CI 绿了把运行链接写上。F7 已由桌面线领走。
+还剩：这次推送到 master 之后的 CI，绿了把运行链接写上。F7 已由桌面线领走。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
