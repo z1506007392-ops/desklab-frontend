@@ -169,6 +169,12 @@ E67 已部署。CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E91：全站静态文件加上安全响应头（`public/_headers`）。Content-Security-Policy 只允许本站脚本，meshopt 需要的 `wasm-unsafe-eval` 和 blob worker，以及 React 的内联样式。旧浏览器检测那段内联脚本用它自己的 sha256。模型和字体不再去别的网站拉（目录模型是 meshopt，不是 Draco，加载时关掉了 Draco）。另外写了 nosniff、Referrer-Policy、Permissions-Policy 和 X-Frame-Options: DENY。这个文件没有写 Cache-Control，避免和 E71–E75 的缓存头被拼成同一个值；冲突时两边都留。
+
+还剩：E92–E95，以及全量验证后推 master。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 领了 E91–E95（安全加固，不改外观）。E91 安全响应头，E92 分享链接和导入存档校验，E93 `/api/ai/layout` 的输入和错误信息，E94 npm audit，E95 登录只读审查。不改 `functions/api/auth/*`，也不改 `server/ai/auth.js`。缓存头留给别的线；`public/_headers` 冲突时两边都留。
 
 还剩：把这五项做完，全量验证后推 master，并看 CI。

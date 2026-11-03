@@ -16,8 +16,11 @@ import { modelAvailability } from '../domain/model-availability.js';
 // (three.js -Z) into the room. Yaw the mesh so the plate meets the anchors.
 const WALL_OUTLET_MESH_YAW = Math.PI;
 
+// Catalog GLBs use meshopt, not Draco. Passing false stops drei from pointing
+// the loader at https://www.gstatic.com/draco/..., which this page never needs
+// and which the content-security policy does not allow.
 for (const model of DEVICE_CATALOG.flatMap(category => category.models)) {
-  if (model.assetUrl) useGLTF.preload(model.assetUrl);
+  if (model.assetUrl) useGLTF.preload(model.assetUrl, false, true);
 }
 
 // Noto Sans (Latin), the file Troika would otherwise download from jsDelivr,
@@ -263,7 +266,7 @@ function useModelAvailability(url) {
 }
 
 function GLBModel({ url, scaleRatio, meshYaw = 0, isSelected, isRelated, isHovered }) {
-  const { scene } = useGLTF(url);
+  const { scene } = useGLTF(url, false, true);
   const clonedScene = React.useMemo(
     () => cloneSceneWithHighlight(scene, { isSelected, isRelated, isHovered }),
     [scene, isSelected, isRelated, isHovered]
