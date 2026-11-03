@@ -17,7 +17,7 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), midi=(), display-capture=(), serial=(), hid=()
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' blob: 'wasm-unsafe-eval' 'sha256-aQVf4of+a/0G0dSzUbOWo/Fv4FGXWMQBXOrOWCGg7xs=' 'sha256-egVk8mC0TYMuODg3qjAfmGsogWSYsvlCCS5zuhpfUGE='; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob:; media-src 'self'; frame-src 'none'
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' blob: 'wasm-unsafe-eval' 'sha256-aQVf4of+a/0G0dSzUbOWo/Fv4FGXWMQBXOrOWCGg7xs=' 'sha256-5QFixfgRitqHe9ghRBMN6Owu79up3fKaQoM0KC5Q/lE='; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob:; media-src 'self'; frame-src 'none'
   X-Frame-Options: DENY
 
 # Long cache for files whose URL changes when the bytes change.

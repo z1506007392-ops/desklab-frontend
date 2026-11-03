@@ -4,6 +4,7 @@
 // (`node tools/write-asset-revisions.mjs`).
 export const ASSET_REVISIONS = Object.freeze({
   'fonts/axis-label.woff': 'f7f64a47',
+  'models/cable-tray.glb': '8a19b9eb',
   'models/desk-lamp.glb': '7e471c37',
   'models/desktop-pc.glb': '31bb9f90',
   'models/game-console.glb': '388a858b',
@@ -20,6 +21,7 @@ export const ASSET_REVISIONS = Object.freeze({
   'models/speakers.glb': '6fa56448',
   'models/ultrawide-monitor.glb': '7f781b5a',
   'models/wall-outlet.glb': '418f0a9a',
+  'thumbnails/cable-tray.webp': '338092a9',
   'thumbnails/desk-lamp.webp': '7f43ee15',
   'thumbnails/desktop-pc.webp': '8764733f',
   'thumbnails/game-console.webp': 'a3b094e7',
