@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { catalogThumbnailUrl } from '../src/domain/catalog.js';
 import { openProject } from './project-fixture.mjs';
 
 async function openLibrary(page) {
@@ -23,7 +24,7 @@ test('a monitor rests on the clamp stand, and the console lives under 娱乐', a
   await openLibrary(page);
   await page.getByRole('button', { name: '配件', exact: true }).click();
   const standCard = page.getByRole('button', { name: /^显示器支架/ });
-  await expect(standCard.locator('img')).toHaveAttribute('src', '/thumbnails/monitor-stand.webp');
+  await expect(standCard.locator('img')).toHaveAttribute('src', catalogThumbnailUrl('monitor-stand'));
   await standCard.click();
   await expect(page.locator('.scene-tag')).toHaveText('显示器支架');
   const standZ = await readHeight(page);
@@ -41,7 +42,7 @@ test('a monitor rests on the clamp stand, and the console lives under 娱乐', a
   if (await back.isVisible()) await back.click();
   await page.getByRole('button', { name: '娱乐', exact: true }).click();
   const consoleCard = page.getByRole('button', { name: /^游戏主机/ });
-  await expect(consoleCard.locator('img')).toHaveAttribute('src', '/thumbnails/game-console.webp');
+  await expect(consoleCard.locator('img')).toHaveAttribute('src', catalogThumbnailUrl('game-console'));
   await consoleCard.click();
   await expect(page.locator('.scene-tag')).toHaveText('游戏主机');
   expect(evidence).toEqual({ errors: [], writes: [] });

@@ -24,7 +24,7 @@ test('the 3D view draws with jsDelivr unreachable, and the page fetches nothing 
 });
 
 test('if the axis letters cannot load, only the letters are missing', async ({ page }) => {
-  await page.route('**/fonts/axis-label.woff', route => route.abort());
+  await page.route(/\/fonts\/axis-label\.woff(?:\?.*)?$/, route => route.abort());
   const evidence = await openProject(page, []);
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
   await page.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();

@@ -138,18 +138,19 @@ function trackDownloads(page) {
 }
 
 /**
- * Waits until the 3D view has finished downloading: every catalog model (it
- * fetches all of them once it loads), then nothing in flight for half a
- * second (the axis label font, anything else it loads). Call it before a
- * reload: iPhone WebKit reports each download a reload cancels as a page
- * error. 'networkidle' is not enough, since Playwright marks it once per page
- * load, possibly before the 3D view starts its downloads. Pages must have
- * been opened with openProject.
+ * Waits until the 3D view has finished downloading: every catalog model (the
+ * open project first, the rest once the browser is idle), then nothing in
+ * flight for half a second (the axis label font, anything else it loads).
+ * Call it before a reload: iPhone WebKit reports each download a reload
+ * cancels as a page error. 'networkidle' is not enough, since Playwright
+ * marks it once per page load, possibly before the 3D view starts its
+ * downloads. Pages must have been opened with openProject.
  */
 export async function waitForSceneDownloads(page) {
   await page.waitForFunction(files => {
     const done = new Set(performance.getEntriesByType('resource').map(entry => new URL(entry.name).pathname));
-    return files.every(file => done.has(file));
+    // Asset URLs carry ?v=<revision>. Compare the path only.
+    return files.every(file => done.has(new URL(file, window.location.origin).pathname));
   }, MODEL_FILES);
   const inFlight = downloadsInFlight.get(page);
   let quietSince = Date.now();

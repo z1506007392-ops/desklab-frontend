@@ -1,7 +1,7 @@
 # E91 security headers for the static site. Cloudflare merges every matching
 # block, and repeats of the same header name are joined with a comma.
 # Cache-Control belongs in other path blocks (E71–E75). This file does not
-# set it, so a cache rule cannot be glued onto these values. On a conflict,
+# set it on /*, so a cache rule cannot be glued onto these values. On a conflict,
 # keep both the security lines and the cache lines.
 #
 # CSP notes: meshopt GLBs compile WASM and decode in a blob worker, and that
@@ -9,11 +9,35 @@
 # GLB loader then fetch()es each texture as a blob URL (connect-src). Troika
 # lays out axis letters in a blob worker. React sets inline styles. AI and
 # login stay on this origin (/api/ai, /api/auth). No remote script host.
-# The sha256 allows the small inline browser-check in index.html.
+# The first sha256 allows the small inline browser-check in index.html.
+# The second sha256 allows the model preload injected at build time. It
+# changes when a model revision changes (see asset-revisions.js).
 
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), midi=(), display-capture=(), serial=(), hid=()
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' blob: 'wasm-unsafe-eval' 'sha256-aQVf4of+a/0G0dSzUbOWo/Fv4FGXWMQBXOrOWCGg7xs='; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob:; media-src 'self'; frame-src 'none'
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' blob: 'wasm-unsafe-eval' 'sha256-aQVf4of+a/0G0dSzUbOWo/Fv4FGXWMQBXOrOWCGg7xs=' 'sha256-egVk8mC0TYMuODg3qjAfmGsogWSYsvlCCS5zuhpfUGE='; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob:; media-src 'self'; frame-src 'none'
   X-Frame-Options: DENY
+
+# Long cache for files whose URL changes when the bytes change.
+# /assets/* names are hashed by the build. Models, thumbnails, and the axis
+# font keep their names and add ?v=<revision> (see asset-revisions.js).
+# index.html stays on Pages' default max-age=0 so a new deploy is picked up.
+# GLBs are brotli-compressed in dist/models by the production build. Cloudflare
+# does not compress model/gltf-binary on its own.
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/models/*
+  Content-Type: model/gltf-binary
+  Content-Encoding: br
+  Vary: Accept-Encoding
+  Cache-Control: public, max-age=31536000, immutable
+
+/thumbnails/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable

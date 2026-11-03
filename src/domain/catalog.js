@@ -1,3 +1,5 @@
+import { ASSET_REVISIONS } from './asset-revisions.js';
+
 // Vite replaces import.meta.env.BASE_URL at build time. Node tests have no env
 // object, so the access throws and we fall back to a root-absolute URL.
 function assetBaseUrl() {
@@ -12,15 +14,38 @@ function assetBaseUrl() {
   return '/';
 }
 
+// ?v= is the file's content revision, so a long cache stays correct after a
+// model, thumbnail, or font change. The path itself stays stable.
+function versionedAsset(path) {
+  const url = `${assetBaseUrl()}${path}`;
+  const rev = ASSET_REVISIONS[path];
+  return rev ? `${url}?v=${rev}` : url;
+}
+
 /** Public URL for a catalog GLB, including Vite's `base`. */
 export function catalogModelUrl(modelId) {
-  return `${assetBaseUrl()}models/${modelId}.glb`;
+  return versionedAsset(`models/${modelId}.glb`);
 }
 
 // The small picture on the asset library card, rendered from the GLB by
 // tools/thumbnails/render-thumbnails.mjs.
 export function catalogThumbnailUrl(modelId) {
-  return `${assetBaseUrl()}thumbnails/${modelId}.webp`;
+  return versionedAsset(`thumbnails/${modelId}.webp`);
+}
+
+// The axis letters in the 3D view. Troika fetches this URL itself.
+export function catalogFontUrl() {
+  return versionedAsset('fonts/axis-label.woff');
+}
+
+// Catalog files ship with the app. A saved project can still point at a
+// non-catalog URL; those are the ones worth a HEAD check.
+export function isCatalogModelUrl(url) {
+  if (typeof url !== 'string' || url.length === 0) return false;
+  const path = url.split(/[?#]/, 1)[0];
+  const match = path.match(/\/models\/([^/]+)\.glb$/);
+  if (!match) return false;
+  return DEVICE_CATALOG.some(category => category.models.some(model => model.modelId === match[1]));
 }
 
 export const DEVICE_CATALOG = [

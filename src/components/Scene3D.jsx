@@ -14,6 +14,7 @@ import {
   DeviceMesh,
   RoomWalls,
 } from './SceneObjects.jsx';
+import { preloadProjectModels, scheduleCatalogPreload } from './scene-model-preload.js';
 
 // The 3D view and everything that pulls in three.js. App loads it lazily so
 // the toolbar and panels appear before the large 3D libraries arrive; all
@@ -51,6 +52,12 @@ export default function Scene3D({
   // React 19), so the selection tag is portalled into a plain layer laid
   // over the canvas instead (threejs-react-three-fiber skill).
   const [overlay, setOverlay] = useState(null);
+  // Models in the project start downloading during this render. Models that
+  // are only in the catalog wait until the browser is idle (first mount).
+  const initialObjects = useRef(null);
+  if (initialObjects.current === null) initialObjects.current = objects;
+  useEffect(() => scheduleCatalogPreload(initialObjects.current), []);
+  preloadProjectModels(objects);
   const selected = objects.find(obj => obj.id === selectedObjectId);
   // Power sources near or over their limit get a tag; the selected one shows
   // its load in the properties panel instead, under the selection tag.

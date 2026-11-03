@@ -1,34 +1,26 @@
 import '../domain/webkit-workers.js';
-import React, { Suspense, useEffect, useRef } from 'react';
+import React, { Suspense, useEffect, useLayoutEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Billboard, Edges, Line, Text, useGLTF } from '@react-three/drei';
 
 import { createCameraPoseSynchronizer } from '../domain/camera-snapshot.js';
-import { DEVICE_CATALOG, getModelDefaultScale } from '../domain/catalog.js';
+import { catalogFontUrl, getModelDefaultScale, isCatalogModelUrl } from '../domain/catalog.js';
 import { evaluateConnectionLength, getConnectionEndpoints, getConnectionRoute } from '../domain/connections.js';
 import { toThreePosition, toThreeZRotation } from '../domain/coordinates.js';
-import { applyGlbHighlight } from '../domain/glb-highlight.js';
+import { applySceneHighlight, cloneModelForHighlight } from '../domain/glb-highlight.js';
 import { getGenericModelAsset } from '../domain/model-assets.js';
 import { getGenericModelLayout } from '../domain/generic-model-layouts.js';
 import { modelAvailability } from '../domain/model-availability.js';
-
 // The outlet plate is authored on three.js +Z, but wall snap aims local -Y
 // (three.js -Z) into the room. Yaw the mesh so the plate meets the anchors.
 const WALL_OUTLET_MESH_YAW = Math.PI;
-
-// Catalog GLBs use meshopt, not Draco. Passing false stops drei from pointing
-// the loader at https://www.gstatic.com/draco/..., which this page never needs
-// and which the content-security policy does not allow.
-for (const model of DEVICE_CATALOG.flatMap(category => category.models)) {
-  if (model.assetUrl) useGLTF.preload(model.assetUrl, false, true);
-}
 
 // Noto Sans (Latin), the file Troika would otherwise download from jsDelivr,
 // served from this site: WebKit blocks that cross-origin request, and
 // jsDelivr is often unreachable from mainland China. Troika only goes to
 // jsDelivr for a character the font lacks, so the labels name their
 // characters (drei would otherwise preload the text "undefined").
-const LABEL_FONT = `${import.meta.env.BASE_URL}fonts/axis-label.woff`;
+const LABEL_FONT = catalogFontUrl();
 const AXIS_LETTERS = 'XYZ';
 
 // The letter loads on its own: while its font is not ready, or if it never
@@ -240,37 +232,39 @@ function PortMarkers({ obj }) {
   );
 }
 
-function cloneSceneWithHighlight(scene, highlight) {
-  const clone = scene.clone();
-  clone.traverse(child => {
-    if (!child.isMesh || !child.material) return;
-    const source = Array.isArray(child.material) ? child.material : [child.material];
-    const cloned = source.map(material => applyGlbHighlight(material.clone(), highlight));
-    child.material = Array.isArray(child.material) ? cloned : cloned[0];
-  });
-  return clone;
-}
-
-// 'none' without a URL; otherwise 'pending' until the file check settles.
+// 'none' without a URL. Catalog files skip the HEAD round trip and go
+// straight to the loader; anything else stays 'pending' until the check settles.
 function useModelAvailability(url) {
-  const [state, setState] = React.useState(() => (url ? modelAvailability.peek(url) : 'none'));
+  const known = Boolean(url) && isCatalogModelUrl(url);
+  const [state, setState] = React.useState(() => {
+    if (!url) return 'none';
+    if (known) return 'available';
+    return modelAvailability.peek(url);
+  });
   useEffect(() => {
-    if (!url) return undefined;
+    if (!url || known) return undefined;
     let active = true;
     modelAvailability.check(url).then(available => {
       if (active) setState(available ? 'available' : 'missing');
     });
     return () => { active = false; };
-  }, [url]);
+  }, [url, known]);
   return url ? state : 'none';
 }
 
 function GLBModel({ url, scaleRatio, meshYaw = 0, isSelected, isRelated, isHovered }) {
+  const invalidate = useThree(state => state.invalidate);
+  // Catalog GLBs use meshopt, not Draco. false stops drei from pointing the
+  // loader at https://www.gstatic.com/draco/..., which the content security
+  // policy does not allow.
   const { scene } = useGLTF(url, false, true);
-  const clonedScene = React.useMemo(
-    () => cloneSceneWithHighlight(scene, { isSelected, isRelated, isHovered }),
-    [scene, isSelected, isRelated, isHovered]
-  );
+  const clonedScene = React.useMemo(() => cloneModelForHighlight(scene), [scene]);
+  // After paint is too late for frameloop="demand": the color has to be on
+  // the materials before R3F draws the frame this render asked for.
+  useLayoutEffect(() => {
+    applySceneHighlight(clonedScene, { isSelected, isRelated, isHovered });
+    invalidate();
+  }, [clonedScene, isSelected, isRelated, isHovered, invalidate]);
 
   return (
     <primitive

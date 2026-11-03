@@ -214,7 +214,7 @@ test('project hydration adds current ports and anchors without overwriting custo
   ]);
 
   assert.equal(hydrated[0].assetUrl, catalogModelUrl('laptop-15'));
-  assert.equal(hydrated[0].assetUrl.endsWith('/models/laptop-15.glb'), true);
+  assert.equal(new URL(hydrated[0].assetUrl, 'https://desklab.local').pathname, '/models/laptop-15.glb');
   assert.ok(hydrated[0].ports.length > 0);
   assert.ok(hydrated[0].ports.every(port => port.anchor));
   assert.deepEqual(hydrated[1].ports[0].anchor, customAnchor);
@@ -225,7 +225,7 @@ test('every catalog model points at its own GLB under the public models director
     for (const model of category.models) {
       const url = catalogModelUrl(model.modelId);
       assert.equal(model.assetUrl, url);
-      assert.match(url, new RegExp(`/models/${model.modelId}\\.glb$`));
+      assert.match(url, new RegExp(`/models/${model.modelId}\\.glb\\?v=[0-9a-f]{8}$`));
       assert.equal(
         existsSync(new URL(`../public/models/${model.modelId}.glb`, import.meta.url)),
         true,

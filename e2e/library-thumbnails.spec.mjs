@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { catalogThumbnailUrl } from '../src/domain/catalog.js';
 import { openProject } from './project-fixture.mjs';
 
 test('library cards show a picture of each device without changing their names', async ({ page }) => {
@@ -11,7 +12,7 @@ test('library cards show a picture of each device without changing their names',
   await expect(card).toHaveAccessibleName('插排 6 孔 · 最大 2500W');
   const picture = card.locator('img');
   await expect(picture).toHaveAttribute('alt', '');
-  await expect(picture).toHaveAttribute('src', '/thumbnails/power-strip.webp');
+  await expect(picture).toHaveAttribute('src', catalogThumbnailUrl('power-strip'));
   await expect.poll(() => picture.evaluate(img => img.complete && img.naturalWidth)).toBe(112);
 
   expect(evidence).toEqual({ errors: [], writes: [] });

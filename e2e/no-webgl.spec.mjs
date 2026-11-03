@@ -26,15 +26,16 @@ test('without WebGL the page explains it and everything else still works', async
 });
 
 test('missing model files fall back to simple shapes without breaking the 3D view', async ({ page }) => {
-  await page.route('**/models/*.glb', route => route.fulfill({ status: 404, body: '' }));
+  await page.route(/\/models\/[^/?#]+\.glb(?:\?.*)?$/, route => route.fulfill({ status: 404, body: '' }));
   const evidence = await openProject(page, []);
   await page.getByRole('button', { name: '桌面模板', exact: true }).click();
   await page.getByRole('button', { name: '使用模板：电竞桌', exact: true }).click();
   await page.waitForTimeout(1500);
   await expect(page.locator('canvas')).toBeVisible();
   await expect(page.getByRole('alert').filter({ hasText: '3D 画面' })).toHaveCount(0);
-  // Only the browser's own network log for the 404s; no uncaught errors.
-  expect(evidence.errors.filter(message => !/^Failed to load resource/.test(message))).toEqual([]);
+  // The browser logs the 404. R3F also reports the caught load error globally
+  // (the view falls back to a box; the app does not raise the error notice).
+  expect(evidence.errors.filter(message => !/^Failed to load resource/.test(message) && !/^Could not load /.test(message))).toEqual([]);
   expect(evidence.writes).toEqual([]);
 });
 

@@ -8,7 +8,7 @@ import {
   decodeShareLink,
   encodeShareLink,
 } from '../src/domain/share-link.js';
-import { DEVICE_CATALOG, hydrateProjectObjects } from '../src/domain/catalog.js';
+import { DEVICE_CATALOG, catalogModelUrl, hydrateProjectObjects } from '../src/domain/catalog.js';
 import { buildTemplateScene } from '../src/domain/desk-templates.js';
 import { normalizeProject } from '../src/domain/local-project-store.js';
 
@@ -173,7 +173,7 @@ test('a packed link cannot rename the id, run a script name, or point at someone
   assert.equal(opened.project.objects[0].name, '＜script＞alert(1)＜/script＞');
   assert.equal(opened.project.objects[0].assetUrl, null);
   assert.equal(Object.prototype.polluted, undefined);
-  assert.equal(hydrateProjectObjects(opened.project.objects)[0].assetUrl, '/models/office-desk.glb');
+  assert.equal(hydrateProjectObjects(opened.project.objects)[0].assetUrl, catalogModelUrl('office-desk'));
 });
 
 test('a free-form packed device cannot carry a script address', async () => {

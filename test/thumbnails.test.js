@@ -20,11 +20,12 @@ function webpSize(bytes) {
 
 test('every catalog device has a 112 px library picture that says where it came from', () => {
   for (const model of DEVICE_CATALOG.flatMap(category => category.models)) {
-    const url = catalogThumbnailUrl(model.modelId);
-    assert.equal(url, `/thumbnails/${model.modelId}.webp`);
-    const file = new URL(`../public${url}`, import.meta.url);
+    const url = new URL(catalogThumbnailUrl(model.modelId), 'https://desklab.local');
+    assert.equal(url.pathname, `/thumbnails/${model.modelId}.webp`);
+    assert.match(url.searchParams.get('v'), /^[0-9a-f]{8}$/);
+    const file = new URL(`../public${url.pathname}`, import.meta.url);
     assert.deepEqual(webpSize(readFileSync(file)), [112, 112], model.modelId);
-    const provenance = JSON.parse(readFileSync(new URL(`../public${url}.json`, import.meta.url), 'utf8'));
+    const provenance = JSON.parse(readFileSync(new URL(`../public${url.pathname}.json`, import.meta.url), 'utf8'));
     assert.match(provenance.prompt, new RegExp(`public/models/${model.modelId}\\.glb`), model.modelId);
   }
 });

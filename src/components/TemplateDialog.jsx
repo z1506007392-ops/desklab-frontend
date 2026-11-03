@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 
-import { findModelTemplate } from '../domain/catalog.js';
+import { DEVICE_CATALOG, findModelTemplate } from '../domain/catalog.js';
 import { DESK_TEMPLATES } from '../domain/desk-templates.js';
+import { preloadModelUrls } from '../domain/model-preload.js';
 import DeskBuilderForm from './DeskBuilderForm.jsx';
 import { CloseIcon } from './Icons.jsx';
 import { useDialogFocus } from './useDialogFocus.js';
@@ -23,6 +24,12 @@ export default function TemplateDialog({
     if (!scrollToBuilder) return;
     builderHeadingRef.current?.scrollIntoView({ block: 'start' });
   }, [scrollToBuilder]);
+
+  // The scene may still be downloading three.js. Start the catalog models
+  // now so choosing a template does not wait on them afterwards.
+  useEffect(() => {
+    preloadModelUrls(DEVICE_CATALOG.flatMap(category => category.models).map(model => model.assetUrl));
+  }, []);
 
   return (
     <div

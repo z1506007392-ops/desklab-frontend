@@ -1,5 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { PROJECT_STORAGE_KEY } from './src/domain/local-project-store.js';
+import { ASSET_REVISIONS } from './src/domain/asset-revisions.js';
+import { loadPerformancePlugin } from './tools/static-delivery.mjs';
 
 // Tauri sets this before it starts Vite. The web dev server and Playwright
 // keep their own host and port.
@@ -7,7 +10,10 @@ const desktopDev = Boolean(globalThis.process?.env?.TAURI_ENV_PLATFORM);
 
 export default defineConfig({
   clearScreen: !desktopDev,
-  plugins: [react()],
+  plugins: [
+    react(),
+    loadPerformancePlugin({ storageKey: PROJECT_STORAGE_KEY, revisions: ASSET_REVISIONS }),
+  ],
   build: {
     rolldownOptions: {
       output: {
