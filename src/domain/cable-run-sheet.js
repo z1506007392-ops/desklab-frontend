@@ -99,7 +99,7 @@ function lengthPhrase(row) {
 function renderInstall(installRows) {
   if (installRows.length === 0) return '当前没有需要列出的线。';
   const steps = installRows.map((row, index) => (
-    `${index + 1}. ${row.typeLabel}：从「${row.fromDevice}」的「${row.fromPort}」接到「${row.toDevice}」的「${row.toPort}」。${lengthPhrase(row)}。`
+    `${index + 1}. ${markdownCell(row.typeLabel)}：从「${markdownCell(row.fromDevice)}」的「${markdownCell(row.fromPort)}」接到「${markdownCell(row.toDevice)}」的「${markdownCell(row.toPort)}」。${lengthPhrase(row)}。`
   ));
   return ['先接电源，再接信号。', '', ...steps].join('\n');
 }

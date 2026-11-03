@@ -95,6 +95,23 @@ test('names that contain commas stay inside one CSV cell, and a keyboard cable i
   assert.match(sheet.markdown, /不用另买/);
 });
 
+test('a line break or a pipe in a name stays inside one install step', () => {
+  const objects = [
+    device('主机\n# 标题', { x: 0, y: 0, z: 0 }, { ...hdmiOut, name: 'HDMI\n输出' }),
+    device('显示器|甲', { x: 1, y: 0, z: 0 }, hdmiIn),
+  ];
+  const sheet = buildCableRunSheet([{
+    id: 'v', cableType: 'hdmi', length: 2,
+    fromObjectId: '主机\n# 标题', fromPortId: 'hdmi-out',
+    toObjectId: '显示器|甲', toPortId: 'hdmi-in',
+  }], objects);
+  const install = sheet.markdown.split('# 安装清单')[1];
+  assert.match(install, /从「主机 # 标题」的「HDMI 输出」接到「显示器∣甲」的「HDMI 输入」/);
+  assert.doesNotMatch(install, /主机\n/);
+  assert.match(sheet.markdown, /\| 主机 # 标题 \| HDMI 输出 \| 显示器∣甲 \| HDMI 输入 \|/);
+  assert.match(sheet.csv, /"主机\n# 标题"/);
+});
+
 test('an empty project exports an empty sheet', () => {
   const sheet = buildCableRunSheet([], []);
   assert.deepEqual(sheet.rows, []);
