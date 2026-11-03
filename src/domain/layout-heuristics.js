@@ -25,7 +25,16 @@ export const HEURISTIC_LIMITS = Object.freeze({
   deskMiddleShare: 0.6,
   cableSlackFactor: 2,
   cableSlackMetres: 1,
+  // In front of the desk's midline, in the desk's own coordinates. The seat
+  // is -y. A back corner and the middle of a side edge (local y = 0) are not
+  // in the way of writing.
+  frontOfDeskLocalY: -0.05,
+  mouseKeyboardDistance: 0.45,
+  cornerInset: 0.05,
 });
+
+// From the seat, the right hand is -x (scene-builder uses the same sign).
+const SEAT_RIGHT = -1;
 
 const MONITOR_MODELS = new Set(['monitor-24', 'monitor-27', 'ultrawide-monitor']);
 export { isDesk };
@@ -35,6 +44,10 @@ const isKeyboard = object => object.modelId === 'keyboard' || object.type === 'k
 const isTower = object => object.modelId === 'desktop-pc' || object.type === 'desktop-pc';
 const isStrip = object => object.modelId === 'power-strip' || object.type === 'power_strip';
 const isRouter = object => object.modelId === 'router' || object.type === 'router';
+const isConsole = object => object.modelId === 'game-console' || object.type === 'game-console';
+const isLamp = object => object.modelId === 'desk-lamp' || object.type === 'desk-lamp';
+const isSpeakers = object => object.modelId === 'speakers' || object.type === 'speakers';
+const isMouse = object => object.modelId === 'mouse' || object.type === 'mouse';
 
 function deskFrame(desk) {
   const radians = ((desk.rotation?.z ?? 0) * Math.PI) / 180;
@@ -91,6 +104,18 @@ const move = (object, point, z) => ({ type: 'move', objectId: object.id, x: roun
 function besideDesk(frame, object, side) {
   const along = getRotatedFootprint(object.scale, (object.rotation?.z ?? 0) - (frame.desk.rotation?.z ?? 0)).sizeX;
   return frame.toWorld({ x: side * (frame.halfLength + along / 2 + 0.05), y: 0 });
+}
+
+function backCorner(frame, object, side) {
+  return frame.toWorld({
+    x: side * (frame.halfLength - object.scale.x / 2 - HEURISTIC_LIMITS.cornerInset),
+    y: frame.halfDepth - object.scale.y / 2 - HEURISTIC_LIMITS.cornerInset,
+  });
+}
+
+function blocksFront(frame, object) {
+  const local = frame.toLocal(object.position);
+  return local.y < HEURISTIC_LIMITS.frontOfDeskLocalY && frame.inMiddle(local);
 }
 
 function insideRoom(room, object, point) {
@@ -223,6 +248,70 @@ export function analyzeLayoutHeuristics(room, rawObjects, rawConnections = []) {
           break;
         }
       }
+    }
+  }
+
+  for (const gameConsole of objects.filter(isConsole)) {
+    const consoleFix = consoleFrame => {
+      const spot = floorSpotBesideDesk(room, consoleFrame, gameConsole, SEAT_RIGHT);
+      return spot ? { fix: [move(gameConsole, spot, gameConsole.scale.z / 2)] } : {};
+    };
+    const frame = deskUnder(gameConsole);
+    if (frame && frame.inMiddle(frame.toLocal(gameConsole.position))) {
+      hints.push(hint('console_on_desk', [gameConsole.id], `${gameConsole.name}占着桌面中间`, consoleFix(frame)));
+    }
+    if (onFloor(gameConsole)) {
+      for (const floorFrame of frames.values()) {
+        const local = floorFrame.toLocal(gameConsole.position);
+        if (floorFrame.inMiddle(local) && floorFrame.underDesk(local)) {
+          hints.push(hint('console_blocks_legroom', [gameConsole.id], `${gameConsole.name}挡住了桌下放腿的地方`, consoleFix(floorFrame)));
+          break;
+        }
+      }
+    }
+  }
+
+  for (const lamp of objects.filter(isLamp)) {
+    const frame = deskUnder(lamp);
+    if (frame && blocksFront(frame, lamp)) {
+      hints.push(hint('lamp_blocks_work', [lamp.id], `${lamp.name}放在座位前面，写字时挡手`, {
+        fix: [move(lamp, backCorner(frame, lamp, -SEAT_RIGHT))],
+      }));
+    }
+  }
+
+  for (const speakers of objects.filter(isSpeakers)) {
+    const frame = deskUnder(speakers);
+    if (frame && blocksFront(frame, speakers)) {
+      hints.push(hint('speakers_block_seat', [speakers.id], `${speakers.name}放在座位前面，挡着手`, {
+        fix: [move(speakers, backCorner(frame, speakers, SEAT_RIGHT))],
+      }));
+    }
+  }
+
+  for (const mouse of objects.filter(isMouse)) {
+    const frame = deskUnder(mouse);
+    if (!frame) continue;
+    const keyboards = objects.filter(isKeyboard).filter(keyboard => deskUnder(keyboard)?.desk.id === frame.desk.id);
+    if (keyboards.length === 0) continue;
+    const mouseLocal = frame.toLocal(mouse.position);
+    let nearest = null;
+    let nearestDistance = Infinity;
+    for (const keyboard of keyboards) {
+      const local = frame.toLocal(keyboard.position);
+      const distance = Math.hypot(mouseLocal.x - local.x, mouseLocal.y - local.y);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = { keyboard, local };
+      }
+    }
+    if (nearestDistance > HEURISTIC_LIMITS.mouseKeyboardDistance) {
+      hints.push(hint('mouse_far_from_keyboard', [mouse.id], `${mouse.name}离键盘太远，手要挪很远才能点`, {
+        fix: [move(mouse, frame.toWorld({
+          x: nearest.local.x - (nearest.keyboard.scale.x / 2 + 0.06 + mouse.scale.x / 2),
+          y: nearest.local.y,
+        }))],
+      }));
     }
   }
 

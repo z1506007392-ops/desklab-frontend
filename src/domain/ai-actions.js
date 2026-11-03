@@ -21,7 +21,9 @@ import { findRiders, updateWithRiders } from './riders.js';
 // new problems. This is the safety boundary for everything the model says.
 
 const isWallOutlet = object => object.modelId === 'wall-outlet' || object.type === 'outlet';
-const DESK_DEVICE_MODELS = new Set(['monitor-24', 'monitor-27', 'ultrawide-monitor', 'laptop-15', 'keyboard', 'mouse', 'desk-lamp', 'speakers', 'monitor-stand', 'game-console']);
+// A game console is built to sit on the floor beside the desk, so a layout
+// fix may move it there. The other models in this set stay on a desk.
+const DESK_DEVICE_MODELS = new Set(['monitor-24', 'monitor-27', 'ultrawide-monitor', 'laptop-15', 'keyboard', 'mouse', 'desk-lamp', 'speakers', 'monitor-stand']);
 const belongsOnDesk = object => DESK_DEVICE_MODELS.has(object.modelId) || object.type === 'monitor' || object.type === 'laptop';
 // Text that looks like an internal id (monitor-1, ac_input) must not reach
 // the user in a title or reason.

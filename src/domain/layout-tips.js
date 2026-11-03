@@ -15,6 +15,11 @@ const TITLES = {
   tower_blocks_legroom: name => `${name}挪出放腿的地方`,
   strip_on_desk: name => `${name}放到桌子后面的地上`,
   router_buried: name => `${name}挪到桌子旁边`,
+  console_on_desk: name => `${name}挪到桌子旁边的地上`,
+  console_blocks_legroom: name => `${name}挪出放腿的地方`,
+  lamp_blocks_work: name => `${name}挪到桌子后角`,
+  speakers_block_seat: name => `${name}挪到桌子后角`,
+  mouse_far_from_keyboard: name => `${name}挪到键盘旁边`,
 };
 
 /**

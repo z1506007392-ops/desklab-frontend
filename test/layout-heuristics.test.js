@@ -188,6 +188,60 @@ test('every hint carries a fix that the AI checks would accept', async () => {
   const hdmi = gaming.connections.find(c => c.cableType !== 'power');
   add('cable too long', { ...gaming, connections: gaming.connections.map(c => (c.id === hdmi.id ? { ...c, length: 10 } : c)) });
 
+  const { buildDeskScene } = await import('../src/domain/scene-builder.js');
+  const furnished = extras => buildDeskScene({
+    devices: [{ modelId: 'monitor-24', count: 1 }, ...extras],
+    desk: { length: 1.6, depth: 0.8 },
+  });
+  const place = (project, modelId, position) => ({
+    ...project,
+    connections: [],
+    objects: project.objects.map(object => (object.modelId === modelId ? { ...object, position } : object)),
+  });
+  const consoleScene = furnished([{ modelId: 'game-console', count: 1 }]);
+  const consoleDesk = byModel(consoleScene.objects, 'office-desk');
+  const game = byModel(consoleScene.objects, 'game-console');
+  const consoleTop = consoleDesk.position.z + consoleDesk.scale.z / 2;
+  add('console on desk', place(consoleScene, 'game-console', {
+    x: consoleDesk.position.x, y: consoleDesk.position.y, z: consoleTop + game.scale.z / 2,
+  }));
+  add('console in legroom', place(consoleScene, 'game-console', {
+    x: consoleDesk.position.x, y: consoleDesk.position.y, z: game.scale.z / 2,
+  }));
+  const lampScene = furnished([{ modelId: 'desk-lamp', count: 1 }]);
+  const lampDesk = byModel(lampScene.objects, 'office-desk');
+  const lamp = byModel(lampScene.objects, 'desk-lamp');
+  add('lamp in front', place(lampScene, 'desk-lamp', {
+    x: lampDesk.position.x + 0.2,
+    y: lampDesk.position.y - lampDesk.scale.y / 2 + lamp.scale.y / 2 + 0.02,
+    z: lampDesk.position.z + lampDesk.scale.z / 2 + lamp.scale.z / 2,
+  }));
+  const speakerScene = furnished([{ modelId: 'speakers', count: 1 }]);
+  const speakerDesk = byModel(speakerScene.objects, 'office-desk');
+  const speakers = byModel(speakerScene.objects, 'speakers');
+  add('speakers in front', place(speakerScene, 'speakers', {
+    x: speakerDesk.position.x - 0.2,
+    y: speakerDesk.position.y - speakerDesk.scale.y / 2 + speakers.scale.y / 2 + 0.02,
+    z: speakerDesk.position.z + speakerDesk.scale.z / 2 + speakers.scale.z / 2,
+  }));
+  const mouseScene = furnished([{ modelId: 'keyboard', count: 1 }, { modelId: 'mouse', count: 1 }]);
+  const mouseDesk = byModel(mouseScene.objects, 'office-desk');
+  const mouse = byModel(mouseScene.objects, 'mouse');
+  add('mouse far from keyboard', place(mouseScene, 'mouse', {
+    x: mouseDesk.position.x + mouseDesk.scale.x / 2 - mouse.scale.x / 2 - 0.04,
+    y: mouseDesk.position.y,
+    z: mouseDesk.position.z + mouseDesk.scale.z / 2 + mouse.scale.z / 2,
+  }));
+  const expectCode = (name, code) => {
+    const project = cases.find(([label]) => label === name)[1];
+    assert.ok(analyzeLayoutHeuristics(project.room, project.objects, project.connections).some(item => item.code === code), name);
+  };
+  expectCode('console on desk', 'console_on_desk');
+  expectCode('console in legroom', 'console_blocks_legroom');
+  expectCode('lamp in front', 'lamp_blocks_work');
+  expectCode('speakers in front', 'speakers_block_seat');
+  expectCode('mouse far from keyboard', 'mouse_far_from_keyboard');
+
   for (const [name, project] of cases) {
     const hints = analyzeLayoutHeuristics(project.room, project.objects, project.connections);
     assert.ok(hints.length > 0, `${name} has a hint`);
@@ -195,6 +249,27 @@ test('every hint carries a fix that the AI checks would accept', async () => {
       assert.ok(Array.isArray(item.fix) && item.fix.length > 0, `${name}: ${item.code} has a fix`);
       const result = evaluateSuggestion(project, { id: 'fix', title: '调整', reason: '这样更好。', actions: item.fix });
       assert.equal(result.accepted, true, `${name}: ${item.code} fix rejected (${result.reasons.join('；')})`);
+      assert.doesNotMatch(item.message, /[a-z]+-\d|[a-z]+_[a-z]+/i, `${name}: ${item.code} message`);
+    }
+  }
+});
+
+test('a generated desk with a lamp, speakers, console and mouse has no comfort hints', async () => {
+  const { buildDeskScene } = await import('../src/domain/scene-builder.js');
+  const extras = ['keyboard', 'mouse', 'desk-lamp', 'speakers', 'game-console'].map(modelId => ({ modelId, count: 1 }));
+  const computers = [
+    [{ modelId: 'laptop-15', count: 1 }, { modelId: 'monitor-27', count: 1 }],
+    [{ modelId: 'desktop-pc', count: 1 }, { modelId: 'monitor-24', count: 2 }],
+    [{ modelId: 'desktop-pc', count: 1 }, { modelId: 'laptop-15', count: 1 }, { modelId: 'ultrawide-monitor', count: 1 }],
+  ];
+  for (const devices of computers) {
+    for (const desk of [{ length: 1.4, depth: 0.7 }, { length: 1.6, depth: 0.6 }, { length: 2, depth: 0.7 }]) {
+      const built = buildDeskScene({ devices: [...devices, ...extras], desk });
+      assert.deepEqual(
+        analyzeLayoutHeuristics(built.room, built.objects, built.connections),
+        [],
+        JSON.stringify({ devices, desk }),
+      );
     }
   }
 });
