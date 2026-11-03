@@ -17,6 +17,12 @@ Last updated: 2026-10-30, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E76–E80 完成。CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41714062354 （提交 5ccd306）。改前整次 22 分 47 秒、检查 22 分 10 秒（https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698980114 ）。改后整次 7 分 19 秒（20:36:00–20:43:19 UTC），检查到 check 成功 6 分 34 秒，部署 43 秒。最慢的是 Chrome 第 3 片 6 分 25 秒。WebKit 整 job 4 分 23 秒，安装 48 秒。static 48 秒。部署步骤未改。提交：E76 0b731c6，E77 5bb21e9，E78 0e66c47，E79 1fb2709 / d298ef2 / 0fe48ab，E80 e568039。
+
+还剩：Leo 2026-11-04 决定转向 Tauri 本地应用。本线按「补完 CI 分钟数即可收工」停止，没有开工下一优先。下一优先（未做）：现有前端里不改 3D 外观的应用感（操作卡顿、存档混乱、错误提示），或 Tauri 测试脚本。不要再开网页运营类任务，不做新的 Pages-only 功能。E96、E98 已由并行线 I 领走。E69、E70 仍等负责人决定。H4 不动。Git 自动部署仍等负责人关掉。发信仍等 BREVO_API_KEY 和 MAIL_FROM。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 领了 E96 和 E98（并行线 I）。Leo 2026-11-04 批准后又改了方向：产品转向 Tauri 本地应用；社区是简单账号，内容是布局 JSON 和实拍，不要跨设备同步。E98 理线槽照原提案做。E96 做成应用里的社区图库和分享，能打开一张桌子并复制到自己的项目，不另做公开网页。E97 已由另一条线领走，E99、E100 本线不做。E101–E108 不动。
 
 还剩：实现并验证。
