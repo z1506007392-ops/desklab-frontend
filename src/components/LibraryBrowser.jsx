@@ -5,6 +5,7 @@ import {
   catalogBranches,
   catalogThumbnailUrl,
   describeCatalogModel,
+  searchCatalogModels,
 } from '../domain/catalog.js';
 
 function moveBrowseFocus(event) {
@@ -29,12 +30,9 @@ export default function LibraryBrowser({ disabled, onAdd }) {
   const skipBranch = branches.length < 2;
   const branch = skipBranch ? branches[0] : branches.find(item => item.id === branchId) || null;
   const searching = query.trim().length > 0;
-  const needle = query.trim().toLowerCase();
 
   const models = searching
-    ? DEVICE_CATALOG.flatMap(item => item.models
-      .filter(model => `${model.displayName} ${model.subcategoryName || ''} ${describeCatalogModel(model)}`.toLowerCase().includes(needle))
-      .map(model => ({ ...model, categoryId: item.category })))
+    ? searchCatalogModels(query)
     : (branch ? branch.models.map(model => ({ ...model, categoryId: category.category })) : []);
 
   const canGoBack = !searching && categoryId !== null;
@@ -88,6 +86,12 @@ export default function LibraryBrowser({ disabled, onAdd }) {
           style={{ width: '100%', boxSizing: 'border-box' }}
           value={query}
           onChange={event => setQuery(event.target.value)}
+          onKeyDown={event => {
+            if (event.key !== 'Escape' || !query) return;
+            event.preventDefault();
+            event.stopPropagation();
+            setQuery('');
+          }}
         />
       </div>
       <div className="asset-browse" ref={listRef} onKeyDown={onKeyDown}>

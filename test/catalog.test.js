@@ -8,6 +8,7 @@ import {
   catalogModelUrl,
   describeCatalogModel,
   findModelTemplate,
+  searchCatalogModels,
   getModelDefaultScale,
   hydrateProjectObjects,
   withPortAnchors,
@@ -140,6 +141,30 @@ test('saved objects of removed models still load with their stored ports', () =>
   assert.deepEqual(hydrated.ports.map(({ id, type }) => ({ id, type })), [{ id: 'dc-in', type: 'dc_input' }]);
   assert.ok(hydrated.ports[0].anchor, 'stored ports still receive a default anchor');
   assert.equal(getModelDefaultScale('computer', 'mini-pc'), null);
+});
+
+test('search matches the name, the kind, and the spec line', () => {
+  const ids = query => searchCatalogModels(query).map(model => model.modelId);
+  for (const category of DEVICE_CATALOG) {
+    for (const model of category.models) {
+      const found = searchCatalogModels(model.displayName);
+      const match = found.find(item => item.modelId === model.modelId);
+      assert.ok(match, `${model.modelId} should be found by its name`);
+      assert.equal(match.categoryId, category.category);
+    }
+  }
+  assert.deepEqual(ids(''), []);
+  assert.deepEqual(ids('   '), []);
+  assert.deepEqual(ids('没有这种设备'), []);
+  assert.ok(ids('键盘').includes('keyboard'));
+  for (const modelId of ['monitor-24', 'monitor-27', 'ultrawide-monitor']) {
+    assert.ok(ids('HDMI').includes(modelId), modelId);
+    assert.ok(ids('hdmi').includes(modelId), modelId);
+  }
+  const hosts = ids('主机');
+  assert.ok(hosts.includes('desktop-pc'));
+  assert.ok(hosts.includes('game-console'));
+  assert.deepEqual(ids('游戏主机'), ['game-console']);
 });
 
 test('catalog models have a short user-facing spec line instead of internal ids', () => {

@@ -170,6 +170,19 @@ export function describeCatalogModel(model) {
   return parts.join(' · ');
 }
 
+// What the asset library search box matches: the name, the kind, and the
+// one-line spec. A blank query matches nothing; the browser shows categories
+// instead of calling this.
+export function searchCatalogModels(query, catalog = DEVICE_CATALOG) {
+  const needle = String(query ?? '').trim().toLowerCase();
+  if (!needle) return [];
+  return catalog.flatMap(item => (item.models || [])
+    .filter(model => `${model.displayName} ${model.subcategoryName || ''} ${describeCatalogModel(model)}`
+      .toLowerCase()
+      .includes(needle))
+    .map(model => ({ ...model, categoryId: item.category })));
+}
+
 export function getModelDefaultScale(category, modelId) {
   return findModelTemplate({ category, modelId })?.defaultScale || null;
 }
