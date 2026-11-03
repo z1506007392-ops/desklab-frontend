@@ -169,6 +169,12 @@ E67 已部署。CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E94：用 `overrides` 把 minimatch 定在 11.0.4。`npm audit` 从 6 条中等（都在 eslint 用的 minimatch 10，不进页面）变成 0。没有把 eslint 降到 9。lint 仍然通过。
+
+还剩：E95 把登录审查写进手册，全量验证后推 master。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E93：`/api/ai/layout` 只收 JSON。请求体限制深度、节点数、键和字符串长度，并拒绝 `__proto__` 这类键。意外错误只回答「服务暂时不可用」，日志只记错误名，不记异常正文。上游返回的网页或密钥、以及带换行的模型名，都不会回到浏览器。限流用的地址只取第一段。登录代码没改。调用这个接口的测试补上了 `Content-Type: application/json`。
 
 还剩：E94–E95，以及全量验证后推 master。

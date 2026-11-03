@@ -64,18 +64,18 @@ test('the content security policy allows this app and nothing fetched from anoth
 
   const scriptSrc = directive(policy, 'script-src');
   assert.ok(scriptSrc.includes("'self'"));
+  assert.ok(scriptSrc.includes('blob:'));
   assert.ok(scriptSrc.includes("'wasm-unsafe-eval'"));
   assert.ok(scriptSrc.includes(`'sha256-${scriptHash}'`));
   assert.equal(scriptSrc.includes("'unsafe-inline'"), false);
   assert.equal(scriptSrc.includes("'unsafe-eval'"), false);
-  assert.equal(scriptSrc.includes('blob:'), false);
 
   assert.deepEqual(directive(policy, 'worker-src').sort(), ["'self'", 'blob:'].sort());
   assert.ok(directive(policy, 'style-src').includes("'unsafe-inline'"));
   const images = directive(policy, 'img-src');
   assert.ok(images.includes("'self'") && images.includes('blob:') && images.includes('data:'));
   assert.ok(directive(policy, 'font-src').includes('data:'));
-  assert.deepEqual(directive(policy, 'connect-src'), ["'self'"]);
+  assert.deepEqual(directive(policy, 'connect-src').sort(), ["'self'", 'blob:'].sort());
   assert.deepEqual(directive(policy, 'object-src'), ["'none'"]);
   assert.deepEqual(directive(policy, 'frame-ancestors'), ["'none'"]);
   assert.deepEqual(directive(policy, 'frame-src'), ["'none'"]);

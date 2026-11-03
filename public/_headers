@@ -4,14 +4,16 @@
 # set it, so a cache rule cannot be glued onto these values. On a conflict,
 # keep both the security lines and the cache lines.
 #
-# CSP notes: meshopt GLBs compile WASM and decode in a blob worker, Troika
-# lays out axis letters in a blob worker, React sets inline styles, and AI
-# and login stay on this origin (/api/ai, /api/auth). No remote script host.
+# CSP notes: meshopt GLBs compile WASM and decode in a blob worker, and that
+# worker importScripts another blob (script-src, not only worker-src). The
+# GLB loader then fetch()es each texture as a blob URL (connect-src). Troika
+# lays out axis letters in a blob worker. React sets inline styles. AI and
+# login stay on this origin (/api/ai, /api/auth). No remote script host.
 # The sha256 allows the small inline browser-check in index.html.
 
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), midi=(), display-capture=(), serial=(), hid=()
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-aQVf4of+a/0G0dSzUbOWo/Fv4FGXWMQBXOrOWCGg7xs='; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self'; media-src 'self'; frame-src 'none'
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' blob: 'wasm-unsafe-eval' 'sha256-aQVf4of+a/0G0dSzUbOWo/Fv4FGXWMQBXOrOWCGg7xs='; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob:; media-src 'self'; frame-src 'none'
   X-Frame-Options: DENY
