@@ -3,8 +3,8 @@
 import { createLayoutHandler } from '../../../server/ai/layout-handler.js';
 import { createRateLimiter } from '../../../server/ai/rate-limit.js';
 
-// Module scope: the in-memory limiter keeps its counts for the life of the
-// server instance; a KV binding named AI_LIMITS makes them shared.
+// Module scope: without AI_LIMITS this instance counts in memory. The KV
+// binding shares the count; see server/ai/rate-limit.js.
 const handleLayoutRequest = createLayoutHandler({ rateLimiter: createRateLimiter() });
 
 export const onRequestPost = context => handleLayoutRequest(context);

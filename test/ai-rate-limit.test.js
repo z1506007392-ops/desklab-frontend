@@ -8,6 +8,37 @@ class FakeKv {
   constructor() { this.values = new Map(); this.puts = []; }
   async get(key) { return this.values.get(key) ?? null; }
   async put(key, value, options) { this.values.set(key, value); this.puts.push([key, value, options]); }
+  async list({ prefix = '', cursor, limit = 1000 } = {}) {
+    const names = [...this.values.keys()].filter(key => key.startsWith(prefix)).sort();
+    const start = cursor ? Number(cursor) : 0;
+    const slice = names.slice(start, start + limit);
+    const next = start + slice.length;
+    const done = next >= names.length;
+    return { keys: slice.map(name => ({ name })), list_complete: done, cursor: done ? undefined : String(next) };
+  }
+}
+
+class StaleGetKv extends FakeKv {
+  async get() { return '0'; }
+}
+
+class StaleListKv extends FakeKv {
+  async list() { return { keys: [], list_complete: true }; }
+}
+
+function createFakeCaches() {
+  const stored = new Map();
+  return {
+    default: {
+      async match(request) {
+        const body = stored.get(request.url);
+        return body === undefined ? undefined : new Response(body);
+      },
+      async put(request, response) {
+        stored.set(request.url, await response.text());
+      },
+    },
+  };
 }
 
 const clock = start => {
@@ -52,10 +83,55 @@ test('with a KV namespace bound as AI_LIMITS, counts live in KV with expiry', as
   const env = { AI_LIMITS: kv, AI_PER_IP_HOURLY: '1' };
   assert.deepEqual(await limiter.take('9.9.9.9', env), { allowed: true, mode: 'kv', scope: null });
   assert.deepEqual(await limiter.take('9.9.9.9', env), { allowed: false, mode: 'kv', scope: 'hour' });
-  assert.ok(kv.puts.every(([, value, options]) => /^\d+$/.test(value) && options.expirationTtl >= 60));
-  assert.ok(kv.puts.some(([key]) => key === 'ai:day:2026-10-30'));
+  assert.equal(kv.puts.length, 2, 'a refusal does not write another marker');
+  assert.ok(kv.puts.every(([, value, options]) => value === '1' && options.expirationTtl >= 60));
+  assert.ok(kv.puts.some(([key]) => key.startsWith('ai:day:2026-10-30:')));
+  assert.ok(kv.puts.some(([key]) => key.startsWith('ai:addr:9.9.9.9:')));
   // A second server instance sees the same counts.
   assert.equal((await createRateLimiter({ now: time.now }).take('9.9.9.9', env)).allowed, false);
+  time.advance(60 * 60 * 1000);
+  assert.equal((await limiter.take('9.9.9.9', env)).allowed, true, 'a new hour starts afresh');
+});
+
+test('a cached KV get does not reset the count', async () => {
+  const kv = new StaleGetKv();
+  const time = clock('2026-10-30T02:10:00Z');
+  const limiter = createRateLimiter({ now: time.now });
+  const env = { AI_LIMITS: kv, AI_PER_IP_HOURLY: '1' };
+  assert.equal((await limiter.take('9.9.9.9', env)).allowed, true);
+  assert.deepEqual(await limiter.take('9.9.9.9', env), { allowed: false, mode: 'kv', scope: 'hour' });
+});
+
+test('a stale KV list still stops a burst through the colo cache', async () => {
+  const kv = new StaleListKv();
+  const caches = createFakeCaches();
+  const time = clock('2026-10-30T02:10:00Z');
+  const env = { AI_LIMITS: kv, AI_PER_IP_HOURLY: '2', AI_DAILY_TOTAL: '100' };
+  const first = createRateLimiter({ now: time.now, caches });
+  assert.equal((await first.take('1.1.1.1', env)).allowed, true);
+  assert.equal((await first.take('1.1.1.1', env)).allowed, true);
+  assert.equal(kv.puts.length, 4);
+  // The next isolate in this colo cannot see the KV keys yet.
+  const second = createRateLimiter({ now: time.now, caches });
+  assert.deepEqual(await second.take('1.1.1.1', env), { allowed: false, mode: 'kv', scope: 'hour' });
+  assert.equal(kv.puts.length, 4);
+});
+
+test('KV counts marker keys past the first list page', async () => {
+  const kv = new FakeKv();
+  for (let i = 0; i < 1500; i += 1) kv.values.set(`ai:day:2026-10-30:seed-${i}`, '1');
+  const time = clock('2026-10-30T02:10:00Z');
+  const limiter = createRateLimiter({ now: time.now });
+  const env = { AI_LIMITS: kv, AI_DAILY_TOTAL: '1500', AI_PER_IP_HOURLY: '100' };
+  assert.deepEqual(await limiter.take('1.1.1.1', env), { allowed: false, mode: 'kv', scope: 'day' });
+});
+
+test('a binding without list stays on the memory counter', async () => {
+  const kv = { async get() { return '0'; }, async put() { throw new Error('should not write'); } };
+  const limiter = createRateLimiter({ now: () => Date.parse('2026-10-30T02:10:00Z') });
+  const env = { AI_LIMITS: kv, AI_PER_IP_HOURLY: '1' };
+  assert.deepEqual(await limiter.take('1.1.1.1', env), { allowed: true, mode: 'memory', scope: null });
+  assert.deepEqual(await limiter.take('1.1.1.1', env), { allowed: false, mode: 'memory', scope: 'hour' });
 });
 
 test('the endpoint explains which limit was hit', async () => {
