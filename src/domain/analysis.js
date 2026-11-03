@@ -1,5 +1,6 @@
 import {
   arePortTypesCompatible,
+  CABLE_SERVICE_LOOP_FACTOR,
   CABLE_TYPE_VALUES,
   describeCableType,
   describePortDirection,
@@ -7,11 +8,13 @@ import {
   evaluateConnectionLength,
   inferCableType,
   isPortDirectionConsistent,
+  standardCableLength,
 } from './connections.js';
 import { findModelTemplate } from './catalog.js';
 import { getPortRecords } from './port-collections.js';
 import { getRecordItems } from './record-collections.js';
 import { isValidPortAnchor } from './project-validation.js';
+import { passiveCableLimit } from './cable-limits.js';
 
 const POWER_INPUT_TYPES = new Set(['ac_input', 'dc_input']);
 const POWER_OUTPUT_TYPES = new Set(['ac_output', 'dc_output']);
@@ -122,8 +125,38 @@ function findPowerCycle(edges) {
   return [...graph.keys()].some(visit);
 }
 
+function passiveRunExceedsLimit(cableLength, route, maxMetres) {
+  if (Number.isFinite(route) && route > maxMetres + 1e-9) return true;
+  if (!Number.isFinite(cableLength) || !(cableLength > maxMetres + 1e-9)) return false;
+  // The next length a shop sells can be 5 m for a run that still fits a
+  // passive cable. That stock size is not itself over the spec.
+  if (!Number.isFinite(route)) return true;
+  const stocked = standardCableLength(route * CABLE_SERVICE_LOOP_FACTOR);
+  return cableLength > stocked + 1e-9;
+}
+
+function appendPassiveCableLimitIssue(issues, connection, lengthStatus) {
+  const limit = passiveCableLimit(connection.cableType);
+  if (!limit) return;
+  const cableLength = Number(connection.length);
+  const route = lengthStatus?.distance;
+  if (!passiveRunExceedsLimit(cableLength, route, limit.maxMetres)) return;
+  const routeText = Number.isFinite(route) ? `走线 ${route.toFixed(2)} 米，` : '';
+  const cableText = Number.isFinite(cableLength) && cableLength > 0 ? `这根线长 ${cableLength.toFixed(2)} 米。` : '';
+  issues.push({
+    id: `passive-cable-limit:${connection.id}`,
+    code: 'passive_cable_too_long',
+    severity: 'warning',
+    title: `线材“${connection.name}”超过${limit.label}被动线的常见长度`,
+    description: `${routeText}${cableText}${limit.label}被动线一般不超过 ${limit.maxMetres} 米。可以把设备挪近一些、改走更短的路径，或改用有源线、光纤线。`,
+    connectionIds: [connection.id],
+    objectIds: [connection.fromObjectId, connection.toObjectId],
+  });
+}
+
 function appendLengthIssues(issues, connection, objects) {
   const lengthStatus = evaluateConnectionLength(connection, objects);
+  appendPassiveCableLimitIssue(issues, connection, lengthStatus);
   if (lengthStatus && !lengthStatus.sufficient) {
     issues.push({
       id: `short-cable:${connection.id}`,

@@ -11,6 +11,9 @@ import {
 } from '../src/domain/analysis.js';
 import { placeCatalogObject } from '../src/domain/placement.js';
 import { DEVICE_CATALOG } from '../src/domain/catalog.js';
+import { PASSIVE_CABLE_LIMITS } from '../src/domain/cable-limits.js';
+import { DESK_TEMPLATES, buildTemplateScene } from '../src/domain/desk-templates.js';
+import { buildDeskScene } from '../src/domain/scene-builder.js';
 
 const port = (id, type, direction) => ({ id, name: id, type, direction });
 const object = (id, ports, overrides = {}) => ({
@@ -949,6 +952,85 @@ test('shared power graph produces the same load totals as standalone load checks
   assert.equal(computeDevicePowerLoad('my-ups', objects, conns, powerGraph), computeDevicePowerLoad('my-ups', objects, conns));
   assert.equal(computeDevicePowerLoad('my-strip', objects, conns, powerGraph), computeDevicePowerLoad('my-strip', objects, conns));
   assert.equal(computeDevicePowerLoad('my-pc', objects, conns, powerGraph), computeDevicePowerLoad('my-pc', objects, conns));
+});
+
+test('a passive cable past its common length is a warning with a way to fix it', () => {
+  const hdmi = (id, type, direction) => object(id, [port(id, type, direction)], {
+    position: { x: 0, y: 0, z: 0 },
+  });
+  const screen = hdmi('screen', 'hdmi', 'input');
+  screen.position = { x: 1, y: 0, z: 0 };
+  const host = hdmi('host', 'hdmi', 'output');
+  const line = (length, cableType = 'hdmi', fromType = 'hdmi', toType = 'hdmi') => {
+    const link = connection('c', 'host', 'host', 'screen', 'screen', length);
+    link.cableType = cableType;
+    host.ports[0].type = fromType;
+    screen.ports[0].type = toType;
+    return link;
+  };
+
+  const within = analyzeProjectWiring([host, screen], [line(PASSIVE_CABLE_LIMITS.hdmi.maxMetres)]);
+  assert.equal(within.some(issue => issue.code === 'passive_cable_too_long'), false);
+
+  const over = analyzeProjectWiring([host, screen], [line(PASSIVE_CABLE_LIMITS.hdmi.maxMetres + 0.01)]);
+  const warning = over.find(issue => issue.code === 'passive_cable_too_long');
+  assert.equal(warning.severity, 'warning');
+  assert.match(warning.description, /有源线、光纤线/);
+  assert.match(warning.description, /挪近/);
+  assert.match(warning.title, /HDMI/);
+
+  const routeHost = object('far-host', [port('out', 'hdmi', 'output')], { position: { x: 0, y: 0, z: 0 } });
+  const routeScreen = object('far-screen', [port('in', 'hdmi', 'input')], { position: { x: 4, y: 0, z: 0 } });
+  const routed = connection('long-run', 'far-host', 'out', 'far-screen', 'in', 1);
+  routed.cableType = 'hdmi';
+  const routedIssues = analyzeProjectWiring([routeHost, routeScreen], [routed]);
+  assert.ok(routedIssues.some(issue => issue.code === 'passive_cable_too_long'));
+  assert.ok(routedIssues.some(issue => issue.code === 'short_cable'));
+
+  const power = connection('mains', 'host', 'host', 'screen', 'screen', 30);
+  host.ports[0].type = 'ac_output';
+  host.ports[0].direction = 'output';
+  screen.ports[0].type = 'ac_input';
+  screen.ports[0].direction = 'input';
+  const powerIssues = analyzeProjectWiring([host, screen], [power]);
+  assert.equal(powerIssues.some(issue => issue.code === 'passive_cable_too_long'), false);
+
+  for (const [cableType, limit] of Object.entries(PASSIVE_CABLE_LIMITS)) {
+    const from = object('a', [port('out', cableType, 'output')]);
+    const to = object('b', [port('in', cableType, 'input')], { position: { x: 0.2, y: 0, z: 0 } });
+    const ok = connection('ok', 'a', 'out', 'b', 'in', limit.maxMetres);
+    ok.cableType = cableType;
+    assert.equal(analyzeProjectWiring([from, to], [ok]).some(issue => issue.code === 'passive_cable_too_long'), false, cableType);
+    const tooLong = connection('over', 'a', 'out', 'b', 'in', limit.maxMetres + 0.05);
+    tooLong.cableType = cableType;
+    const hit = analyzeProjectWiring([from, to], [tooLong]).find(issue => issue.code === 'passive_cable_too_long');
+    assert.ok(hit, cableType);
+    assert.match(hit.description, new RegExp(`${limit.maxMetres} 米`));
+  }
+});
+
+test('built-in desks do not warn about passive cable length', () => {
+  for (const template of DESK_TEMPLATES) {
+    const scene = buildTemplateScene(template.id);
+    const issues = analyzeProjectWiring(scene.objects, scene.connections);
+    assert.equal(issues.some(issue => issue.code === 'passive_cable_too_long'), false, template.name);
+  }
+  const scene = buildDeskScene({
+    desk: { length: 3, depth: 1.2 },
+    devices: [
+      { modelId: 'desktop-pc', count: 1 },
+      { modelId: 'laptop-15', count: 1 },
+      { modelId: 'monitor-27', count: 2 },
+      { modelId: 'ultrawide-monitor', count: 1 },
+      { modelId: 'router', count: 1 },
+      { modelId: 'keyboard', count: 1 },
+      { modelId: 'mouse', count: 1 },
+      { modelId: 'speakers', count: 1 },
+      { modelId: 'game-console', count: 1 },
+    ],
+  });
+  const issues = analyzeProjectWiring(scene.objects, scene.connections);
+  assert.equal(issues.some(issue => issue.code === 'passive_cable_too_long'), false, 'largest generated desk');
 });
 
 test('wiring problems on odd imported data are explained without internal type names', async () => {
