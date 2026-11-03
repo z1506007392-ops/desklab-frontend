@@ -6,6 +6,25 @@
 
 ---
 
+## 方向（Leo 2026-11-04）：本地桌面应用
+
+产品从「网页优先」改为 **本机桌面应用**。壳是 Tauri 2，包着现有的 Vite / React 前端。网页构建和 Cloudflare Pages 留着，作为过渡，不再是唯一入口，也不再是「可用」的定义。日常使用在本机，**不要跨设备同步**。旧的 Express 后端仍然不是必需。
+
+账号不是同步服务。邮箱验证码仍只给 AI 用，以后也给社区发布用。生产没配好发信时，发码返回「登录暂未开放」。**不要加登录墙。** 下文和界面里的「登录后」是「第一次进入应用」，不是先输入验证码。
+
+进门顺序（壳已经这样做，网页同一套前端也是这样）：
+
+1. 打开应用。没有账号这一步。
+2. 第一次只出一页房间大小。默认已选中（5 × 4 米，高 3 米，和未保存时的房间一样）。小是 4 × 3.5 × 2.7，大是 6.5 × 5 × 3。整页只有这三项和一个按钮「生成这个房间」。工具栏和两边的面板先藏起来。
+3. 确认以后，按这个尺寸生成空的 3D 房间。
+4. 第二步才选桌子：只有「用电竞桌」和「自己摆」。电竞桌是现有的电竞模板，放进刚选的这间房，不是换成模板自带的房间。自己摆才打开资产库。
+5. 选完才回到平时的编辑界面。五步新手引导不再自动弹出，仍可从「更多 → 新手引导」打开。
+6. 再以后（本轮不做）：房间已经有了，才可以把扫描交给 AI。只留概念，见 F6。不要做拍摄、上传或识别。
+7. 核心电竞设备是：台式主机、带鱼屏、键盘、鼠标、音箱、游戏主机、路由器（`CORE_ESPORTS_MODEL_IDS`）。进门的电竞桌现在只放模板里已经有的书桌、主机、带鱼屏、笔记本和路由器。键盘、鼠标、音箱、游戏主机还在目录里，这一轮不放上去，放上去会改 3D。
+8. 社区是自愿的：发布一份布局 JSON，再加一张按这个摆法拍的照片。正在用的项目仍留在本机。图库界面是 E96，仍由已领走的那条线做。接口只写在 F4，本轮不实现。
+
+---
+
 ## 0. 如何开始（每次开工先做这一节）
 
 ### 0.1 给 AI 的启动指令（产品负责人把这段原样发给 AI 即可）
@@ -41,16 +60,16 @@
 
 DeskLab 是给**普通家庭用户和电竞玩家**用的 3D 桌面搭建与布线工具。下面这些全部满足，才算"可用"（发布门槛）：
 
-1. **能上手**：第一次打开的人，不看说明就能在 1 分钟内用模板或"按设备生成"得到一张像样的桌面。
+1. **能上手**：第一次打开先定房间大小，确认后看到这间 3D 房间，再用电竞桌或自己摆。不看说明就能得到一张像样的桌面。模板和「按设备生成」仍在，五步新手引导从「更多」里打开。
 2. **能编辑**：添加、拖动、旋转、删除设备；线缆自动补全；能手动连线、改线长；撤销/重做可靠。
 3. **能检查**：布局检查、布线检查给出普通人能看懂的中文问题和免费修复；购物建议只针对真实问题（插孔不够、过载、插排串联、线太短），并能生成购物清单。
-4. **能保存**：项目保存在用户浏览器里，刷新不丢；有备份提醒、导出/导入；损坏时能恢复上一版本。
+4. **能保存**：网页上项目仍在这台浏览器的 localStorage 里。桌面应用写在本机应用数据目录里。刷新不丢；有备份提醒、导出/导入；损坏时能恢复上一版本。网站里保存过的桌面不会自动出现在安装好的应用里，用导出再导入搬过去。
 5. **AI 能帮忙**：接入 DeepSeek 后，用户可以用一句中文说出想法（也可以不说），得到 1–5 条中文布局建议，每条可以预览、应用、撤销；**AI 的任何改动都经过规则引擎校验，不会让布局变差、不会产生新问题**。
-6. **稳定**：桌面（1440×900）和手机（390×844）上无控制台报错，全部自动化测试通过，线上站点（`https://desklab-frontend.pages.dev`）实际打开验证过。
+6. **稳定**：桌面应用能在本机打开；网页在桌面（1440×900）和手机（390×844）上无控制台报错，全部自动化测试通过。线上站点（`https://desklab-frontend.pages.dev`）仍是过渡入口，打开验证过更好，但站点暂时打不开不再单独定义「不可用」。
    手机端的范围（负责人 2026-11-02 决定，E59）：手机上只保证能用、不报错、测试通过，不再专门做细致的手机优化；手机访问时提醒一次"建议用电脑打开"。
 7. **说清楚**：页面上有隐私说明（项目存在本机；使用 AI 时会把桌面布局数据发给 DeepSeek 处理）。
 
-做完第 5 节阶段 A、B、C、D 的所有"必做"任务，即达到上述门槛。之后进入阶段 E（持续改进），永远有事可做。
+做完第 5 节阶段 A、B、C、D 的所有"必做"任务，即达到当时的网页门槛。2026-11-04 起，入口改到阶段 F 的桌面应用。阶段 E 里别人已经领走的任务照做，不要再开新的「只为网页」任务。
 
 ---
 
@@ -83,9 +102,9 @@ DeskLab 是给**普通家庭用户和电竞玩家**用的 3D 桌面搭建与布�
 ## 3. 工作循环（每一轮都按这个来）
 
 ### 3.1 选任务
-1. 打开第 5 节任务板，按阶段顺序（A → B → C → D → E）从上往下找第一个状态为 `[ ]` 且依赖已完成的任务。
-2. 同一阶段内，标了 **必做** 的优先于 **可选**。
-3. 如果 master 是红的、线上站点打不开、或有用户可见的崩溃，这些永远插队到最前面。
+1. 打开第 5 节任务板，按阶段顺序（A → B → C → D → E → F）从上往下找第一个状态为 `[ ]` 且依赖已完成的任务。阶段 F 里还没做的，优先于阶段 E 里新开的网页任务。
+2. 同一阶段内，标了 **必做** 的优先于 **可选**。别人标了 `[~]` 的不要碰，包括 E96、E97、E98。
+3. 网页构建是红的、桌面壳起不来、或有用户可见的崩溃，这些永远插队。Pages 站点打不开要记下来，但不再压过这三件。
 
 ### 3.2 领任务（防止两个 AI 撞车）
 1. 在本文件任务板里，把该任务的 `[ ]` 改成 `[~] 进行中（你的名字，YYYY-MM-DD）`。
@@ -151,6 +170,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 
 ### 4.1 技术栈
 - React 19 + `@react-three/fiber` / `drei`（three.js），Vite 8，Node 22（`.node-version`）。
+- 桌面壳：Tauri 2（`src-tauri/`，标识 `app.desklab.desktop`）。`npm run desktop` 即 `tauri dev`。Rust 用 `src-tauri/rust-toolchain.toml` 里的 1.99.1（opener 2.7 需要 Rust 1.90 或更新）。网页的 `npm run dev` 和 `npm run build` 不变。
 - 单元测试：`node --test`（`test/*.test.js`，约 291 个）。UI 测试：Playwright（`e2e/*.spec.mjs`，桌面 + 手机共约 38 个）。
 - `src/main.jsx` 用了 `StrictMode`：开发模式下组件会"挂载→卸载→再挂载"。写 `useEffect` 时清理函数不能让状态永久失效（曾因此丢失所有状态提示，见 `5919d80`）。
 
@@ -190,16 +210,18 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 
 ### 4.5 界面（`src/App.jsx`，约 2350 行）
 - 顶部工具栏：房间尺寸、桌面模板、撤销/重做、重置视角、所有连接、布局检查、布线检查、改进建议、更多（导入/导出/复制/粘贴 JSON、坐标轴开关）、保存项目。
-- 对话框标题（UI 测试靠它们定位）：`桌面模板`、`布局检查`、`布线检查`、`全部连接清单`、`自动检查与改进建议`。
+- 对话框标题（UI 测试靠它们定位）：`桌面模板`、`布局检查`、`布线检查`、`全部连接清单`、`自动检查与改进建议`。第一次进入还有 `这间房有多大` 和 `放一张桌子`。这两步里工具栏和两侧面板先藏起来，保存按钮仍在页面里，只是还看不见。
 - 横幅：本地草稿恢复、存档损坏锁定、备份提醒（region `备份提醒`）。
 - `App.jsx` 很大。**不要一次性大重构**；当某个任务要改到某一块时，顺手把那块抽成组件（`src/components/`），并保持测试全绿。
 
 ### 4.6 存储与后端
-- 每个访客的项目存在**自己浏览器的 localStorage**：`desklab.project.v1`（存档）、`desklab.project-backup.v1`（上一版）、`desklab.project-draft.v1`（未保存草稿）、`desklab.backup-reminder.v1`、`desklab.phone-notice-dismissed.v1`（手机上点过"知道了"）。
-- 摆放、布线和存档不需要登录，项目仍只在这台浏览器的 localStorage。使用 AI 时要先用邮箱验证码登录（E67）：会话是 HttpOnly cookie，验证码和次数在 KV `AI_LIMITS`。不登录也能看 3D。后端仓库（Express，`/api/projects/default`）**前端已不再调用**；保留它，但不要在它上面加新功能。AI 代理放在 Cloudflare Pages Functions（见第 6 节），不放在这个后端。
+- 网页上，每个访客的项目存在**自己浏览器的 localStorage**：`desklab.project.v1`（存档）、`desklab.project-backup.v1`（上一版）、`desklab.project-draft.v1`（未保存草稿）、`desklab.backup-reminder.v1`、`desklab.phone-notice-dismissed.v1`（手机上点过"知道了"）、`desklab.guide-seen.v1`（进门或新手引导已结束）。
+- 桌面应用用同一批键，写成应用数据目录里的文件（`project.json`、`project-backup.json`、`project-draft.json`、`backup-reminder.json`、`phone-notice.txt`、`guide-seen.txt`）。目录是 Tauri 的 app data：Windows `%APPDATA%\app.desklab.desktop`，macOS `~/Library/Application Support/app.desklab.desktop`，Linux `~/.local/share/app.desklab.desktop`。只有这份壳能写这些文件。这个 webview 里已有的 localStorage，在文件里还没有项目时复制一次，不覆盖已有文件，浏览器里的那份留着。安装好的应用和 Chrome 不是同一份存储，网站存档不会自动出现。
+- 摆放、布线和存档不需要登录。使用 AI 时要先用邮箱验证码登录（E67）：会话是 HttpOnly cookie，验证码和次数在 KV `AI_LIMITS`。不登录也能看 3D，也能进门。后端仓库（Express，`/api/projects/default`）**前端已不再调用**；保留它，但不要在它上面加新功能。AI 代理仍放在 Cloudflare Pages Functions（见第 6 节），不放在这个后端。`tauri dev` 仍用 Vite 把 `/api` 代理到 `localhost:3001`。打包后的应用没有这个代理，直接请求 `/api` 会 404，直到 F7 给一个基址。
 - `vite.config.js` 仍把 `/api` 代理到 `localhost:3001`，第 6 节的本地 AI 开发服务器会用到它。
 
 ### 4.7 部署
+- **Pages 是过渡，不是产品入口。** 下面 A8 的部署步骤保持原样，不要为了桌面壳去改 `deploy` job。
 - **A8 已上线。** `.github/workflows/ci.yml` 的 `deploy`：推送到 `master` 且 `check` 全绿后执行 `npx wrangler@4.157.0 pages deploy dist --project-name desklab-frontend`（仓库根目录，`functions/` 会一起上传）。Secrets：`CLOUDFLARE_API_TOKEN`（token 名 `desklab-github-actions-pages`，仅 Account → Cloudflare Pages → Edit）、`CLOUDFLARE_ACCOUNT_ID`。第一次成功：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41698923327 （https://79dc0a72.desklab-frontend.pages.dev ）。E67 那次尖端也部署成功：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41704588154 （https://3c8daf45.desklab-frontend.pages.dev ）。线上首页 https://desklab-frontend.pages.dev 。
 - **Git 自动部署仍然开着。** 构建命令 `npm run build`，输出 `dist`，Node 版本读 `.node-version`。它不等 CI；CI 红了，Git 那条仍可能更新站点。所以**本地验证全绿才推送**。已经连上 Git 的 Pages 项目不能改成 Direct Upload；关掉的是自动构建，wrangler 直接上传仍然可用。
 - **关 Git 自动部署：等负责人/Desklab 在控制台关。** 2026-11-04 这台环境没有 `CLOUDFLARE_API_TOKEN`，也没有 `CLOUDFLARE_ACCOUNT_ID`，不能代关。不要从 GitHub Actions secrets 里把 token 读出来。
@@ -470,11 +492,11 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E78 [x] 完成（Desklab，2026-11-04，0e66c47）** 存档和分享链接的缺口：未保存的本地草稿可以恢复或放弃，已保存的项目不被覆盖；分享链接对话框里可以用键盘复制链接。
 - **E79 [x] 完成（Desklab，2026-11-04，1fb2709）** 设备目录和 AI 建议：搜索能按名称和规格找到目录里的型号，没有匹配时说明；AI 建议应用后可以撤销再重做；取消进行中的请求后，迟到的回答不再套用到桌面上。另有 d298ef2、0fe48ab。
 - **E80 [x] 完成（Desklab，2026-11-04，e568039）** 非视觉的可访问性和健壮性，不改外观样式。「更多」菜单可用方向键、Home、End、Tab、Escape，关掉后焦点回到「更多」。重复的「定位」等按钮带上对应问题的名字。页面外壳崩溃时有错误边界，刷新后本机存档还在。查看是否已登录时如果网络失败，给出失败提示，不把这当成未登录去弹登录框。
-- **E96 [~] 进行中（Desklab，2026-11-04）** 社区图库和分享，做在应用里面。别人能打开一张桌子，并复制到自己的项目。负责人 Leo 2026-11-04 批准后改了方向：产品转向 Tauri 本地应用；社区是简单账号，内容是布局 JSON 和一张实拍，不要跨设备同步。不要做成独立的公开网页。E97、E99、E100 由另一条线做。
-  - 用户问题：分享链接是一条只能发给某一个人的地址，链接里已经带上整张桌子（`#desklab-share-2.`，超过约 2000 字会提示微信可能打不开）。做完的人没有地方被别人看见，也翻不到别人怎么摆。项目仍只在这台浏览器里（`desklab.project.v1`）。
+- **E96 [~] 进行中（Desklab，2026-11-04）** 社区图库。别人能打开一张桌子，并复制到自己的项目。负责人 Leo 2026-11-04 定了方向：桌面应用为主；社区是简单账号，发布的是布局 JSON 和一张按这个摆法拍的实拍；账号不为同步服务。不要假设必须打开 Pages 网站才能用。图库界面仍由领了这条的线做。E97、E99、E100 由另一条线做。接口草图在 F4，本轮没有实现。
+  - 用户问题：分享链接是一条只能发给某一个人的地址，链接里已经带上整张桌子（`#desklab-share-2.`，超过约 2000 字会提示微信可能打不开）。做完的人没有地方被别人看见，也翻不到别人怎么摆。正在用的项目仍只在本机（网页是 `desklab.project.v1`，桌面应用是应用数据目录里的文件）。
   - 竞品：[Juddesk](https://www.juddesk.com/) 免费、不注册就能摆，可选把方案发到社区图库，别人可以 remix；保存到命名槽位用 Google 登录。[Desk Setup Builder](https://www.desksetupbuilder.com/) 有社区方案和 3D 设计，2026-11-04 打开首页时写着 “490 desks designed so far”。[PCPartPicker 完成品](https://pcpartpicker.com/builds/) 按价格、日期、评分浏览别人的装机，[关于页](https://pcpartpicker.com/about/) 写可以分享零件单和论坛讨论。[Loadout](https://loadout.app/) 是上传实拍、在照片上标产品。[MySetup](https://mysetup.is/) 写的是发照片、给整套设置打分、保留升级历史。[DeskFlex HQ](https://deskflexhq.com/) 是照片图库，免费账号 1 套公开桌子、5 张照片，Premium 为每月 5 美元或每年 40 美元。Reddit 的 r/battlestations 本次打开超时，订阅人数和现行规则未查到；一条旧帖侧栏写过只收实拍、不收 CAD 或 AI 图、禁止联盟链接（见调研）。
-  - 实现要点和工作量：原先按「布局存到服务器」估成大。Leo 2026-11-04 改成应用内的最小社区，不另做网站，也不做跨设备同步。这一版：本机一个显示名（简单账号，不上传）、当前桌子的布局 JSON、可选的一张实拍；图库里可以打开只读 3D，再复制到自己的项目。随应用带几张示例。要给别人时导出一份文件，对方导入到自己的本机图库。邮箱登录仍只用于 AI。关于页继续写明项目不会上传。界面沿用 `DESIGN.md`，入口放在现有应用里，方便以后嵌进 Tauri。不改布线规则。
-  - 视觉或新设备：应用里多一个图库。3D 场景的背景、灯光、模型不变。没有新设备。不把布局存到服务器。
+  - 实现要点和工作量：中。2026-11-04 早先的认领写成了「只在本机、导出一份文件、不上传」。Leo 后来的决定不是这个：正在用的项目仍然不上传、不同步；社区发布是自愿的，内容是布局 JSON 加一张实拍。图库在应用里，可以打开只读 3D，再「复制到我的项目」（只写本机）。账号复用邮箱验证码，只用于发布和浏览，不是云端项目。宿主可以是 Pages Functions，也可以是以后任何一个 HTTPS，桌面应用不必先打开网站。接口形状见 F4，由做图库的那条线去接，不要在这里重做布线或加设备。界面沿用 `DESIGN.md`。
+  - 视觉或新设备：应用里多一个图库。3D 场景的背景、灯光、模型不变。没有新设备。
   - 变现：DeskFlex 对更多照片和多套桌子收费；Juddesk 和 Planner 5D 的分享在免费档里。PCPartPicker 的收入在商家链接，不在图库本身（[披露](https://pcpartpicker.com/disclosure/)）。图库单独收费的把握小。它更适合把人留下来，再走到购线链接（E97）。品牌买位置要另定，和关于页「不做广告」有关。
 - **E97 [~] 进行中（Desklab，2026-11-04）** 购线清单可以跳到商店搜索。页面上不写 DeskLab 自己编的价格。Leo 2026-11-04 已批准。
   - 用户问题：清单已经按走线算出「2 米 HDMI 线 ×1」这种行（键盘和鼠标的线标成自带，不进清单），人还是要自己去搜。E25 定过不接商城、不编价格，所以现在没有价格、也没有链接。
@@ -509,6 +531,23 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E107 [x] 完成（Desklab，2026-11-04）** 导出的安装清单里，设备名或接口名里的换行、竖线不能把一行步骤拆开或变成新的标题。不改布线检查的操作测试（E77）。
 - **E108 [x] 完成（Desklab，2026-11-04）** 空桌面打开改进建议时，说明要先放设备，「让 AI 看看」保持禁用，不弹出登录框，也不请求 AI。不改分享链接（E103、E78）。
 
+### 阶段 F：本地桌面应用（Leo 2026-11-04）
+
+上面「方向」一节是产品决定。这一阶段是它的任务。不要把 E96–E108 改成自己的；E96 的界面仍归已领走的那条线。
+
+- **F1 [x] 完成（Desklab，2026-11-04，7cfb95c）** Tauri 2 壳，包着现有 Vite / React。`npm run desktop`（`tauri dev`）和 `npm run desktop:build`（`tauri build`）。网页 `npm run dev` 和 `npm run build` 仍可用。标识 `app.desklab.desktop`。Rust 钉在 `src-tauri/rust-toolchain.toml` 的 1.99.1。
+- **F2 [x] 完成（Desklab，2026-11-04，7cfb95c）** 项目写在应用数据目录。同一 webview 里已有的 localStorage，只在文件里还没有项目时复制一次。网页仍用 localStorage，文案默认仍是「浏览器里」。
+- **F3 [x] 完成（Desklab，2026-11-04，7cfb95c）** 本机可以 `npm run desktop`。这台 Linux 上窗口打开后第一屏是房间大小，确认后是空房间，用电竞桌之后草稿写进 `~/.local/share/app.desklab.desktop/project-draft.json`。README 写了怎么跑。CI 只检查壳的文件在不在，不装 Rust，也不打安装包。Windows 和 macOS 安装包是 F7。
+- **F4 [x] 完成（Desklab，2026-11-04）** 社区接口只写在这里，不实现，不改页面。
+  - `POST /api/community/layouts`，正文 `{ layout, note? }`。`layout` 就是应用已经会导出的那份项目（房间、设备、连线）。
+  - `POST /api/community/layouts/:id/photos`，multipart，一张按这个摆法拍的实拍。
+  - `GET /api/community/layouts` 和 `GET /api/community/layouts/:id` 返回布局和照片。
+  - 客户端「复制到我的项目」只写本机文件。没有云端项目这种资源。账号复用邮箱验证码。
+  - 宿主可以是 Pages Functions，也可以是以后任何一个 HTTPS。图库界面是 E96。
+- **F5 [x] 完成（Desklab，2026-11-04，7cfb95c）** 进门：整页房间大小，一个确认；然后 3D 生成这间房；然后只有「用电竞桌」和「自己摆」。已保存的项目、分享链接、正在恢复的草稿不再看到这两步。
+- **F6 [x] 暂不做（Leo 2026-11-04：只留概念）** 房间已经生成之后，以后可以把一次房间扫描交给 AI，再选预设或自己摆。不要做拍摄、上传、识别，也不要把这一条改成可领的 `[ ]`。
+- **F7 [ ]** 打出 Windows 和 macOS 安装包。第一次打开应是房间大小那一页，保存应落在应用数据目录。打包后的应用没有 Vite 的 `/api` 代理，AI 和以后的社区请求需要一个基址（可以先指向现有的 Pages）。内容安全策略现在是空的，打安装包时收紧，但不要为了收紧而挡住安装包。
+
 ---
 
 ## 6. LLM（DeepSeek）详细设计
@@ -534,6 +573,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **代理用 Cloudflare Pages Functions**，与前端同域（无跨域问题），随前端一起部署，无需维护服务器。日本 EC2 和旧后端都不用于此功能。只有当 Pages Functions 被证实无法访问 DeepSeek 时，才改用日本 EC2 部署同一个处理函数（`tools/dev-api-server.mjs` 就是现成的 Node 版），并记录原因。
 - **提示词和模型调用在服务端**，客户端只发"场景摘要 + 用户目标"。
 - **校验在客户端**（那里有全部规则引擎），服务端只做结构检查。客户端校验是最终防线。
+- **桌面应用是入口。** AI 代理这一轮仍可以留在 Pages Functions。`tauri dev` 用 Vite 把 `/api` 代理到 `localhost:3001`。打包后的应用没有这个代理，调用 `/api` 会 404，直到 F7 配上基址。不要为此把 Express 后端接回来。
 
 ### 6.2 DeepSeek 接口（开工前先核对官方文档）
 - 官方文档：`https://api-docs.deepseek.com/`。**写代码前先读一遍，以文档为准**（2026-10-30 的云端会话里该域名被网络策略拦截，只核对了第三方资料，结论与下文一致；能访问时再核一次）；下面是 2026 年时的已知做法，如有出入按文档改，并更新本节。
@@ -841,8 +881,10 @@ total = 100 × errors + 20 × warnings + 5 × hints + 1 × cableMeters
 ### 9.1 常用命令
 ```bash
 npm ci
-npm run dev                 # http://localhost:5173
-npm run dev:api             # （B4 之后）本地 AI 代理，3001 端口
+npm run dev                 # 网页，http://127.0.0.1:5173
+npm run desktop             # 桌面应用（tauri dev，需要 Rust 1.99.1 和本机 WebView）
+npm run desktop:build       # 给当前系统打安装包
+npm run dev:api             # 本地 AI 代理，3001 端口
 npm test
 npm run lint
 npm run build
@@ -859,6 +901,8 @@ npm run test:ui -- --project=desktop --grep "关键字"
 | Cloudflare 函数 | `functions/api/...`（路由 = 路径） |
 | 测试夹具 | `test/fixtures/...` |
 | 工具脚本 | `tools/<name>/...` |
+| 桌面壳 | `src-tauri/`（Rust、图标、`tauri.conf.json`） |
+| 桌面启动 | `src/desktop/`（进应用前接上文件存档） |
 | 文档 | `docs/` |
 
 ### 9.3 本文件的维护

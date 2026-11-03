@@ -1,6 +1,6 @@
 # DeskLab Memory Bank for Claude
 
-Last updated: 2026-10-30, Asia/Singapore
+Last updated: 2026-11-04, Asia/Singapore
 
 > Start here: `docs/AUTONOMOUS_ROADMAP.md` is the step-by-step plan, task
 > board, and LLM (DeepSeek) design that every agent follows. This memory bank
@@ -14,6 +14,19 @@ Last updated: 2026-10-30, Asia/Singapore
 ## 进度记录 / Progress Log
 
 最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。Claude 在 master 上的记录原先写在正文里，这里按提交作者收成同一份日志。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
+本地桌面应用的壳、文件存档和进门两步。提交 `7cfb95c`。Leo 2026-11-04 决定从网页优先改到 Tauri 2 本机应用：不跨设备同步，账号不为同步服务。「登录后」是第一次进入应用，不是邮箱验证码，不要加登录墙。
+
+- 壳：`npm run desktop`（`tauri dev`）。网页 `npm run dev` / `npm run build` 仍在。Rust 钉在 1.99.1。CI 只检查壳的文件在不在，不装 Rust，部署步骤没改。
+- 存档：桌面应用写在应用数据目录 `app.desklab.desktop`。这个 webview 里已有的 localStorage 只在文件还没有项目时复制一次。网页文案仍是「浏览器里」。
+- 进门：整页只有房间大小，一个「生成这个房间」；确认后 3D 生成这间空房；然后只有「用电竞桌」和「自己摆」。电竞桌放进刚选的房间，不换成模板自己的房间，也不另加键盘、鼠标、音箱、游戏主机。扫描只写在手册里，不做。
+- 手册：方向写在 `docs/AUTONOMOUS_ROADMAP.md` 顶部。E96 仍是进行中，规格改成自愿发布布局 JSON 加实拍；接口草图是 F4，没有实现。F1–F5 完成，F6 暂不做，下一件是 F7。
+
+验证：`npm test` 574 通过，lint 0 问题，build 通过。Chrome 桌面和手机的进门与本地保存 18 通过（`start-guide`、`local-save`）。整套 Chrome UI 这一轮没有重跑；E102–E105 那次 CI 是 241 通过 + 1 跳过。`cargo test` 在 `src-tauri` 通过（存档文件名 1 个）。这台 Linux 上 `npm run desktop` 打开了窗口：第一屏是房间大小，确认后是 5 × 4 × 3 的空房间，用电竞桌之后 `project-draft.json` 和 `guide-seen.txt` 写在 `~/.local/share/app.desklab.desktop/`。没有打出 Windows 或 macOS 安装包。
+
+还剩：F7，打 Windows 和 macOS 安装包，并给打包后的 AI 一个基址（现在打包应用没有 `/api` 代理）。内容安全策略仍是空的。E96 的图库界面仍由已领走的那条线做。扫描不做。E97、E98 是别人的，没改。E102–E105 已由另一条线完成。E69、E70 仍等负责人决定。发信仍等 Mailjet 或 Brevo。Git 自动部署仍等负责人关掉。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
@@ -1238,6 +1251,13 @@ Product decisions from the product owner (2026-10-25):
 - Accounts (2026-10-30): start anonymous. Each visitor's project is saved in
   their own browser, not on the server (see "Browser-local saves" below).
   Accounts or cloud sync may come later.
+- Desktop (2026-11-04, Leo): the product entry is a local Tauri app. The
+  working project stays on that computer (app data directory), with no
+  cross-device sync. A simple account is for AI now and later for publishing
+  a layout plus a real photo. It is not a sync service, and it does not gate
+  the first room. "After login" in the entry brief means the first time
+  someone enters the app, not an email-code wall. Scanning a room for AI is
+  a later concept only. The website and Pages stay as a transition.
 
 The current work mode is autonomous engineering:
 
@@ -4343,8 +4363,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 564 domain tests (E102–E105 login mail and limits; 547 at E106–E108)
-npm run test:ui   # Chrome desktop + phone: 241 passed + 1 skipped. Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 574 domain tests (desktop entry and file archive on top of 564 at E102–E105)
+npm run test:ui   # Chrome desktop + phone: 241 passed + 1 skipped before the desktop shell. This shell re-ran start-guide and local-save only (18 passed). Cross-browser: npx playwright test. CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
@@ -4359,6 +4379,12 @@ npm run check:contracts  # schema + openapi checks
 If rendered UI behavior changes, do browser QA against localhost if browser runtime works.
 
 ## High-Value Next Work
+
+The next task is roadmap F7: Windows and macOS installers, with the first
+screen still the room page and saves in the app data directory. The packaged
+app also needs an API base before AI works, and the content security policy
+is still null. Do not pick up E96, E97, E98, or E102–E105; those are already
+claimed. Do not implement room scanning.
 
 The autonomous hardening backlog and recommendation foundation are complete.
 Do not resume open-ended malformed-state hardening; it had stopped producing

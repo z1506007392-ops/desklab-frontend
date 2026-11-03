@@ -7,10 +7,11 @@ DeskLab is a connected 3D room desktop layout and cabling tool.
 Run `npm ci`, then `npm run dev` from this repository. The frontend normally
 uses port 5173.
 
-The desk itself has no account. Each visitor's project is saved in their own
-browser (`localStorage`, see `src/domain/local-project-store.js`), together
-with the previous save as a backup, so the backend is not needed to load or
-save. AI suggestions require an email login code. The dev server proxies
+The desk itself has no account, and login does not gate the room. Each
+visitor's project on the website is saved in their own browser
+(`localStorage`, see `src/domain/local-project-store.js`), together with the
+previous save as a backup, so the backend is not needed to load or save. AI
+suggestions require an email login code. The dev server proxies
 `/api` to port 3001, where `npm run dev:api` serves the AI and auth endpoints
 locally (the same handlers Cloudflare runs from `functions/`):
 
@@ -32,13 +33,37 @@ fall through to Brevo. Until a provider is fully configured,
 keys. `AI_MOCK=1` treats a missing cookie as a local developer so the mock
 still answers.
 
+## Desktop app
+
+`npm run desktop` (`tauri dev`) opens the same frontend in a Tauri 2 window.
+It needs the Rust toolchain named in `src-tauri/rust-toolchain.toml` (1.99.1;
+the opener plugin needs Rust 1.90 or newer) and the platform WebView
+libraries (on Linux, WebKitGTK 4.1). `npm run desktop:build` packages the
+app for the OS you are on. Windows and macOS installers are not built here.
+
+The first launch is only a room-size page. Confirming it builds that empty
+room; the next step is the existing gaming desk or an empty room you fill
+yourself. A saved project skips both screens.
+
+Desktop saves go to the app data directory `app.desklab.desktop` (`project.json`
+and the other small files next to it): `%APPDATA%\app.desklab.desktop` on
+Windows, `~/Library/Application Support/app.desklab.desktop` on macOS, and
+`~/.local/share/app.desklab.desktop` on Linux. A project already in that
+webview's `localStorage` is copied once, and only when the file archive has
+no project yet. A save made in Chrome does not appear in the installed app;
+export a backup and import it. `npm run dev` is unchanged.
+
+`tauri dev` still proxies `/api` to port 3001. A packaged build serves
+`dist` with no proxy, so AI calls need a base URL before they work there.
+
 ## Deployment
 
-Cloudflare Pages builds `master` on every push (`npm run build`, output
-`dist`, Node version from `.node-version`) and serves
-https://desklab-frontend.pages.dev. GitHub Actions (`.github/workflows/ci.yml`)
-runs the checks below on pushes and pull requests. After those checks pass
-on `master`, the same workflow deploys with
+The website remains a transitional entry. Cloudflare Pages builds `master`
+on every push (`npm run build`, output `dist`, Node version from
+`.node-version`) and serves https://desklab-frontend.pages.dev. GitHub
+Actions (`.github/workflows/ci.yml`) does not install Rust or package the
+desktop app. It runs the checks below on pushes and pull requests. After
+those checks pass on `master`, the same workflow deploys with
 `wrangler pages deploy dist --project-name desklab-frontend`. Git auto-deploy
 stays on as well until it is turned off.
 
