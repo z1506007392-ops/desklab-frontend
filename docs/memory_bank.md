@@ -21,7 +21,7 @@ E71–E75 完成（1f8b656）。只做加载和缓存，3D 画面没有改。电
 
 E71：带 `?v=`（sha256 前 8 位）的模型、缩略图、轴字体，以及带哈希的 `/assets/*`，缓存一年且 immutable。改前刷新电竞桌，3 个脚本各 300 字节、模型 7200 字节都是重新验证。改后这些传输是 0。HTML 仍是短缓存。
 
-E72：`vite build` 把 16 个 GLB 压成 brotli，642624 → 284462 字节。`desktop-pc.glb` 140512 → 92664，解开后字节和魔数不变。预览里 `Content-Encoding: br`。线上要等这次部署后再用 curl 核对，避免 Cloudflare 把已经压过的文件再压一次或丢掉这个头。
+E72：`vite build` 把 16 个 GLB 压成 brotli，642624 → 284462 字节。`desktop-pc.glb` 140512 → 92664，解开后字节和魔数不变。预览里 `Content-Encoding: br`。线上同样：带 `Accept-Encoding: br` 时 `content-length` 92664、`content-encoding: br`，解开后 140512 字节、魔数 glTF。没有被再压一次。
 
 E73：当前项目的模型马上开始下（低优先级，不跟样式表抢），其余等空闲。目录模型不再 HEAD。电竞桌第一只模型 155ms → 17ms，最后一只 519ms → 197ms，HEAD 8 → 0，模型传输 649824 → 289262 字节，16 个地址各 1 次。空房间 243–258ms、647424 字节 → 174–199ms、289262 字节。
 
@@ -31,9 +31,9 @@ E75：Lighthouse 空房间。桌面 91 → 94（LCP 1.5s → 1.2s，总字节 11
 
 未登录 `POST /api/ai/layout` 这次测得 TTFB 113ms，401，登录代码没动。`desktop-pc` 的 25 张贴图（约 46KB）再压或减面会改外观，记在手册里等负责人决定，没做。E69、E70 仍等负责人决定。
 
-验证：`npm test` 596 通过（E91–E95 的 588 再加上这 8 个加载测试），lint 0 问题，build 通过（brotli 642624 → 284462）。Chrome 桌面和手机 UI 243 通过 + 1 跳过。CI 链接等这次推送的运行全绿后补上。
+验证：`npm test` 596 通过（E91–E95 的 588 再加上这 8 个加载测试），lint 0 问题，build 通过（brotli 642624 → 284462）。Chrome 桌面和手机 UI 243 通过 + 1 跳过。CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41724487289 （尖端 `ffbbc6e`，static、Chrome 四片、WebKit、check、deploy 都成功）。HTML 仍是 `max-age=0`。带哈希的 JS 和 `?v=` 的字体是一年 immutable。CSP 里同时有首页检测脚本和预加载脚本的 sha256。
 
-还剩：部署后确认线上 GLB 带 `content-encoding: br` 且解开后是 glTF。E69、E70 和贴图再压缩等负责人决定。
+还剩：E69、E70 和贴图再压缩等负责人决定。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
