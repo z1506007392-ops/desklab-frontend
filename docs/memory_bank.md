@@ -21,7 +21,7 @@ E65 完成：购线清单旁可以导出布线表。Markdown 和 CSV 各一份�
 
 验证：`npm test` 516 通过，lint 0 问题，build 通过。购线清单的界面测试在桌面和手机上 10 个通过，其中包括导出文件的内容。电竞桌的购线清单截图：`e65-cable-export-desktop.png`、`e65-cable-export-mobile.png`。全量 Playwright 在推送前再跑。
 
-还剩：写上提交号。等 E61 的 CI 绿了，和 E64 一起推。
+提交：`23d0610`。还剩：全量 Playwright 通过后，等 E61 的 CI 绿了，和 E64 一起推。
 
 ### 2026-11-03 · Desklab (Grok Bot) · master
 
