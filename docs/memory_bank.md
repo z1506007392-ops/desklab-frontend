@@ -17,6 +17,12 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E91–E95 的 CI 全绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41721968069 （尖端 `4be0cf3`）。static、Chrome 四片、WebKit、check、deploy 都成功。21:27–21:35 UTC（北京时间 05:27–05:35）。没有改登录代码，也没有改工作流。
+
+还剩：E95 的五条交给主线。桌面壳的内容安全策略仍是空的，留给桌面线。E69、E70 仍等负责人决定。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E91–E95 做完（安全加固，不改外观，不加设备）。登录代码没改。`functions/api/auth/*` 和 `server/ai/auth.js` 都没动。`.github/workflows/` 没动，`src-tauri` 也没动。桌面壳的内容安全策略仍是空的，留给桌面线。rebase 到本地桌面壳 `f6fd7b1` 之后的提交号：
 
 - E91 `f640186`，补丁 `0e6c445`：`public/_headers` 写了 CSP、nosniff、Referrer-Policy、Permissions-Policy 和 X-Frame-Options: DENY。没有写 Cache-Control，避免和缓存头被拼成同一个值。生产构建带上这些头之后，书桌的贴图和 meshopt 的 worker 被 CSP 拦住。worker 里的 `importScripts` 看的是 `script-src`，贴图是对 blob 地址的 `fetch`，看的是 `connect-src`。两处都加上 `blob:`。用带 `_headers` 的静态服务打开生产构建，书桌模型（灰桌面、黑桌腿）能画出来，同域的 `/api/ai/layout` 没有被 CSP 挡住。目录模型加载时关掉 Draco。没有改外观。
