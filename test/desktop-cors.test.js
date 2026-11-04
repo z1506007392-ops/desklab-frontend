@@ -136,6 +136,87 @@ test('an http desktop cookie gains Secure', () => {
   assert.match(response.headers.get('set-cookie'), /Secure/);
 });
 
+test('login and AI reject a foreign origin with nosniff before the handler runs', async () => {
+  const cases = [
+    ['POST', '/api/auth/request-code', { email: 'a@b.cn' }],
+    ['POST', '/api/auth/verify', { email: 'a@b.cn', code: '123456' }],
+    ['POST', '/api/auth/logout', {}],
+    ['GET', '/api/auth/me', null],
+    ['POST', '/api/ai/layout', { version: 1, summary: {} }],
+    ['OPTIONS', '/api/auth/verify', null],
+    ['OPTIONS', '/api/ai/layout', null],
+  ];
+  for (const origin of ['https://evil.example', 'null']) {
+    for (const [method, path, body] of cases) {
+      let called = false;
+      const request = new Request(`https://desklab-frontend.pages.dev${path}`, {
+        method,
+        headers: { origin, 'content-type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const response = await onRequest({
+        request,
+        async next() { called = true; return new Response('should-not-run'); },
+      });
+      const label = `${method} ${path} ${origin}`;
+      assert.equal(called, false, label);
+      assert.equal(response.status, 403, label);
+      assert.equal(response.headers.get('x-content-type-options'), 'nosniff', label);
+      assert.equal(response.headers.get('content-type'), 'application/json; charset=utf-8', label);
+      assert.equal(response.headers.get('access-control-allow-origin'), null, label);
+      assert.equal(response.headers.get('set-cookie'), null, label);
+      assert.equal((await response.json()).error, 'forbidden_origin');
+    }
+  }
+});
+
+test('the Pages middleware keeps website cookies Lax and desktop cookies None', async () => {
+  const site = 'https://desklab-frontend.pages.dev';
+  const handlers = auth();
+  const website = await onRequest({
+    request: post(`${site}/api/auth/verify`, {}, { origin: site }),
+    next: () => login(handlers, site),
+  });
+  const websiteCookie = website.headers.get('set-cookie');
+  assert.match(websiteCookie, /SameSite=Lax/i);
+  assert.equal(/SameSite=None/i.test(websiteCookie), false);
+  assert.equal(website.headers.get('access-control-allow-origin'), null);
+  assert.equal(website.headers.get('x-content-type-options'), 'nosniff');
+
+  for (const origin of ['tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost']) {
+    const desktopHandlers = auth();
+    const response = await onRequest({
+      request: post(`${site}/api/auth/verify`, {}, { origin }),
+      next: () => login(desktopHandlers, origin),
+    });
+    const cookie = response.headers.get('set-cookie');
+    assert.match(cookie, /SameSite=None/i, origin);
+    assert.match(cookie, /Secure/i, origin);
+    assert.equal(/SameSite=Lax/i.test(cookie), false, origin);
+    assert.equal(response.headers.get('access-control-allow-origin'), origin);
+    assert.equal(response.headers.get('access-control-allow-credentials'), 'true');
+    assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+  }
+
+  for (const [method, path] of [['GET', '/api/auth/me'], ['POST', '/api/ai/layout'], ['POST', '/api/auth/request-code'], ['POST', '/api/auth/logout']]) {
+    let called = false;
+    const response = await onRequest({
+      request: new Request(`${site}${path}`, {
+        method,
+        headers: { origin: site, 'content-type': 'application/json' },
+        body: method === 'POST' ? '{}' : undefined,
+      }),
+      async next() {
+        called = true;
+        return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
+      },
+    });
+    assert.equal(called, true, path);
+    assert.equal(response.status, 200, path);
+    assert.equal(response.headers.get('access-control-allow-origin'), null, path);
+  }
+});
+
 test('the Pages middleware is the guard', async () => {
   let forwarded = null;
   const request = post('https://desklab-frontend.pages.dev/api/auth/me', {}, { origin: 'https://evil.example' });
@@ -145,6 +226,7 @@ test('the Pages middleware is the guard', async () => {
   });
   assert.equal(forwarded, null);
   assert.equal(response.status, 403);
+  assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
 });
 
 function startServer() {
@@ -171,6 +253,23 @@ test('the local API server allows the desktop origin and the Vite proxy, and ref
       body: '{}',
     });
     assert.equal(foreign.status, 403);
+    assert.equal(foreign.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal((await foreign.json()).error, 'forbidden_origin');
+    for (const path of ['/api/auth/request-code', '/api/auth/verify', '/api/auth/logout']) {
+      const refused = await fetch(server.url.replace('/api/ai/layout', path), {
+        method: 'POST',
+        headers: { ...headers, origin: 'https://evil.example' },
+        body: '{}',
+      });
+      assert.equal(refused.status, 403, path);
+      assert.equal(refused.headers.get('x-content-type-options'), 'nosniff', path);
+      assert.equal(refused.headers.get('access-control-allow-origin'), null, path);
+    }
+    const me = await fetch(server.url.replace('/api/ai/layout', '/api/auth/me'), {
+      headers: { origin: 'https://evil.example' },
+    });
+    assert.equal(me.status, 403);
+    assert.equal(me.headers.get('x-content-type-options'), 'nosniff');
     const desktop = await fetch(server.url, {
       method: 'POST',
       headers: { ...headers, origin: 'tauri://localhost' },

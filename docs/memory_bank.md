@@ -17,6 +17,14 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E119：登录和 AI 的陌生 Origin 继续拒绝，响应带 nosniff。这条规则是 F7 就写在 `functions/api/_middleware.js` 里的，这次没有改它，也没有改桌面的 SameSite=None。补的测试覆盖发码、验证、退出、查看登录、AI，以及登录和 AI 的预检：`https://evil.example` 和 `null` 都是 403、nosniff、没有 CORS、没有 Set-Cookie，处理函数不跑。同源会进入处理函数，网站 cookie 仍是 Lax。三个桌面来源的验证 cookie 仍是 None 且 Secure。本地开发服务器上这几个登录地址同样 403 且 nosniff。
+
+验证：`npm test` 667 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在）。Chrome 桌面和手机 UI 257 通过 + 1 跳过。页面没改。
+
+还剩：推 master。E120 还没领。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 领了 E119。给登录和 AI 的 Pages 入口补上陌生 Origin 的测试：继续 403，带 nosniff，不执行后面的处理。同源和桌面来源保持 F7。E118 已推 `ac7f214`（认领 `d343248`）。
 
 还剩：补测试并验证。E120 还没领。
@@ -4680,8 +4688,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 665 domain tests (E118 session generation on top of E117's 662)
-npm run test:ui   # Chrome desktop + phone: 257 passed + 1 skipped (E118, same UI count as E111). CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 667 domain tests (E119 origin checks on top of E118's 665)
+npm run test:ui   # Chrome desktop + phone: 257 passed + 1 skipped (E119, same UI count as E111). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
