@@ -1,34 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { openProject, waitForSceneDownloads } from './project-fixture.mjs';
-import { decodePng } from './png-pixels.mjs';
+import { canvasShowsAPicture } from './png-pixels.mjs';
 
 // Guards against a canvas that mounts without errors but never draws (this
-// happened under StrictMode with React.lazy). A blank canvas is one flat
-// colour and compresses to a few KB. The solid room is only a few colours
-// too, so size alone cannot tell them apart; a drawn frame also has pixels
-// that are not the corner colour. Devices and cables still land well above
-// the old byte threshold.
-const DRAWN_MIN_BYTES = 20000;
-
-function canvasShowsAPicture(buffer) {
-  if (buffer.length > DRAWN_MIN_BYTES) return true;
-  const { width, height, data } = decodePng(buffer);
-  if (width < 2 || height < 2) return false;
-  const step = Math.max(1, Math.floor(Math.min(width, height) / 48));
-  let different = 0;
-  let samples = 0;
-  for (let y = 0; y < height; y += step) {
-    for (let x = 0; x < width; x += step) {
-      const index = (y * width + x) * 4;
-      const delta = Math.abs(data[index] - data[0])
-        + Math.abs(data[index + 1] - data[1])
-        + Math.abs(data[index + 2] - data[2]);
-      if (delta > 30) different += 1;
-      samples += 1;
-    }
-  }
-  return different > samples * 0.02;
-}
+// happened under StrictMode with React.lazy). See canvasShowsAPicture.
 
 async function expectCanvasDrawn(page) {
   const canvas = page.locator('canvas');
