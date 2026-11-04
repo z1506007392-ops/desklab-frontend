@@ -17,6 +17,12 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+领了 E120。网站的 https 会话 cookie 加上 `__Host-` 前缀。桌面来源和本地 http 仍用 `desklab_session`，避免破坏桌面应用。E119 已推 `6afb455`（认领 `3404cbd`）。
+
+还剩：实现并验证。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E121：线上按手册第 1 节 7 条复跑。生产站 https://desklab-frontend.pages.dev ，桌面 1440×900 和手机 390×844。当时页面 etag 是 `W/"bac9310b12d62be80d6513ee30333e1e"`，脚本是 `/assets/index-D9U5EYkO.js`。origin/master 上更新的是登录取样、退出世代号和 Origin 测试，没有另一份内容不同的预览站。没有为了过验收改生产密钥。
 
 - 进门：Escape 关不掉「这间房有多大」，第一次没有「返回」。确认后是 5×4 米的房间，再点「用电竞桌」。工具栏没有房间尺寸。
@@ -60,7 +66,7 @@ E119：登录和 AI 的陌生 Origin 继续拒绝，响应带 nosniff。这条�
 
 验证：`npm test` 667 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在）。Chrome 桌面和手机 UI 257 通过 + 1 跳过。页面没改。
 
-还剩：推 master。E120 还没领。
+还剩：无。已推 master `6afb455`。E120 在上面领了。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
