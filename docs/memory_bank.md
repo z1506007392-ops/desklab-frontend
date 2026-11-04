@@ -19,7 +19,7 @@ Last updated: 2026-11-04, Asia/Singapore
 
 E110 的网站 CI 是红的，不是还在等。提交 `a674d96`：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41737873817 。失败的是 `ui (2)` 和因此失败的 `check`。唯一的测试是桌面 Chrome `e2e/scene-render.spec.mjs`「the 3D view draws only when something changes」，限时 30 秒，跑了 33.3 秒被掐掉。失败页面已经选中台式主机，标签也在，场景画出来了。前面要等超宽的模型下完，再等两秒没有新的绘制；SwiftShader 把 30 秒用完了。同一提交的桌面安装包是绿的：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41737873931 。
 
-这条测试的限时改成 60 秒，和 `e2e/edit-edge-cases.spec.mjs` 一样。按需绘制没改，预设和提示词没改。E111 的桌面安装包已绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41743397577 （`90e7315`）。当时网站 CI https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41743397576 还在跑。
+这条测试的限时改成 60 秒，和 `e2e/edit-edge-cases.spec.mjs` 一样。代码 `8fef560`。按需绘制没改，预设和提示词没改。E111 的桌面安装包已绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41743397577 （`90e7315`）。当时网站 CI https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41743397576 还在跑。
 
 还剩：这次提交的网站 CI 绿了再把运行链接写上。下面 E110 那条历史记录里的「还剩：推 master」保持原样。
 
