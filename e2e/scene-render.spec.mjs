@@ -23,7 +23,12 @@ test('the 3D view really draws the room and the devices', async ({ page }) => {
 
 // E62: the canvas draws on demand. A desk that sits still costs nothing,
 // and turning the view or selecting a device still draws.
+// SwiftShader on the hosted runner spends most of a 30s budget waiting for
+// the ultrawide models and a quiet two seconds. The run that failed
+// (a674d96, actions/runs/41737873817) had already selected the tower when
+// the test clock ran out. 60s matches the other heavy desk tests.
 test('the 3D view draws only when something changes', async ({ page }) => {
+  test.setTimeout(60_000);
   await page.addInitScript(() => {
     window.desklabDrawCalls = 0;
     for (const proto of [WebGLRenderingContext.prototype, WebGL2RenderingContext.prototype]) {

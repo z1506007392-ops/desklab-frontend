@@ -17,6 +17,14 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E110 的网站 CI 是红的，不是还在等。提交 `a674d96`：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41737873817 。失败的是 `ui (2)` 和因此失败的 `check`。唯一的测试是桌面 Chrome `e2e/scene-render.spec.mjs`「the 3D view draws only when something changes」，限时 30 秒，跑了 33.3 秒被掐掉。失败页面已经选中台式主机，标签也在，场景画出来了。前面要等超宽的模型下完，再等两秒没有新的绘制；SwiftShader 把 30 秒用完了。同一提交的桌面安装包是绿的：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41737873931 。
+
+这条测试的限时改成 60 秒，和 `e2e/edit-edge-cases.spec.mjs` 一样。按需绘制没改，预设和提示词没改。E111 的桌面安装包已绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41743397577 （`90e7315`）。当时网站 CI https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41743397576 还在跑。
+
+还剩：这次提交的网站 CI 绿了再把运行链接写上。下面 E110 那条历史记录里的「还剩：推 master」保持原样。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 按 Leo 的桌搭简报再摆三套预设，并给 AI 加上硬规则和不要清单。代码 `9136eed`，手册任务 E111。方向仍是 Tauri 本地应用：模板和启发式在 `src/domain`，提示词在 `server/ai/prompt.js`，网页和桌面共用，没有改 `src-tauri`。E110 已经在 master `a674d96`，那条记录里的 CI 链接还没写上。
 
 - 电竞双屏仍是 1.6×0.85 米的浅 V，内转从约 18° 改成约 20°（朝向 160° 和 200°），接缝在中线。键盘对准接缝，鼠标在座位右侧。转过之后屏幕和键盘之间约 10 厘米。主机仍在座位左侧地上：简报写右侧或侧边都可以，右侧会和超宽的路由器挤在一起，而且线长是按左侧主机留的。
