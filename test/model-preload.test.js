@@ -23,3 +23,19 @@ test('a model that is not in the catalog is still preloaded now', () => {
   assert.deepEqual(plan.now, ['/custom/thing.glb']);
   assert.deepEqual(plan.later, ['/models/desk.glb']);
 });
+
+test('a scheme or a protocol-relative model address is not preloaded', () => {
+  const plan = partitionModelPreload(
+    [
+      'https://evil.example/steal.glb',
+      'javascript:alert(1)',
+      'data:model/gltf-binary;base64,AAAA',
+      '//evil.example/steal.glb',
+      '/custom/thing.glb',
+      '/models/office-desk.glb?v=db8405b5',
+    ],
+    ['/models/desk.glb', 'https://cdn.example/a.glb'],
+  );
+  assert.deepEqual(plan.now, ['/custom/thing.glb', '/models/office-desk.glb?v=db8405b5']);
+  assert.deepEqual(plan.later, ['/models/desk.glb']);
+});

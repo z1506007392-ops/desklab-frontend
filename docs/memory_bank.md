@@ -17,6 +17,14 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E154：预加载不再抓带协议的模型地址。`https`、`javascript:`、`data:` 和以 `//` 开头的地址不会进「现在加载」或「稍后加载」，目录里混进的站外地址也不会。`/custom/thing.glb` 和 `/models/office-desk.glb?v=` 仍照旧。模型文件和外观没改。
+
+验证：`npm test` 693 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。摆法界面桌面测试打开三维房间并通过。没改外观，没加设备。
+
+还剩：E69、E70 和贴图再压缩等负责人。F6 不做。F4 不实现。本批 E150–E154 已完成。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E153：安装清单再挡住 E107 漏掉的字符。单独的回车、垂直制表、换页、NEL、U+2028、U+2029 在 Markdown 里收成空格，尖括号换成全角，竖线仍换成 ∣，所以一步不会被拆开，也不会变成新标题。CSV 里以 `=`、`+`、`-`、`@`、制表符或回车开头的单元格前面加撇号，撇号是单元格内容。原来的换行仍留在引号里。布线算法没改。「导出 Markdown」「导出 CSV」这两个词没改。
 
 验证：`npm test` 692 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。购线清单界面测试桌面和手机 10 通过，导出按钮的词和普通桌子的表还在。没改外观，没加设备。
@@ -4813,7 +4821,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 692 domain tests (E153 install-list escaping on top of E140-E143's 690)
+npm test          # 693 domain tests (E154 model preload schemes on top of E153's 692)
 npm run test:ui   # Chrome desktop + phone: 257 passed + 1 skipped (E122, same UI count as E111). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
