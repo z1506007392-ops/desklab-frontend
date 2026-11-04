@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "test": "node --test",
     "test:ui": "playwright test --project=desktop --project=mobile",
-    "test:ui:webkit": "playwright test --project=webkit-iphone e2e/scene-render.spec.mjs e2e/no-webgl.spec.mjs e2e/library-browse.spec.mjs e2e/local-save.spec.mjs e2e/templates.spec.mjs e2e/gizmo.spec.mjs e2e/compact-toolbar.spec.mjs e2e/error-notice.spec.mjs e2e/start-guide.spec.mjs e2e/selection-hint.spec.mjs e2e/offline-fonts.spec.mjs",
+    "test:ui:webkit": "playwright test --project=webkit-iphone e2e/scene-render.spec.mjs e2e/no-webgl.spec.mjs e2e/library-browse.spec.mjs e2e/local-save.spec.mjs e2e/templates.spec.mjs e2e/gizmo.spec.mjs e2e/compact-toolbar.spec.mjs e2e/error-notice.spec.mjs e2e/start-guide.spec.mjs e2e/selection-hint.spec.mjs e2e/offline-fonts.spec.mjs e2e/share-link.spec.mjs e2e/room-size.spec.mjs e2e/community-gallery.spec.mjs e2e/dialog-focus.spec.mjs",
     "test:ui:firefox": "playwright test --project=firefox",
     "preview": "vite preview"
   },

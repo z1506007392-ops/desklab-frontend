@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 import { PROJECT_STORAGE_KEY } from '../src/domain/local-project-store.js';
-import { box, openProject } from './project-fixture.mjs';
+import { box, openProject, waitForSceneDownloads } from './project-fixture.mjs';
 
 function device(id, x, y, port) {
   return {
@@ -73,6 +73,9 @@ test('a share link is read-only and does not replace the saved desk', async ({ p
   // A hash-only navigation does not reload the page, so open the link the way a
   // new tab would: a full load with the fragment already in the address.
   await page.evaluate(nextHash => { window.location.hash = nextHash; }, new URL(url).hash);
+  // Reload only once the 3D models have finished downloading: iPhone WebKit
+  // reports each download a reload cancels as a page error.
+  await waitForSceneDownloads(page);
   await page.reload();
   const banner = page.getByRole('region', { name: '只读分享', exact: true });
   await expect(banner).toBeVisible();
@@ -129,6 +132,7 @@ test('a damaged share link explains itself and leaves the saved desk', async ({ 
   const evidence = await openProject(page, [box('我的桌子')]);
   const before = await readStorage(page);
   await page.evaluate(() => { window.location.hash = '#desklab-share-1.not-a-real-link'; });
+  await waitForSceneDownloads(page); // see the reload above
   await page.reload();
   await expect(page.getByText('分享链接已损坏，打不开。已打开你自己的桌面。')).toBeVisible();
   await expect(page.getByRole('region', { name: '只读分享', exact: true })).toHaveCount(0);
