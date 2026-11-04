@@ -1,5 +1,6 @@
-import { isProjectEnvelope } from './project-validation.js';
+import { normalizeProject } from './local-project-store.js';
 import { followStorageWrite } from './storage-write.js';
+import { screenUntrustedProject } from './untrusted-project.js';
 
 // Up to three named copies beside the desk that is on screen (E100).
 // They stay on this machine. Export can carry them; nothing here uploads
@@ -11,7 +12,17 @@ export const LAYOUT_SCHEMES_VERSION = 1;
 const NAME_LIMIT = 20;
 
 function cleanName(name) {
-  const text = String(name ?? '').replace(/\s+/g, ' ').trim();
+  if (typeof name !== 'string') return '';
+  let out = '';
+  for (const char of name) {
+    const code = char.charCodeAt(0);
+    const hidden = code <= 8 || code === 11 || code === 12 || (code >= 14 && code <= 31) || code === 127
+      || (code >= 0x202A && code <= 0x202E)
+      || (code >= 0x2066 && code <= 0x2069)
+      || code === 0x200E || code === 0x200F || code === 0xFEFF;
+    if (!hidden) out += char;
+  }
+  const text = out.replaceAll('<', '＜').replaceAll('>', '＞').replace(/\s+/g, ' ').trim();
   if (!text) return '';
   return [...text].slice(0, NAME_LIMIT).join('').trim();
 }
@@ -26,11 +37,20 @@ function snapshotProject(project) {
   return JSON.parse(JSON.stringify(copy));
 }
 
+function schemeProject(project) {
+  try {
+    return snapshotProject(screenUntrustedProject(normalizeProject(project)));
+  } catch {
+    return null;
+  }
+}
+
 function cleanScheme(entry) {
   if (!entry || typeof entry !== 'object') return null;
   const name = cleanName(entry.name);
-  if (!entry.id || typeof entry.id !== 'string' || !name) return null;
-  if (!isProjectEnvelope(entry.project)) return null;
+  if (typeof entry.id !== 'string' || entry.id.length === 0 || entry.id.length > 80 || !name) return null;
+  const project = schemeProject(entry.project);
+  if (!project) return null;
   const savedAt = typeof entry.savedAt === 'string' && !Number.isNaN(Date.parse(entry.savedAt))
     ? entry.savedAt
     : new Date(0).toISOString();
@@ -38,8 +58,21 @@ function cleanScheme(entry) {
     id: entry.id,
     name,
     savedAt,
-    project: snapshotProject(entry.project),
+    project,
   };
+}
+
+function cleanSchemeList(entries) {
+  const seen = new Set();
+  const out = [];
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    const scheme = cleanScheme(entry);
+    if (!scheme || seen.has(scheme.id)) continue;
+    seen.add(scheme.id);
+    out.push(scheme);
+    if (out.length >= LAYOUT_SCHEME_LIMIT) break;
+  }
+  return out;
 }
 
 export function readLayoutSchemes(raw) {
@@ -47,7 +80,7 @@ export function readLayoutSchemes(raw) {
   try {
     const parsed = JSON.parse(raw);
     if (!parsed || parsed.version !== LAYOUT_SCHEMES_VERSION || !Array.isArray(parsed.schemes)) return [];
-    return parsed.schemes.map(cleanScheme).filter(Boolean).slice(0, LAYOUT_SCHEME_LIMIT);
+    return cleanSchemeList(parsed.schemes);
   } catch {
     return [];
   }
@@ -56,7 +89,7 @@ export function readLayoutSchemes(raw) {
 export function serializeLayoutSchemes(schemes) {
   return JSON.stringify({
     version: LAYOUT_SCHEMES_VERSION,
-    schemes: (Array.isArray(schemes) ? schemes : []).map(cleanScheme).filter(Boolean).slice(0, LAYOUT_SCHEME_LIMIT),
+    schemes: cleanSchemeList(schemes),
   });
 }
 
@@ -74,7 +107,7 @@ export function layoutSchemeStoreState(raw) {
       return { schemes: [], blocked: true };
     }
     return {
-      schemes: parsed.schemes.map(cleanScheme).filter(Boolean).slice(0, LAYOUT_SCHEME_LIMIT),
+      schemes: cleanSchemeList(parsed.schemes),
       blocked: false,
     };
   } catch {
@@ -118,11 +151,11 @@ export function layoutSchemesInBackup(file) {
   if (!Object.prototype.hasOwnProperty.call(file, 'layoutSchemes')) return null;
   const field = file.layoutSchemes;
   if (!field || field.version !== LAYOUT_SCHEMES_VERSION || !Array.isArray(field.schemes)) return null;
-  return field.schemes.map(cleanScheme).filter(Boolean).slice(0, LAYOUT_SCHEME_LIMIT);
+  return cleanSchemeList(field.schemes);
 }
 
 export function addLayoutScheme(schemes, { id, name, project, savedAt }) {
-  const current = Array.isArray(schemes) ? schemes.map(cleanScheme).filter(Boolean) : [];
+  const current = cleanSchemeList(schemes);
   if (current.length >= LAYOUT_SCHEME_LIMIT) return { ok: false, reason: 'full', schemes: current };
   const scheme = cleanScheme({ id, name, project, savedAt });
   if (!scheme) {

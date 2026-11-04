@@ -37,3 +37,35 @@ test('three local layouts can be saved, switched, exported, and not synced', asy
   expect(evidence.errors).toEqual([]);
   expect(evidence.writes).toEqual([]);
 });
+
+test('a fourth layout is blocked until one saved copy is deleted', async ({ page }) => {
+  const evidence = await openProject(page, [box('现在的桌子')]);
+  page.on('dialog', dialog => dialog.accept());
+
+  await page.getByRole('button', { name: '更多', exact: true }).click();
+  await page.getByRole('menu', { name: '更多', exact: true }).getByRole('menuitem', { name: '我的摆法', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '我的摆法', exact: true });
+  for (const name of ['第一套', '第二套', '第三套']) {
+    await dialog.getByLabel('从当前桌面留一套').fill(name);
+    await dialog.getByRole('button', { name: '留下这套', exact: true }).click();
+    await expect(dialog.getByRole('listitem').filter({ hasText: name })).toBeVisible();
+  }
+  await expect(dialog.getByRole('button', { name: '已经有 3 套', exact: true })).toBeDisabled();
+  await expect(dialog.getByLabel('从当前桌面留一套')).toBeDisabled();
+
+  const second = dialog.getByRole('listitem').filter({ hasText: '第二套' });
+  await second.getByRole('button', { name: /删除/ }).click();
+  await expect(dialog.getByRole('listitem').filter({ hasText: '第二套' })).toHaveCount(0);
+  const nameBox = dialog.getByLabel('从当前桌面留一套');
+  await expect(nameBox).toBeEnabled();
+  await expect(dialog.getByRole('button', { name: '已经有 3 套', exact: true })).toHaveCount(0);
+
+  await nameBox.fill('第四套');
+  await dialog.getByRole('button', { name: '留下这套', exact: true }).click();
+  await expect(dialog.getByRole('listitem').filter({ hasText: '第四套' })).toBeVisible();
+  await expect(page.getByText('已留下摆法「第四套」', { exact: true })).toBeVisible();
+  await expect(dialog.getByRole('listitem')).toHaveCount(3);
+
+  expect(evidence.errors).toEqual([]);
+  expect(evidence.writes).toEqual([]);
+});

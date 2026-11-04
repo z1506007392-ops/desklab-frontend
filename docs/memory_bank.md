@@ -17,6 +17,14 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E151：摆法槽最多 3 套。满了再留会拒绝；删掉一套之后可以从当前桌面再复制。复制是快照，之后改当前桌面不会改已留下的那套。名字里的尖括号换成全角，控制符和双向符去掉，换行收成空格。旧备份没有摆法字段，或字段损坏时，不覆盖这台设备已有的摆法。读回时丢掉站外模型地址、多余字段和重复 id，第 4 套起丢掉。预设桌面仍能留下。
+
+验证：`npm test` 678 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。摆法界面测试桌面和手机 4 通过，其中包括满 3 套后按钮停用、删掉一套再留第四套。没改外观，没加设备，没改预设。
+
+还剩：E152–E154。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E150：本机图库拒绝坏图和非法字段。gif、svg、网页、`javascript:`、文件头对不上的 base64（例如 `QQ==`）都进不了图库。刚好不超过 18 万字符且文件头是 jpeg 的可以留下，再长一截就拒绝。名字和显示名必须是文字；尖括号换成全角，控制字符和双向控制符去掉。作者不是文字时导入记成「未署名」。放进图库、导出和读回都会丢掉站外模型地址。已经存在图库里的坏照片只去掉照片，桌子还在；非法 id 整条丢掉。401 件设备的文件拒绝。同一份干净文件再导出一次，内容和第一次一样。
 
 验证：`npm test` 676 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。图库界面测试桌面和手机 6 通过，其中包括拒绝 `javascript:` 照片且不改已保存的项目。没改外观，没加设备。
@@ -4776,7 +4784,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 676 domain tests (E150 gallery boundaries on top of E122's 675)
+npm test          # 678 domain tests (E151 layout-scheme slots on top of E150's 676)
 npm run test:ui   # Chrome desktop + phone: 257 passed + 1 skipped (E122, same UI count as E111). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)

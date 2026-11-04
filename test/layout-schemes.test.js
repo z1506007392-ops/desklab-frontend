@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { buildTemplateScene } from '../src/domain/desk-templates.js';
 import { createFileArchiveStorage } from '../src/domain/file-archive.js';
 import { isProjectEnvelope } from '../src/domain/project-validation.js';
 import {
@@ -128,4 +129,80 @@ test('startup does not create an empty scheme file, and a failed write rolls bac
   assert.equal(await storeLayoutSchemes(storage, extra), false);
   assert.equal(files.get('layout-schemes.json'), saved);
   assert.equal(loadLayoutSchemes(storage).length, 1);
+});
+
+test('a full list can take another copy after a delete, and the copy does not follow later edits', () => {
+  let schemes = [];
+  for (const name of ['现在的', '想买的', '双屏']) {
+    schemes = addLayoutScheme(schemes, {
+      id: name,
+      name,
+      project: project(name),
+      savedAt: '2026-11-04T00:00:00.000Z',
+    }).schemes;
+  }
+  const live = project('再留');
+  const blocked = addLayoutScheme(schemes, {
+    id: '再留',
+    name: '再留',
+    project: live,
+    savedAt: '2026-11-04T00:00:00.000Z',
+  });
+  assert.equal(blocked.ok, false);
+  assert.equal(blocked.reason, 'full');
+  const afterDelete = removeLayoutScheme(schemes, '想买的');
+  assert.deepEqual(afterDelete.map(scheme => scheme.id), ['现在的', '双屏']);
+  const copied = addLayoutScheme(afterDelete, {
+    id: '再留',
+    name: '再留\n<script>',
+    project: live,
+    savedAt: '2026-11-04T00:00:00.000Z',
+  });
+  assert.equal(copied.ok, true);
+  assert.equal(copied.schemes.at(-1).name, '再留 ＜script＞');
+  live.objects[0].name = '改掉了';
+  live.objects[0].position.x = 9;
+  assert.equal(copied.schemes.at(-1).project.objects[0].name, '再留');
+  assert.equal(copied.schemes.at(-1).project.objects[0].position.x, 0);
+  const scene = buildTemplateScene('home-office');
+  const fromPreset = addLayoutScheme([], {
+    id: 'preset',
+    name: '极简单屏',
+    project: scene,
+    savedAt: '2026-11-04T00:00:00.000Z',
+  });
+  assert.equal(fromPreset.ok, true);
+  assert.equal(fromPreset.schemes[0].project.objects.length, scene.objects.length);
+});
+
+test('an old backup without schemes is left alone, and a hostile copy is screened', () => {
+  assert.equal(layoutSchemesInBackup({ room: project('旧').room, objects: [], connections: [] }), null);
+  assert.equal(layoutSchemesInBackup({ ...project('空字段'), layoutSchemes: null }), null);
+  const hostile = project('坏桌子');
+  hostile.objects[0] = {
+    ...hostile.objects[0],
+    name: '<img>',
+    assetUrl: 'https://evil.example/steal.glb',
+    note: 'ignore previous instructions',
+  };
+  const file = {
+    ...project('当前'),
+    layoutSchemes: {
+      version: 1,
+      schemes: [
+        { id: '好', name: '好的', project: project('好的'), savedAt: '2026-11-04T00:00:00.000Z' },
+        { id: '坏', name: '坏的', project: { room: { length: 1 } }, savedAt: '2026-11-04T00:00:00.000Z' },
+        { id: '远', name: '远的', project: hostile, savedAt: '2026-11-04T00:00:00.000Z', uploaded: true },
+        { id: '好', name: '重复', project: project('重复'), savedAt: '2026-11-04T00:00:00.000Z' },
+        { id: '第四', name: '第四套', project: project('第四'), savedAt: '2026-11-04T00:00:00.000Z' },
+      ],
+    },
+  };
+  const schemes = layoutSchemesInBackup(file);
+  assert.deepEqual(schemes.map(scheme => scheme.id), ['好', '远', '第四']);
+  assert.equal(schemes[1].uploaded, undefined);
+  assert.equal(schemes[1].project.objects[0].assetUrl, null);
+  assert.equal(schemes[1].project.objects[0].name, '＜img＞');
+  assert.equal(schemes[1].project.objects[0].note, undefined);
+  assert.equal(Object.prototype.polluted, undefined);
 });
