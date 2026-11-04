@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { loginCodeMessage, mailConfig, sendLoginCode } from '../server/ai/mail.js';
+import { postResend, resendFrom } from '../server/ai/resend.js';
 
 const ready = { BREVO_API_KEY: 'secret-key', MAIL_FROM: 'login@desklab.test', MAIL_FROM_NAME: 'DeskLab' };
 
@@ -156,4 +157,126 @@ test('a Brevo failure or a network error is reported and not thrown', async () =
     code: '123456',
   });
   assert.deepEqual(thrown, { ok: false, reason: 'upstream' });
+});
+
+const resendEnv = {
+  RESEND_API_KEY: 're_test_secret',
+  MAIL_FROM: 'login@desklab.test',
+  MAIL_FROM_NAME: 'DeskLab',
+};
+
+test('Resend is chosen ahead of Mailjet and Brevo when its key is set', () => {
+  const all = { ...mailjetEnv, BREVO_API_KEY: 'secret-key', RESEND_API_KEY: 're_test_secret' };
+  assert.equal(mailConfig(all).provider, 'resend');
+  assert.equal(mailConfig(all).configured, true);
+  assert.equal(mailConfig(all).apiKey, 're_test_secret');
+  assert.equal(mailConfig(all).apiSecret, '');
+  assert.equal(mailConfig({ RESEND_API_KEY: '  re_test_secret  ', MAIL_FROM: ' login@desklab.test ' }).configured, true);
+  assert.equal(mailConfig({ RESEND_API_KEY: '  re_test_secret  ', MAIL_FROM: ' login@desklab.test ' }).from, 'login@desklab.test');
+  assert.equal(mailConfig({ RESEND_API_KEY: 're_test_secret' }).configured, false);
+  assert.equal(mailConfig({ RESEND_API_KEY: 're_test_secret', MAIL_FROM: '  ' }).configured, false);
+  assert.equal(mailConfig({ RESEND_API_KEY: '   ', ...mailjetEnv }).provider, 'mailjet');
+  assert.equal(mailConfig({ RESEND_API_KEY: '   ', ...ready }).provider, 'brevo');
+  assert.equal(mailConfig(mailjetEnv).provider, 'mailjet');
+  assert.equal(mailConfig(ready).provider, 'brevo');
+});
+
+test('a Resend key without a sender does not call Resend, Mailjet, or Brevo', async () => {
+  let called = false;
+  const result = await sendLoginCode({
+    fetchImpl: async () => { called = true; return new Response('{}', { status: 200 }); },
+    env: {
+      RESEND_API_KEY: 're_test_secret',
+      MAILJET_API_KEY: 'mj-public-test',
+      MAILJET_API_SECRET: 'mj-private-test',
+      BREVO_API_KEY: 'secret-key',
+    },
+    to: 'a@b.cn',
+    code: '123456',
+  });
+  assert.deepEqual(result, { ok: false, reason: 'unconfigured' });
+  assert.equal(called, false);
+});
+
+test('Resend gets the same Chinese note with Bearer auth, and the key stays out of the body', async () => {
+  let sent;
+  const result = await sendLoginCode({
+    fetchImpl: async (url, init) => {
+      sent = { url, init, body: JSON.parse(init.body) };
+      return new Response('{"id":"email_test"}', { status: 200 });
+    },
+    env: { ...resendEnv, ...mailjetEnv, BREVO_API_KEY: 'secret-key', MAIL_FROM_NAME: 'Desk Lab' },
+    to: 'a@b.cn',
+    code: '123456',
+  });
+  assert.deepEqual(result, { ok: true });
+  assert.equal(sent.url, 'https://api.resend.com/emails');
+  assert.equal(sent.init.method, 'POST');
+  assert.equal(sent.init.headers.authorization, 'Bearer re_test_secret');
+  assert.equal(sent.init.headers['api-key'], undefined);
+  assert.equal(sent.body.from, 'Desk Lab <login@desklab.test>');
+  assert.deepEqual(sent.body.to, ['a@b.cn']);
+  assert.equal(sent.body.subject, 'DeskLab 登录验证码');
+  assert.equal(sent.body.text, loginCodeMessage('123456'));
+  assert.equal(sent.body.html, undefined);
+  const packed = JSON.stringify(sent.body);
+  assert.equal(packed.includes('re_test_secret'), false);
+  assert.equal(packed.includes('mj-private-test'), false);
+  assert.equal(packed.includes('secret-key'), false);
+});
+
+test('a half-set Mailjet pair still sends through Resend when that key is set', async () => {
+  let sent;
+  const result = await sendLoginCode({
+    fetchImpl: async (url, init) => {
+      sent = { url, body: JSON.parse(init.body) };
+      return new Response('', { status: 201 });
+    },
+    env: { RESEND_API_KEY: 're_test_secret', MAILJET_API_KEY: 'only-one', BREVO_API_KEY: 'secret-key', MAIL_FROM: 'login@desklab.test' },
+    to: 'a@b.cn',
+    code: '123456',
+  });
+  assert.deepEqual(result, { ok: true });
+  assert.equal(sent.url, 'https://api.resend.com/emails');
+  assert.equal(sent.body.from, 'DeskLab <login@desklab.test>');
+});
+
+test('a Resend error status or a network error is not thrown', async () => {
+  const refused = await sendLoginCode({
+    fetchImpl: async () => new Response('no', { status: 403 }),
+    env: resendEnv,
+    to: 'a@b.cn',
+    code: '123456',
+  });
+  assert.deepEqual(refused, { ok: false, reason: 'upstream' });
+  const thrown = await sendLoginCode({
+    fetchImpl: async () => { throw new Error('network'); },
+    env: resendEnv,
+    to: 'a@b.cn',
+    code: '123456',
+  });
+  assert.deepEqual(thrown, { ok: false, reason: 'upstream' });
+});
+
+test('Resend uses the bare address when there is no sender name', async () => {
+  assert.equal(resendFrom('login@desklab.test', ''), 'login@desklab.test');
+  assert.equal(resendFrom('login@desklab.test', '  '), 'login@desklab.test');
+  assert.equal(resendFrom('login@desklab.test', 'DeskLab'), 'DeskLab <login@desklab.test>');
+  let sent;
+  const result = await postResend({
+    fetchImpl: async (url, init) => {
+      sent = { url, body: JSON.parse(init.body) };
+      return new Response('{}', { status: 200 });
+    },
+    apiKey: 're_test_secret',
+    from: 'onboarding@resend.dev',
+    fromName: '',
+    to: 'a@b.cn',
+    subject: 'DeskLab 登录验证码',
+    text: loginCodeMessage('123456'),
+  });
+  assert.deepEqual(result, { ok: true });
+  assert.equal(sent.url, 'https://api.resend.com/emails');
+  assert.equal(sent.body.from, 'onboarding@resend.dev');
+  assert.deepEqual(sent.body.to, ['a@b.cn']);
 });

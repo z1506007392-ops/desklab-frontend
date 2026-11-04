@@ -17,6 +17,14 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E155：登录验证码优先走 Resend。有 `RESEND_API_KEY` 就 `POST https://api.resend.com/emails`，Bearer 鉴权，正文是 `from`、`to`、`subject`、`text`。没有这把钥匙时，两个 Mailjet 密钥仍走 Mailjet，否则走 Brevo。`MAIL_FROM` 空着仍是未配置，不发请求。主题仍是「DeskLab 登录验证码」，正文仍是原来的中文句子。Mailjet 只填一半时，只要 Resend 配齐就走 Resend；Resend 没配时仍不改去 Brevo。没有写入密钥。没有改页面、外观、设备和预设。
+
+验证：`npm test` 702 通过（E120 的 696 加上这 6 条发信测试），碰到的文件 lint 0 问题。没有跑界面测试：页面没改。
+
+还剩：Cloudflare Pages 的 Production 和 Preview 要配 `RESEND_API_KEY` 和 `MAIL_FROM`（已验证地址；沙箱 `onboarding@resend.dev` 只能寄到账号邮箱）。这台环境不写生产密钥。Mailjet 和 Brevo 仍是旧路径。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E130–E134 完成。没有改样式，没有改 3D，没有加设备，没有改预设，没有改登录和 `src-tauri` 存档，没有改图库字段校验和模型预加载。没有做视觉验收。
 
 - E130（`e220454`）：保存成功的状态提示是 `role="status"`，失败是 `role="alert"`。字和样式没变。「未保存」按整句匹配，套用模板时那句「尚未保存」不会被当成第二个未保存指示。
@@ -4843,7 +4851,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 696 domain tests (E120 host-prefix cookie on top of E154's 693)
+npm test          # 702 domain tests (E155 Resend login mail on top of E120's 696)
 npm run test:ui   # Chrome desktop + phone: 261 passed + 1 skipped (E120, after E151–E154). CI webkit key cases: 46 passed locally (E133).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
@@ -4864,7 +4872,7 @@ E96–E100、F1–F7、E110–E116 已完成。F6 仍只是概念：不要做房
 
 还卡住、不要绕开的：
 
-1. **Mailjet 密钥。** 生产发码仍是「登录暂未开放」。2026-11-04 `POST /api/auth/request-code` 返回 503 `auth_unavailable`。要在 Cloudflare Pages 的 Production 和 Preview 配上 `MAILJET_API_KEY`、`MAILJET_API_SECRET`、`MAIL_FROM`（或按手册 6.9 改走 Brevo）。不要把密钥写进仓库，也不要从 GitHub Actions secrets 里读出来。
+1. **Resend 发信密钥。** 代码已优先走 Resend（E155）。生产发码在配上密钥之前仍是「登录暂未开放」。2026-11-04 配密钥前 `POST /api/auth/request-code` 返回 503 `auth_unavailable`。要在 Cloudflare Pages 的 Production 和 Preview 配上 `RESEND_API_KEY` 和 `MAIL_FROM`（已验证地址；沙箱 `onboarding@resend.dev` 只能寄到账号邮箱）。Mailjet 和 Brevo 仍是旧路径，见手册 6.9。不要把密钥写进仓库，也不要从 GitHub Actions secrets 里读出来。
 2. **安装包签名和公证。** Windows 和 macOS 安装包仍由 `.github/workflows/desktop.yml` 产出，没有签名，也没有公证。需要负责人的证书。
 3. **E69、E70 和贴图再压缩。** 等负责人决定。会改变 3D 样子，批准前不做。
 4. **关掉 Git 自动部署。** 仍然开着，不等 CI。这台环境没有 Cloudflare API token。负责人在 Pages 控制台关（手册 4.7）。不要自己读 token。

@@ -494,7 +494,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E66 [x] 完成（Desklab，2026-11-04）** 线上全面验收复跑（E58–E65 之后）。https://desklab-frontend.pages.dev 上第 1 节 7 条，桌面 1440×900 和手机 390×844 都过：新手引导、电竞桌模板、3D 画面、布局和布线检查（模板都是 0）、购线清单的 Markdown/CSV 和「自带」、显示器缩略图、添加 27 寸并自动接线、拖动、Q 旋转、撤销重做、删除并撤销、改线长、重置视角、保存、刷新、备份提醒、导出再导入、损坏存档恢复上一版本、关于与隐私（本机、DeepSeek、NVIDIA SimReady、CC BY 4.0 链接）、分享链接、改进建议里的「让 AI 看看」（没有真的调用，避免扣额度）。正常操作没有控制台错误、页面异常或模型/缩略图 404。手机上「建议用电脑打开」在引导关掉之后可以点「知道了」。电竞桌模板本身没有键盘（设备清单里没有），键鼠在「按我的设备生成」里。npm audit 没有高危或严重（6 条中等，都在 eslint 开发依赖里，不进页面）。首屏 JS 已拆开：页面约 130KB、3D 场景约 140KB、three.js 约 185KB（gzip）；16 个模型合计约 643KB。没有因此改代码。主机和键盘的比例另见 E69、E70，这次不改外观。
 - **E67 [x] 完成（Desklab，2026-11-04，d95e9d5）** AI 改为登录后才能用。负责人 Leo 2026-11-04 02:49 批准，包括登录弹窗和「今日剩余次数」；02:50 修正为不设全站每日上限；02:52 确认本任务取代 E14 的 30 次连发。
   - 只做邮箱验证码（国内打不开 Google）。`POST /api/auth/request-code` 发 6 位验证码，10 分钟内有效，只存哈希。同一邮箱 60 秒内 1 次、每天最多 5 次；同一 IP 每小时 `AUTH_CODE_PER_IP_HOURLY`（默认 10）。`POST /api/auth/verify` 最多输错 5 次，通过后发 HttpOnly、Secure、SameSite=Lax 的会话 cookie，30 天。`GET /api/auth/me` 返回邮箱和今日剩余次数。`POST /api/auth/logout` 退出。验证码、会话和计数都在 KV `AI_LIMITS`。
-  - 发信封装在 `server/ai/mail.js`（Mailjet 请求在旁边的 `server/ai/mailjet.js`）。E67 接了 Brevo（`POST https://api.brevo.com/v3/smtp/email`，请求头 `api-key`）。两个 Mailjet 密钥都配了就改走 Mailjet，否则走 Brevo；都没配好时发码返回「登录暂未开放」，不要 500。选择顺序和切换方法见 6.9。验证码邮件用中文，只写验证码和有效期。
+  - 发信封装在 `server/ai/mail.js`（Resend 在 `server/ai/resend.js`，Mailjet 在 `server/ai/mailjet.js`）。E67 接了 Brevo（`POST https://api.brevo.com/v3/smtp/email`，请求头 `api-key`）。E155 起有 `RESEND_API_KEY` 就走 Resend；否则两个 Mailjet 密钥都配了走 Mailjet，再否则走 Brevo。都没配好时发码返回「登录暂未开放」，不要 500。选择顺序和切换方法见 6.9。验证码邮件用中文，只写验证码和有效期。
   - `/api/ai/layout` 没登录返回 401。每个邮箱每天 `AI_DAILY_PER_USER` 次（默认 20），按北京时间零点重置，响应里带剩余次数。不设全站上限，不用 `AI_DAILY_GLOBAL`。每 IP 每小时限流保留作兜底（`AI_PER_IP_HOURLY`，默认 20）。
   - 没登录时点「让 AI 看看」弹出登录框（先邮箱，再验证码）。登录后在这个按钮旁边显示「今日剩余 N 次」和退出。样式沿用现有弹窗。分享链接的只读模式不受影响。不登录也能用 3D 和布线。
 - **E69 [x] 等负责人决定（Desklab 记录，2026-11-04；原编号 E67，同日改号）** 台式主机按源模型比例。现在目录 `defaultScale` 是 0.25×0.50×0.50（宽×深×高，米）。SimReady `computer_desktop_tower_a01` 原始包围盒约 0.197×0.624×0.490（宽×深×高，米），生成 GLB 时适配系数是宽 1.27、高 1.02、深 0.80：横向拉宽约 27%，深度压到约八成，高度几乎不变。会明显改变 3D 画面，所以没有改模型、没有改目录、没有做迁移。建议（负责人批准外观后再做，做法同 E61）：目录改成源比例并取整到厘米（约 0.20×0.62×0.49），用 `tools/simready/build.mjs` 重新生成使适配系数接近 1，旧存档里正好是 0.25×0.50×0.50 的主机迁到新尺寸、底面不动，故意改过的不动；重测接口锚点和缩略图。批准前不要做。
@@ -594,6 +594,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E152 [x] 完成（grok，2026-11-04）** 只读分享里不弹出登录框，不发送 AI 请求，也不退出登录。要求输入框停用。复制到自己的项目之后，登录、AI 和退出恢复。不改登录接口，不改 E78 的分享对话框。
 - **E153 [x] 完成（grok，2026-11-04）** 导出的安装清单再挡住 E107 漏掉的字符：单独的回车、Unicode 换行、尖括号不能拆开步骤或变成新标题；CSV 里以等号、加号、减号、@ 或制表符开头的名字前面加撇号，不能变成表格公式。换行仍留在引号里的 CSV 单元格。不改布线算法，不改「导出 Markdown」「导出 CSV」这两个词。
 - **E154 [x] 完成（grok，2026-11-04）** 打开图库、摆法或分享时，带协议的模型地址（https、javascript、data）和以 // 开头的地址不预加载。`/custom/thing.glb` 和带 `?v=` 的本站模型仍预加载。不改模型外观。
+- **E155 [x] 完成（Desklab，2026-11-04）** 登录验证码优先走 Resend 的 HTTPS API（`POST https://api.resend.com/emails`，`Authorization: Bearer`）。有 `RESEND_API_KEY` 就用它，否则仍是 Mailjet，再否则 Brevo。`MAIL_FROM` 仍要有，否则「登录暂未开放」。主题和正文不变。Mailjet 和 Brevo 留着。生产在 Cloudflare Pages 的 Production 和 Preview 配 `RESEND_API_KEY` 和 `MAIL_FROM`。不改外观，不加设备。密钥不进仓库。
 
 ### 阶段 F：本地桌面应用（Leo 2026-11-04）
 
@@ -685,11 +686,12 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 | `AI_PER_IP_HOURLY` | `20` | 每 IP 每小时请求上限（兜底，登录后仍生效） |
 | `AI_DAILY_PER_USER` | `20` | 每个邮箱每天的 AI 次数，按北京时间零点重置。不设全站上限 |
 | `AI_TIMEOUT_MS` | `40000` | 调 DeepSeek 的超时 |
-| `MAILJET_API_KEY` | （无） | 和 `MAILJET_API_SECRET` 一起才走 Mailjet。只填一个不会改去 Brevo，发码仍是「登录暂未开放」 |
-| `MAILJET_API_SECRET` | （无） | Mailjet Basic Auth 的密码。不要写进仓库 |
-| `BREVO_API_KEY` | （无） | 没配 Mailjet 时用它发登录验证码。两个都没配好就返回「登录暂未开放」，不要 500 |
-| `MAIL_FROM` | （无） | 已验证的发件地址。和当前供应商的密钥一起才算配好 |
-| `MAIL_FROM_NAME` | `DeskLab` | 发件人名称 |
+| `RESEND_API_KEY` | （无） | 有它就走 Resend HTTPS API。不要写进仓库 |
+| `MAILJET_API_KEY` | （无） | 没配 Resend 时，和 `MAILJET_API_SECRET` 一起才走 Mailjet。只填一个不会改去 Brevo，发码仍是「登录暂未开放」 |
+| `MAILJET_API_SECRET` | （无） | Mailjet Basic Auth 的密码。旧路径。不要写进仓库 |
+| `BREVO_API_KEY` | （无） | 没配 Resend、也没配齐 Mailjet 时用它发登录验证码。都没配好就返回「登录暂未开放」，不要 500 |
+| `MAIL_FROM` | （无） | 已验证的发件地址。Resend 沙箱可用 `onboarding@resend.dev`（只能寄到该账号邮箱）。和当前供应商的密钥一起才算配好 |
+| `MAIL_FROM_NAME` | `DeskLab` | 发件人名称。Resend 写成 `名称 <地址>` |
 | `AUTH_CODE_PER_IP_HOURLY` | `10` | 同一 IP 每小时最多发几次验证码。负责人要求有上限、没有给数字，默认 10 |
 | `AUTH_VERIFY_PER_IP_HOURLY` | `30` | 同一 IP 每小时最多验证几次。默认 30：一家网络里几个人各试几次，10 次会把正常登录锁住；30 次仍挡住一个地址撒验证码。超限不增加该邮箱的错误次数 |
 
@@ -934,19 +936,20 @@ total = 100 × errors + 20 × warnings + 5 × hints + 1 × cableMeters
 | `GET /api/auth/me` | `{ email, remaining }`。未登录是 `{ email: null, remaining: null }` |
 | `POST /api/auth/logout` | 删掉当前会话，并把该邮箱的世代号加一。同一邮箱的其它会话（包括只存了邮箱字符串的旧记录）下次读取就作废，不必等 30 天。没有有效会话时只清 cookie，不动世代号。网站 https 只认 `__Host-desklab_session`，只带旧名字不会作废会话，但响应会把两个名字都清掉。桌面和本地 http 只清 `desklab_session`。别的邮箱不动。JSON 带 nosniff |
 
-发信在 `server/ai/mail.js`。选择顺序：
+发信在 `server/ai/mail.js`。选择顺序（E155）：
 
-1. `MAILJET_API_KEY` 和 `MAILJET_API_SECRET` 都有：走 Mailjet `POST https://api.mailjet.com/v3.1/send`（`server/ai/mailjet.js`）。`Authorization: Basic`，用户名是 key，密码是 secret。正文只有 `TextPart`，主题和中文句子与 Brevo 相同。Mailjet 返回的 `Messages[0].Status` 不是 `success` 算失败。缺 `MAIL_FROM`，或两个密钥只填了一个，仍是 503，不改去 Brevo。
-2. 否则有 `BREVO_API_KEY` 和 `MAIL_FROM`：走 Brevo `POST https://api.brevo.com/v3/smtp/email`，请求头 `api-key`。
-3. 都没有：503「登录暂未开放」，不要 500。不扣发码次数。
+1. 有 `RESEND_API_KEY`：走 Resend `POST https://api.resend.com/emails`（`server/ai/resend.js`）。`Authorization: Bearer`。JSON 是 `from`（`名称 <地址>`，没有名称时只写地址）、`to`（只含收件人的数组）、`subject`、`text`。非 2xx 算失败。Pages Functions 走这个 HTTPS 接口，不走 SMTP。缺 `MAIL_FROM` 仍是 503。有 Resend 时不再改去 Mailjet 或 Brevo，Mailjet 只填了一半也一样。
+2. 否则 `MAILJET_API_KEY` 和 `MAILJET_API_SECRET` 都有：走 Mailjet `POST https://api.mailjet.com/v3.1/send`（`server/ai/mailjet.js`）。`Authorization: Basic`，用户名是 key，密码是 secret。正文只有 `TextPart`，主题和中文句子与 Resend、Brevo 相同。Mailjet 返回的 `Messages[0].Status` 不是 `success` 算失败。缺 `MAIL_FROM`，或两个密钥只填了一个，仍是 503，不改去 Brevo。
+3. 否则有 `BREVO_API_KEY` 和 `MAIL_FROM`：走 Brevo `POST https://api.brevo.com/v3/smtp/email`，请求头 `api-key`。
+4. 都没有：503「登录暂未开放」，不要 500。不扣发码次数。
 
-生产要改用 Mailjet：在 Cloudflare Pages 项目 `desklab-frontend` 的 Production 和 Preview 里把 `MAILJET_API_KEY`、`MAILJET_API_SECRET`、`MAIL_FROM` 设成加密环境变量（`MAIL_FROM` 必须是 Mailjet 里已验证的发件地址，`MAIL_FROM_NAME` 可选，默认 DeskLab）。不要把密钥写进仓库、日志或响应。配齐之后发码走 Mailjet。想回到 Brevo，删掉两个 Mailjet 变量，留下 `BREVO_API_KEY` 和 `MAIL_FROM`。两边都没配好时，接口继续返回「登录暂未开放」。
+生产发信：在 Cloudflare Pages 项目 `desklab-frontend` 的 Production 和 Preview 里把 `RESEND_API_KEY`、`MAIL_FROM` 设成加密环境变量。`MAIL_FROM` 是 Resend 已验证域名上的地址；沙箱可以用 `onboarding@resend.dev`，但只能投到该 Resend 账号的邮箱。`MAIL_FROM_NAME` 可选，默认 DeskLab。Mailjet（`MAILJET_API_KEY` + `MAILJET_API_SECRET`）和 Brevo（`BREVO_API_KEY`）仍可用，是旧路径：删掉 `RESEND_API_KEY` 之后，两个 Mailjet 密钥都在就走 Mailjet，否则走 Brevo。不要把密钥写进仓库、日志或响应。三个都没配好时，接口继续返回「登录暂未开放」。
 
 邮件只有验证码和「10 分钟内有效」。验证码、会话、发码计数、AI 次数都在 KV `AI_LIMITS`。没绑定 KV 时落在本 isolate 的内存里（Pages 上每个函数是各自的 isolate，所以生产必须有 KV）。
 
 界面：没登录时点「让 AI 看看」打开登录框（先邮箱，再验证码），登录成功不自动发起 AI 请求。登录后按钮旁是「今日剩余 N 次」和「退出」。样式用现有的 `.modal-overlay` / `.modal-container`。分享链接只读时这个按钮保持禁用。
 
-E113–E116（2026-11-04，c2de31f）做了 E95 交给主线的修复：验证错误次数在同一个 Worker 里加锁；验证按 IP 限流；对外文案不再区分没有待验证码和填错，也不再区分三种发码限额；https 的 `Set-Cookie` 带 Secure。网站的 SameSite 保持 Lax。F7 只对桌面来源把这枚 cookie 改成 None，这次没有改掉。登录 JSON 带 nosniff。KV 没有原子更新，锁只覆盖这个 isolate 里叠在一起的请求。CSRF 在网站的 Lax 下可以接受。E109 是房间尺寸。E117 把验证码改成拒绝采样。E118 用每个邮箱的世代号让一次退出作废该邮箱的全部会话，不扫描会话列表。E119 没有改 F7 的来源规则，只把登录和 AI 上「陌生 Origin 403 且 nosniff、桌面来源仍是 SameSite=None」锁进测试。E120 只给网站 https 加上 `__Host-` 前缀；桌面来源和本地 http 仍用 `desklab_session`，避免破坏桌面会话。详情在阶段 E 的 E95、E113–E120。
+E113–E116（2026-11-04，c2de31f）做了 E95 交给主线的修复：验证错误次数在同一个 Worker 里加锁；验证按 IP 限流；对外文案不再区分没有待验证码和填错，也不再区分三种发码限额；https 的 `Set-Cookie` 带 Secure。网站的 SameSite 保持 Lax。F7 只对桌面来源把这枚 cookie 改成 None，这次没有改掉。登录 JSON 带 nosniff。KV 没有原子更新，锁只覆盖这个 isolate 里叠在一起的请求。CSRF 在网站的 Lax 下可以接受。E109 是房间尺寸。E117 把验证码改成拒绝采样。E118 用每个邮箱的世代号让一次退出作废该邮箱的全部会话，不扫描会话列表。E119 没有改 F7 的来源规则，只把登录和 AI 上「陌生 Origin 403 且 nosniff、桌面来源仍是 SameSite=None」锁进测试。E120 只给网站 https 加上 `__Host-` 前缀；桌面来源和本地 http 仍用 `desklab_session`，避免破坏桌面会话。E155 把登录验证码改成优先 Resend，Mailjet 和 Brevo 仍是后面的路径。详情在阶段 E 的 E95、E113–E120、E155。
 
 ---
 

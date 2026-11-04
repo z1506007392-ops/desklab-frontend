@@ -24,14 +24,18 @@ In production the key is the Cloudflare Pages secret `DEEPSEEK_API_KEY`;
 optional settings: `DEEPSEEK_MODEL`, `DEEPSEEK_BASE_URL`, `AI_ENABLED`,
 `AI_TIMEOUT_MS`, `AI_PER_IP_HOURLY`, `AI_DAILY_PER_USER` (per email, default
 20; there is no site-wide daily cap), and a KV binding `AI_LIMITS` for
-sessions, login codes, and those counts. Login mail uses Mailjet when
-both `MAILJET_API_KEY` and `MAILJET_API_SECRET` are set, and otherwise
-Brevo when `BREVO_API_KEY` is set. Either way `MAIL_FROM` is required
-(`MAIL_FROM_NAME` defaults to DeskLab). A half-set Mailjet pair does not
-fall through to Brevo. Until a provider is fully configured,
-`POST /api/auth/request-code` returns “登录暂未开放”. Do not commit these
-keys. `AI_MOCK=1` treats a missing cookie as a local developer so the mock
-still answers.
+sessions, login codes, and those counts. Login mail uses Resend when
+`RESEND_API_KEY` is set, otherwise Mailjet when both `MAILJET_API_KEY`
+and `MAILJET_API_SECRET` are set, and otherwise Brevo when
+`BREVO_API_KEY` is set. `MAIL_FROM` is required in every case
+(`MAIL_FROM_NAME` defaults to DeskLab; Resend sends `Name <email>`).
+Mailjet and Brevo stay available when Resend is unset. A half-set Mailjet
+pair stays unconfigured unless Resend is set. Production on Cloudflare
+Pages needs `RESEND_API_KEY` and `MAIL_FROM` (a verified address, or
+`onboarding@resend.dev` for the Resend sandbox). Until a provider is
+fully configured, `POST /api/auth/request-code` returns “登录暂未开放”.
+Do not commit these keys. `AI_MOCK=1` treats a missing cookie as a local
+developer so the mock still answers.
 
 ## Desktop app
 
