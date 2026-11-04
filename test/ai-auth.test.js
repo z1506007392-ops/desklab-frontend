@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { LOGIN_CODE_ROLL_LIMIT } from '../src/domain/login-code.js';
 import { createAuthHandlers, normalizeEmail, sha256Hex } from '../server/ai/auth.js';
 import { createRateLimiter } from '../server/ai/rate-limit.js';
 
@@ -48,13 +49,14 @@ function post(url, body, headers = {}) {
   });
 }
 
-function setup({ time = clock('2026-10-30T02:10:00Z'), env = mailEnv, mail } = {}) {
+function setup({ time = clock('2026-10-30T02:10:00Z'), env = mailEnv, mail, randomUint32 = null } = {}) {
   const kv = new FakeKv(time.now);
   const sent = [];
   const handlers = createAuthHandlers({
     now: time.now,
     rateLimiter: createRateLimiter({ now: time.now }),
     mail: mail ?? (async ({ to, code }) => { sent.push({ to, code }); return { ok: true }; }),
+    randomUint32,
   });
   return { kv, sent, time, env: { ...env, AI_LIMITS: kv }, ...handlers };
 }
@@ -63,6 +65,32 @@ function cookieToken(response) {
   const header = response.headers.get('set-cookie') || '';
   return header.match(/desklab_session=([0-9a-f]+)/)?.[1] || '';
 }
+
+test('a rejected roll is discarded before the code is mailed', async () => {
+  const rolls = [LOGIN_CODE_ROLL_LIMIT, 0xFFFFFFFF, 42];
+  const rig = setup({ randomUint32: () => rolls.shift() });
+  const response = await rig.requestCode({
+    request: post('https://desklab.test/api/auth/request-code', { email: 'a@b.cn' }),
+    env: rig.env,
+  });
+  assert.equal(response.status, 200);
+  assert.equal(rig.sent[0].code, '000042');
+  assert.equal(rolls.length, 0);
+  assert.notEqual(rig.sent[0].code, String(0xFFFFFFFF % 1000000).padStart(6, '0'));
+});
+
+test('eight rejected rolls do not fall back to modulo or send mail', async () => {
+  const rig = setup({ randomUint32: () => 0xFFFFFFFF });
+  const response = await rig.requestCode({
+    request: post('https://desklab.test/api/auth/request-code', { email: 'a@b.cn' }),
+    env: rig.env,
+  });
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).message, '登录暂未开放');
+  assert.equal(rig.sent.length, 0);
+  assert.equal(await rig.kv.get('auth:code:a@b.cn'), null);
+  assert.equal(rig.kv.puts.some(([key]) => String(key).startsWith('auth:lock:')), false);
+});
 
 test('email addresses are trimmed and lowercased, and junk is refused', () => {
   assert.equal(normalizeEmail('  User@Example.com '), 'user@example.com');

@@ -1,6 +1,7 @@
 // Email-code login for the AI feature. The desk itself stays in the
 // browser. Codes, sessions, and send counters live in the AI_LIMITS KV
 // binding when it is present, and in this isolate's memory otherwise.
+import { uniformLoginCode } from '../../src/domain/login-code.js';
 import { beijingDay, createRateLimiter, hourBucket } from './rate-limit.js';
 import { mailConfig, sendLoginCode } from './mail.js';
 
@@ -64,9 +65,9 @@ function newToken() {
   return [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-function newCode() {
-  const roll = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
-  return String(roll).padStart(6, '0');
+function newCode(randomUint32) {
+  const next = randomUint32 || (() => crypto.getRandomValues(new Uint32Array(1))[0]);
+  return uniformLoginCode(next);
 }
 
 function clientIp(request) {
@@ -170,6 +171,7 @@ export function createAuthHandlers({
   now = () => Date.now(),
   mail = sendLoginCode,
   rateLimiter = null,
+  randomUint32 = null,
 } = {}) {
   const memory = new Map();
   const limiter = rateLimiter ?? createRateLimiter({ now });
@@ -221,6 +223,9 @@ export function createAuthHandlers({
       || await blocked(ipPrefix, ipLimit, 'send_limited');
     if (refusal) return refusal;
 
+    const code = newCode(randomUint32);
+    if (!code) return fail(503, 'auth_unavailable');
+
     const lock = await limiter.consume(env, { prefix: lockPrefix, limit: 1, ttlSeconds: LOCK_TTL_SECONDS });
     if (!lock.allowed) return fail(429, 'send_limited');
     const daily = await limiter.consume(env, { prefix: dailyPrefix, limit: SENDS_PER_EMAIL_DAY, ttlSeconds: 2 * 24 * 60 * 60 });
@@ -228,7 +233,6 @@ export function createAuthHandlers({
     const ipHit = await limiter.consume(env, { prefix: ipPrefix, limit: ipLimit, ttlSeconds: 2 * 60 * 60 });
     if (!ipHit.allowed) return fail(429, 'send_limited');
 
-    const code = newCode();
     const record = JSON.stringify({ hash: await sha256Hex(`${email}:${code}`), attempts: 0 });
     await store.put(`auth:code:${email}`, record, { expirationTtl: CODE_TTL_SECONDS });
     const sent = await mail({ fetchImpl, env, to: email, code });

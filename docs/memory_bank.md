@@ -17,6 +17,14 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E117：登录验证码改为拒绝采样。`Uint32 % 1000000` 会让 000000–967295 比后面的号码多一种抽法。现在只收 4294000000 以下的随机数，每个验证码正好 4294 种；尾部重抽，最多 8 次。8 次都落在尾部就不发信，也不扣发码次数，不退回取模。逻辑在 `src/domain/login-code.js`，发码仍在 `server/ai/auth.js`。
+
+验证：`npm test` 662 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。Chrome 桌面和手机 UI 257 通过 + 1 跳过。登录界面没改，外观没改。
+
+还剩：推 master。E118–E120 还没领。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 领了 E117。验证码改成拒绝采样，去掉 `Uint32 % 1000000` 的取模偏差，000000–999999 每个号码一样多。不改外观，不加设备，不做 F6，不做 F4。
 
 还剩：实现并验证，然后推 master。
@@ -4652,8 +4660,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 649 domain tests (E113–E116 on top of E97, E99, and E100)
-npm run test:ui   # Chrome desktop + phone: 251 passed + 1 skipped before E97; E97 recorded 255 passed + 1 skipped. CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 662 domain tests (E117 rejection sampling on top of E111's 658)
+npm run test:ui   # Chrome desktop + phone: 257 passed + 1 skipped (E117, same UI count as E111). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

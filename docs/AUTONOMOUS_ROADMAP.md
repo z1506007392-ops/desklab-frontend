@@ -509,8 +509,8 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E92 [x] 完成（Desklab，2026-11-04，df397f0）** 分享链接的 URL hash 和导入存档做输入校验。解开之前按长度拒绝过大的 hash，解压有字节上限。版本 2 里用户改过的字段改成白名单。导入文件、粘贴和打开分享链接时限制设备数、连接数、房间和坐标；名字里的尖括号换成全角。模型地址只留本站 `/models/*.glb`，远程地址和 `javascript:` 丢掉，已知型号仍用水合后的目录模型。已经存在存档里的远程地址也不再发请求。本机正常保存不走这道筛子。不改外观。
 - **E93 [x] 完成（Desklab，2026-11-04，eda4edf）** `/api/ai/layout` 只收 `application/json`。请求体限制深度、节点数、键和字符串长度，并拒绝 `__proto__`、`constructor`、`prototype`。意外错误只回答「服务暂时不可用」，日志只记错误名。上游正文和带换行的模型名不会回到浏览器。限流用的地址只取第一段。502、504 和看不懂的回答仍带回 `remaining`（E101）。不改 `functions/api/auth/*`，也不改 `server/ai/auth.js`。
 - **E94 [x] 完成（Desklab，2026-11-04，8912623）** `package.json` 的 `overrides.minimatch` 定为 11.0.4。`npm audit` 从 6 条中等（都在 eslint 用的 minimatch 10，不进页面）变成 0。没有把 eslint 降到 9，也没有升级 three、react、vite。lint 仍然通过。
-- **E95 [x] 完成（Desklab，2026-11-04，4be0cf3）** 登录流程只读安全审查。审查当时没有改 `functions/api/auth/*`，也没有改 `server/ai/auth.js`。E113–E116（c2de31f）补上了第 1 条的加锁和验证 IP 限流、第 2 条的对外文案、第 3 条的 https Secure（网站 SameSite 仍是 Lax）、第 5 条的 nosniff。E109 是房间尺寸，不是这四条。下面是当时的发现。这次没做的：验证码 `Uint32 % 1000000` 的取模偏差、`__Host-` 前缀、退出时清掉这个邮箱的全部会话、核对 Origin。
-  1. 审查时验证码错误次数不是原子的。`verify` 先读 `attempts`，再写入加一后的数。并发请求可以读到同一个数，实际试错可以超过 5 次（`MAX_ATTEMPTS`）。单线程下是 6 位、10 分钟、同一邮箱每天最多发 5 次，硬猜不划算。验证接口当时没有按 IP 限流（发码才有，默认每小时 10 次）。E113 在同一个 Worker 里把这一次读和写排队，并给验证加上每 IP 每小时上限。KV 没有比较并交换，另一个 isolate 仍可能看到旧次数。生成验证码是 `Uint32 % 1000000`，有很小的取模偏差，可选改成拒绝采样，这次没改。比对是 SHA-256 再逐字节异或。验证码不进日志。
+- **E95 [x] 完成（Desklab，2026-11-04，4be0cf3）** 登录流程只读安全审查。审查当时没有改 `functions/api/auth/*`，也没有改 `server/ai/auth.js`。E113–E116（c2de31f）补上了第 1 条的加锁和验证 IP 限流、第 2 条的对外文案、第 3 条的 https Secure（网站 SameSite 仍是 Lax）、第 5 条的 nosniff。E109 是房间尺寸，不是这四条。下面是当时的发现。当时没做的：验证码 `Uint32 % 1000000` 的取模偏差（E117 已改为拒绝采样）、`__Host-` 前缀、退出时清掉这个邮箱的全部会话、核对 Origin。
+  1. 审查时验证码错误次数不是原子的。`verify` 先读 `attempts`，再写入加一后的数。并发请求可以读到同一个数，实际试错可以超过 5 次（`MAX_ATTEMPTS`）。单线程下是 6 位、10 分钟、同一邮箱每天最多发 5 次，硬猜不划算。验证接口当时没有按 IP 限流（发码才有，默认每小时 10 次）。E113 在同一个 Worker 里把这一次读和写排队，并给验证加上每 IP 每小时上限。KV 没有比较并交换，另一个 isolate 仍可能看到旧次数。生成验证码原来是 `Uint32 % 1000000`，有很小的取模偏差。E117 改成拒绝采样。比对是 SHA-256 再逐字节异或。验证码不进日志。
   2. 没有用户库，任意合法邮箱都能要验证码，不存在「这个邮箱有没有账号」。审查时没有待验证的码返回 `code_expired`（验证码已失效），码还在但填错返回 `code_wrong`（验证码不对），错满返回 `code_locked`。发码的 `send_lock`、`send_daily`、`send_ip` 是三句不同的话。E114 把这两组收成两句，错误码也收成 `code_rejected` 和 `send_limited`。
   3. Cookie `desklab_session`：HttpOnly、SameSite=Lax、Path=/、Max-Age 30 天。`request.url` 是 https 才加 Secure。令牌是 32 字节随机数，KV 只存它的 SHA-256。没有 Domain，也没有 `__Host-` 前缀。退出只删当前这一条会话，同一邮箱的其他会话要等 30 天。E115 用测试锁住：https 的 `Set-Cookie` 带 Secure，本地 http 不带，网站的 SameSite 保持 Lax。`__Host-` 和一次退出全部会话这次没做。
   4. 改状态的接口都是 POST。SameSite=Lax 在现行浏览器上会挡住跨站 POST 带上这个 cookie。没有 CSRF 令牌，也没有核对 Origin。JSON 的 Content-Type 会触发预检，响应没有 CORS 头。普通表单 POST 不是合法 JSON，发码会当成无效邮箱，不会发信。保持 Lax 就可以接受。不要改成 SameSite=None。以后可以再对一下 Origin。
@@ -573,7 +573,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E114 [x] 完成（Desklab，2026-11-04，c2de31f）** 登录和发码对外用同一类句子。没有待验证码、填错、错满都是 `code_rejected`：「验证码不对或已失效，请重新获取」。邮箱刚发过、今天发满、这个 IP 发满都是 `send_limited`：「发送太频繁，请稍后再试」。验证接口按 IP 超限是 `verify_limited`，句子与发码限额相同，状态 429。无效邮箱和不是 6 位验证码仍用原来的句子。
 - **E115 [x] 完成（Desklab，2026-11-04，c2de31f）** 生产 https 的 `Set-Cookie` 带 Secure。Pages 传入的 `request.url` 是 https 才加；本地 http 不加，否则浏览器不存。网站这条 cookie 仍是 SameSite=Lax，没有改成 None。F7 的 `server/ai/desktop-cors.js` 只对桌面来源把这句 Lax 改成 None 并补上 Secure。退出清 cookie 用同一条规则。
 - **E116 [x] 完成（Desklab，2026-11-04，c2de31f）** 登录接口的 JSON 响应（成功和失败）加上 `X-Content-Type-Options: nosniff`。`public/_headers` 盖不到 Pages Functions。
-- **E117 [~] 进行中（grok，2026-11-04）** 验证码生成去掉 `Uint32 % 1000000` 取模偏差，改成拒绝采样，保证均匀 000000–999999。单测锁住。不改外观，不加设备，不改桌面壳，不做扫描，不实现网上社区接口。
+- **E117 [x] 完成（grok，2026-11-04）** 验证码生成去掉 `Uint32 % 1000000` 取模偏差，改成拒绝采样，保证均匀 000000–999999。`2^32` 比 1000000 的整数倍多 967296，取模会让 000000–967295 各多出现一次。现在只接受 `4294000000` 以下的随机数（每个验证码正好 4294 种），尾部重抽，最多 8 次，抽不出来就不发信、也不扣次数。单测锁住：尾部不会被折成 967295，连续 8 次拒绝不会退回取模。不改外观，不加设备，不改桌面壳。
 
 ### 阶段 F：本地桌面应用（Leo 2026-11-04）
 
@@ -909,7 +909,7 @@ total = 100 × errors + 20 × warnings + 5 × hints + 1 × cableMeters
 
 | 接口 | 作用 |
 |---|---|
-| `POST /api/auth/request-code` | 6 位验证码，10 分钟，只存 `SHA-256(邮箱:验证码)`。同一邮箱 60 秒 1 次、每天 5 次；同一 IP 每小时 `AUTH_CODE_PER_IP_HOURLY`（默认 10）。刚发过、今天发满、这个 IP 发满都是 429「发送太频繁，请稍后再试」。发信没配好时 503「登录暂未开放」，且不扣次数。发信失败 502「邮件没有发出去，请稍后再试」，并删掉刚存的验证码。JSON 带 nosniff |
+| `POST /api/auth/request-code` | 6 位验证码，000000–999999 均匀（拒绝采样，不用 `Uint32 % 1000000`）。10 分钟，只存 `SHA-256(邮箱:验证码)`。同一邮箱 60 秒 1 次、每天 5 次；同一 IP 每小时 `AUTH_CODE_PER_IP_HOURLY`（默认 10）。刚发过、今天发满、这个 IP 发满都是 429「发送太频繁，请稍后再试」。发信没配好时 503「登录暂未开放」，且不扣次数。抽不够均匀随机数时也是这句，并且不扣次数。发信失败 502「邮件没有发出去，请稍后再试」，并删掉刚存的验证码。JSON 带 nosniff |
 | `POST /api/auth/verify` | 同一个 Worker 里先排队，错误次数不会被并发请求盖过 5。没有待验证码、填错、错满都是「验证码不对或已失效，请重新获取」。同一 IP 每小时 `AUTH_VERIFY_PER_IP_HOURLY`（默认 30），超限是「发送太频繁，请稍后再试」，不增加错误次数。通过后 `desklab_session`：HttpOnly、SameSite=Lax、Path=/、30 天；只有 https 才加 Secure（本地 http 不加） |
 | `GET /api/auth/me` | `{ email, remaining }`。未登录是 `{ email: null, remaining: null }` |
 | `POST /api/auth/logout` | 删掉会话 |
