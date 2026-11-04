@@ -573,6 +573,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E114 [x] 完成（Desklab，2026-11-04，c2de31f）** 登录和发码对外用同一类句子。没有待验证码、填错、错满都是 `code_rejected`：「验证码不对或已失效，请重新获取」。邮箱刚发过、今天发满、这个 IP 发满都是 `send_limited`：「发送太频繁，请稍后再试」。验证接口按 IP 超限是 `verify_limited`，句子与发码限额相同，状态 429。无效邮箱和不是 6 位验证码仍用原来的句子。
 - **E115 [x] 完成（Desklab，2026-11-04，c2de31f）** 生产 https 的 `Set-Cookie` 带 Secure。Pages 传入的 `request.url` 是 https 才加；本地 http 不加，否则浏览器不存。网站这条 cookie 仍是 SameSite=Lax，没有改成 None。F7 的 `server/ai/desktop-cors.js` 只对桌面来源把这句 Lax 改成 None 并补上 Secure。退出清 cookie 用同一条规则。
 - **E116 [x] 完成（Desklab，2026-11-04，c2de31f）** 登录接口的 JSON 响应（成功和失败）加上 `X-Content-Type-Options: nosniff`。`public/_headers` 盖不到 Pages Functions。
+- **E117 [~] 进行中（grok，2026-11-04）** 验证码生成去掉 `Uint32 % 1000000` 取模偏差，改成拒绝采样，保证均匀 000000–999999。单测锁住。不改外观，不加设备，不改桌面壳，不做扫描，不实现网上社区接口。
 
 ### 阶段 F：本地桌面应用（Leo 2026-11-04）
 

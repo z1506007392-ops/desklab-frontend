@@ -17,6 +17,12 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+领了 E117。验证码改成拒绝采样，去掉 `Uint32 % 1000000` 的取模偏差，000000–999999 每个号码一样多。不改外观，不加设备，不做 F6，不做 F4。
+
+还剩：实现并验证，然后推 master。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 按需绘制测试那次推送的 CI 已绿。提交 `9b86ece`（测试改动 `8fef560`）。网站 11 项都过了：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41744336302 。桌面安装包：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41744336304 。
 
 E111 文档提交 `90e7315` 的网站 CI 也已绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41743397576 。桌面安装包：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41743397577 。`a674d96` 的网站 CI 仍是红的，不改写成绿。
