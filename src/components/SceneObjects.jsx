@@ -1,9 +1,10 @@
 import '../domain/webkit-workers.js';
 import React, { Suspense, useEffect, useLayoutEffect, useRef } from 'react';
-import { useThree } from '@react-three/fiber';
-import { Billboard, Edges, Line, Text, useGLTF } from '@react-three/drei';
+import { useFrame, useThree } from '@react-three/fiber';
+import { Billboard, Line, Text, useGLTF } from '@react-three/drei';
 
-import { createCameraPoseSynchronizer } from '../domain/camera-snapshot.js';
+import { applyCameraPose, createCameraPoseSynchronizer, emptyRoomViewPose } from '../domain/camera-snapshot.js';
+import { ROOM_FLOOR_COLOR, ROOM_WALL_COLOR, ROOM_WALL_THICKNESS, roomWallsFacingCamera } from '../domain/room-shell.js';
 import { catalogFontUrl, getModelDefaultScale, isCatalogModelUrl } from '../domain/catalog.js';
 import { drawCablePoints } from '../domain/cable-tray.js';
 import { evaluateConnectionLength, getConnectionEndpoints, getConnectionRoute } from '../domain/connections.js';
@@ -77,17 +78,102 @@ export function DeskLabAxes({ room }) {
   );
 }
 
-export function RoomWalls({ room }) {
+// Emissive lifts the faces the key light misses. Without it the far wall
+// renders as a flat grey under the scene's ambient light, not off-white.
+const WALL_MATERIAL = {
+  color: ROOM_WALL_COLOR,
+  emissive: ROOM_WALL_COLOR,
+  emissiveIntensity: 0.42,
+  roughness: 1,
+  metalness: 0,
+};
+
+// Devices stay on layer 0, under the original lights. The room also joins
+// layer 1 so a fill light can lift the walls the key light never reaches,
+// without changing how devices are lit.
+const ROOM_LIGHT_LAYER = 1;
+
+function useRoomLightLayer(group) {
+  const camera = useThree(state => state.camera);
+  useLayoutEffect(() => {
+    camera.layers.enable(ROOM_LIGHT_LAYER);
+    group.current?.traverse(child => {
+      if (child.isMesh) child.layers.enable(ROOM_LIGHT_LAYER);
+    });
+  });
+}
+
+// Soft fill for the room shell only. The key light sits outside the far
+// wall, so that wall and the floor would otherwise fall into flat shadow.
+export function RoomFillLight() {
+  const light = useRef(null);
+  const camera = useThree(state => state.camera);
+  // Before the first draw, so devices (layer 0) never pick up this light.
+  camera.layers.enable(ROOM_LIGHT_LAYER);
+  useFrame(() => {
+    light.current?.layers.set(ROOM_LIGHT_LAYER);
+  });
   return (
-    <group>
-      <mesh position={[0, 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[room.length, room.width]} />
-        <meshStandardMaterial color="#90a4ae" transparent opacity={0.15} depthWrite={false} />
+    <directionalLight
+      ref={light}
+      position={[-6, 10, -8]}
+      intensity={2.1}
+    />
+  );
+}
+
+// Solid floor and the walls that face the camera. The wall in front of the
+// lens is hidden, so orbiting never puts a wall between the viewer and the
+// room. Nothing here is clickable; picking still hits devices only.
+export function RoomWalls({ room }) {
+  const camera = useThree(state => state.camera);
+  const group = useRef(null);
+  const minX = useRef(null);
+  const maxX = useRef(null);
+  const minZ = useRef(null);
+  const maxZ = useRef(null);
+  useRoomLightLayer(group);
+  const showFacingWalls = () => {
+    const visible = roomWallsFacingCamera(room, camera.position);
+    if (minX.current) minX.current.visible = visible.minX;
+    if (maxX.current) maxX.current.visible = visible.maxX;
+    if (minZ.current) minZ.current.visible = visible.minZ;
+    if (maxZ.current) maxZ.current.visible = visible.maxZ;
+  };
+  useLayoutEffect(showFacingWalls);
+  useFrame(showFacingWalls);
+
+  const length = room.length;
+  const width = room.width;
+  const height = room.height;
+  const thickness = ROOM_WALL_THICKNESS;
+  return (
+    <group ref={group}>
+      <mesh position={[0, -0.02, 0]} raycast={() => null}>
+        <boxGeometry args={[length, 0.04, width]} />
+        <meshStandardMaterial
+          color={ROOM_FLOOR_COLOR}
+          emissive={ROOM_FLOOR_COLOR}
+          emissiveIntensity={0.18}
+          roughness={0.94}
+          metalness={0}
+        />
       </mesh>
-      <mesh position={[0, room.height / 2, 0]}>
-        <boxGeometry args={[room.length, room.height, room.width]} />
-        <meshStandardMaterial color="#cfd8dc" transparent opacity={0.04} depthWrite={false} side={2} />
-        <Edges threshold={15} color="#546e7a" />
+      <mesh ref={minX} position={[-(length / 2 + thickness / 2), height / 2, 0]} raycast={() => null}>
+        <boxGeometry args={[thickness, height, width]} />
+        <meshStandardMaterial {...WALL_MATERIAL} />
+      </mesh>
+      <mesh ref={maxX} position={[length / 2 + thickness / 2, height / 2, 0]} raycast={() => null}>
+        <boxGeometry args={[thickness, height, width]} />
+        <meshStandardMaterial {...WALL_MATERIAL} />
+      </mesh>
+      <mesh ref={minZ} position={[0, height / 2, -(width / 2 + thickness / 2)]} raycast={() => null}>
+        <boxGeometry args={[length + thickness * 2, height, thickness]} />
+        <meshStandardMaterial {...WALL_MATERIAL} />
+      </mesh>
+      <mesh ref={maxZ} position={[0, height / 2, width / 2 + thickness / 2]} raycast={() => null}>
+        <boxGeometry args={[length + thickness * 2, height, thickness]} />
+        <meshStandardMaterial {...WALL_MATERIAL} />
       </mesh>
     </group>
   );
@@ -142,9 +228,25 @@ export function ConnectionsRenderer({ connections, objects }) {
   );
 }
 
-export function CameraSetup({ cameraConfig, room, objects, controlsRef, cameraRef }) {
-  const { camera } = useThree();
+function cameraStillAt(camera, controls, pose) {
+  const close = (left, right) => Math.abs(left - right) < 0.03;
+  return close(camera.position.x, pose.position.x)
+    && close(camera.position.y, pose.position.y)
+    && close(camera.position.z, pose.position.z)
+    && close(controls.target.x, pose.target.x)
+    && close(controls.target.y, pose.target.y)
+    && close(controls.target.z, pose.target.z);
+}
+
+export function CameraSetup({ cameraConfig, room, objects, controlsRef, cameraRef, frameEmptyRoom = false }) {
+  const camera = useThree(state => state.camera);
+  const size = useThree(state => state.size);
+  const invalidate = useThree(state => state.invalidate);
   const poseSynchronizerRef = useRef(null);
+  const lastFitRef = useRef(null);
+  const fitStamp = useRef(0);
+  const appliedFit = useRef(0);
+  const frameEmptyRoomRef = useRef(frameEmptyRoom);
   if (poseSynchronizerRef.current === null) {
     poseSynchronizerRef.current = createCameraPoseSynchronizer();
   }
@@ -153,15 +255,62 @@ export function CameraSetup({ cameraConfig, room, objects, controlsRef, cameraRe
     if (cameraRef) cameraRef.current = camera;
   }, [camera, cameraRef]);
 
-  useEffect(() => {
-    poseSynchronizerRef.current.sync({
+  // While the first-run sheet covers the bottom of the window, the canvas is
+  // only the area above it. The fit is applied in the draw loop: a pose set
+  // from a layout effect lands after the frame that was just painted, and on
+  // a demand loop that frame is the one the visitor is left looking at.
+  useLayoutEffect(() => {
+    frameEmptyRoomRef.current = frameEmptyRoom;
+  });
+
+  useLayoutEffect(() => {
+    if (size.height < 1 || size.width < 1) return undefined;
+    if (frameEmptyRoom) {
+      fitStamp.current += 1;
+      const frame = requestAnimationFrame(() => invalidate());
+      return () => cancelAnimationFrame(frame);
+    }
+    const controls = controlsRef.current;
+    if (!camera || !controls) return undefined;
+    if (lastFitRef.current && cameraStillAt(camera, controls, lastFitRef.current)) {
+      const pose = emptyRoomViewPose(room, size.width / size.height);
+      applyCameraPose(camera, controls, pose);
+      lastFitRef.current = pose;
+      const frame = requestAnimationFrame(() => invalidate());
+      return () => cancelAnimationFrame(frame);
+    }
+    return undefined;
+  }, [camera, controlsRef, frameEmptyRoom, invalidate, room, size.height, size.width]);
+
+  useFrame(() => {
+    if (!frameEmptyRoomRef.current || appliedFit.current === fitStamp.current) return;
+    const controls = controlsRef.current;
+    if (!camera || !controls || size.height < 1 || size.width < 1) {
+      invalidate();
+      return;
+    }
+    const pose = emptyRoomViewPose(room, size.width / size.height);
+    applyCameraPose(camera, controls, pose);
+    lastFitRef.current = pose;
+    appliedFit.current = fitStamp.current;
+  });
+
+  useLayoutEffect(() => {
+    if (frameEmptyRoomRef.current) return undefined;
+    const applied = poseSynchronizerRef.current.sync({
       cameraConfig,
       room,
       objects,
       camera,
       controls: controlsRef.current,
     });
-  }, [cameraConfig, camera, controlsRef, objects, room]);
+    // Same demand-loop hole as the empty-room fit: the pose is set after the
+    // frame that was just painted, and nothing else asks for another one
+    // when the room is empty (no model, no axes, no grid).
+    if (!applied) return undefined;
+    const frame = requestAnimationFrame(() => invalidate());
+    return () => cancelAnimationFrame(frame);
+  }, [camera, cameraConfig, controlsRef, invalidate, objects, room]);
 
   return null;
 }

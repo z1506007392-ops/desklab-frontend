@@ -55,6 +55,9 @@ function findHandle(image, canvasBox, anchor, channel) {
   let chosen = null;
   let chosenDistance = Infinity;
   for (const cluster of clusters) {
+    // The light floor antialiases a one-pixel gap in the arrow. That speck
+    // sits closer to the label than the handle and must not win.
+    if (cluster.length < 4) continue;
     const centerX = cluster.reduce((sum, pixel) => sum + pixel.x, 0) / cluster.length;
     const centerY = cluster.reduce((sum, pixel) => sum + pixel.y, 0) / cluster.length;
     const distance = Math.hypot(centerX - anchorX, centerY - anchorY);

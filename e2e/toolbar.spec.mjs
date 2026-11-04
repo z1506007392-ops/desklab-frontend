@@ -20,9 +20,9 @@ test('project data tools and axes live behind the more menu', async ({ page }) =
     await expect(menu.getByRole('menuitem', { name, exact: true })).toBeEnabled();
   }
   const axes = menu.getByRole('menuitemcheckbox', { name: '显示坐标轴' });
-  await expect(axes).toBeChecked();
-  await axes.click();
   await expect(axes).not.toBeChecked();
+  await axes.click();
+  await expect(axes).toBeChecked();
   await expect(menu, 'toggling axes keeps the menu open').toBeVisible();
   await expect(menu).toBeInViewport({ ratio: 1 });
 
@@ -50,7 +50,7 @@ test('the more menu can be used from the keyboard and returns focus', async ({ p
   const menu = page.getByRole('menu', { name: '更多', exact: true });
   const axes = menu.getByRole('menuitemcheckbox', { name: '显示坐标轴' });
   await expect(axes).toBeFocused();
-  await expect(axes).toBeChecked();
+  await expect(axes).not.toBeChecked();
 
   await page.keyboard.press('ArrowDown');
   await expect(menu.getByRole('menuitem', { name: '导入备份', exact: true })).toBeFocused();
@@ -67,7 +67,7 @@ test('the more menu can be used from the keyboard and returns focus', async ({ p
   await more.click();
   await expect(axes).toBeFocused();
   await page.keyboard.press('Enter');
-  await expect(axes).not.toBeChecked();
+  await expect(axes).toBeChecked();
   await expect(menu).toBeVisible();
   await page.keyboard.press('End');
   await page.keyboard.press('Enter');

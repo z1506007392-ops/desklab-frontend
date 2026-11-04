@@ -3,6 +3,8 @@ html, body {
   padding: 0;
   width: 100vw;
   height: 100vh;
+  height: 100svh;
+  height: 100dvh;
   overflow: hidden;
   font-family: "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", system-ui, sans-serif;
   color: #1b1b1f;
@@ -14,6 +16,8 @@ html, body {
 #root {
   width: 100vw;
   height: 100vh;
+  height: 100svh;
+  height: 100dvh;
   margin: 0;
   padding: 0;
   display: flex;

@@ -51,6 +51,11 @@
   flex-direction: column;
   width: 100vw;
   height: 100vh;
+  /* svh is the fallback when the toolbar is showing; dvh tracks it. 100vh on
+     iPhone Safari is the large viewport, so a bottom sheet would sit under
+     the browser toolbar. */
+  height: 100svh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -2381,18 +2386,51 @@
   font-size: var(--text-sm);
 }
 
+/* The 3D view fills whatever is left above the first-run sheet, so the room
+   is framed in that area instead of sliding under the card. */
+.scene-stage {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+
+.scene-stage-view {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .entry-desk-card {
-  position: absolute;
-  left: 50%;
-  bottom: 24px;
+  position: relative;
+  flex: 0 0 auto;
+  align-self: center;
   z-index: 30;
-  width: min(360px, calc(100% - 32px));
+  width: min(420px, calc(100% - 32px));
   box-sizing: border-box;
-  padding: 20px;
-  transform: translateX(-50%);
+  margin: 0 16px max(12px, env(safe-area-inset-bottom, 0px));
+  padding: 16px 16px calc(14px + env(safe-area-inset-bottom, 0px));
   border-radius: var(--radius-dialog);
   background: var(--surface);
   box-shadow: var(--shadow-dialog);
   text-align: center;
-  animation: guide-in var(--dur) var(--ease-out);
+  animation: entry-sheet-in var(--dur) var(--ease-out);
+}
+
+@keyframes entry-sheet-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+/* Phone: a real bottom sheet. Both actions stay inside the small viewport,
+   above the home indicator, and do not scroll. */
+@media (max-width: 899px) {
+  .entry-desk-card {
+    align-self: stretch;
+    width: auto;
+    margin: 0;
+    border-radius: var(--radius-dialog) var(--radius-dialog) 0 0;
+    padding: 14px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
 }

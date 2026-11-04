@@ -230,7 +230,9 @@ export default function App() {
   // ends a drag released outside the 3D view.
   const dragInfoRef = useRef(null);
   const [inputRoom, setInputRoom] = useState({ length: 10, width: 10, height: 3 });
-  const [showAxes, setShowAxes] = useState(true);
+  // Corner axes are a debug aid. They stay off until someone turns them on
+  // from 更多; the first-run room never shows them.
+  const [showAxes, setShowAxes] = useState(false);
   // null while closed; otherwise the fixed-position anchor for the "更多" menu,
   // which must escape the toolbar's scroll container.
   const [moreMenuPosition, setMoreMenuPosition] = useState(null);
@@ -1021,7 +1023,11 @@ export default function App() {
     if (!projectEditable && !shareView && !galleryView) return;
     if (cameraRef.current && controlsRef.current) {
       // From behind the seat of the first desk, however it is turned (E54).
-      applyCameraPose(cameraRef.current, controlsRef.current, defaultCameraPose(room, objects));
+      applyCameraPose(
+        cameraRef.current,
+        controlsRef.current,
+        defaultCameraPose(room, objects, cameraRef.current.aspect),
+      );
       if (projectEditable) setCameraDirty(true);
     }
   };
@@ -2307,7 +2313,14 @@ export default function App() {
         )}
 
         {/* 左侧/中间：3D 视图 */}
-        <div ref={canvasContainerRef} role="region" aria-label="三维房间" style={{ flex: 1, position: 'relative', cursor: dragInfo ? 'grabbing' : 'default', minWidth: 0, minHeight: 0 }}>
+        <div
+          ref={canvasContainerRef}
+          role="region"
+          aria-label="三维房间"
+          className={entryStep === 'desk' ? 'scene-stage scene-stage-with-sheet' : 'scene-stage'}
+          style={{ cursor: dragInfo ? 'grabbing' : 'default' }}
+        >
+          <div className="scene-stage-view">
           {!webglAvailable ? <SceneUnavailable reason="no-webgl" /> : (
           <SceneErrorBoundary>
           {reportSceneFailure => (
@@ -2336,6 +2349,7 @@ export default function App() {
             }}
             onDragEnd={endObjectDrag}
             showAxes={showAxes}
+            frameEmptyRoom={entryStep === 'desk'}
             objects={aiPreview ? aiPreview.nextProject.objects : objects}
             connections={aiPreview ? aiPreview.nextProject.connections : connections}
             selectedObjectId={selectedObjectId}
@@ -2382,6 +2396,7 @@ export default function App() {
           )}
           </SceneErrorBoundary>
           )}
+          </div>
           {entryStep === 'desk' && (
             <EntryDeskStep
               roomSummary={formatEntryRoom(room)}

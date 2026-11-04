@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { WebGLRenderer } from 'three';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Grid, Html } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
 import SelectionGizmo from './SelectionGizmo.jsx';
 
 import { toThreePosition } from '../domain/coordinates.js';
+import { ROOM_BACKGROUND_COLOR } from '../domain/room-shell.js';
 import { findPowerTags } from '../domain/power-tags.js';
 import { createRendererOrReport } from '../domain/webgl-support.js';
 import {
@@ -12,6 +13,7 @@ import {
   ConnectionsRenderer,
   DeskLabAxes,
   DeviceMesh,
+  RoomFillLight,
   RoomWalls,
 } from './SceneObjects.jsx';
 import { preloadProjectModels, scheduleCatalogPreload } from './scene-model-preload.js';
@@ -31,6 +33,7 @@ export default function Scene3D({
   onDragMove,
   onDragEnd,
   showAxes,
+  frameEmptyRoom = false,
   objects,
   connections,
   selectedObjectId,
@@ -89,9 +92,18 @@ export default function Scene3D({
       gl={defaults => createRendererOrReport(props => new WebGLRenderer(props), defaults, reportFailure)}
       onPointerMissed={onBackgroundClick}
     >
+      <color attach="background" args={[ROOM_BACKGROUND_COLOR]} />
       <ambientLight intensity={0.5} />
       <directionalLight position={[10, 10, 5]} intensity={1} />
-      <CameraSetup cameraConfig={cameraConfig} room={room} objects={objects} controlsRef={controlsRef} cameraRef={cameraRef} />
+      <RoomFillLight />
+      <CameraSetup
+        cameraConfig={cameraConfig}
+        room={room}
+        objects={objects}
+        controlsRef={controlsRef}
+        cameraRef={cameraRef}
+        frameEmptyRoom={frameEmptyRoom}
+      />
       <OrbitControls
         ref={controlsRef}
         makeDefault
@@ -114,9 +126,6 @@ export default function Scene3D({
       )}
 
       {showAxes && <DeskLabAxes room={room} />}
-      <Grid infiniteGrid fadeDistance={40} sectionColor="#cfd8dc" cellColor="#eceff1" />
-
-      {/* 实体墙壁与线框 */}
       <RoomWalls room={room} />
 
       {/* 连接线渲染 */}

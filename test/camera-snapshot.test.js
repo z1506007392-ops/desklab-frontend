@@ -8,6 +8,7 @@ import {
   captureCameraSnapshot,
   createCameraPoseSynchronizer,
   defaultCameraPose,
+  emptyRoomViewPose,
 } from '../src/domain/camera-snapshot.js';
 
 test('preserves the loaded camera when live canvas controls are unavailable', () => {
@@ -115,6 +116,42 @@ test('with no desk the view is the whole room from high above its -y wall', () =
     target: { x: 0, y: room.height / 2, z: 0 },
   });
 });
+
+test('an empty room on a narrow phone steps back until every corner is in frame', () => {
+  const narrow = { length: 5, width: 4, height: 3 };
+  const pose = emptyRoomViewPose(narrow, 390 / 680);
+  assert.equal(pose.target.x, 0);
+  assert.equal(pose.position.x, 0, 'still head-on from the -y wall');
+  assert.ok(pose.position.z < -narrow.width / 2, 'camera stays outside the near wall');
+  assert.ok(pose.position.y > pose.target.y);
+  // A wide frame already fit at the old distance, so the desktop view does not zoom in.
+  const wide = emptyRoomViewPose(narrow, 1440 / 760);
+  const historical = defaultCameraPose(narrow, []);
+  assert.ok(Math.hypot(wide.position.y - wide.target.y, wide.position.z) >= Math.hypot(historical.position.y - historical.target.y, historical.position.z) - 1e-6);
+  for (const aspect of [390 / 844, 390 / 680, 375 / 500, 1440 / 760]) {
+    assertRoomInsideFrame(emptyRoomViewPose(narrow, aspect), narrow, aspect);
+  }
+  // Passing the aspect through the default pose is the same view, and a desk ignores it.
+  assert.deepEqual(defaultCameraPose(narrow, [], 390 / 680), emptyRoomViewPose(narrow, 390 / 680));
+  assert.deepEqual(defaultCameraPose(room, [deskTurned(0)], 0.5), defaultCameraPose(room, [deskTurned(0)]));
+});
+
+function assertRoomInsideFrame(pose, roomSize, aspect) {
+  const camera = new PerspectiveCamera(75, aspect, 0.1, 1000);
+  camera.position.set(pose.position.x, pose.position.y, pose.position.z);
+  camera.lookAt(pose.target.x, pose.target.y, pose.target.z);
+  camera.updateProjectionMatrix();
+  camera.updateMatrixWorld();
+  for (const x of [-roomSize.length / 2, roomSize.length / 2]) {
+    for (const y of [0, roomSize.height]) {
+      for (const z of [-roomSize.width / 2, roomSize.width / 2]) {
+        const vector = camera.position.clone().set(x, y, z).project(camera);
+        assert.ok(Math.abs(vector.x) <= 0.9 && Math.abs(vector.y) <= 0.9 && vector.z < 1,
+          `corner ${x},${y},${z} at aspect ${aspect.toFixed(3)} landed at ${vector.x.toFixed(3)},${vector.y.toFixed(3)}`);
+      }
+    }
+  }
+}
 
 test('a generated desk opens on the same view that "重置视角" returns to', async () => {
   const { buildDeskScene } = await import('../src/domain/scene-builder.js');
