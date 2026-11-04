@@ -120,12 +120,17 @@ const ACTIONS = {
   move(project, action) {
     const object = findObject(project, action.objectId);
     assertMovable(object);
+    if (!Number.isFinite(action.x) || !Number.isFinite(action.y)
+      || (action.z !== undefined && !Number.isFinite(action.z))) {
+      refuse('位置不是有效数字');
+    }
     const keepFloor = findSupportingObject(object, project.objects)?.kind === 'floor';
     return carryAlong(project, placeObject(project, object, { x: action.x, y: action.y, z: action.z }, { keepFloor }));
   },
   rotate(project, action) {
     const object = findObject(project, action.objectId);
     assertMovable(object);
+    if (!Number.isFinite(action.rotationZ)) refuse('角度不是有效数字');
     const rotationZ = ((action.rotationZ % 360) + 360) % 360;
     const rotated = { ...object, rotation: { ...object.rotation, z: rotationZ } };
     const constrained = validateAndConstrainObject(rotated, project.room);
@@ -201,6 +206,12 @@ const ACTIONS = {
  * { project, rejected: [] }. The input project is never modified.
  */
 export function applyAiActions(project, actions) {
+  if (!project || typeof project !== 'object') {
+    return { project: null, rejected: [{ action: null, reason: '没有可以改的桌面' }] };
+  }
+  if (!Array.isArray(actions)) {
+    return { project: null, rejected: [{ action: actions ?? null, reason: '不支持的改动' }] };
+  }
   let next = {
     ...project,
     objects: getRecordItems(project.objects),
@@ -225,9 +236,12 @@ export function applyAiActions(project, actions) {
  * the result is a valid project, and the text has no internal ids.
  */
 export function evaluateSuggestion(project, suggestion) {
-  const scoreBefore = scoreLayout(project);
+  const scoreBefore = scoreLayout(project && typeof project === 'object' ? project : {});
   const reject = reasons => ({ accepted: false, nextProject: null, scoreBefore, scoreAfter: null, reasons });
-  if (ID_LIKE_TEXT.test(`${suggestion.title} ${suggestion.reason}`)) return reject(['说明里有内部编号']);
+  const title = typeof suggestion?.title === 'string' ? suggestion.title.trim() : '';
+  const reason = typeof suggestion?.reason === 'string' ? suggestion.reason.trim() : '';
+  if (!title || !reason) return reject(['说明不完整']);
+  if (ID_LIKE_TEXT.test(`${title} ${reason}`)) return reject(['说明里有内部编号']);
   if (!Array.isArray(suggestion.actions) || suggestion.actions.length === 0) return reject(['没有具体改动']);
 
   const { project: nextProject, rejected } = applyAiActions(project, suggestion.actions);

@@ -10,6 +10,7 @@ import {
 } from '../src/domain/ai-actions.js';
 import { buildTemplateScene } from '../src/domain/desk-templates.js';
 import { scoreLayout } from '../src/domain/layout-score.js';
+import { createProjectHistory } from '../src/domain/project-history.js';
 
 const gaming = () => buildTemplateScene('gaming');
 const find = (project, modelId) => project.objects.find(object => object.modelId === modelId);
@@ -292,4 +293,92 @@ test('moving or turning a loaded desk takes what stands on it along', () => {
   const turned = applyAiActions(moved.project, [{ type: 'rotate', objectId: desk.id, rotationZ: 15 }]);
   assert.notEqual(turned.project, null, turned.rejected.map(item => item.reason).join());
   assert.equal(find(turned.project, monitor.modelId).rotation.z, (monitor.rotation.z + 15) % 360, 'the screen turns with the desk');
+});
+
+test('non-finite coordinates and angles are refused and the desk stays as it was', () => {
+  const project = gaming();
+  const monitor = find(project, 'ultrawide-monitor');
+  const rotation = structuredClone(monitor.rotation);
+  for (const action of [
+    { type: 'move', objectId: monitor.id, x: Number.NaN, y: 0 },
+    { type: 'move', objectId: monitor.id, x: 0, y: Number.POSITIVE_INFINITY },
+    { type: 'move', objectId: monitor.id, x: 0, y: 0, z: Number.NaN },
+    { type: 'rotate', objectId: monitor.id, rotationZ: Number.NaN },
+    { type: 'rotate', objectId: monitor.id, rotationZ: Number.POSITIVE_INFINITY },
+  ]) {
+    const result = applyAiActions(project, [action]);
+    assert.equal(result.project, null, JSON.stringify(action));
+    assert.match(result.rejected[0].reason, /不是有效数字/);
+  }
+  assert.deepEqual(find(project, 'ultrawide-monitor').rotation, rotation);
+});
+
+test('a missing action list and an empty desk do not throw', () => {
+  const project = gaming();
+  for (const actions of [null, undefined, { type: 'move' }]) {
+    let result;
+    assert.doesNotThrow(() => { result = applyAiActions(project, actions); });
+    assert.equal(result.project, null);
+    assert.equal(result.rejected[0].reason, '不支持的改动');
+  }
+  assert.equal(applyAiActions(null, []).rejected[0].reason, '没有可以改的桌面');
+  const empty = { room: project.room, objects: [], connections: [] };
+  const missing = applyAiActions(empty, [{ type: 'move', objectId: 'ghost', x: 0, y: 0 }]);
+  assert.equal(missing.project, null);
+  assert.match(missing.rejected[0].reason, /找不到设备/);
+  const none = evaluateSuggestion(empty, suggestion([]));
+  assert.equal(none.accepted, false);
+  assert.equal(none.scoreBefore.total, 0);
+  assert.deepEqual(none.reasons, ['没有具体改动']);
+});
+
+test('a helpful move with a blank title or reason is not shown', () => {
+  const project = messyGaming();
+  const monitor = find(project, 'ultrawide-monitor');
+  const move = [{ type: 'move', objectId: monitor.id, x: 0, y: monitor.position.y }];
+  for (const extra of [
+    { title: '  ', reason: '这样更舒服。' },
+    { title: '调整一下', reason: '' },
+    { title: null, reason: '这样更舒服。' },
+    { title: '调整一下', reason: 12 },
+  ]) {
+    const result = evaluateSuggestion(project, suggestion(move, extra));
+    assert.equal(result.accepted, false);
+    assert.deepEqual(result.reasons, ['说明不完整']);
+    assert.equal(result.nextProject, null);
+  }
+});
+
+test('fixing a hint while making the cable score worse is not strictly better', () => {
+  const project = messyGaming();
+  const monitor = find(project, 'ultrawide-monitor');
+  const power = project.connections.find(connection => connection.cableType === 'power');
+  assert.ok(power);
+  const result = evaluateSuggestion(project, suggestion([
+    { type: 'move', objectId: monitor.id, x: 0, y: monitor.position.y },
+    { type: 'set_cable_length', connectionId: power.id, length: power.length + 20 },
+  ]));
+  assert.equal(result.accepted, false);
+  assert.ok(result.reasons.includes('没有让布局变得更好'), result.reasons.join());
+  assert.ok(result.scoreAfter.total >= result.scoreBefore.total - 1e-9);
+  assert.ok(result.scoreAfter.errors <= result.scoreBefore.errors);
+  assert.ok(result.scoreAfter.warnings <= result.scoreBefore.warnings);
+});
+
+test('undo and redo of an accepted suggestion restore the matching desk', () => {
+  const before = messyGaming();
+  const monitor = find(before, 'ultrawide-monitor');
+  const history = createProjectHistory();
+  history.record(before);
+  const result = evaluateSuggestion(before, suggestion([
+    { type: 'move', objectId: monitor.id, x: 0, y: monitor.position.y },
+  ]));
+  assert.equal(result.accepted, true, result.reasons.join());
+  const undone = history.undo(result.nextProject);
+  assert.equal(find(undone.snapshot, 'ultrawide-monitor').position.x, monitor.position.x);
+  const redone = history.redo(undone.snapshot);
+  assert.equal(find(redone.snapshot, 'ultrawide-monitor').position.x, 0);
+  const again = history.undo(redone.snapshot);
+  assert.equal(again.status.canRedo, true);
+  assert.equal(find(again.snapshot, 'ultrawide-monitor').position.x, monitor.position.x);
 });

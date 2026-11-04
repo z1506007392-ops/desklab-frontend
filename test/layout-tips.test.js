@@ -6,6 +6,7 @@ import { buildTemplateScene, DESK_TEMPLATES } from '../src/domain/desk-templates
 import { hydrateProjectObjects } from '../src/domain/catalog.js';
 import { analyzeLayoutHeuristics } from '../src/domain/layout-heuristics.js';
 import { analyzeProjectLayout } from '../src/domain/layout-analysis.js';
+import { scoreLayout } from '../src/domain/layout-score.js';
 
 const projectOf = (id, change = object => object) => {
   const scene = buildTemplateScene(id);
@@ -59,4 +60,33 @@ test('a tip that no longer helps is not applied', () => {
   const again = applyLayoutTip(fixed, tip);
   assert.equal(again.project, undefined);
   assert.ok(again.reasons.length > 0);
+});
+
+test('an empty desk and a project with no records have no tips', () => {
+  assert.deepEqual(buildLayoutTips({ room: { length: 5, width: 4, height: 3 }, objects: [], connections: [] }), []);
+  assert.deepEqual(buildLayoutTips({}), []);
+});
+
+test('every tip on an off-centre screen strictly improves the score', () => {
+  const project = projectOf('gaming', object => (object.modelId === 'ultrawide-monitor'
+    ? { ...object, position: { ...object.position, x: 0.4 } }
+    : object));
+  const before = scoreLayout(project);
+  const tips = buildLayoutTips(project);
+  assert.ok(tips.length > 0);
+  for (const tip of tips) {
+    const applied = applyLayoutTip(project, tip);
+    assert.ok(applied.project, applied.reasons?.join());
+    const after = scoreLayout(applied.project);
+    assert.ok(after.total < before.total - 1e-9, `${tip.code} ${before.total} -> ${after.total}`);
+    assert.ok(after.errors <= before.errors);
+    assert.ok(after.warnings <= before.warnings);
+  }
+});
+
+test('a tip with a blank title is not applied', () => {
+  const project = projectOf('gaming');
+  const applied = applyLayoutTip(project, { title: '  ', description: '', actions: [] });
+  assert.equal(applied.project, undefined);
+  assert.deepEqual(applied.reasons, ['说明不完整']);
 });
