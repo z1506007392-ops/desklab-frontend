@@ -1,7 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
+import { PROJECT_DRAFT_STORAGE_KEY } from '../src/domain/draft-storage.js';
 import { PROJECT_STORAGE_KEY } from '../src/domain/local-project-store.js';
-import { box, openProject } from './project-fixture.mjs';
+import { box, openProject, waitForSceneDownloads } from './project-fixture.mjs';
 
 const TINY_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
@@ -51,7 +52,14 @@ test('a local gallery opens an example, copies it, and keeps a desk file on this
   const gallery = page.getByRole('dialog', { name: '社区图库', exact: true });
   await gallery.getByLabel('显示名', { exact: true }).fill('小林');
   await gallery.getByLabel('这张桌子的名字', { exact: true }).fill('我的一角');
-  await gallery.getByLabel('选择实拍', { exact: true }).setInputFiles({
+  // The file inputs are clipped to 1px and labelled like the buttons beside
+  // them. They must not take a Tab stop, or keyboard users land on nothing.
+  await gallery.getByRole('button', { name: '选择实拍', exact: true }).focus();
+  await page.keyboard.press('Tab');
+  await expect(gallery.getByRole('button', { name: '把当前桌子放进图库', exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(gallery.getByRole('button', { name: '导入桌子文件', exact: true })).toBeFocused();
+  await gallery.locator('input[aria-label="选择实拍"]').setInputFiles({
     name: 'desk.png', mimeType: 'image/png', buffer: TINY_PNG,
   });
   await expect(gallery.locator('.gallery-photo')).toBeVisible();
@@ -73,7 +81,7 @@ test('a local gallery opens an example, copies it, and keeps a desk file on this
   page.once('dialog', popup => popup.accept());
   await mine.getByRole('button', { name: '删除：我的一角', exact: true }).click();
   await expect(gallery.getByRole('button', { name: '删除：我的一角', exact: true })).toHaveCount(0);
-  await gallery.getByLabel('导入桌子文件', { exact: true }).setInputFiles({
+  await gallery.locator('input[aria-label="导入桌子文件"]').setInputFiles({
     name: 'desklab-desk.json', mimeType: 'application/json', buffer: Buffer.from(fileText),
   });
   await expect(gallery.getByText(/已导入“我的一角”/)).toBeVisible();
@@ -85,6 +93,9 @@ test('a built-in gallery address is read-only and an unknown one opens your own 
   const evidence = await openProject(page, [box('我的桌子')]);
   const saved = await readStorage(page);
   await page.evaluate(() => { window.location.hash = '#desklab-gallery/gaming'; });
+  // Reload only once the 3D models have finished downloading: iPhone WebKit
+  // reports each download a reload cancels as a page error.
+  await waitForSceneDownloads(page);
   await page.reload();
   await expect(page.getByRole('region', { name: '社区图库', exact: true })).toContainText('超宽');
   await expect(page.getByRole('button', { name: '保存项目', exact: true })).toBeDisabled();
@@ -99,9 +110,19 @@ test('a built-in gallery address is read-only and an unknown one opens your own 
   expect(await readStorage(page)).toBe(saved);
 
   await page.evaluate(() => { window.location.hash = '#desklab-gallery/missing'; });
+  await waitForSceneDownloads(page); // see the reload above
+  // Copying the example marks the desk dirty. The draft is written 500ms
+  // later, and that timer restarts if the scene is still settling. Reloading
+  // in the middle either locks saving or does not, depending on the machine.
+  // Wait until the draft is actually stored, then reload.
+  await expect.poll(() => page.evaluate(key => localStorage.getItem(key), PROJECT_DRAFT_STORAGE_KEY)).not.toBeNull();
   await page.reload();
   await expect(page.getByText('图库里没有这张桌子，已打开你自己的桌面。')).toBeVisible();
   await expect(page.getByRole('region', { name: '社区图库', exact: true })).toHaveCount(0);
+  const draft = page.getByRole('alert').filter({ hasText: '发现未保存的本地草稿' });
+  await expect(draft).toBeVisible();
+  await expect(page.getByRole('button', { name: '保存项目', exact: true })).toBeDisabled();
+  await draft.getByRole('button', { name: '放弃', exact: true }).click();
   await expect(page.getByRole('button', { name: '保存项目', exact: true })).toBeEnabled();
   expect(evidence.errors).toEqual([]);
   expect(evidence.writes).toEqual([]);
@@ -112,7 +133,7 @@ test('a desk file with a bad picture is refused and the saved project stays', as
   const saved = await readStorage(page);
   await page.getByRole('button', { name: '社区图库', exact: true }).click();
   const gallery = page.getByRole('dialog', { name: '社区图库', exact: true });
-  await gallery.getByLabel('导入桌子文件', { exact: true }).setInputFiles({
+  await gallery.locator('input[aria-label="导入桌子文件"]').setInputFiles({
     name: 'desklab-desk.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify({

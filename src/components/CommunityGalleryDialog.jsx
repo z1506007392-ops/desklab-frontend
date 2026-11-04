@@ -223,7 +223,7 @@ export default function CommunityGalleryDialog({
           </label>
           <div className="gallery-actions">
             <button type="button" className="ui-button" onClick={() => photoInputRef.current?.click()} disabled={!canPublish}>选择实拍</button>
-            <input ref={photoInputRef} className="gallery-file-input" type="file" accept="image/jpeg,image/png,image/webp" aria-label="选择实拍" onChange={handlePhoto} disabled={!canPublish} />
+            <input ref={photoInputRef} className="gallery-file-input" type="file" accept="image/jpeg,image/png,image/webp" aria-label="选择实拍" aria-hidden="true" tabIndex={-1} onChange={handlePhoto} disabled={!canPublish} />
           </div>
           {photo && <img className="gallery-photo" src={photo} alt="" />}
           <div className="gallery-actions">
@@ -239,7 +239,7 @@ export default function CommunityGalleryDialog({
           </div>
           <div className="gallery-actions">
             <button type="button" className="ui-button" onClick={() => importInputRef.current?.click()}>导入桌子文件</button>
-            <input ref={importInputRef} className="gallery-file-input" type="file" accept="application/json,.json" aria-label="导入桌子文件" onChange={handleImport} />
+            <input ref={importInputRef} className="gallery-file-input" type="file" accept="application/json,.json" aria-label="导入桌子文件" aria-hidden="true" tabIndex={-1} onChange={handleImport} />
           </div>
         </div>
       </div>

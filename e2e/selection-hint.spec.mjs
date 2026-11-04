@@ -9,6 +9,7 @@ async function expectFullyVisible(hint) {
 
 test('the hint under the toolbar fits the screen and names the selected device in plain words', async ({ page }, testInfo) => {
   const evidence = await openProject(page, []);
+  await expect(page.getByRole('region', { name: '三维房间', exact: true })).toBeVisible();
   const mobile = testInfo.project.use.viewport.width < 900;
   const hint = page.locator('.selection-hint');
 

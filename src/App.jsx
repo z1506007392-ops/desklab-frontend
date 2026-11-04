@@ -2307,7 +2307,7 @@ export default function App() {
         )}
 
         {/* 左侧/中间：3D 视图 */}
-        <div ref={canvasContainerRef} style={{ flex: 1, position: 'relative', cursor: dragInfo ? 'grabbing' : 'default', minWidth: 0, minHeight: 0 }}>
+        <div ref={canvasContainerRef} role="region" aria-label="三维房间" style={{ flex: 1, position: 'relative', cursor: dragInfo ? 'grabbing' : 'default', minWidth: 0, minHeight: 0 }}>
           {!webglAvailable ? <SceneUnavailable reason="no-webgl" /> : (
           <SceneErrorBoundary>
           {reportSceneFailure => (
