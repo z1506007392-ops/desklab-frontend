@@ -17,6 +17,14 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E153：安装清单再挡住 E107 漏掉的字符。单独的回车、垂直制表、换页、NEL、U+2028、U+2029 在 Markdown 里收成空格，尖括号换成全角，竖线仍换成 ∣，所以一步不会被拆开，也不会变成新标题。CSV 里以 `=`、`+`、`-`、`@`、制表符或回车开头的单元格前面加撇号，撇号是单元格内容。原来的换行仍留在引号里。布线算法没改。「导出 Markdown」「导出 CSV」这两个词没改。
+
+验证：`npm test` 692 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。购线清单界面测试桌面和手机 10 通过，导出按钮的词和普通桌子的表还在。没改外观，没加设备。
+
+还剩：E154。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E152：只读分享里，AI 的「让 AI 看看」和「退出」都停用，要求输入框也停用。未登录不会弹出登录框，已登录不会发出 AI 请求，也不会退出。复制到自己的项目之后，可以再问 AI，也可以退出。登录接口和分享对话框没改。
 
 验证：并上 E140–E143 之后 `npm test` 690 通过（本条没有新增领域测试），lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。分享、登录界面测试桌面和手机 20 通过。没改外观，没加设备。
@@ -4805,7 +4813,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 690 domain tests (E140-E143 wiring and AI checks on top of E151's 678)
+npm test          # 692 domain tests (E153 install-list escaping on top of E140-E143's 690)
 npm run test:ui   # Chrome desktop + phone: 257 passed + 1 skipped (E122, same UI count as E111). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)

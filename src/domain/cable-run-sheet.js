@@ -15,8 +15,41 @@ function endpointName(object, portId) {
   };
 }
 
+function isLineBreak(code) {
+  return code === 10 || code === 13 || code === 11 || code === 12 || code === 0x85
+    || code === 0x2028 || code === 0x2029;
+}
+
 function markdownCell(value) {
-  return String(value ?? '').replace(/\|/g, '∣').replace(/\r?\n/g, ' ');
+  const raw = value == null ? '' : String(value);
+  let out = '';
+  for (let index = 0; index < raw.length; index += 1) {
+    const char = raw[index];
+    const code = char.charCodeAt(0);
+    if (char === '|') {
+      out += '∣';
+      continue;
+    }
+    if (char === '<') {
+      out += '＜';
+      continue;
+    }
+    if (char === '>') {
+      out += '＞';
+      continue;
+    }
+    if (code === 13 && raw.charCodeAt(index + 1) === 10) {
+      out += ' ';
+      index += 1;
+      continue;
+    }
+    if (isLineBreak(code)) {
+      out += ' ';
+      continue;
+    }
+    out += char;
+  }
+  return out;
 }
 
 function formatMetres(length) {
@@ -24,10 +57,25 @@ function formatMetres(length) {
   return String(Math.round(length * 100) / 100);
 }
 
+function startsSpreadsheetFormula(text) {
+  if (!text) return false;
+  const code = text.charCodeAt(0);
+  return text[0] === '=' || text[0] === '+' || text[0] === '-' || text[0] === '@' || code === 9 || code === 13;
+}
+
+function csvNeedsQuotes(text) {
+  for (const char of text) {
+    const code = char.charCodeAt(0);
+    if (char === '"' || char === ',' || code === 10 || code === 13 || code === 0x2028 || code === 0x2029) return true;
+  }
+  return false;
+}
+
 function csvCell(value) {
-  const text = value == null ? '' : String(value);
-  if (/[",\r\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
-  return text;
+  let text = value == null ? '' : String(value);
+  if (startsSpreadsheetFormula(text)) text = `'${text}`;
+  if (!csvNeedsQuotes(text)) return text;
+  return `"${text.replaceAll('"', '""')}"`;
 }
 
 function installRank(row, powerTargets) {

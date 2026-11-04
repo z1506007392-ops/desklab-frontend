@@ -112,6 +112,47 @@ test('a line break or a pipe in a name stays inside one install step', () => {
   assert.match(sheet.csv, /"主机\n# 标题"/);
 });
 
+test('a lone return, a unicode break, or brackets stay inside one install step', () => {
+  const objects = [
+    device('主机\r\u0085\v\f<script>', { x: 0, y: 0, z: 0 }, { ...hdmiOut, name: 'HDMI\u2028输出' }),
+    device('=cmd|甲', { x: 1, y: 0, z: 0 }, { ...hdmiIn, name: '输入\u2029甲' }),
+  ];
+  const sheet = buildCableRunSheet([{
+    id: 'v', cableType: 'hdmi', length: 2,
+    fromObjectId: '主机\r\u0085\v\f<script>', fromPortId: 'hdmi-out',
+    toObjectId: '=cmd|甲', toPortId: 'hdmi-in',
+  }], objects);
+  const install = sheet.markdown.split('# 安装清单')[1];
+  assert.equal(
+    install.includes('从「主机    ＜script＞」的「HDMI 输出」接到「=cmd∣甲」的「输入 甲」'),
+    true,
+  );
+  for (const char of ['\r', '\u0085', '\v', '\f', '\u2028', '\u2029', '<']) {
+    assert.equal(install.includes(char), false);
+  }
+  assert.equal(install.split('\n').filter(line => line.startsWith('1. ')).length, 1);
+  assert.equal(sheet.csv.includes("'=cmd|甲"), true);
+  assert.equal(/(^|,)=cmd/.test(sheet.csv), false);
+  assert.equal(sheet.csv.includes('"主机\r'), true);
+});
+
+test('a spreadsheet formula in a device or port name is stored as text', () => {
+  const objects = [
+    device('+SUM', { x: 0, y: 0, z: 0 }, { ...hdmiOut, name: '@A1' }),
+    device('\t=1', { x: 1, y: 0, z: 0 }, { ...hdmiIn, name: '-端口' }),
+  ];
+  const sheet = buildCableRunSheet([{
+    id: 'v', cableType: 'hdmi', length: 2,
+    fromObjectId: '+SUM', fromPortId: 'hdmi-out',
+    toObjectId: '\t=1', toPortId: 'hdmi-in',
+  }], objects);
+  assert.equal(sheet.csv.includes("'+SUM,'@A1,'\t=1,'-端口"), true);
+  assert.equal(sheet.csv.includes(',+SUM'), false);
+  assert.equal(sheet.csv.includes(',@A1'), false);
+  assert.equal(sheet.csv.includes(',\t=1'), false);
+  assert.equal(sheet.csv.includes(',-端口'), false);
+});
+
 test('an empty project exports an empty sheet', () => {
   const sheet = buildCableRunSheet([], []);
   assert.deepEqual(sheet.rows, []);
