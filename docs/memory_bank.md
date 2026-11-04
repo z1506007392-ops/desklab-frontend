@@ -17,6 +17,19 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E140–E143 完成。没有改外观，没有加设备，没有改三套预设和提示词，没有改登录、桌面壳和工作流。界面测试没有重跑：这次没有改页面。E130–E134、E152–E154 仍是别的线，没有改。
+
+- E140（`38844d8`）：键盘和鼠标的自带线太短时，仍给出免费的延长，购线清单不再建议买一根。走线已经超过该线种的被动规格（HDMI / DP 3 米、USB-C 2 米、USB 3 米）时，不再自动接上，也不建议再买一根更长的同规格线。近处 HDMI、电源线和音频线照旧。购物清单和走线表共用同一个「自带线」判断。
+- E141（`1802858`）：坐标或角度不是有限数字、动作不是一组、没有桌面时，AI 动作拒绝且不抛错，原项目不动。空桌面上找不到的设备仍是「找不到设备」。
+- E142（`1802858`）：标题或理由是空白时不展示。把屏幕摆正的同时把电源线加得很长，分数没有严格下降，建议被拒绝，错误和警告不增加。偏离中线的屏幕，每条摆放小建议都会让分数下降且不新增问题。接受后再撤销、重做，屏幕回到对应的那一版。
+- E143（`45c7854`）：离线评测在没有服务、503（没有密钥）、401，或续跑文件不是 JSON 时以状态 2 退出，此时不新建结果目录。不调用生产接口，也不读取密钥。
+
+验证：`npm test` 690 通过（E151 的 678 再加上这批 12 条），`npm run lint` 0，`npm run build` 通过（three.js 分块超过 500 KB 的警告照旧）。
+
+还剩：E69、E70 和贴图再压缩等负责人。Mailjet 密钥、安装包签名、关掉 Git 自动部署、H4 仍卡住。F6 不做。F4 的网上社区不实现。购线清单按钮上的「导出 Markdown」「导出 CSV」等负责人。E120、E130–E134、E152–E154 仍是别的线。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E151：摆法槽最多 3 套。满了再留会拒绝；删掉一套之后可以从当前桌面再复制。复制是快照，之后改当前桌面不会改已留下的那套。名字里的尖括号换成全角，控制符和双向符去掉，换行收成空格。旧备份没有摆法字段，或字段损坏时，不覆盖这台设备已有的摆法。读回时丢掉站外模型地址、多余字段和重复 id，第 4 套起丢掉。预设桌面仍能留下。
 
 验证：`npm test` 678 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。摆法界面测试桌面和手机 4 通过，其中包括满 3 套后按钮停用、删掉一套再留第四套。没改外观，没加设备，没改预设。
@@ -4784,7 +4797,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 678 domain tests (E151 layout-scheme slots on top of E150's 676)
+npm test          # 690 domain tests (E140-E143 wiring and AI checks on top of E151's 678)
 npm run test:ui   # Chrome desktop + phone: 257 passed + 1 skipped (E122, same UI count as E111). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
