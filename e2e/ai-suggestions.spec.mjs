@@ -59,7 +59,7 @@ test('AI suggestions are checked, previewed, applied, and undone', async ({ page
   expect(evidence.aiRequests[0].goal).toBe('适合打游戏');
   expect(evidence.aiRequests[0].summary.hints.map(hint => hint.code)).toEqual(['monitor_off_center']);
 
-  await card.getByRole('button', { name: '预览', exact: true }).click();
+  await card.getByRole('button', { name: '预览：显示器移到正前方', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   const preview = page.getByRole('region', { name: 'AI 预览', exact: true });
   await expect(preview).toContainText('预览 AI 建议：显示器移到正前方');
@@ -68,7 +68,7 @@ test('AI suggestions are checked, previewed, applied, and undone', async ({ page
   await expect(preview).toHaveCount(0);
 
   const reopened = await openAiSection(page);
-  await reopened.section.getByRole('group', { name: '显示器移到正前方' }).getByRole('button', { name: '应用', exact: true }).click();
+  await reopened.section.getByRole('group', { name: '显示器移到正前方' }).getByRole('button', { name: '应用：显示器移到正前方', exact: true }).click();
   await expect(page.getByText(/已应用 AI 建议：显示器移到正前方/)).toBeVisible();
   await page.getByRole('button', { name: '保存项目', exact: true }).click();
   await expect(page.getByText(/^已保存$/)).toBeVisible();
@@ -239,7 +239,7 @@ test('an AI suggestion to move a desk with things on it takes them along', async
   await section.getByRole('button', { name: '让 AI 看看', exact: true }).click();
   const card = section.getByRole('group', { name: '书桌往左挪开主机', exact: true });
   await expect(card).toBeVisible();
-  await card.getByRole('button', { name: '预览', exact: true }).click();
+  await card.getByRole('button', { name: '预览：书桌往左挪开主机', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await page.getByRole('region', { name: 'AI 预览', exact: true }).getByRole('button', { name: '应用', exact: true }).click();
   await expect(page.getByText(/已应用 AI 建议：书桌往左挪开主机/)).toBeVisible();

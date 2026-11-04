@@ -13,6 +13,8 @@ test('three local layouts can be saved, switched, exported, and not synced', asy
   await dialog.getByLabel('从当前桌面留一套').fill('想买的');
   await dialog.getByRole('button', { name: '留下这套', exact: true }).click();
   await expect(dialog.getByRole('listitem').filter({ hasText: '想买的' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: '换成这套：想买的', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: '删除：想买的', exact: true })).toBeVisible();
   await dialog.getByRole('button', { name: '关闭我的摆法', exact: true }).click();
   await expect(dialog).toHaveCount(0);
 
@@ -22,7 +24,7 @@ test('three local layouts can be saved, switched, exported, and not synced', asy
 
   await page.getByRole('button', { name: '更多', exact: true }).click();
   await page.getByRole('menu', { name: '更多', exact: true }).getByRole('menuitem', { name: '我的摆法', exact: true }).click();
-  await page.getByRole('dialog', { name: '我的摆法', exact: true }).getByRole('button', { name: '换成这套', exact: true }).click();
+  await page.getByRole('dialog', { name: '我的摆法', exact: true }).getByRole('button', { name: '换成这套：想买的', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByText('已换成摆法「想买的」，尚未保存', { exact: true })).toBeVisible();
 

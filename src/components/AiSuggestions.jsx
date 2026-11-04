@@ -184,6 +184,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
                 <button
                   type="button"
                   className="ui-button"
+                  aria-label={`预览：${result.suggestion.title}`}
                   onClick={() => onPreview({ title: result.suggestion.title, nextProject: result.nextProject, changedIds: result.changedIds })}
                   disabled={!editable}
                 >
@@ -192,6 +193,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
                 <button
                   type="button"
                   className="ui-button ui-button-primary"
+                  aria-label={`应用：${result.suggestion.title}`}
                   onClick={() => onApply(result.nextProject, result.suggestion.title)}
                   disabled={!editable}
                 >
