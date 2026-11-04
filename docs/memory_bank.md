@@ -17,11 +17,19 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+按需绘制测试那次推送的 CI 已绿。提交 `9b86ece`（测试改动 `8fef560`）。网站 11 项都过了：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41744336302 。桌面安装包：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41744336304 。
+
+E111 文档提交 `90e7315` 的网站 CI 也已绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41743397576 。桌面安装包：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41743397577 。`a674d96` 的网站 CI 仍是红的，不改写成绿。
+
+还剩：无。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E110 的网站 CI 是红的，不是还在等。提交 `a674d96`：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41737873817 。失败的是 `ui (2)` 和因此失败的 `check`。唯一的测试是桌面 Chrome `e2e/scene-render.spec.mjs`「the 3D view draws only when something changes」，限时 30 秒，跑了 33.3 秒被掐掉。失败页面已经选中台式主机，标签也在，场景画出来了。前面要等超宽的模型下完，再等两秒没有新的绘制；SwiftShader 把 30 秒用完了。同一提交的桌面安装包是绿的：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41737873931 。
 
 这条测试的限时改成 60 秒，和 `e2e/edit-edge-cases.spec.mjs` 一样。代码 `8fef560`。按需绘制没改，预设和提示词没改。E111 的桌面安装包已绿：https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41743397577 （`90e7315`）。当时网站 CI https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41743397576 还在跑。
 
-还剩：这次提交的网站 CI 绿了再把运行链接写上。下面 E110 那条历史记录里的「还剩：推 master」保持原样。
+还剩：已写上。网站 https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41744336302 ，桌面 https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41744336304 。下面 E110 那条历史记录里的「还剩：推 master」保持原样。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
@@ -36,7 +44,7 @@ E110 的网站 CI 是红的，不是还在等。提交 `a674d96`：https://githu
 
 验证：`npm test` 658 通过，lint 0 问题，build 通过（brotli 652248 → 285991，17 个 GLB，three.js 分块超过 500KB 的警告还在）。Chrome 桌面和手机 UI 257 通过 + 1 跳过。本地看过三套：插排 Z 0.62，键盘 0.766，理线槽 0.68，主机在地上 0.25。布局检查和布线检查都是严重 0、警告 0、提示 0，没有控制台错误。电竞双屏和极简单屏的桌面是键盘、鼠标和屏幕。超宽从座位这侧仍能看到主机到路由器、主机到插排那两条不落在桌面上的线。
 
-还剩：E110 和这次的 CI 绿了再把运行链接写上。
+还剩：这次的网站 CI 已绿 https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41743397576 。`a674d96` 的网站 CI 是红的，链接在上面限时那条。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
