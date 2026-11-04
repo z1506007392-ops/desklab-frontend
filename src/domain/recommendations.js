@@ -5,6 +5,8 @@ import {
   snapWallOutletToNearestWall,
 } from './layout-analysis.js';
 import { analyzeProjectWiring, buildPowerGraph, computeDevicePowerLoad, getEffectiveMaxLoad, classifyPowerLoad, isPowerStrip } from './analysis.js';
+import { passiveCableLimit } from './cable-limits.js';
+import { connectionHasBuiltInCable } from './cable-shopping-list.js';
 import { calculatePositionDistance, evaluateConnectionLength, arePortsCompatible, arePortTypesCompatible, isPortDirectionConsistent, inferCableType, standardCableLength, CABLE_TYPE_NAMES } from './connections.js';
 import { validateAndConstrainObject } from './geometry.js';
 import { findModelTemplate } from './catalog.js';
@@ -26,6 +28,19 @@ function ceilLength(value) {
 function autoCableLength(ends, objects, fallback) {
   const status = evaluateConnectionLength({ ...ends, length: 1 }, objects);
   return standardCableLength(status ? status.recommendedLength : fallback);
+}
+
+function measuredRoute(ends, objects) {
+  return evaluateConnectionLength({ ...ends, length: 1 }, objects)?.distance ?? null;
+}
+
+// Power and analog audio are not in the passive table, so they still connect.
+// A run past the copper ceiling would only add a new warning.
+function routeFitsPassiveCable(cableType, distance) {
+  if (distance == null) return true;
+  const limit = passiveCableLimit(cableType);
+  if (!limit) return true;
+  return distance <= limit.maxMetres + 1e-9;
 }
 
 function hasSameOwnValues(current, next) {
@@ -331,6 +346,7 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
       const connection = actionableConnections.find(candidate => candidate.id === connectionId);
       const status = connection && evaluateConnectionLength(connection, objects);
       if (!status) continue;
+      if (!routeFitsPassiveCable(connection.cableType, status.distance)) continue;
       const length = standardCableLength(status.recommendedLength);
       if (length <= connection.length) continue;
       suggestions.push({
@@ -372,6 +388,10 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
           const isPortOccupied = occupiedPorts.get(candidate.id)?.has(candidatePort.id);
           if (isPortOccupied) continue;
 
+          const route = measuredRoute({
+            fromObjectId: candidate.id, fromPortId: candidatePort.id, toObjectId: object.id, toPortId: port.id,
+          }, actionableObjects);
+          if (!routeFitsPassiveCable('ethernet', route)) continue;
           const dist = calculatePositionDistance(object.position, candidate.position);
           if (dist !== null && dist < minDistance) {
             minDistance = dist;
@@ -458,6 +478,10 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
           const isPortOccupied = occupiedPorts.get(candidate.id)?.has(candidatePort.id);
           if (isPortOccupied) continue;
 
+          const route = measuredRoute({
+            fromObjectId: object.id, fromPortId: port.id, toObjectId: candidate.id, toPortId: candidatePort.id,
+          }, actionableObjects);
+          if (!routeFitsPassiveCable(inferCableType(port, candidatePort), route)) continue;
           const dist = calculatePositionDistance(object.position, candidate.position);
           if (dist === null) continue;
           const fed = fedDisplays.has(candidate.id);
@@ -534,10 +558,12 @@ export function buildFreeImprovements(room, rawObjects, rawConnections = [], opt
             : (portType === 'usb' && candidatePort.type === 'usb_c' ? 1 : -1);
           if (cross < 0) continue;
           if (occupiedPorts.get(candidate.id)?.has(candidatePort.id)) continue;
-          const distance = evaluateConnectionLength({
-            fromObjectId: candidate.id, fromPortId: candidatePort.id, toObjectId: object.id, toPortId: port.id, length: 1,
-          }, actionableObjects)?.distance ?? calculatePositionDistance(object.position, candidate.position);
+          const measured = measuredRoute({
+            fromObjectId: candidate.id, fromPortId: candidatePort.id, toObjectId: object.id, toPortId: port.id,
+          }, actionableObjects);
+          const distance = measured ?? calculatePositionDistance(object.position, candidate.position);
           if (distance === null || distance === undefined) continue;
+          if (!routeFitsPassiveCable(inferCableType(candidatePort, port), measured)) continue;
           const closer = !best
             || rank < best.rank
             || (rank === best.rank && cross < best.cross)
@@ -643,6 +669,8 @@ export function buildPurchaseSuggestions(rawObjects, rawConnections = [], option
       const connection = actionableConnections.find(candidate => candidate.id === connectionId);
       const status = connection && evaluateConnectionLength(connection, objects);
       if (!status) continue;
+      if (connectionHasBuiltInCable(connection, objects)) continue;
+      if (!routeFitsPassiveCable(connection.cableType, status.distance)) continue;
       const length = ceilLength(status.recommendedLength);
       if (length <= connection.length) continue;
 

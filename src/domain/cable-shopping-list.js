@@ -41,12 +41,15 @@ function shopCableName(cableType) {
 }
 
 // A wired keyboard or mouse has its cable built in (E60): nothing to buy.
-const BUILT_IN_CABLE_DEVICES = new Set(['keyboard', 'mouse']);
+export const BUILT_IN_CABLE_DEVICES = new Set(['keyboard', 'mouse']);
 
-function hasBuiltInCable(connection, objectsById) {
-  return [connection.fromObjectId, connection.toObjectId].some(id => {
+export function connectionHasBuiltInCable(connection, objects) {
+  const objectsById = objects instanceof Map
+    ? objects
+    : new Map((Array.isArray(objects) ? objects : []).map(object => [object?.id, object]));
+  return [connection?.fromObjectId, connection?.toObjectId].some(id => {
     const object = objectsById.get(id);
-    return object && (BUILT_IN_CABLE_DEVICES.has(object.type) || BUILT_IN_CABLE_DEVICES.has(object.modelId));
+    return Boolean(object && (BUILT_IN_CABLE_DEVICES.has(object.type) || BUILT_IN_CABLE_DEVICES.has(object.modelId)));
   });
 }
 
@@ -61,7 +64,7 @@ export function buildCableShoppingList(connections, objects) {
   const byKey = new Map();
   const objectsById = new Map((objects || []).map(object => [object.id, object]));
   for (const connection of Array.isArray(connections) ? connections : []) {
-    if (hasBuiltInCable(connection, objectsById)) continue;
+    if (connectionHasBuiltInCable(connection, objectsById)) continue;
     const route = getConnectionRoute(connection, objects || []);
     const length = shopCableLength(route?.length ?? NaN);
     if (length === null) continue;

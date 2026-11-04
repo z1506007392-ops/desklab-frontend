@@ -2608,3 +2608,169 @@ test('with the tower\'s USB ports taken, another keyboard goes to the laptop, or
   assert.deepEqual(homeKeyboard.lines, [], 'a desk with no computer has nothing to plug into');
   assert.equal(buildRecommendations(homeKeyboard.project).total, 0);
 });
+
+const wideRoom = { length: 8, width: 6, height: 3 };
+const port = (id, type, direction) => ({ id, name: id, type, direction });
+
+test('auto wiring skips a run that is already past the passive cable spec', () => {
+  const pc = object('pc', {
+    type: 'desktop-pc',
+    modelId: 'desktop-pc',
+    position: { x: -3, y: 0, z: 0.2 },
+    scale: { x: 0.2, y: 0.4, z: 0.4 },
+    ports: [
+      port('hdmi', 'hdmi', 'output'),
+      port('usb-c', 'usb_c', 'output'),
+      port('usb', 'usb', 'output'),
+      port('audio', 'audio', 'output'),
+    ],
+  });
+  const farScreen = object('far-screen', {
+    type: 'monitor',
+    modelId: 'monitor-27',
+    position: { x: 3, y: 0, z: 0.2 },
+    scale: { x: 0.6, y: 0.08, z: 0.36 },
+    ports: [port('hdmi', 'hdmi', 'input')],
+  });
+  assert.equal(
+    buildFreeImprovements(wideRoom, [pc, farScreen], []).some(item => item.code === 'auto_connect_display'),
+    false,
+    'a 6 m HDMI run is past the 3 m passive ceiling',
+  );
+
+  const nearScreen = { ...farScreen, id: 'near-screen', position: { x: -2.2, y: 0, z: 0.2 } };
+  const near = buildFreeImprovements(wideRoom, [pc, nearScreen], [])
+    .filter(item => item.code === 'auto_connect_display');
+  assert.equal(near.length, 1);
+  assert.equal(near[0].patch.newConnection.cableType, 'hdmi');
+  assert.equal(near[0].patch.newConnection.toObjectId, 'near-screen');
+
+  const usbCOnly = {
+    ...farScreen,
+    id: 'usbc-screen',
+    position: { x: -0.5, y: 0, z: 0.2 },
+    ports: [port('usbc', 'usb_c', 'input')],
+  };
+  assert.equal(
+    buildFreeImprovements(wideRoom, [pc, usbCOnly], []).some(item => item.code === 'auto_connect_display'),
+    false,
+    '2.5 m is past the 2 m passive USB-C ceiling',
+  );
+  const hdmiAtSameSpot = { ...usbCOnly, ports: [port('hdmi', 'hdmi', 'input')] };
+  const hdmiNearLimit = buildFreeImprovements(wideRoom, [pc, hdmiAtSameSpot], [])
+    .filter(item => item.code === 'auto_connect_display');
+  assert.equal(hdmiNearLimit.length, 1);
+  assert.equal(hdmiNearLimit[0].patch.newConnection.cableType, 'hdmi');
+
+  const farKeyboard = object('far-keys', {
+    type: 'keyboard',
+    modelId: 'keyboard',
+    position: { x: 3, y: 0, z: 0.02 },
+    scale: { x: 0.44, y: 0.15, z: 0.04 },
+    ports: [port('usb', 'usb', 'bidirectional')],
+  });
+  assert.equal(
+    buildFreeImprovements(wideRoom, [pc, farKeyboard], []).some(item => item.code === 'auto_connect_peripheral'),
+    false,
+  );
+  const nearKeyboard = { ...farKeyboard, id: 'near-keys', position: { x: -2.6, y: 0, z: 0.02 } };
+  const keys = buildFreeImprovements(wideRoom, [pc, nearKeyboard], [])
+    .filter(item => item.code === 'auto_connect_peripheral');
+  assert.equal(keys.length, 1);
+  assert.equal(keys[0].patch.newConnection.toObjectId, 'near-keys');
+
+  const farSpeakers = object('far-speakers', {
+    type: 'speakers',
+    modelId: 'speakers',
+    position: { x: 3, y: 0, z: 0.1 },
+    scale: { x: 0.2, y: 0.15, z: 0.2 },
+    ports: [port('audio', 'audio', 'input')],
+  });
+  const audio = buildFreeImprovements(wideRoom, [pc, farSpeakers], [])
+    .filter(item => item.code === 'auto_connect_peripheral');
+  assert.equal(audio.length, 1, 'analog audio has no passive ceiling');
+  assert.equal(audio[0].patch.newConnection.cableType, 'audio');
+});
+
+test('purchases skip built-in cables and runs past a passive spec', async () => {
+  const { buildTemplateScene } = await import('../src/domain/desk-templates.js');
+  const scene = buildTemplateScene('gaming');
+  const byId = new Map(scene.objects.map(item => [item.id, item]));
+  const isBuiltIn = id => {
+    const item = byId.get(id);
+    return Boolean(item && (item.type === 'keyboard' || item.type === 'mouse'
+      || item.modelId === 'keyboard' || item.modelId === 'mouse'));
+  };
+  const builtIn = scene.connections.filter(connection =>
+    isBuiltIn(connection.fromObjectId) || isBuiltIn(connection.toObjectId));
+  assert.ok(builtIn.length >= 2, 'the gaming desk cables its keyboard and mouse');
+  const shortened = scene.connections.map(connection => (
+    builtIn.some(item => item.id === connection.id) ? { ...connection, length: 0.05 } : connection
+  ));
+  const purchases = buildPurchaseSuggestions(scene.objects, shortened);
+  for (const cable of builtIn) {
+    assert.equal(
+      purchases.some(item => item.code === 'buy_cable' && item.connectionIds?.includes(cable.id)),
+      false,
+      cable.id,
+    );
+  }
+  const keyboardCable = builtIn.find(connection => {
+    const ends = [byId.get(connection.fromObjectId), byId.get(connection.toObjectId)];
+    return ends.some(item => item?.type === 'keyboard' || item?.modelId === 'keyboard');
+  });
+  assert.ok(keyboardCable);
+  assert.equal(
+    buildFreeImprovements(scene.room, scene.objects, shortened)
+      .some(item => item.code === 'extend_cable' && item.connectionIds?.includes(keyboardCable.id)),
+    true,
+    'a short built-in cable is still a free length fix',
+  );
+
+  const host = object('host', {
+    type: 'desktop-pc',
+    modelId: 'desktop-pc',
+    position: { x: -2.2, y: 0, z: 0.2 },
+    scale: { x: 0.2, y: 0.4, z: 0.4 },
+    ports: [port('hdmi', 'hdmi', 'output')],
+  });
+  const screen = object('screen', {
+    type: 'monitor',
+    modelId: 'monitor-27',
+    position: { x: 2.2, y: 0, z: 0.2 },
+    scale: { x: 0.6, y: 0.08, z: 0.36 },
+    ports: [port('hdmi', 'hdmi', 'input')],
+  });
+  const far = [{
+    id: 'far-hdmi', name: 'HDMI', cableType: 'hdmi', length: 1,
+    fromObjectId: 'host', fromPortId: 'hdmi', toObjectId: 'screen', toPortId: 'hdmi',
+  }];
+  assert.equal(buildPurchaseSuggestions([host, screen], far).some(item => item.code === 'buy_cable'), false);
+  assert.equal(buildFreeImprovements(wideRoom, [host, screen], far).some(item => item.code === 'extend_cable'), false);
+
+  const closeScreen = { ...screen, position: { x: 0.6, y: 0, z: 0.2 } };
+  const closeHost = { ...host, position: { x: 0, y: 0, z: 0.2 } };
+  const close = [{ ...far[0], length: 0.2 }];
+  const bought = buildPurchaseSuggestions([closeHost, closeScreen], close).find(item => item.code === 'buy_cable');
+  assert.ok(bought);
+  assert.equal(bought.product.modelId, 'hdmi');
+  assert.equal(bought.product.category, 'cable');
+
+  const player = object('player', {
+    position: { x: 0, y: 0, z: 0.1 },
+    ports: [port('out', 'audio', 'output')],
+  });
+  const speaker = object('speaker', {
+    type: 'speakers',
+    modelId: 'speakers',
+    position: { x: 3, y: 0, z: 0.1 },
+    ports: [port('in', 'audio', 'input')],
+  });
+  const audio = [{
+    id: 'short-audio', name: '音频线', cableType: 'audio', length: 1,
+    fromObjectId: 'player', fromPortId: 'out', toObjectId: 'speaker', toPortId: 'in',
+  }];
+  const audioBuy = buildPurchaseSuggestions([player, speaker], audio).find(item => item.code === 'buy_cable');
+  assert.ok(audioBuy, 'audio is not built in and has no passive ceiling');
+  assert.equal(audioBuy.product.modelId, 'audio');
+});

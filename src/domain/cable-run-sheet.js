@@ -1,9 +1,8 @@
+import { connectionHasBuiltInCable, shopCableLength } from './cable-shopping-list.js';
 import { describeCableType, getConnectionRoute } from './connections.js';
-import { shopCableLength } from './cable-shopping-list.js';
 
 // A wired keyboard or mouse brings its own cable (E60). The run sheet still
 // lists it, and the shop column says so instead of a length to buy.
-const BUILT_IN_CABLE_DEVICES = new Set(['keyboard', 'mouse']);
 
 const SHEET_HEADERS = ['起点设备', '起点接口', '终点设备', '终点接口', '类型', '走线长度（米）', '购买长度（米）'];
 
@@ -14,13 +13,6 @@ function endpointName(object, portId) {
     device: object.name || '未命名设备',
     port: port?.name || (portId ? String(portId) : '未知接口'),
   };
-}
-
-function isBuiltIn(connection, objectsById) {
-  return [connection.fromObjectId, connection.toObjectId].some(id => {
-    const object = objectsById.get(id);
-    return object && (BUILT_IN_CABLE_DEVICES.has(object.type) || BUILT_IN_CABLE_DEVICES.has(object.modelId));
-  });
 }
 
 function markdownCell(value) {
@@ -58,7 +50,7 @@ export function buildCableRunSheet(connections, objects) {
     const from = endpointName(objectsById.get(connection.fromObjectId), connection.fromPortId);
     const to = endpointName(objectsById.get(connection.toObjectId), connection.toPortId);
     const route = getConnectionRoute(connection, items);
-    const builtIn = isBuiltIn(connection, objectsById);
+    const builtIn = connectionHasBuiltInCable(connection, objectsById);
     const shop = builtIn ? null : shopCableLength(route?.length ?? NaN);
     rows.push({
       fromDevice: from.device,
