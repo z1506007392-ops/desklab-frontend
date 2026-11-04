@@ -17,6 +17,45 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E121：线上按手册第 1 节 7 条复跑。生产站 https://desklab-frontend.pages.dev ，桌面 1440×900 和手机 390×844。当时页面 etag 是 `W/"bac9310b12d62be80d6513ee30333e1e"`，脚本是 `/assets/index-D9U5EYkO.js`。origin/master 上更新的是登录取样、退出世代号和 Origin 测试，没有另一份内容不同的预览站。没有为了过验收改生产密钥。
+
+- 进门：Escape 关不掉「这间房有多大」，第一次没有「返回」。确认后是 5×4 米的房间，再点「用电竞桌」。工具栏没有房间尺寸。
+- 保存后的电竞桌：插排 z 0.62，键盘 0.766，鼠标 0.769，理线槽 0.68，主机 0.25。插排不在地上。预设没有改。
+- 布局检查、布线检查都是严重 0、警告 0、提示 0。
+- 桌面模板有极简单屏、电竞双屏、超宽。
+- 购线清单有京东和淘宝。导出按钮仍是「导出 Markdown」「导出 CSV」。等负责人。界面测试锁着这两个词，这次不改。
+- 社区图库写着不会上传，没有上传按钮。四张示例都在：极简单屏、电竞双屏、超宽、线收进桌下槽。
+- 改进建议里有眼睛高度。「更多 → 我的摆法」能打开。
+- 设置里把宽改成 4.2，出现「房间尺寸已更新」。「重新选择房间」有「返回」，Escape 也能离开。回到主界面后保存按钮还在，工具栏仍没有房间尺寸。
+- 保存后刷新，不再进房间页，存档内容不变。
+- 关于与隐私写了 DeepSeek，也写了不会上传。
+- 登录：页面上获取验证码后是「登录暂未开放」。`POST /api/auth/request-code` 是 503 `auth_unavailable`。`GET /api/auth/me` 是 200，`{"email":null,"remaining":null}`。未登录的 `POST /api/ai/layout` 是 401「请先登录后再使用 AI」。
+- 17 个模型的 HEAD 都是 200。没有页面异常。控制台只有这次发码的 503。
+- 手机上出现「建议用电脑打开」，点过「知道了」。
+
+没有因此改页面。
+
+E123：High-Value Next Work 改成现在的阻塞项。E96–E100、F1–F7、E110–E116 已完成。仍卡住的是 Mailjet 密钥、安装包签名和公证、E69/E70 与贴图再压缩、关掉 Git 自动部署、H4。F6 仍只是概念。
+
+还剩：无。E122 的代码是 `0696455`。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
+E122：桌面存档写失败不再被当成已经成功。代码 `0696455`。
+
+- 文件要等写完。眼睛高度、摆法、进门记录、手机提示、备份提醒写失败会退回，界面不说已经记下。放弃草稿也会等清完再收起提示。导出备份如果没记下导出时间，会说明提醒可能还会出现。
+- 读不出来的 `project.json` 不会被当成一张新桌子盖掉。恢复上一版之前，磁盘上的原文件不动。
+- 摆法文件如果不是一份摆法列表，启动时不会用空列表盖掉。人自己留下、删除或从备份导入，才允许替换。启动也不为了空列表新建文件。
+- 一个文件读失败不再让整个存档退回网页的 localStorage。能读的还在。提示用中文，不把文件名露出来。
+- 替换文件时先把旧文件挪开，新文件没就位就放回去。临时文件名以点开头，存档名单拒掉它们。
+- 系统浏览器打不开链接时，状态提示是中文。网页上原来的「浏览器」句子没改。桌面壳改说「这台电脑」。
+
+验证：`npm test` 675 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。Chrome 桌面和手机 UI 257 通过 + 1 跳过。`cargo test` 的存档测试 3 条通过（Rust 1.99.1）。`npm run desktop` 打开了窗口：第一屏是房间大小，Escape 关不掉；用电竞桌之后 `~/.local/share/app.desklab.desktop/guide-seen.txt` 是 `1`，并出现 `project-draft.json`；点保存后写下 `project.json`，草稿文件消失。插排 z 0.62，键盘 0.766，理线槽 0.68。没改外观，没加设备，没改预设。
+
+还剩：无。线上验收和 High-Value 在上面一条。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E119：登录和 AI 的陌生 Origin 继续拒绝，响应带 nosniff。这条规则是 F7 就写在 `functions/api/_middleware.js` 里的，这次没有改它，也没有改桌面的 SameSite=None。补的测试覆盖发码、验证、退出、查看登录、AI，以及登录和 AI 的预检：`https://evil.example` 和 `null` 都是 403、nosniff、没有 CORS、没有 Set-Cookie，处理函数不跑。同源会进入处理函数，网站 cookie 仍是 Lax。三个桌面来源的验证 cookie 仍是 None 且 Secure。本地开发服务器上这几个登录地址同样 403 且 nosniff。
 
 验证：`npm test` 667 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在）。Chrome 桌面和手机 UI 257 通过 + 1 跳过。页面没改。
@@ -4688,8 +4727,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 667 domain tests (E119 origin checks on top of E118's 665)
-npm run test:ui   # Chrome desktop + phone: 257 passed + 1 skipped (E119, same UI count as E111). CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 675 domain tests (E122 archive writes on top of E119's 667)
+npm run test:ui   # Chrome desktop + phone: 257 passed + 1 skipped (E122, same UI count as E111). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
@@ -4705,31 +4744,21 @@ If rendered UI behavior changes, do browser QA against localhost if browser runt
 
 ## High-Value Next Work
 
-Phase F is done except F6, which stays a concept: do not implement room
-scanning. Windows and macOS installers come from
-`.github/workflows/desktop.yml` as unsigned artifacts. Do not pick up E97,
-E99, or E100; other lines have them. Do not implement the community upload
-API; F4 is still only a sketch.
+E96–E100、F1–F7、E110–E116 已完成。F6 仍只是概念：不要做房间扫描。不要加设备，不要改 3D 外观或模型尺寸，不要做 E69/E70，不要再压贴图，不要实现网上社区上传（F4 仍只是接口草图）。预设摆法交给负责人；只有明确 bug（例如插排在地上）才改模板。2026-11-04 线上电竞桌的插排 z 是 0.62，不在地上。
 
-The autonomous hardening backlog and recommendation foundation are complete.
-Do not resume open-ended malformed-state hardening; it had stopped producing
-user-visible value. Done so far: home-user catalog reduction (2026-10-25);
-templates, device-list builder, and shopping list (2026-10-28).
+还卡住、不要绕开的：
 
-1. **Blocked on a product decision: LLM provider** (domestic vs Claude). Once
-   chosen, the "describe your desk" flow is: backend endpoint (API key server
-   side, rate limited) asks the LLM for the `{ desk, devices }` JSON that
-   `DeskBuilderForm` already produces, then `buildDeskScene()` places and wires
-   it and its notes are shown. The LLM never invents device ids; unsupported
-   ids are dropped with a note by the builder.
+1. **Mailjet 密钥。** 生产发码仍是「登录暂未开放」。2026-11-04 `POST /api/auth/request-code` 返回 503 `auth_unavailable`。要在 Cloudflare Pages 的 Production 和 Preview 配上 `MAILJET_API_KEY`、`MAILJET_API_SECRET`、`MAIL_FROM`（或按手册 6.9 改走 Brevo）。不要把密钥写进仓库，也不要从 GitHub Actions secrets 里读出来。
+2. **安装包签名和公证。** Windows 和 macOS 安装包仍由 `.github/workflows/desktop.yml` 产出，没有签名，也没有公证。需要负责人的证书。
+3. **E69、E70 和贴图再压缩。** 等负责人决定。会改变 3D 样子，批准前不做。
+4. **关掉 Git 自动部署。** 仍然开着，不等 CI。这台环境没有 Cloudflare API token。负责人在 Pages 控制台关（手册 4.7）。不要自己读 token。
+5. **H4。** 域名 ICP 备案和国内服务器。负责人已决定暂缓。不做。
 
-2. **Candidates not yet confirmed with the product owner**:
-   - LLM explanations of each suggestion and grounded Q&A.
-   - Simpler manual connection flow (today: pick ports, cable type, length).
-   - Launch basics: multiple projects/accounts, deployment, LLM cost limits.
-   - Code-splitting the old 1.46MB bundle. Already done: three.js is its own chunk and Scene3D loads after the page (E66 measured gzip about 130KB + 140KB + 185KB). Do not split it again unless a profile says the first screen is actually slow.
+等负责人、这次不改文案：购线清单的「导出 Markdown」「导出 CSV」。界面测试锁着这两个词。
 
-3. **Always start from current evidence**:
+下一轮先看任务板。E118、E119 已完成。不要重做上面卡住的五项。
+
+**Always start from current evidence**:
 ```bash
 cd D:\desklab\frontend
 git status --short
