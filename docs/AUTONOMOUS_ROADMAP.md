@@ -594,7 +594,7 @@ type 用：`feat`（新功能）、`fix`（修 bug）、`test`、`docs`、`ci`�
 - **E152 [x] 完成（grok，2026-11-04）** 只读分享里不弹出登录框，不发送 AI 请求，也不退出登录。要求输入框停用。复制到自己的项目之后，登录、AI 和退出恢复。不改登录接口，不改 E78 的分享对话框。
 - **E153 [x] 完成（grok，2026-11-04）** 导出的安装清单再挡住 E107 漏掉的字符：单独的回车、Unicode 换行、尖括号不能拆开步骤或变成新标题；CSV 里以等号、加号、减号、@ 或制表符开头的名字前面加撇号，不能变成表格公式。换行仍留在引号里的 CSV 单元格。不改布线算法，不改「导出 Markdown」「导出 CSV」这两个词。
 - **E154 [x] 完成（grok，2026-11-04）** 打开图库、摆法或分享时，带协议的模型地址（https、javascript、data）和以 // 开头的地址不预加载。`/custom/thing.glb` 和带 `?v=` 的本站模型仍预加载。不改模型外观。
-- **E155 [x] 完成（Desklab，2026-11-04）** 登录验证码优先走 Resend 的 HTTPS API（`POST https://api.resend.com/emails`，`Authorization: Bearer`）。有 `RESEND_API_KEY` 就用它，否则仍是 Mailjet，再否则 Brevo。`MAIL_FROM` 仍要有，否则「登录暂未开放」。主题和正文不变。Mailjet 和 Brevo 留着。生产在 Cloudflare Pages 的 Production 和 Preview 配 `RESEND_API_KEY` 和 `MAIL_FROM`。不改外观，不加设备。密钥不进仓库。
+- **E155 [x] 完成（Desklab，2026-11-04，c8dab68）** 登录验证码优先走 Resend 的 HTTPS API（`POST https://api.resend.com/emails`，`Authorization: Bearer`）。有 `RESEND_API_KEY` 就用它，否则仍是 Mailjet，再否则 Brevo。`MAIL_FROM` 仍要有，否则「登录暂未开放」。主题和正文不变。Mailjet 和 Brevo 留着。生产在 Cloudflare Pages 的 Production 和 Preview 配 `RESEND_API_KEY` 和 `MAIL_FROM`。不改外观，不加设备。密钥不进仓库。
 
 ### 阶段 F：本地桌面应用（Leo 2026-11-04）
 

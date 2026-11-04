@@ -17,7 +17,7 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
-E155：登录验证码优先走 Resend。有 `RESEND_API_KEY` 就 `POST https://api.resend.com/emails`，Bearer 鉴权，正文是 `from`、`to`、`subject`、`text`。没有这把钥匙时，两个 Mailjet 密钥仍走 Mailjet，否则走 Brevo。`MAIL_FROM` 空着仍是未配置，不发请求。主题仍是「DeskLab 登录验证码」，正文仍是原来的中文句子。Mailjet 只填一半时，只要 Resend 配齐就走 Resend；Resend 没配时仍不改去 Brevo。没有写入密钥。没有改页面、外观、设备和预设。
+E155：登录验证码优先走 Resend。代码 `c8dab68`。有 `RESEND_API_KEY` 就 `POST https://api.resend.com/emails`，Bearer 鉴权，正文是 `from`、`to`、`subject`、`text`。没有这把钥匙时，两个 Mailjet 密钥仍走 Mailjet，否则走 Brevo。`MAIL_FROM` 空着仍是未配置，不发请求。主题仍是「DeskLab 登录验证码」，正文仍是原来的中文句子。Mailjet 只填一半时，只要 Resend 配齐就走 Resend；Resend 没配时仍不改去 Brevo。没有写入密钥。没有改页面、外观、设备和预设。
 
 验证：`npm test` 702 通过（E120 的 696 加上这 6 条发信测试），碰到的文件 lint 0 问题。没有跑界面测试：页面没改。
 
