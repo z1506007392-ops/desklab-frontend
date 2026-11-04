@@ -128,7 +128,7 @@ test('importing a file that is not a backup explains it in plain words', async (
   await page.getByLabel('导入 DeskLab 备份文件', { exact: true }).setInputFiles({
     name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('hello'),
   });
-  await expect(page.getByText('导入失败：这不是 DeskLab 的备份文件，或者文件已损坏')).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: '导入失败：这不是 DeskLab 的备份文件，或者文件已损坏' })).toBeVisible();
   expect(evidence).toEqual({ errors: [], writes: [] });
 });
 

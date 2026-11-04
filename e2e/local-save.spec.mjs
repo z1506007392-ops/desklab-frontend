@@ -20,11 +20,11 @@ async function expectTemplateCables(page) {
 test('a saved desk stays in this browser after a reload, with no server involved', async ({ page }) => {
   const evidence = await openProject(page, []);
   await applyGamingTemplate(page);
-  const unsaved = page.getByRole('status').filter({ hasText: '未保存' });
+  const unsaved = page.getByRole('status').filter({ hasText: /^未保存$/ });
   await expect(unsaved).toBeVisible();
 
   await page.getByRole('button', { name: '保存项目', exact: true }).click();
-  await expect(page.getByText(/^已保存$/)).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: /^已保存$/ })).toBeVisible();
   await expect(unsaved).toHaveCount(0);
 
   // Reload only once the 3D models have finished downloading: iPhone WebKit

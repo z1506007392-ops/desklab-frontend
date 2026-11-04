@@ -19,7 +19,7 @@ test('a new user can start from a desk template that is ready to use, and undo i
   await expect(page.getByRole('button', { name: '布局检查', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '布线检查', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '改进建议', exact: true })).toBeVisible();
-  await expect(page.getByRole('status').filter({ hasText: '未保存' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: /^未保存$/ })).toBeVisible();
 
   await page.getByRole('button', { name: '所有连接', exact: true }).click();
   const connections = page.getByRole('dialog', { name: '全部连接清单', exact: true });
