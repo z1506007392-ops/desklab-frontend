@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openProject } from './project-fixture.mjs';
+import { openProject, waitForSceneDownloads } from './project-fixture.mjs';
 
 function device(id, type, category, modelId, position, scale, ports) {
   return {
@@ -31,10 +31,11 @@ test('an old save with a closed-lid laptop and removed devices still opens', asy
 
   const evidence = await openProject(page, objects, connections);
   await expect(page.locator('canvas')).toBeVisible();
-  // Let the GLBs load and a few frames render before checking for errors.
-  await page.waitForTimeout(1500);
+  // A fixed 1500 ms wait ended before a late model failure. Wait until every
+  // catalog model has finished, the same condition used before a reload.
+  await waitForSceneDownloads(page);
   // Migrating the old save is part of loading it, not an edit to save.
-  const unsaved = page.getByRole('status').filter({ hasText: '未保存' });
+  const unsaved = page.getByRole('status').filter({ hasText: /^未保存$/ });
   await expect(unsaved).toHaveCount(0);
   expect(evidence.errors).toEqual([]);
   expect(evidence.writes).toEqual([]);
