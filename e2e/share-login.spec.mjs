@@ -46,11 +46,15 @@ test('after copying a share, a signed-in person can ask AI without the login dia
   const evidence = await openShared(page, {
     session: { email: 'leo@example.com', remaining: 20 },
     ai: () => ({ version: 1, model: 'test', suggestions: [], remaining: 19 }),
+    auth: { logout: () => ({ ok: true }) },
   });
   const advice = await openAdvice(page);
   await expect(advice.getByRole('button', { name: '让 AI 看看', exact: true })).toBeDisabled();
+  await expect(advice.getByRole('button', { name: '退出', exact: true })).toBeDisabled();
+  await expect(advice.getByLabel('想怎么改？（可选）')).toBeDisabled();
   await expect(page.getByRole('dialog', { name: '登录后使用 AI', exact: true })).toHaveCount(0);
   expect(evidence.aiRequests).toEqual([]);
+  expect(evidence.writes.filter(line => line.includes('/api/auth/logout') || line.includes('/api/ai/layout'))).toEqual([]);
   await page.keyboard.press('Escape');
 
   page.once('dialog', popup => popup.accept());
@@ -58,10 +62,14 @@ test('after copying a share, a signed-in person can ask AI without the login dia
   await expect(page.getByText('已复制到当前项目，尚未保存')).toBeVisible();
 
   const own = await openAdvice(page);
+  await expect(own.getByRole('button', { name: '退出', exact: true })).toBeEnabled();
+  await expect(own.getByLabel('想怎么改？（可选）')).toBeEnabled();
   await own.getByRole('button', { name: '让 AI 看看', exact: true }).click();
   await expect(page.getByRole('dialog', { name: '登录后使用 AI', exact: true })).toHaveCount(0);
   await expect(own.getByText('AI 这次没有找到能让布局更好的改动。')).toBeVisible();
   await expect(own.getByText('今日剩余 19 次')).toBeVisible();
   expect(evidence.aiRequests).toHaveLength(1);
+  await own.getByRole('button', { name: '退出', exact: true }).click();
+  await expect(own.getByRole('button', { name: '退出', exact: true })).toHaveCount(0);
   expect(evidence.errors.filter(message => !/Failed to load resource|net::ERR_/.test(message))).toEqual([]);
 });

@@ -51,6 +51,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
   const signedInEmail = sessionRejected ? null : session.email;
 
   const ask = (withFeedback = false) => {
+    if (!editable) return;
     if (!signedInEmail) {
       setLoginOpen(true);
       return;
@@ -78,7 +79,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
 
   const remaining = typeof ai.remaining === 'number' ? ai.remaining : session.remaining;
   const signedIn = session.status === 'ready' && Boolean(signedInEmail);
-  const showLogin = loginOpen || (sessionRejected && !authPromptSeen);
+  const showLogin = editable && (loginOpen || (sessionRejected && !authPromptSeen));
   const accepted = useMemo(() => evaluateSuggestions(project, ai.suggestions).map(result => ({
     ...result,
     changedIds: changedObjectIds(project, result.nextProject),
@@ -108,7 +109,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
           placeholder="例如：更整洁 / 适合打游戏 / 双屏办公"
           value={goal}
           onChange={event => setGoal(event.target.value)}
-          disabled={loading}
+          disabled={!editable || loading}
         />
         <button
           type="button"
@@ -122,7 +123,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
           <span className="ai-suggestions-remaining">今日剩余 {remaining} 次</span>
         )}
         {signedIn && (
-          <button type="button" className="ui-button" onClick={logout} disabled={loading}>退出</button>
+          <button type="button" className="ui-button" onClick={logout} disabled={!editable || loading}>退出</button>
         )}
         {logoutError && (
           <div className="ai-suggestions-status ai-suggestions-error" role="alert">
@@ -213,6 +214,7 @@ export function AiSuggestionsPanel({ ai, project, editable, onApply, onPreview }
             placeholder="例如：不要动主机 / 再整洁一点"
             value={feedback}
             onChange={event => setFeedback(event.target.value)}
+            disabled={!editable}
           />
           <button
             type="button"
