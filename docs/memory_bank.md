@@ -17,6 +17,14 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E120：网站 https 的会话 cookie 改成 `__Host-desklab_session`。Secure、Path=/、没有 Domain、SameSite 仍是 Lax。登录和退出都会把旧的 `desklab_session` 清掉。网站 https 不再认旧名字，只带旧名字的退出也不会把这个邮箱的会话作废。桌面来源仍用 `desklab_session`，F7 继续改成 SameSite=None。本地 http 仍用原来的名字，不加 Secure。`__Host-` 在本地 http 上会被丢掉；打包后的桌面 cookie 是跨站的，改名字会让现有桌面会话失效。所以只加固网站。评测脚本在 https 上把原始令牌包成带前缀的名字，http 仍用原来的名字；已经带 `=` 的值原样送出。没有服务或续跑文件损坏时，评测仍在建结果目录之前退出。
+
+验证：`npm test` 696 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在）。Chrome 桌面和手机 UI 261 通过 + 1 跳过。页面没改。
+
+还剩：推 master。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E154：预加载不再抓带协议的模型地址。`https`、`javascript:`、`data:` 和以 `//` 开头的地址不会进「现在加载」或「稍后加载」，目录里混进的站外地址也不会。`/custom/thing.glb` 和 `/models/office-desk.glb?v=` 仍照旧。模型文件和外观没改。
 
 验证：`npm test` 693 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。摆法界面桌面测试打开三维房间并通过。没改外观，没加设备。
@@ -107,7 +115,7 @@ E150：本机图库拒绝坏图和非法字段。gif、svg、网页、`javascrip
 
 领了 E120。网站的 https 会话 cookie 加上 `__Host-` 前缀。桌面来源和本地 http 仍用 `desklab_session`，避免破坏桌面应用。E119 已推 `6afb455`（认领 `3404cbd`）。
 
-还剩：实现并验证。
+还剩：无。实现在上面一条。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
@@ -4821,8 +4829,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 693 domain tests (E154 model preload schemes on top of E153's 692)
-npm run test:ui   # Chrome desktop + phone: 257 passed + 1 skipped (E122, same UI count as E111). CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 696 domain tests (E120 host-prefix cookie on top of E154's 693)
+npm run test:ui   # Chrome desktop + phone: 261 passed + 1 skipped (E120, after E151–E154). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

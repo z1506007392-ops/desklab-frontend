@@ -64,6 +64,10 @@ function cookieToken(response) {
   return (response.headers.get('set-cookie') || '').match(/desklab_session=([0-9a-f]+)/)?.[1] || '';
 }
 
+function websiteCookie(token) {
+  return `__Host-desklab_session=${token}`;
+}
+
 test('missing mail, and a half-set Mailjet pair, stay closed without calling out', async () => {
   const closed = setup({ env: {} });
   const response = await closed.auth.requestCode({
@@ -147,14 +151,21 @@ test('the login flow sends one Mailjet note, then a cookie, and AI stays closed 
   assert.equal(ok.headers.get('x-content-type-options'), 'nosniff');
   assert.match(cookie, /Path=\//);
   assert.match(cookie, /Max-Age=2592000/);
+  assert.equal(/Domain=/i.test(cookie), false);
   const token = cookieToken(ok);
+  assert.match(ok.headers.getSetCookie()[0], new RegExp(`^__Host-desklab_session=${token};`));
   assert.equal(await sha256Hex(`user@example.com:${code}`).then(hash => hash.length), 64);
   const body = await ok.json();
   assert.equal(body.email, 'user@example.com');
   assert.equal(body.remaining, 20);
 
-  const allowed = await rig.layout({
+  const ignored = await rig.layout({
     request: layoutRequest(`desklab_session=${token}`),
+    env: rig.env,
+  });
+  assert.equal(ignored.status, 401);
+  const allowed = await rig.layout({
+    request: layoutRequest(websiteCookie(token)),
     env: rig.env,
   });
   assert.equal(allowed.status, 200);
@@ -167,15 +178,15 @@ test('the login flow sends one Mailjet note, then a cookie, and AI stays closed 
   const gone = await rig.auth.logout({
     request: new Request('https://desklab.test/api/auth/logout', {
       method: 'POST',
-      headers: { cookie: `desklab_session=${token}` },
+      headers: { cookie: websiteCookie(token) },
     }),
     env: rig.env,
   });
   assert.equal(gone.status, 200);
-  assert.match(gone.headers.get('set-cookie'), /desklab_session=/);
+  assert.match(gone.headers.get('set-cookie'), /__Host-desklab_session=/);
   assert.match(gone.headers.get('set-cookie'), /HttpOnly/i);
   assert.match(gone.headers.get('set-cookie'), /Max-Age=0/);
-  const after = await rig.layout({ request: layoutRequest(`desklab_session=${token}`), env: rig.env });
+  const after = await rig.layout({ request: layoutRequest(websiteCookie(token)), env: rig.env });
   assert.equal(after.status, 401);
   assert.equal((await after.json()).message, '请先登录后再使用 AI');
 });
@@ -225,7 +236,7 @@ test('a code expires after ten minutes, and a session expires after thirty days'
   assert.equal(still.status, 200);
   const token = cookieToken(still);
   const me = () => rig.auth.me({
-    request: new Request('https://desklab.test/api/auth/me', { headers: { cookie: `desklab_session=${token}` } }),
+    request: new Request('https://desklab.test/api/auth/me', { headers: { cookie: websiteCookie(token) } }),
     env: rig.env,
   });
   time.advance(30 * 24 * 60 * 60 * 1000 - 1);

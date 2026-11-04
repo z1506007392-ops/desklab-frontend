@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { LOGIN_CODE_ROLL_LIMIT } from '../src/domain/login-code.js';
-import { createAuthHandlers, normalizeEmail, sha256Hex } from '../server/ai/auth.js';
+import { createAuthHandlers, normalizeEmail, sessionCookieName, sha256Hex } from '../server/ai/auth.js';
 import { createRateLimiter } from '../server/ai/rate-limit.js';
 
 class FakeKv {
@@ -64,6 +64,10 @@ function setup({ time = clock('2026-10-30T02:10:00Z'), env = mailEnv, mail, rand
 function cookieToken(response) {
   const header = response.headers.get('set-cookie') || '';
   return header.match(/desklab_session=([0-9a-f]+)/)?.[1] || '';
+}
+
+function websiteCookie(token) {
+  return `__Host-desklab_session=${token}`;
 }
 
 test('a rejected roll is discarded before the code is mailed', async () => {
@@ -155,7 +159,12 @@ test('a code is stored only as a hash, and the right code opens a 30-day session
   assert.match(cookie, /Secure/);
   assert.match(cookie, /Path=\//);
   assert.match(cookie, /Max-Age=2592000/);
+  assert.equal(/Domain=/i.test(cookie), false);
+  const issued = ok.headers.getSetCookie();
+  assert.equal(issued.length, 2);
   const token = cookieToken(ok);
+  assert.match(issued[0], new RegExp(`^__Host-desklab_session=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000; Secure$`));
+  assert.match(issued[1], /^desklab_session=; HttpOnly; SameSite=Lax; Path=\/; Max-Age=0; Secure$/);
   assert.equal(token.length, 64);
   assert.deepEqual(JSON.parse(await rig.kv.get(`auth:session:${await sha256Hex(token)}`)), {
     email: 'user@example.com',
@@ -167,24 +176,99 @@ test('a code is stored only as a hash, and the right code opens a 30-day session
   assert.equal(body.email, 'user@example.com');
   assert.equal(body.remaining, 20);
 
-  const me = await rig.me({
+  const ignored = await rig.me({
     request: new Request('https://desklab.test/api/auth/me', { headers: { cookie: `desklab_session=${token}` } }),
+    env: rig.env,
+  });
+  assert.deepEqual(await ignored.json(), { email: null, remaining: null });
+  const me = await rig.me({
+    request: new Request('https://desklab.test/api/auth/me', { headers: { cookie: websiteCookie(token) } }),
     env: rig.env,
   });
   assert.deepEqual(await me.json(), { email: 'user@example.com', remaining: 20 });
 
   const gone = await rig.logout({
-    request: new Request('https://desklab.test/api/auth/logout', { method: 'POST', headers: { cookie: `desklab_session=${token}` } }),
+    request: new Request('https://desklab.test/api/auth/logout', { method: 'POST', headers: { cookie: websiteCookie(token) } }),
     env: rig.env,
   });
   assert.equal(gone.status, 200);
   assert.match(gone.headers.get('set-cookie'), /Max-Age=0/);
   assert.match(gone.headers.get('set-cookie'), /Secure/);
   assert.match(gone.headers.get('set-cookie'), /SameSite=Lax/i);
+  assert.deepEqual(gone.headers.getSetCookie(), [
+    '__Host-desklab_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0; Secure',
+    'desklab_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0; Secure',
+  ]);
   assert.equal(gone.headers.get('x-content-type-options'), 'nosniff');
   assert.equal(await rig.kv.get(`auth:session:${await sha256Hex(token)}`), null);
   const after = await rig.me({ request: new Request('https://desklab.test/api/auth/me'), env: rig.env });
   assert.deepEqual(await after.json(), { email: null, remaining: null });
+});
+
+test('the host prefix is only for website https', () => {
+  const site = 'https://desklab-frontend.pages.dev/api/auth/verify';
+  assert.equal(sessionCookieName(new Request(site)), '__Host-desklab_session');
+  assert.equal(sessionCookieName(new Request(site, { headers: { origin: 'https://desklab-frontend.pages.dev' } })), '__Host-desklab_session');
+  assert.equal(sessionCookieName(new Request('http://127.0.0.1:3001/api/auth/verify')), 'desklab_session');
+  for (const origin of ['tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost']) {
+    assert.equal(sessionCookieName(new Request(site, { headers: { origin } })), 'desklab_session', origin);
+    assert.equal(sessionCookieName(new Request('http://127.0.0.1:3001/api/auth/verify', { headers: { origin } })), 'desklab_session', origin);
+  }
+});
+
+test('a desktop origin keeps the unprefixed cookie and does not read the host name', async () => {
+  const rig = setup();
+  const origin = 'tauri://localhost';
+  await rig.requestCode({
+    request: post('https://desklab-frontend.pages.dev/api/auth/request-code', { email: 'a@b.cn' }, { origin }),
+    env: rig.env,
+  });
+  const ok = await rig.verify({
+    request: post('https://desklab-frontend.pages.dev/api/auth/verify', { email: 'a@b.cn', code: rig.sent[0].code }, { origin }),
+    env: rig.env,
+  });
+  const cookies = ok.headers.getSetCookie();
+  assert.equal(cookies.length, 1);
+  const token = cookieToken(ok);
+  assert.match(cookies[0], new RegExp(`^desklab_session=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000; Secure$`));
+  assert.equal(cookies[0].includes('__Host-'), false);
+  const me = cookie => rig.me({
+    request: new Request('https://desklab-frontend.pages.dev/api/auth/me', { headers: { origin, cookie } }),
+    env: rig.env,
+  });
+  assert.equal((await (await me(`desklab_session=${token}`)).json()).email, 'a@b.cn');
+  assert.equal((await (await me(websiteCookie(token))).json()).email, null);
+});
+
+test('an old website cookie cannot sign in or end the host session', async () => {
+  const rig = setup();
+  await rig.requestCode({
+    request: post('https://desklab.test/api/auth/request-code', { email: 'a@b.cn' }),
+    env: rig.env,
+  });
+  const ok = await rig.verify({
+    request: post('https://desklab.test/api/auth/verify', { email: 'a@b.cn', code: rig.sent[0].code }),
+    env: rig.env,
+  });
+  const token = cookieToken(ok);
+  const stale = await rig.logout({
+    request: new Request('https://desklab.test/api/auth/logout', {
+      method: 'POST',
+      headers: { cookie: `desklab_session=${token}` },
+    }),
+    env: rig.env,
+  });
+  assert.equal(stale.status, 200);
+  assert.equal(await rig.kv.get('auth:generation:a@b.cn'), null);
+  assert.deepEqual(JSON.parse(await rig.kv.get(`auth:session:${await sha256Hex(token)}`)), {
+    email: 'a@b.cn',
+    generation: 0,
+  });
+  const me = await rig.me({
+    request: new Request('https://desklab.test/api/auth/me', { headers: { cookie: websiteCookie(token) } }),
+    env: rig.env,
+  });
+  assert.equal((await me.json()).email, 'a@b.cn');
 });
 
 test('a local http session cookie is not marked Secure', async () => {
@@ -198,9 +282,12 @@ test('a local http session cookie is not marked Secure', async () => {
     env: rig.env,
   });
   const cookie = ok.headers.get('set-cookie');
+  assert.match(cookie, /^desklab_session=/);
+  assert.equal(cookie.includes('__Host-'), false);
   assert.match(cookie, /HttpOnly/i);
   assert.match(cookie, /SameSite=Lax/i);
   assert.equal(/Secure/.test(cookie), false);
+  assert.equal(ok.headers.getSetCookie().length, 1);
   const gone = await rig.logout({
     request: new Request('http://127.0.0.1/api/auth/logout', { method: 'POST', headers: { cookie: `desklab_session=${cookieToken(ok)}` } }),
     env: rig.env,
@@ -226,7 +313,7 @@ test('logging out ends every session for that email and leaves other emails sign
     return cookieToken(response);
   };
   const me = token => rig.me({
-    request: new Request('https://desklab.test/api/auth/me', { headers: { cookie: `desklab_session=${token}` } }),
+    request: new Request('https://desklab.test/api/auth/me', { headers: { cookie: websiteCookie(token) } }),
     env: rig.env,
   });
   const first = await open('a@b.cn');
@@ -241,7 +328,7 @@ test('logging out ends every session for that email and leaves other emails sign
   const gone = await rig.logout({
     request: new Request('https://desklab.test/api/auth/logout', {
       method: 'POST',
-      headers: { cookie: `desklab_session=${first}` },
+      headers: { cookie: websiteCookie(first) },
     }),
     env: rig.env,
   });
@@ -273,7 +360,7 @@ test('logging out ends every session for that email and leaves other emails sign
   const stale = await rig.logout({
     request: new Request('https://desklab.test/api/auth/logout', {
       method: 'POST',
-      headers: { cookie: `desklab_session=${legacyToken}` },
+      headers: { cookie: websiteCookie(legacyToken) },
     }),
     env: rig.env,
   });
@@ -303,14 +390,14 @@ test('two logouts still leave that email signed out everywhere', async () => {
   const leave = token => rig.logout({
     request: new Request('https://desklab.test/api/auth/logout', {
       method: 'POST',
-      headers: { cookie: `desklab_session=${token}` },
+      headers: { cookie: websiteCookie(token) },
     }),
     env: rig.env,
   });
   const responses = await Promise.all([leave(first), leave(second)]);
   assert.deepEqual(responses.map(response => response.status), [200, 200]);
   const me = token => rig.me({
-    request: new Request('https://desklab.test/api/auth/me', { headers: { cookie: `desklab_session=${token}` } }),
+    request: new Request('https://desklab.test/api/auth/me', { headers: { cookie: websiteCookie(token) } }),
     env: rig.env,
   });
   assert.equal((await (await me(first)).json()).email, null);
@@ -330,7 +417,7 @@ test('logging out without a live session does not move any generation', async ()
   const junk = await rig.logout({
     request: new Request('https://desklab.test/api/auth/logout', {
       method: 'POST',
-      headers: { cookie: `desklab_session=${unknown}` },
+      headers: { cookie: websiteCookie(unknown) },
     }),
     env: rig.env,
   });

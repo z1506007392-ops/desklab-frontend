@@ -1,8 +1,11 @@
 // Run the AI evaluation against a running /api/ai/layout and record results.
 //   DEEPSEEK_API_KEY=sk-... npm run dev:api     (in another terminal)
 //   node tools/ai-eval/run-eval.mjs [--url http://localhost:3001/api/ai/layout]
-// Against a server that requires login, set AI_EVAL_COOKIE to the session
-// cookie value. AI_MOCK=1 on the dev server skips login.
+// Against a server that requires login, set AI_EVAL_COOKIE to the raw session
+// token. An https URL sends __Host-desklab_session; an http URL sends
+// desklab_session. A value that already contains "=" is sent unchanged, so a
+// full desktop cookie header can be passed through. AI_MOCK=1 on the dev
+// server skips login.
 //   node tools/ai-eval/run-eval.mjs --url ... --resume tools/ai-eval/results/<run>
 // Raw answers and metrics go to tools/ai-eval/results/<timestamp>/ (or the
 // --resume folder). On a rate limit (429) the run stops, saves what it has,
@@ -13,6 +16,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
+import { sessionCookieName } from '../../server/ai/auth.js';
 import { THRESHOLDS, buildEvalScenes, evalProbeDecision, readResumeResults, runEval, summarize } from './lib.mjs';
 
 const flag = name => {
@@ -25,7 +29,7 @@ const resume = flag('--resume');
 const headers = { 'Content-Type': 'application/json' };
 if (process.env.AI_EVAL_COOKIE) {
   const token = process.env.AI_EVAL_COOKIE.trim();
-  headers.cookie = token.startsWith('desklab_session=') ? token : `desklab_session=${token}`;
+  headers.cookie = token.includes('=') ? token : `${sessionCookieName(new Request(url))}=${token}`;
 }
 
 const post = async body => {

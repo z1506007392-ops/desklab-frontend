@@ -2,6 +2,7 @@
 // browser. Codes, sessions, and send counters live in the AI_LIMITS KV
 // binding when it is present, and in this isolate's memory otherwise.
 import { uniformLoginCode } from '../../src/domain/login-code.js';
+import { isDesktopOrigin, statedOrigin } from './desktop-cors.js';
 import { beijingDay, createRateLimiter, hourBucket } from './rate-limit.js';
 import { mailConfig, sendLoginCode } from './mail.js';
 
@@ -15,7 +16,8 @@ const LOCK_TTL_SECONDS = 60;
 const MAX_ATTEMPTS = 5;
 const CODE_IP_HOURLY_DEFAULT = 10;
 const VERIFY_IP_HOURLY_DEFAULT = 30;
-const COOKIE = 'desklab_session';
+export const SESSION_COOKIE = 'desklab_session';
+export const HOST_SESSION_COOKIE = '__Host-desklab_session';
 
 export const AUTH_MESSAGES = Object.freeze({
   auth_unavailable: '登录暂未开放',
@@ -35,15 +37,16 @@ function positiveInt(value, fallback) {
 }
 
 function json(status, body, headers = {}) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store',
-      'x-content-type-options': 'nosniff',
-      ...headers,
-    },
+  const { 'set-cookie': setCookie, ...rest } = headers;
+  const responseHeaders = new Headers({
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    'x-content-type-options': 'nosniff',
+    ...rest,
   });
+  const cookies = setCookie == null ? [] : (Array.isArray(setCookie) ? setCookie : [setCookie]);
+  for (const cookie of cookies) responseHeaders.append('set-cookie', cookie);
+  return new Response(JSON.stringify(body), { status, headers: responseHeaders });
 }
 
 function fail(status, error, extraHeaders) {
@@ -106,10 +109,11 @@ function cookieValue(request, name) {
   return '';
 }
 
-function sessionCookie(token, { secure, maxAge }) {
+function sessionCookie(name, token, { secure, maxAge }) {
   // The website cookie stays Lax. desktop-cors.js rewrites this SameSite=Lax
-  // token to None, and only for the packaged app's origins.
-  const parts = [`${COOKIE}=${token}`, 'HttpOnly', 'SameSite=Lax', 'Path=/', `Max-Age=${maxAge}`];
+  // token to None, and only for the packaged app's origins. No Domain attribute:
+  // the __Host- prefix is rejected by the browser when Domain is set.
+  const parts = [`${name}=${token}`, 'HttpOnly', 'SameSite=Lax', 'Path=/', `Max-Age=${maxAge}`];
   if (secure) parts.push('Secure');
   return parts.join('; ');
 }
@@ -118,6 +122,25 @@ function sessionCookie(token, { secure, maxAge }) {
 // Local http omits it; otherwise the browser will not store the cookie.
 function isSecureRequest(request) {
   return new URL(request.url).protocol === 'https:';
+}
+
+// __Host- requires a cryptographic response, Secure, Path=/, and no Domain.
+// The desktop app's dev server is local http, and the packaged app's cookie is
+// cross-site (SameSite=None on desklab_session). Renaming that cookie would
+// drop existing desktop sessions, so only the website https cookie is prefixed.
+export function sessionCookieName(request) {
+  if (isSecureRequest(request) && !isDesktopOrigin(statedOrigin(request))) return HOST_SESSION_COOKIE;
+  return SESSION_COOKIE;
+}
+
+function sessionCookies(request, token, maxAge) {
+  const name = sessionCookieName(request);
+  const secure = isSecureRequest(request);
+  const cookies = [sessionCookie(name, token, { secure: secure || name === HOST_SESSION_COOKIE, maxAge })];
+  if (name === HOST_SESSION_COOKIE) {
+    cookies.push(sessionCookie(SESSION_COOKIE, '', { secure: true, maxAge: 0 }));
+  }
+  return cookies;
 }
 
 async function readJson(request) {
@@ -218,7 +241,7 @@ export function createAuthHandlers({
   }
 
   async function readSession(request, env = {}) {
-    const token = cookieValue(request, COOKIE);
+    const token = cookieValue(request, sessionCookieName(request));
     if (!token) return null;
     const store = storeFor(env);
     const parsed = parseSessionValue(await store.get(`auth:session:${await sha256Hex(token)}`));
@@ -340,7 +363,7 @@ export function createAuthHandlers({
     const token = await issueSession(store, email);
     const remaining = await remainingFor(email, env);
     return json(200, { email, remaining }, {
-      'set-cookie': sessionCookie(token, { secure: isSecureRequest(request), maxAge: SESSION_TTL_SECONDS }),
+      'set-cookie': sessionCookies(request, token, SESSION_TTL_SECONDS),
     });
   }
 
@@ -352,7 +375,7 @@ export function createAuthHandlers({
 
   async function logout({ request, env = {} }) {
     const store = storeFor(env);
-    const token = cookieValue(request, COOKIE);
+    const token = cookieValue(request, sessionCookieName(request));
     if (token) {
       const key = `auth:session:${await sha256Hex(token)}`;
       const parsed = parseSessionValue(await store.get(key));
@@ -375,7 +398,7 @@ export function createAuthHandlers({
       }
     }
     return json(200, { ok: true }, {
-      'set-cookie': sessionCookie('', { secure: isSecureRequest(request), maxAge: 0 }),
+      'set-cookie': sessionCookies(request, '', 0),
     });
   }
 

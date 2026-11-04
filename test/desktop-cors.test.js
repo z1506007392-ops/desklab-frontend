@@ -47,9 +47,16 @@ test('a website login cookie stays Lax and gains no CORS headers', async () => {
   const handlers = auth();
   const request = post('https://desklab-frontend.pages.dev/api/auth/verify', {}, { origin: 'https://desklab-frontend.pages.dev' });
   const response = await guardApiRequest(request, () => login(handlers, 'https://desklab-frontend.pages.dev'));
-  const cookie = response.headers.get('set-cookie');
-  assert.match(cookie, /SameSite=Lax/i);
-  assert.equal(/SameSite=None/i.test(cookie), false);
+  const cookies = response.headers.getSetCookie();
+  assert.equal(cookies.length, 2);
+  assert.match(cookies[0], /^__Host-desklab_session=[0-9a-f]{64};/);
+  assert.match(cookies[0], /SameSite=Lax/i);
+  assert.match(cookies[0], /Secure/);
+  assert.match(cookies[0], /Path=\//);
+  assert.equal(/Domain=/i.test(cookies[0]), false);
+  assert.equal(/SameSite=None/i.test(cookies[0]), false);
+  assert.match(cookies[1], /^desklab_session=;/);
+  assert.match(cookies[1], /Max-Age=0/);
   assert.equal(response.headers.get('access-control-allow-origin'), null);
 });
 
@@ -58,10 +65,15 @@ test('a desktop login cookie is SameSite=None and the origin is echoed', async (
     const handlers = auth();
     const request = post('https://desklab-frontend.pages.dev/api/auth/verify', {}, { origin });
     const response = await guardApiRequest(request, () => login(handlers, origin));
-    const cookie = response.headers.get('set-cookie');
+    const cookies = response.headers.getSetCookie();
+    assert.equal(cookies.length, 1, origin);
+    const cookie = cookies[0];
+    assert.match(cookie, /^desklab_session=[0-9a-f]{64};/, origin);
+    assert.equal(cookie.includes('__Host-'), false, origin);
     assert.match(cookie, /SameSite=None/i, origin);
     assert.match(cookie, /Secure/i, origin);
     assert.equal(/SameSite=Lax/i.test(cookie), false, origin);
+    assert.equal(/Domain=/i.test(cookie), false, origin);
     assert.equal(response.headers.get('access-control-allow-origin'), origin);
     assert.equal(response.headers.get('access-control-allow-credentials'), 'true');
     assert.match(response.headers.get('vary'), /Origin/);
@@ -72,7 +84,11 @@ test('logout from the desktop app clears the cookie with the same site rules', a
   const handlers = auth();
   const request = post('https://desklab-frontend.pages.dev/api/auth/logout', {}, { origin: 'tauri://localhost' });
   const response = await guardApiRequest(request, () => handlers.logout({ request, env: handlers.env }));
-  const cookie = response.headers.get('set-cookie');
+  const cookies = response.headers.getSetCookie();
+  assert.equal(cookies.length, 1);
+  const cookie = cookies[0];
+  assert.match(cookie, /^desklab_session=;/);
+  assert.equal(cookie.includes('__Host-'), false);
   assert.match(cookie, /Max-Age=0/);
   assert.match(cookie, /SameSite=None/i);
   assert.match(cookie, /Secure/i);
@@ -84,6 +100,7 @@ test('a missing origin is unchanged, and a foreign or broken origin is refused',
     post('https://desklab-frontend.pages.dev/api/ai/layout', {}),
     () => login(handlers),
   );
+  assert.match(plain.headers.getSetCookie()[0], /^__Host-desklab_session=/);
   assert.match(plain.headers.get('set-cookie'), /SameSite=Lax/i);
   assert.equal(plain.headers.get('access-control-allow-origin'), null);
 
@@ -177,9 +194,11 @@ test('the Pages middleware keeps website cookies Lax and desktop cookies None', 
     request: post(`${site}/api/auth/verify`, {}, { origin: site }),
     next: () => login(handlers, site),
   });
-  const websiteCookie = website.headers.get('set-cookie');
-  assert.match(websiteCookie, /SameSite=Lax/i);
-  assert.equal(/SameSite=None/i.test(websiteCookie), false);
+  const websiteCookies = website.headers.getSetCookie();
+  assert.match(websiteCookies[0], /^__Host-desklab_session=/);
+  assert.match(websiteCookies[0], /SameSite=Lax/i);
+  assert.equal(/SameSite=None/i.test(websiteCookies[0]), false);
+  assert.equal(/Domain=/i.test(websiteCookies[0]), false);
   assert.equal(website.headers.get('access-control-allow-origin'), null);
   assert.equal(website.headers.get('x-content-type-options'), 'nosniff');
 
@@ -189,7 +208,11 @@ test('the Pages middleware keeps website cookies Lax and desktop cookies None', 
       request: post(`${site}/api/auth/verify`, {}, { origin }),
       next: () => login(desktopHandlers, origin),
     });
-    const cookie = response.headers.get('set-cookie');
+    const cookies = response.headers.getSetCookie();
+    assert.equal(cookies.length, 1, origin);
+    const cookie = cookies[0];
+    assert.match(cookie, /^desklab_session=/, origin);
+    assert.equal(cookie.includes('__Host-'), false, origin);
     assert.match(cookie, /SameSite=None/i, origin);
     assert.match(cookie, /Secure/i, origin);
     assert.equal(/SameSite=Lax/i.test(cookie), false, origin);
