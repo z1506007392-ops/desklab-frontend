@@ -17,6 +17,20 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E130–E134 完成。没有改样式，没有改 3D，没有加设备，没有改预设，没有改登录和 `src-tauri` 存档，没有改图库字段校验和模型预加载。没有做视觉验收。
+
+- E130（`e220454`）：保存成功的状态提示是 `role="status"`，失败是 `role="alert"`。字和样式没变。「未保存」按整句匹配，套用模板时那句「尚未保存」不会被当成第二个未保存指示。
+- E131（`5105fd1`）：AI 卡片的「预览」「应用」和摆法的「换成这套」「删除」带上那一条的名字。按钮上的字不变。预览条上的「应用」仍是这个词。
+- E132（`e950a34`）：图库里 1 像素的文件选择 `tabIndex={-1}` 且 `aria-hidden`，Tab 从「选择实拍」到「把当前桌子放进图库」再到「导入桌子文件」。三维房间容器是 region「三维房间」。复制示例后草稿大约 500 毫秒才落盘，未知图库地址的刷新会先等到这份草稿，再放弃，保存按钮不会有时锁、有时不锁。
+- E133（`e73a01e`）：WebKit 关键用例加上分享链接、房间尺寸、社区图库、对话框焦点。分享和图库在刷新前等目录模型下完。
+- E134（`3b71cdd`）：旧存档测试等目录模型下完再查错误，不再干等 1500 毫秒。Chrome 四片没改。https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41744336302 （`9b86ece`）Playwright 步骤：片 1 是 5 分 43 秒（报告 65 通过，5.7 分），片 2 是 5 分 20 秒，片 3 是 4 分 17 秒，片 4 是 4 分 41 秒，WebKit 用例 2 分 57 秒。https://github.com/z1506007392-ops/desklab-frontend/actions/runs/41749709302 （`3404cbd`）片 1 的同一步是 6 分 57 秒。同一片两次差约 74 秒，所以没有为了更小的重切去改分片，也没有改 `workers`。
+
+验证：`npm test` 696 通过（本批没有新增领域测试；696 是 E120）。lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。Chrome 桌面和手机 UI 261 通过 + 1 跳过（9.1 分钟；比早先的 257 多 4，是 E150 坏图和 E151 第四套摆法，各在桌面和手机一条）。并上 E120 的 cookie 提交之后没有重跑整套界面测试，e2e 不读 cookie 名字。WebKit 关键用例 46 通过（1.7 分钟），其中有分享链接、房间尺寸、社区图库和对话框焦点。
+
+还剩：无。E69、E70 和贴图再压缩仍等负责人。F6 不做。F4 不实现。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E120：网站 https 的会话 cookie 改成 `__Host-desklab_session`。Secure、Path=/、没有 Domain、SameSite 仍是 Lax。登录和退出都会把旧的 `desklab_session` 清掉。网站 https 不再认旧名字，只带旧名字的退出也不会把这个邮箱的会话作废。桌面来源仍用 `desklab_session`，F7 继续改成 SameSite=None。本地 http 仍用原来的名字，不加 Secure。`__Host-` 在本地 http 上会被丢掉；打包后的桌面 cookie 是跨站的，改名字会让现有桌面会话失效。所以只加固网站。评测脚本在 https 上把原始令牌包成带前缀的名字，http 仍用原来的名字；已经带 `=` 的值原样送出。没有服务或续跑文件损坏时，评测仍在建结果目录之前退出。
 
 验证：`npm test` 696 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在）。Chrome 桌面和手机 UI 261 通过 + 1 跳过。页面没改。
@@ -4830,7 +4844,7 @@ Frontend:
 ```bash
 cd D:\desklab\frontend
 npm test          # 696 domain tests (E120 host-prefix cookie on top of E154's 693)
-npm run test:ui   # Chrome desktop + phone: 261 passed + 1 skipped (E120, after E151–E154). CI adds npm run test:ui:webkit (key iPhone cases).
+npm run test:ui   # Chrome desktop + phone: 261 passed + 1 skipped (E120, after E151–E154). CI webkit key cases: 46 passed locally (E133).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
