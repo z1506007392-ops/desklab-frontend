@@ -19,7 +19,9 @@ npm run eval:ai                                # terminal 2
   cables, leave the laptop alone).
 - Each run saves every raw answer and the metrics to `results/<timestamp>/`
   (ignored by git) and exits 1 if a threshold is missed, 2 if the endpoint is
-  missing, has no key, or rate-limits.
+  missing, has no key, or rate-limits. A missing server, a 503, a 401, or a
+  resume file that is not JSON exits before that folder is created. Do not
+  point this at production to obtain a key.
 - After a run, copy a few representative answers into
   `test/fixtures/ai/recorded/` so unit tests can replay them, and record the
   metrics in `docs/memory_bank.md` ("Prompt iterations").

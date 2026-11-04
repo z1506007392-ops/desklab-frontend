@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { existsSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
+import process from 'node:process';
+import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { buildEvalScenes, runEval, summarize } from '../tools/ai-eval/lib.mjs';
+import { buildEvalScenes, evalProbeDecision, readResumeResults, runEval, summarize } from '../tools/ai-eval/lib.mjs';
 import { createLayoutHandler } from '../server/ai/layout-handler.js';
 import { createMockFetch } from '../server/ai/mock-model.js';
 import { analyzeLayoutHeuristics } from '../src/domain/layout-heuristics.js';
@@ -88,4 +95,74 @@ test('a run can skip finished pairs and stop early', async () => {
   assert.equal(results.length, 3, 'two answers and the refused one');
   assert.equal(results.at(-1).status, 429);
   assert.ok(!results.some(result => result.scene === 'home-office'));
+});
+
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+const resultsDir = join(repoRoot, 'tools', 'ai-eval', 'results');
+const resultNames = () => (existsSync(resultsDir) ? readdirSync(resultsDir).sort() : []);
+
+function runEvalScript(args) {
+  return new Promise(resolve => {
+    const child = spawn(process.execPath, ['tools/ai-eval/run-eval.mjs', ...args], {
+      cwd: repoRoot,
+      // The test runner's own --test flag must not be forwarded to this script.
+      execArgv: [],
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', chunk => { stdout += chunk; });
+    child.stderr.on('data', chunk => { stderr += chunk; });
+    const timer = setTimeout(() => child.kill(), 15000);
+    child.on('close', status => {
+      clearTimeout(timer);
+      resolve({ status, stdout, stderr });
+    });
+  });
+}
+
+test('a probe or a saved file decides whether a run may start', () => {
+  assert.equal(evalProbeDecision(null).ok, false);
+  assert.equal(evalProbeDecision(null).code, 2);
+  assert.match(evalProbeDecision(null).message, /Nothing answers/);
+  assert.match(evalProbeDecision({ status: 503 }).message, /no DEEPSEEK_API_KEY/);
+  assert.match(evalProbeDecision({ status: 401 }).message, /AI_EVAL_COOKIE/);
+  assert.equal(evalProbeDecision({ status: 200 }).ok, true);
+
+  assert.match(readResumeResults('{').message, /not valid JSON/);
+  assert.match(readResumeResults('{"ok":true}').message, /not a list/);
+  const saved = readResumeResults(JSON.stringify([{ status: 200, scene: 'a' }, { status: 429, scene: 'b' }]));
+  assert.equal(saved.ok, true);
+  assert.deepEqual(saved.results.map(result => result.scene), ['a']);
+});
+
+test('a missing server, a 503, and a corrupt resume exit before writing results', async () => {
+  const before = resultNames();
+  const missing = await runEvalScript(['--url', 'http://127.0.0.1:9/api/ai/layout']);
+  assert.equal(missing.status, 2, missing.stderr);
+  assert.match(missing.stderr, /Nothing answers/);
+  assert.deepEqual(resultNames(), before);
+
+  const server = createServer((_request, response) => {
+    response.writeHead(503, { 'Content-Type': 'application/json' });
+    response.end('{"error":"unavailable"}');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const { port } = server.address();
+    const unavailable = await runEvalScript(['--url', `http://127.0.0.1:${port}/api/ai/layout`]);
+    assert.equal(unavailable.status, 2, unavailable.stderr);
+    assert.match(unavailable.stderr, /no DEEPSEEK_API_KEY/);
+    assert.deepEqual(resultNames(), before);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+
+  const dir = mkdtempSync(join(tmpdir(), 'desklab-eval-'));
+  writeFileSync(join(dir, 'results.json'), '{');
+  const corrupt = await runEvalScript(['--resume', dir]);
+  assert.equal(corrupt.status, 2, corrupt.stderr);
+  assert.match(corrupt.stderr, /not valid JSON/);
+  assert.equal(existsSync(join(dir, 'summary.json')), false);
+  assert.deepEqual(resultNames(), before);
 });

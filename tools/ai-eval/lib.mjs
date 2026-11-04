@@ -15,6 +15,47 @@ export const THRESHOLDS = Object.freeze({
   jargonRate: 0,
 });
 
+// Decide whether a probe of /api/ai/layout is worth a full run. Missing
+// service, no key (503), and a signed-out 401 all stop before any results
+// directory is created. This does not call production and does not read a key.
+export function evalProbeDecision(probe) {
+  if (!probe || typeof probe.status !== 'number') {
+    return {
+      ok: false,
+      code: 2,
+      message: 'Nothing answers at the evaluation URL. Start it with: DEEPSEEK_API_KEY=sk-... npm run dev:api',
+    };
+  }
+  if (probe.status === 503) {
+    return {
+      ok: false,
+      code: 2,
+      message: 'The endpoint says AI is not available: no DEEPSEEK_API_KEY (roadmap H1). Nothing to evaluate yet.',
+    };
+  }
+  if (probe.status === 401) {
+    return {
+      ok: false,
+      code: 2,
+      message: 'AI requires a signed-in session. Set AI_EVAL_COOKIE, or start the dev server with AI_MOCK=1.',
+    };
+  }
+  return { ok: true, code: 0, message: '' };
+}
+
+export function readResumeResults(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return { ok: false, message: 'Saved results are not valid JSON. Nothing was sent.' };
+  }
+  if (!Array.isArray(parsed)) {
+    return { ok: false, message: 'Saved results are not a list. Nothing was sent.' };
+  }
+  return { ok: true, results: parsed.filter(result => result && result.status === 200) };
+}
+
 const GOALS = ['', '更整洁', '适合打游戏', '双屏办公', '显示器正对我', '主机别挡腿', '线少一点', '不要动笔记本'];
 
 function edit(project, modelId, change) {

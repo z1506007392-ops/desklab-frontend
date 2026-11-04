@@ -13,7 +13,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
-import { THRESHOLDS, buildEvalScenes, runEval, summarize } from './lib.mjs';
+import { THRESHOLDS, buildEvalScenes, evalProbeDecision, readResumeResults, runEval, summarize } from './lib.mjs';
 
 const flag = name => {
   const index = process.argv.indexOf(name);
@@ -36,28 +36,26 @@ const post = async body => {
 const outDir = resume
   ? pathToFileURL(`${resume.replace(/\/+$/, '')}/`)
   : new URL(`./results/${new Date().toISOString().replace(/[:.]/g, '-')}/`, import.meta.url);
-mkdirSync(outDir, { recursive: true });
 const resultsFile = new URL('results.json', outDir);
-const previous = resume && existsSync(resultsFile)
-  ? JSON.parse(readFileSync(resultsFile, 'utf8')).filter(result => result.status === 200)
-  : [];
-const done = new Set(previous.map(result => JSON.stringify([result.scene, result.goal])));
-
+let previous = [];
+if (resume && existsSync(resultsFile)) {
+  const saved = readResumeResults(readFileSync(resultsFile, 'utf8'));
+  if (!saved.ok) {
+    console.error(saved.message);
+    process.exit(2);
+  }
+  previous = saved.results;
+}
 if (!resume) {
   const probe = await post({ version: 1, summary: {} }).catch(() => null);
-  if (!probe) {
-    console.error(`Nothing answers at ${url}. Start it with: DEEPSEEK_API_KEY=sk-... npm run dev:api`);
-    process.exit(2);
-  }
-  if (probe.status === 503) {
-    console.error('The endpoint says AI is not available: no DEEPSEEK_API_KEY (roadmap H1). Nothing to evaluate yet.');
-    process.exit(2);
-  }
-  if (probe.status === 401) {
-    console.error('AI requires a signed-in session. Set AI_EVAL_COOKIE, or start the dev server with AI_MOCK=1.');
+  const decision = evalProbeDecision(probe);
+  if (!decision.ok) {
+    console.error(decision.message);
     process.exit(2);
   }
 }
+mkdirSync(outDir, { recursive: true });
+const done = new Set(previous.map(result => JSON.stringify([result.scene, result.goal])));
 
 let rateLimited = false;
 const fresh = await runEval({
