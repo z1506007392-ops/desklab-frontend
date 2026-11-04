@@ -17,11 +17,17 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+领了 E118。一次退出让该邮箱的会话全部作废：不扫描全部 `auth:session:`，用每个邮箱一个世代号。E117 已推上 master，`1cc8ae2`（认领 `1ddb5a3`）。
+
+还剩：实现 E118 并验证。E119、E120 还没领。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E117：登录验证码改为拒绝采样。`Uint32 % 1000000` 会让 000000–967295 比后面的号码多一种抽法。现在只收 4294000000 以下的随机数，每个验证码正好 4294 种；尾部重抽，最多 8 次。8 次都落在尾部就不发信，也不扣发码次数，不退回取模。逻辑在 `src/domain/login-code.js`，发码仍在 `server/ai/auth.js`。
 
 验证：`npm test` 662 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。Chrome 桌面和手机 UI 257 通过 + 1 跳过。登录界面没改，外观没改。
 
-还剩：推 master。E118–E120 还没领。
+还剩：无。已推 master `1cc8ae2`。E118 在上面领了。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
