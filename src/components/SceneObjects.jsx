@@ -295,7 +295,12 @@ export function CameraSetup({ cameraConfig, room, objects, controlsRef, cameraRe
     appliedFit.current = fitStamp.current;
   });
 
-  useLayoutEffect(() => {
+  // After paint, not during layout. OrbitControls writes its ref in a layout
+  // effect of a later sibling, so a layout effect here still sees no controls
+  // and then never retries. The pose lands after the frame that was just
+  // painted; ask for another, or an empty room with nothing else to draw
+  // stays on the default camera.
+  useEffect(() => {
     if (frameEmptyRoomRef.current) return undefined;
     const applied = poseSynchronizerRef.current.sync({
       cameraConfig,
@@ -304,9 +309,6 @@ export function CameraSetup({ cameraConfig, room, objects, controlsRef, cameraRe
       camera,
       controls: controlsRef.current,
     });
-    // Same demand-loop hole as the empty-room fit: the pose is set after the
-    // frame that was just painted, and nothing else asks for another one
-    // when the room is empty (no model, no axes, no grid).
     if (!applied) return undefined;
     const frame = requestAnimationFrame(() => invalidate());
     return () => cancelAnimationFrame(frame);
