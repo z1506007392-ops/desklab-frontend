@@ -17,6 +17,14 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E156：第一次生成的空房间改成一间实心的房。代码 `16537d7`。坐标轴默认关闭，仍可从「更多 → 显示坐标轴」打开，没有新按钮。地板是浅暖木色，靠里的三面墙是哑光近白，朝向镜头的那面不画，绕到墙外时那面也会让开，所以不会挡住视线。无限网格去掉了。窄屏上相机会沿原来的方向退远，整间房落在底部卡片上方并居中；宽屏不比原来更近。底部卡片跟在画面下面，页面高度用 100vh、100svh、100dvh，底部留 `env(safe-area-inset-bottom)`，`viewport-fit=cover`。390×844 和 375×667 上「用电竞桌」和「自己摆」都在可见区域里，页面不滚动。设备灯光强度、预设、设备和 AI 没改。房间另加了一盏只照房间的补光，设备仍在原来的灯下。
+
+验证：`npm test` 705 通过（E155 的 702 加上房间外壳 2 条、空房间取景 1 条）。lint 0 问题。build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。进门这一步在 Chrome 的 390×844、375×667、1440×900 和 WebKit 同样三个尺寸上通过。工具栏、进门流程、场景是否画出来、控制柄拖动，在桌面、手机和 WebKit 上都通过。
+
+还剩：这台环境的浏览器没有 iPhone Safari 那条底栏，真机是否被挡住要靠 dvh/svh 和安全区，这里复现不了底栏盖住按钮。E69、E70 和贴图再压缩仍等负责人。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 E155：登录验证码优先走 Resend。代码 `c8dab68`。有 `RESEND_API_KEY` 就 `POST https://api.resend.com/emails`，Bearer 鉴权，正文是 `from`、`to`、`subject`、`text`。没有这把钥匙时，两个 Mailjet 密钥仍走 Mailjet，否则走 Brevo。`MAIL_FROM` 空着仍是未配置，不发请求。主题仍是「DeskLab 登录验证码」，正文仍是原来的中文句子。Mailjet 只填一半时，只要 Resend 配齐就走 Resend；Resend 没配时仍不改去 Brevo。没有写入密钥。没有改页面、外观、设备和预设。
 
 验证：`npm test` 702 通过（E120 的 696 加上这 6 条发信测试），碰到的文件 lint 0 问题。没有跑界面测试：页面没改。
