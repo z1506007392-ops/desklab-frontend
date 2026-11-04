@@ -157,7 +157,11 @@ test('a code is stored only as a hash, and the right code opens a 30-day session
   assert.match(cookie, /Max-Age=2592000/);
   const token = cookieToken(ok);
   assert.equal(token.length, 64);
-  assert.equal(await rig.kv.get(`auth:session:${await sha256Hex(token)}`), 'user@example.com');
+  assert.deepEqual(JSON.parse(await rig.kv.get(`auth:session:${await sha256Hex(token)}`)), {
+    email: 'user@example.com',
+    generation: 0,
+  });
+  assert.equal(await rig.kv.get('auth:generation:user@example.com'), null);
   assert.equal(await rig.kv.get('auth:code:user@example.com'), null);
   const body = await ok.json();
   assert.equal(body.email, 'user@example.com');
@@ -203,6 +207,136 @@ test('a local http session cookie is not marked Secure', async () => {
   });
   assert.equal(/Secure/.test(gone.headers.get('set-cookie')), false);
   assert.match(gone.headers.get('set-cookie'), /SameSite=Lax/i);
+});
+
+test('logging out ends every session for that email and leaves other emails signed in', async () => {
+  const time = clock('2026-10-30T02:10:00Z');
+  const rig = setup({ time });
+  const open = async email => {
+    const sent = await rig.requestCode({
+      request: post('https://desklab.test/api/auth/request-code', { email }),
+      env: rig.env,
+    });
+    assert.equal(sent.status, 200, email);
+    const response = await rig.verify({
+      request: post('https://desklab.test/api/auth/verify', { email, code: rig.sent.at(-1).code }),
+      env: rig.env,
+    });
+    assert.equal(response.status, 200, email);
+    return cookieToken(response);
+  };
+  const me = token => rig.me({
+    request: new Request('https://desklab.test/api/auth/me', { headers: { cookie: `desklab_session=${token}` } }),
+    env: rig.env,
+  });
+  const first = await open('a@b.cn');
+  time.advance(61 * 1000);
+  const second = await open('a@b.cn');
+  const other = await open('c@b.cn');
+  const legacyToken = 'cd'.repeat(32);
+  await rig.kv.put(`auth:session:${await sha256Hex(legacyToken)}`, 'a@b.cn', { expirationTtl: 3600 });
+  assert.equal((await (await me(legacyToken)).json()).email, 'a@b.cn');
+  assert.equal(await rig.kv.get('auth:generation:a@b.cn'), null);
+
+  const gone = await rig.logout({
+    request: new Request('https://desklab.test/api/auth/logout', {
+      method: 'POST',
+      headers: { cookie: `desklab_session=${first}` },
+    }),
+    env: rig.env,
+  });
+  assert.equal(gone.status, 200);
+  assert.equal((await (await me(first)).json()).email, null);
+  assert.equal((await (await me(second)).json()).email, null);
+  assert.equal((await (await me(legacyToken)).json()).email, null);
+  assert.equal((await (await me(other)).json()).email, 'c@b.cn');
+  assert.equal(await rig.kv.get(`auth:session:${await sha256Hex(first)}`), null);
+  assert.deepEqual(JSON.parse(await rig.kv.get(`auth:session:${await sha256Hex(second)}`)), {
+    email: 'a@b.cn',
+    generation: 0,
+  });
+  assert.equal(await rig.kv.get('auth:generation:a@b.cn'), '1');
+  assert.equal(await rig.kv.get('auth:generation:c@b.cn'), null);
+  const generationPut = rig.kv.puts.filter(([key]) => key === 'auth:generation:a@b.cn').at(-1);
+  assert.equal(generationPut[2].expirationTtl, 30 * 24 * 60 * 60 + 24 * 60 * 60);
+
+  time.advance(61 * 1000);
+  const again = await open('a@b.cn');
+  assert.equal((await (await me(again)).json()).email, 'a@b.cn');
+  assert.equal((await (await me(second)).json()).email, null);
+  assert.equal((await (await me(other)).json()).email, 'c@b.cn');
+  assert.deepEqual(JSON.parse(await rig.kv.get(`auth:session:${await sha256Hex(again)}`)), {
+    email: 'a@b.cn',
+    generation: 1,
+  });
+
+  const stale = await rig.logout({
+    request: new Request('https://desklab.test/api/auth/logout', {
+      method: 'POST',
+      headers: { cookie: `desklab_session=${legacyToken}` },
+    }),
+    env: rig.env,
+  });
+  assert.equal(stale.status, 200);
+  assert.equal(await rig.kv.get('auth:generation:a@b.cn'), '1');
+  assert.equal((await (await me(again)).json()).email, 'a@b.cn');
+  assert.equal(await rig.kv.get(`auth:session:${await sha256Hex(legacyToken)}`), null);
+});
+
+test('two logouts still leave that email signed out everywhere', async () => {
+  const time = clock('2026-10-30T02:10:00Z');
+  const rig = setup({ time });
+  const open = async email => {
+    assert.equal((await rig.requestCode({
+      request: post('https://desklab.test/api/auth/request-code', { email }),
+      env: rig.env,
+    })).status, 200);
+    const response = await rig.verify({
+      request: post('https://desklab.test/api/auth/verify', { email, code: rig.sent.at(-1).code }),
+      env: rig.env,
+    });
+    return cookieToken(response);
+  };
+  const first = await open('a@b.cn');
+  time.advance(61 * 1000);
+  const second = await open('a@b.cn');
+  const leave = token => rig.logout({
+    request: new Request('https://desklab.test/api/auth/logout', {
+      method: 'POST',
+      headers: { cookie: `desklab_session=${token}` },
+    }),
+    env: rig.env,
+  });
+  const responses = await Promise.all([leave(first), leave(second)]);
+  assert.deepEqual(responses.map(response => response.status), [200, 200]);
+  const me = token => rig.me({
+    request: new Request('https://desklab.test/api/auth/me', { headers: { cookie: `desklab_session=${token}` } }),
+    env: rig.env,
+  });
+  assert.equal((await (await me(first)).json()).email, null);
+  assert.equal((await (await me(second)).json()).email, null);
+  assert.equal(await rig.kv.get('auth:generation:a@b.cn'), '1');
+});
+
+test('logging out without a live session does not move any generation', async () => {
+  const rig = setup();
+  const empty = await rig.logout({
+    request: new Request('https://desklab.test/api/auth/logout', { method: 'POST' }),
+    env: rig.env,
+  });
+  assert.equal(empty.status, 200);
+  const unknown = 'ab'.repeat(32);
+  await rig.kv.put(`auth:session:${await sha256Hex(unknown)}`, 'not-an-email', { expirationTtl: 60 });
+  const junk = await rig.logout({
+    request: new Request('https://desklab.test/api/auth/logout', {
+      method: 'POST',
+      headers: { cookie: `desklab_session=${unknown}` },
+    }),
+    env: rig.env,
+  });
+  assert.equal(junk.status, 200);
+  assert.equal(await rig.kv.get(`auth:session:${await sha256Hex(unknown)}`), null);
+  assert.equal(rig.kv.puts.some(([key]) => String(key).startsWith('auth:generation:')), false);
 });
 
 test('five wrong codes lock the challenge', async () => {

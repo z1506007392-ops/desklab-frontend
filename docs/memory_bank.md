@@ -17,6 +17,14 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E118：一次退出作废该邮箱的全部会话。没有去列 `auth:session:`，因为那份列表是最终一致的，会漏掉刚写上的键，而且和限流计数在同一个 KV。每个邮箱一个世代号。新会话记下这个数；旧的纯邮箱记录算 0。退出时只有仍属当前世代的会话才能把数加一，并删掉自己的键。其它键还在，但读的时候对不上就当没登录。已经作废的 cookie 再点退出，不会把之后的新登录清掉。没有有效会话时只清 cookie。别的邮箱不动。世代号比会话多活一天，下次登录会顺延。另一个 isolate 可能短暂读到旧世代号，和以前删一条会话键一样。
+
+验证：`npm test` 665 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在）。Chrome 桌面和手机 UI 257 通过 + 1 跳过。退出按钮的文案和样式没改。
+
+还剩：推 master。E119、E120 还没领。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 领了 E118。一次退出让该邮箱的会话全部作废：不扫描全部 `auth:session:`，用每个邮箱一个世代号。E117 已推上 master，`1cc8ae2`（认领 `1ddb5a3`）。
 
 还剩：实现 E118 并验证。E119、E120 还没领。
@@ -4666,8 +4674,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 662 domain tests (E117 rejection sampling on top of E111's 658)
-npm run test:ui   # Chrome desktop + phone: 257 passed + 1 skipped (E117, same UI count as E111). CI adds npm run test:ui:webkit (key iPhone cases).
+npm test          # 665 domain tests (E118 session generation on top of E117's 662)
+npm run test:ui   # Chrome desktop + phone: 257 passed + 1 skipped (E118, same UI count as E111). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```

@@ -7,6 +7,9 @@ import { mailConfig, sendLoginCode } from './mail.js';
 
 const CODE_TTL_SECONDS = 10 * 60;
 const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
+// Outlives every session that existed when the user logged out, and is
+// refreshed on the next login. A missing key means generation 0.
+const GENERATION_TTL_SECONDS = SESSION_TTL_SECONDS + 24 * 60 * 60;
 const SENDS_PER_EMAIL_DAY = 5;
 const LOCK_TTL_SECONDS = 60;
 const MAX_ATTEMPTS = 5;
@@ -166,6 +169,35 @@ function safeEqual(left, right) {
   return diff === 0;
 }
 
+function generationKey(email) {
+  return `auth:generation:${email}`;
+}
+
+function parseSessionValue(raw) {
+  if (typeof raw !== 'string' || raw.length === 0) return null;
+  if (raw[0] === '{') {
+    try {
+      const body = JSON.parse(raw);
+      const email = normalizeEmail(body?.email);
+      const generation = Number(body?.generation);
+      if (!email || !Number.isInteger(generation) || generation < 0) return null;
+      return { email, generation };
+    } catch {
+      return null;
+    }
+  }
+  const email = normalizeEmail(raw);
+  if (email !== raw) return null;
+  return { email, generation: 0 };
+}
+
+async function readGeneration(store, email) {
+  const raw = await store.get(generationKey(email));
+  if (raw == null || raw === '') return 0;
+  const number = Number(raw);
+  return Number.isInteger(number) && number >= 0 ? number : 0;
+}
+
 export function createAuthHandlers({
   fetchImpl = (...args) => fetch(...args),
   now = () => Date.now(),
@@ -188,9 +220,26 @@ export function createAuthHandlers({
   async function readSession(request, env = {}) {
     const token = cookieValue(request, COOKIE);
     if (!token) return null;
-    const key = `auth:session:${await sha256Hex(token)}`;
-    const email = normalizeEmail(await storeFor(env).get(key));
-    return email ? { email } : null;
+    const store = storeFor(env);
+    const parsed = parseSessionValue(await store.get(`auth:session:${await sha256Hex(token)}`));
+    if (!parsed) return null;
+    const generation = await readGeneration(store, parsed.email);
+    if (parsed.generation !== generation) return null;
+    return { email: parsed.email };
+  }
+
+  async function issueSession(store, email) {
+    return exclusive(`session:${email}`, async () => {
+      const generation = await readGeneration(store, email);
+      const token = newToken();
+      await store.put(`auth:session:${await sha256Hex(token)}`, JSON.stringify({ email, generation }), {
+        expirationTtl: SESSION_TTL_SECONDS,
+      });
+      if (generation > 0) {
+        await store.put(generationKey(email), String(generation), { expirationTtl: GENERATION_TTL_SECONDS });
+      }
+      return token;
+    });
   }
 
   async function remainingFor(email, env) {
@@ -288,8 +337,7 @@ export function createAuthHandlers({
     }
 
     await store.delete(key);
-    const token = newToken();
-    await store.put(`auth:session:${await sha256Hex(token)}`, email, { expirationTtl: SESSION_TTL_SECONDS });
+    const token = await issueSession(store, email);
     const remaining = await remainingFor(email, env);
     return json(200, { email, remaining }, {
       'set-cookie': sessionCookie(token, { secure: isSecureRequest(request), maxAge: SESSION_TTL_SECONDS }),
@@ -303,8 +351,29 @@ export function createAuthHandlers({
   }
 
   async function logout({ request, env = {} }) {
+    const store = storeFor(env);
     const token = cookieValue(request, COOKIE);
-    if (token) await storeFor(env).delete(`auth:session:${await sha256Hex(token)}`);
+    if (token) {
+      const key = `auth:session:${await sha256Hex(token)}`;
+      const parsed = parseSessionValue(await store.get(key));
+      if (parsed) {
+        await exclusive(`session:${parsed.email}`, async () => {
+          const current = parseSessionValue(await store.get(key));
+          if (!current) return;
+          const generation = await readGeneration(store, current.email);
+          // Only a session from the current generation can move it forward.
+          // An already-dead cookie must not sign out a newer login.
+          if (current.generation === generation) {
+            await store.put(generationKey(current.email), String(generation + 1), {
+              expirationTtl: GENERATION_TTL_SECONDS,
+            });
+          }
+          await store.delete(key);
+        });
+      } else {
+        await store.delete(key);
+      }
+    }
     return json(200, { ok: true }, {
       'set-cookie': sessionCookie('', { secure: isSecureRequest(request), maxAge: 0 }),
     });
