@@ -106,3 +106,31 @@ test('a built-in gallery address is read-only and an unknown one opens your own 
   expect(evidence.errors).toEqual([]);
   expect(evidence.writes).toEqual([]);
 });
+
+test('a desk file with a bad picture is refused and the saved project stays', async ({ page }) => {
+  const evidence = await openProject(page, [box('我的桌子')]);
+  const saved = await readStorage(page);
+  await page.getByRole('button', { name: '社区图库', exact: true }).click();
+  const gallery = page.getByRole('dialog', { name: '社区图库', exact: true });
+  await gallery.getByLabel('导入桌子文件', { exact: true }).setInputFiles({
+    name: 'desklab-desk.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({
+      kind: 'desklab-community-desk',
+      version: 1,
+      title: '外来',
+      authorName: '甲',
+      photo: 'javascript:alert(1)',
+      project: {
+        room: { length: 4, width: 4, height: 3 },
+        objects: [box('桌子')],
+        connections: [],
+      },
+    })),
+  });
+  await expect(gallery.getByText('照片需要是这台设备上的一张图片。')).toBeVisible();
+  await expect(gallery.getByRole('button', { name: '打开：外来', exact: true })).toHaveCount(0);
+  expect(await readStorage(page)).toBe(saved);
+  expect(evidence.errors).toEqual([]);
+  expect(evidence.writes).toEqual([]);
+});

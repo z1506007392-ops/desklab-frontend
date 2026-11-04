@@ -17,6 +17,14 @@ Last updated: 2026-11-04, Asia/Singapore
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 
+E150：本机图库拒绝坏图和非法字段。gif、svg、网页、`javascript:`、文件头对不上的 base64（例如 `QQ==`）都进不了图库。刚好不超过 18 万字符且文件头是 jpeg 的可以留下，再长一截就拒绝。名字和显示名必须是文字；尖括号换成全角，控制字符和双向控制符去掉。作者不是文字时导入记成「未署名」。放进图库、导出和读回都会丢掉站外模型地址。已经存在图库里的坏照片只去掉照片，桌子还在；非法 id 整条丢掉。401 件设备的文件拒绝。同一份干净文件再导出一次，内容和第一次一样。
+
+验证：`npm test` 676 通过，lint 0 问题，build 通过（three.js 分块超过 500KB 的警告还在，brotli 照旧）。图库界面测试桌面和手机 6 通过，其中包括拒绝 `javascript:` 照片且不改已保存的项目。没改外观，没加设备。
+
+还剩：E151–E154。
+
+### 2026-11-04 · Desklab (Grok Bot) · master
+
 领了 E130–E134。编号确认过：E120 是另一条线的 `__Host-` cookie，E121–E123 已完成，E140–E143 是布线线，E150–E154 是图库、摆法槽、分享只读和安装清单。这一批只做非视觉可访问性、WebKit 关键路径和测试等待条件。不改登录、不改 `src-tauri` 存盘、不改布线启发式、不改建议校验、不改图库字段校验、不改模型预加载、不改预设、不改外观、不加设备。
 
 - E130：保存成功 `role="status"`，失败 `role="alert"`。可见文字和样式不变。
@@ -4768,7 +4776,7 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 675 domain tests (E122 archive writes on top of E119's 667)
+npm test          # 676 domain tests (E150 gallery boundaries on top of E122's 675)
 npm run test:ui   # Chrome desktop + phone: 257 passed + 1 skipped (E122, same UI count as E111). CI adds npm run test:ui:webkit (key iPhone cases).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)

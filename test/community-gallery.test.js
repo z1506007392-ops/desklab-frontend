@@ -18,6 +18,8 @@ import { findHostDesk } from '../src/domain/cable-tray.js';
 import { createFileArchiveStorage } from '../src/domain/file-archive.js';
 import { PROJECT_STORAGE_KEY } from '../src/domain/local-project-store.js';
 
+const TINY_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
 function memoryStorage(initial = {}) {
   const data = { ...initial };
   return {
@@ -112,7 +114,7 @@ test('a desk file round-trips, and a project backup is not a gallery file', () =
     title: '给朋友',
     authorName: '小明',
     project: deskProject(),
-    photo: 'data:image/jpeg;base64,QQ==',
+    photo: TINY_PNG,
     id: 'local-2',
     now,
   });
@@ -122,7 +124,7 @@ test('a desk file round-trips, and a project backup is not a gallery file', () =
   assert.equal(imported.ok, true);
   assert.equal(imported.desk.title, '给朋友');
   assert.equal(imported.desk.authorName, '小明');
-  assert.equal(imported.desk.photo, 'data:image/jpeg;base64,QQ==');
+  assert.equal(imported.desk.photo, TINY_PNG);
   assert.equal(imported.desk.project.objects.length, published.post.project.objects.length);
   const again = publishCommunityDesk(storage, { ...imported.desk, id: 'local-3', now });
   assert.equal(again.ok, true);
@@ -195,4 +197,107 @@ test('the desktop file archive keeps a gallery desk, and a failed write stays of
   assert.match(refused.message, /图库显示名没有写到这台电脑上/);
   assert.equal(refused.message.includes('disk full'), false);
   assert.equal(failing.getItem(COMMUNITY_PROFILE_KEY), null);
+});
+
+test('a bad picture, an illegal field, and a huge desk are refused, and a good file round-trips', () => {
+  const storage = memoryStorage();
+  const project = deskProject();
+  const badPictures = [
+    'javascript:alert(1)',
+    'data:image/svg+xml;base64,PHN2Zy8+',
+    'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+    'data:text/html;base64,PGh0bWw+',
+    'data:image/jpeg;base64,QQ==',
+    'data:image/png;base64, iVBORw0KGgo=',
+    { url: TINY_PNG },
+  ];
+  for (const photo of badPictures) {
+    const refused = publishCommunityDesk(storage, { title: '甲', authorName: '甲', project, photo });
+    assert.equal(refused.ok, false, JSON.stringify(photo));
+    assert.match(refused.message, /照片/);
+  }
+  assert.match(publishCommunityDesk(storage, {
+    title: ['甲'], authorName: '甲', project,
+  }).message, /不完整/);
+  assert.match(publishCommunityDesk(storage, {
+    title: '甲', authorName: '甲', project, id: '../project',
+  }).message, /不完整/);
+
+  const prefix = 'data:image/jpeg;base64,';
+  const header = '/9j/';
+  let payload = header + 'A'.repeat(180_000 - prefix.length - header.length);
+  payload = payload.slice(0, payload.length - (payload.length % 4));
+  const atLimit = prefix + payload;
+  assert.equal(atLimit.length <= 180_000, true);
+  assert.equal(publishCommunityDesk(storage, {
+    title: '刚好', authorName: '甲', project, photo: atLimit, id: 'edge-photo', now,
+  }).ok, true);
+  assert.match(publishCommunityDesk(storage, {
+    title: '太大', authorName: '甲', project, photo: `${atLimit}AAAA`, id: 'over-photo',
+  }).message, /太大/);
+  assert.equal(removeCommunityPost(storage, 'edge-photo').ok, true);
+
+  project.objects[0] = { ...project.objects[0], assetUrl: 'javascript:alert(1)', name: '桌<script>\u0000甲' };
+  const raw = JSON.parse(`{
+    "kind": "desklab-community-desk",
+    "version": 1,
+    "title": ${JSON.stringify('外来\u202e<script>')},
+    "authorName": ["甲"],
+    "__proto__": {"polluted": true},
+    "photo": ${JSON.stringify(TINY_PNG)},
+    "note": "upload me",
+    "project": ${JSON.stringify(project)}
+  }`);
+  const imported = importCommunityDesk(raw);
+  assert.equal(imported.ok, true);
+  assert.equal(imported.desk.title.includes('<'), false);
+  assert.equal(imported.desk.title.includes('\u202e'), false);
+  assert.equal(imported.desk.authorName, '未署名');
+  assert.equal(imported.desk.note, undefined);
+  assert.equal(imported.desk.project.objects[0].assetUrl, null);
+  assert.equal(imported.desk.project.objects[0].name.includes('<'), false);
+  assert.equal(imported.desk.project.objects[0].name.includes('\u0000'), false);
+  assert.equal(Object.prototype.polluted, undefined);
+
+  const exported = exportCommunityDesk({ ...imported.desk, title: imported.desk.title, authorName: '甲' });
+  const again = importCommunityDesk(exported.contents);
+  assert.equal(again.ok, true);
+  assert.equal(exportCommunityDesk({ ...again.desk }).contents, exported.contents);
+
+  const tooMany = deskProject();
+  const seed = tooMany.objects[0];
+  tooMany.objects = Array.from({ length: 401 }, (_, index) => ({ ...seed, id: `desk-${index}` }));
+  tooMany.connections = [];
+  assert.match(importCommunityDesk(JSON.stringify({
+    kind: 'desklab-community-desk',
+    version: 1,
+    title: '太多',
+    authorName: '甲',
+    project: tooMany,
+  })).message, /太大/);
+
+  const kept = publishCommunityDesk(storage, {
+    title: '窗边\u0000', authorName: '甲<乙>', project: deskProject(), photo: 'javascript:alert(1)', id: 'kept-desk', now,
+  });
+  assert.equal(kept.ok, false);
+  const storedProject = deskProject();
+  storedProject.objects[0] = { ...storedProject.objects[0], assetUrl: 'https://evil.example/steal.glb' };
+  storage.setItem(COMMUNITY_POSTS_KEY, JSON.stringify([
+    {
+      id: 'kept-desk',
+      title: '窗边\u0000甲',
+      authorName: '甲<乙>',
+      photo: 'javascript:alert(1)',
+      project: storedProject,
+      createdAt: '2026-11-04T00:00:00.000Z',
+    },
+    { id: '../bad', title: '甲', authorName: '甲', project: deskProject() },
+    { id: 'also', title: '乙', authorName: '乙', photo: TINY_PNG, project: deskProject() },
+  ]));
+  const posts = readCommunityPosts(storage);
+  assert.deepEqual(posts.map(post => post.id), ['kept-desk', 'also']);
+  assert.equal(posts[0].title, '窗边甲');
+  assert.equal(posts[0].authorName, '甲＜乙＞');
+  assert.equal(posts[0].photo, null);
+  assert.equal(posts[0].project.objects[0].assetUrl, null);
 });

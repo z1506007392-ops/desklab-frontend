@@ -17,8 +17,10 @@ export const GALLERY_HASH_PREFIX = '#desklab-gallery/';
 
 const DISPLAY_NAME_MAX = 24;
 const TITLE_MAX = 40;
-const PHOTO_PATTERN = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
+const PHOTO_PATTERN = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/;
+const POST_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
 const STORAGE_FULL_MESSAGE = '这台设备的存储空间不够，桌子没有放进图库。';
+const INCOMPLETE_DESK = '这份桌子的内容不完整，不能放进图库。';
 
 const BUILTIN_DESKS = Object.freeze([
   Object.freeze({ id: 'home-office', title: '极简单屏', summary: '27 英寸居中，键盘和鼠标在正前方。线在桌下。' }),
@@ -69,27 +71,69 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+// A label from a file is data, not markup. Non-strings are refused so
+// String(object) cannot turn an illegal field into a title.
+function plainLabel(value) {
+  if (typeof value !== 'string') return null;
+  let out = '';
+  for (const char of value) {
+    const code = char.charCodeAt(0);
+    const hidden = code <= 31 || code === 127
+      || (code >= 0x202A && code <= 0x202E)
+      || (code >= 0x2066 && code <= 0x2069)
+      || code === 0x200E || code === 0x200F || code === 0xFEFF;
+    if (!hidden) out += char;
+  }
+  return out.replaceAll('<', '＜').replaceAll('>', '＞').trim().replace(/\s+/g, ' ');
+}
+
 export function normalizeDisplayName(value) {
-  const name = String(value ?? '').trim().replace(/\s+/g, ' ');
+  if (value != null && typeof value !== 'string') return { ok: false, message: INCOMPLETE_DESK };
+  const name = plainLabel(value ?? '');
   if (!name) return { ok: false, message: '先写一个显示名。图库只在这台设备上使用它。' };
   if ([...name].length > DISPLAY_NAME_MAX) return { ok: false, message: `显示名最多 ${DISPLAY_NAME_MAX} 个字。` };
   return { ok: true, name };
 }
 
 export function normalizeDeskTitle(value) {
-  const title = String(value ?? '').trim().replace(/\s+/g, ' ');
+  if (value != null && typeof value !== 'string') return { ok: false, message: INCOMPLETE_DESK };
+  const title = plainLabel(value ?? '');
   if (!title) return { ok: false, message: '给这张桌子起个名字。' };
   if ([...title].length > TITLE_MAX) return { ok: false, message: `名字最多 ${TITLE_MAX} 个字。` };
   return { ok: true, title };
 }
 
+function photoHeaderMatches(kind, binary) {
+  const code = index => binary.charCodeAt(index);
+  if (kind === 'jpeg') {
+    return binary.length >= 3 && code(0) === 0xff && code(1) === 0xd8 && code(2) === 0xff;
+  }
+  if (kind === 'png') {
+    return binary.length >= 8
+      && code(0) === 0x89 && code(1) === 0x50 && code(2) === 0x4e && code(3) === 0x47
+      && code(4) === 0x0d && code(5) === 0x0a && code(6) === 0x1a && code(7) === 0x0a;
+  }
+  return kind === 'webp' && binary.length >= 12 && binary.slice(0, 4) === 'RIFF' && binary.slice(8, 12) === 'WEBP';
+}
+
 function acceptPhoto(photo) {
   if (photo === undefined || photo === null || photo === '') return { ok: true, photo: null };
-  if (typeof photo !== 'string' || !PHOTO_PATTERN.test(photo)) {
-    return { ok: false, message: '照片需要是这台设备上的一张图片。' };
-  }
+  if (typeof photo !== 'string') return { ok: false, message: '照片需要是这台设备上的一张图片。' };
   if (photo.length > COMMUNITY_PHOTO_MAX_CHARS) {
     return { ok: false, message: '这张照片太大，放不进这台设备的图库。请换一张小一些的。' };
+  }
+  const match = PHOTO_PATTERN.exec(photo);
+  if (!match || match[2].length % 4 !== 0) {
+    return { ok: false, message: '照片需要是这台设备上的一张图片。' };
+  }
+  let binary;
+  try {
+    binary = atob(match[2]);
+  } catch {
+    return { ok: false, message: '照片需要是这台设备上的一张图片。' };
+  }
+  if (!photoHeaderMatches(match[1], binary)) {
+    return { ok: false, message: '照片需要是这台设备上的一张图片。' };
   }
   return { ok: true, photo };
 }
@@ -99,12 +143,12 @@ function cleanProject(project) {
   try {
     normalized = normalizeProject(project);
   } catch {
-    return { ok: false, message: '这份桌子的内容不完整，不能放进图库。' };
+    return { ok: false, message: INCOMPLETE_DESK };
   }
   if (!Array.isArray(normalized.objects) || normalized.objects.length === 0) {
     return { ok: false, message: '当前房间里还没有设备，不能放进图库。' };
   }
-  return { ok: true, project: normalized };
+  return screenDesk(normalized);
 }
 
 // A desk file is the same kind of untrusted input as a backup or a share
@@ -114,7 +158,7 @@ function screenDesk(project) {
   try {
     return { ok: true, project: screenUntrustedProject(project) };
   } catch (error) {
-    return { ok: false, message: error instanceof Error && error.message ? error.message : '这份桌子的内容不完整，不能放进图库。' };
+    return { ok: false, message: error instanceof Error && error.message ? error.message : INCOMPLETE_DESK };
   }
 }
 
@@ -191,19 +235,20 @@ export function saveCommunityProfile(storage, displayName) {
 }
 
 function normalizeStoredPost(entry) {
-  if (!entry || typeof entry !== 'object' || typeof entry.id !== 'string' || entry.id.length === 0) return null;
+  if (!entry || typeof entry !== 'object' || typeof entry.id !== 'string' || !POST_ID.test(entry.id)) return null;
   const title = normalizeDeskTitle(entry.title);
   const author = normalizeDisplayName(entry.authorName);
-  const picture = acceptPhoto(entry.photo);
   const project = cleanProject(entry.project);
-  if (!title.ok || !author.ok || !picture.ok || !project.ok) return null;
+  if (!title.ok || !author.ok || !project.ok) return null;
+  // A broken photo must not throw away the desk that is already on this device.
+  const picture = acceptPhoto(entry.photo);
   return {
     id: entry.id,
     builtin: false,
     title: title.title,
     summary: '',
     authorName: author.name,
-    photo: picture.photo,
+    photo: picture.ok ? picture.photo : null,
     project: project.project,
     createdAt: typeof entry.createdAt === 'string' ? entry.createdAt : '',
   };
@@ -228,6 +273,7 @@ export function publishCommunityDesk(storage, { title, authorName, project, phot
   if (!picture.ok) return picture;
   const clean = cleanProject(project);
   if (!clean.ok) return clean;
+  if (id != null && (typeof id !== 'string' || !POST_ID.test(id))) return { ok: false, message: INCOMPLETE_DESK };
   const posts = readCommunityPosts(storage);
   if (posts.length >= COMMUNITY_POST_LIMIT) {
     return { ok: false, message: `这台设备的图库最多留 ${COMMUNITY_POST_LIMIT} 张桌子。先删掉一张再放。` };
