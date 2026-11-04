@@ -1,3 +1,5 @@
+import { followStorageWrite } from './storage-write.js';
+
 // First visit only: no saved project, and this flag is still unset. "更多"
 // can open the same steps again later. The flag is not the project save.
 export const GUIDE_SEEN_STORAGE_KEY = 'desklab.guide-seen.v1';
@@ -40,8 +42,7 @@ export function hasSeenGuide(storage) {
 
 export function markGuideSeen(storage) {
   try {
-    storage?.setItem(GUIDE_SEEN_STORAGE_KEY, '1');
-    return true;
+    return followStorageWrite(storage?.setItem(GUIDE_SEEN_STORAGE_KEY, '1'), () => true, () => false);
   } catch {
     return false;
   }

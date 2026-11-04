@@ -136,17 +136,24 @@ function isThenable(value) {
 // updates memory immediately and resolves after the file is on disk, rolling
 // memory back if that write fails. Callers that can await still get a plain
 // result from a synchronous store.
+function refusedWrite(error) {
+  if (error?.code === 'archive_write_failed' && typeof error.message === 'string' && error.message) {
+    return { ok: false, message: error.message };
+  }
+  return { ok: false, message: STORAGE_FULL_MESSAGE };
+}
+
 function writeJson(storage, key, value) {
   let result;
   try {
     result = storage.setItem(key, JSON.stringify(value));
-  } catch {
-    return { ok: false, message: STORAGE_FULL_MESSAGE };
+  } catch (error) {
+    return refusedWrite(error);
   }
   if (!isThenable(result)) return { ok: true };
   return result.then(
     () => ({ ok: true }),
-    () => ({ ok: false, message: STORAGE_FULL_MESSAGE }),
+    error => refusedWrite(error),
   );
 }
 

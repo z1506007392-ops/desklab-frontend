@@ -12,6 +12,7 @@ import {
   createLocalProjectClient,
 } from '../src/domain/local-project-store.js';
 import {
+  ARCHIVE_FILE_LABELS,
   ARCHIVE_FILES,
   createFileArchiveStorage,
   loadFileArchive,
@@ -47,9 +48,14 @@ test('known saves map to plain file names inside the app data directory', () => 
   assert.equal(ARCHIVE_FILES[LAYOUT_SCHEMES_STORAGE_KEY], 'layout-schemes.json');
   assert.equal(ARCHIVE_FILES[COMMUNITY_PROFILE_KEY], 'community-profile.json');
   assert.equal(ARCHIVE_FILES[COMMUNITY_POSTS_KEY], 'community-posts.json');
+  assert.equal(ARCHIVE_FILES['desklab.project-draft.v1'], 'project-draft.json');
+  assert.equal(ARCHIVE_FILES['desklab.backup-reminder.v1'], 'backup-reminder.json');
+  assert.equal(ARCHIVE_FILES['desklab.phone-notice-dismissed.v1'], 'phone-notice.txt');
+  assert.deepEqual(Object.values(ARCHIVE_FILES).sort(), Object.keys(ARCHIVE_FILE_LABELS).sort());
   for (const name of Object.values(ARCHIVE_FILES)) {
     assert.match(name, /^[a-z0-9.-]+$/);
     assert.equal(name.includes('..'), false);
+    assert.equal(typeof ARCHIVE_FILE_LABELS[name], 'string');
   }
 });
 
@@ -91,8 +97,9 @@ test('a failed write rolls back and does not replace the previous project file',
       objects: [],
       connections: [],
     }, (await client.load()).version),
-    { code: 'archive_write_failed' },
+    { code: 'archive_write_failed', message: /这台电脑上/ },
   );
+  assert.equal(storage.getItem(PROJECT_STORAGE_KEY).includes('disk full'), false);
   assert.equal(io.files.get('project.json'), first);
   assert.equal(JSON.parse(storage.getItem(PROJECT_STORAGE_KEY)).room.length, 5);
 });
@@ -135,4 +142,51 @@ test('migration does nothing when the browser has no project', async () => {
   const storage = createFileArchiveStorage(memoryIo());
   const result = await migrateBrowserArchive({ getItem: () => null }, storage);
   assert.deepEqual(result, { migrated: false, reason: 'browser_empty' });
+});
+
+test('an unreadable project file stays on disk until the previous save is restored', async () => {
+  const io = memoryIo({
+    'project.json': 'still-on-disk',
+    'project-backup.json': JSON.stringify({
+      id: 'default',
+      room: { length: 5, width: 4, height: 3 },
+      objects: [],
+      connections: [],
+      updatedAt: '2026-11-04T00:00:00.000Z',
+    }),
+  });
+  io.read = async (name) => {
+    if (name === 'project.json') throw new Error('not utf-8');
+    return io.files.has(name) ? io.files.get(name) : null;
+  };
+  const storage = await loadFileArchive(io);
+  assert.deepEqual(storage.unreadableFiles, ['project.json']);
+  assert.equal(storage.getItem(PROJECT_STORAGE_KEY).includes('desklabUnreadable'), true);
+
+  const client = createLocalProjectClient(() => storage, { now: () => new Date('2026-11-04T00:00:00.000Z') });
+  await assert.rejects(client.load(), { code: 'project_unreadable' });
+  await assert.rejects(
+    client.save({ room: { length: 5, width: 4, height: 3 }, objects: [], connections: [] }, null),
+    /版本尚未加载/,
+  );
+  await assert.rejects(
+    client.save({
+      room: { length: 5, width: 4, height: 3 },
+      objects: [],
+      connections: [],
+    }, UNSAVED_PROJECT_VERSION),
+    { code: 'project_conflict' },
+  );
+  assert.equal(io.files.get('project.json'), 'still-on-disk');
+
+  const recovered = await client.recoverBackup();
+  assert.equal(recovered.project.room.length, 5);
+  assert.equal(io.files.get('project.json'), io.files.get('project-backup.json'));
+
+  const browser = new Map([[PROJECT_STORAGE_KEY, '{"id":"browser"}']]);
+  const copied = await migrateBrowserArchive({
+    getItem: key => browser.get(key) ?? null,
+  }, storage);
+  assert.deepEqual(copied, { migrated: false, reason: 'file_exists' });
+  assert.notEqual(storage.getItem(PROJECT_STORAGE_KEY), '{"id":"browser"}');
 });

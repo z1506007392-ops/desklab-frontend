@@ -18,11 +18,33 @@ export default function EyeHeightAdvice({ project, storage = getAppStorage }) {
   ));
   const [fieldError, setFieldError] = useState('');
 
-  const save = next => {
+  const save = (next, nextHeightText) => {
+    const previous = profile;
+    const previousText = heightText;
     setProfile(next);
-    if (!writeEyeProfile(store, next)) {
-      setFieldError('这台设备没有允许保存，这句话刷新后会丢。');
+    if (nextHeightText !== undefined) setHeightText(nextHeightText);
+    setFieldError('');
+    const fail = () => {
+      setProfile(current => (current === next ? previous : current));
+      if (nextHeightText !== undefined) {
+        setHeightText(current => (current === nextHeightText ? previousText : current));
+      }
+      setFieldError('眼睛高度没有写上，刚才的修改已取消。');
+    };
+    let pending;
+    try {
+      pending = writeEyeProfile(store, next);
+    } catch {
+      fail();
+      return;
     }
+    if (pending != null && typeof pending.then === 'function') {
+      pending.then(ok => {
+        if (!ok) fail();
+      }, fail);
+      return;
+    }
+    if (!pending) fail();
   };
 
   const commitHeight = (text) => {
@@ -31,9 +53,7 @@ export default function EyeHeightAdvice({ project, storage = getAppStorage }) {
       setFieldError('眼睛离地高度请填 0.50 到 2.20 米。');
       return;
     }
-    setFieldError('');
-    setHeightText(height == null ? '' : String(height));
-    save({ ...profile, eyeHeightMetres: height });
+    save({ ...profile, eyeHeightMetres: height }, height == null ? '' : String(height));
   };
 
   return (

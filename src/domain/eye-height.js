@@ -1,4 +1,5 @@
 import { getRotatedFootprint } from './geometry.js';
+import { followStorageWrite } from './storage-write.js';
 import { isDesk } from './desks.js';
 import { findSupportingObject } from './layout-analysis.js';
 import { HEURISTIC_LIMITS } from './layout-heuristics.js';
@@ -69,12 +70,10 @@ export function writeEyeProfile(storage, profile) {
       posture: profile?.posture === 'standing' ? 'standing' : 'sitting',
       bifocals: profile?.bifocals === true,
     };
-    if (clean.eyeHeightMetres === null && clean.posture === 'sitting' && !clean.bifocals) {
-      storage.removeItem(EYE_HEIGHT_STORAGE_KEY);
-    } else {
-      storage.setItem(EYE_HEIGHT_STORAGE_KEY, JSON.stringify({ version: 1, ...clean }));
-    }
-    return true;
+    const pending = clean.eyeHeightMetres === null && clean.posture === 'sitting' && !clean.bifocals
+      ? storage.removeItem(EYE_HEIGHT_STORAGE_KEY)
+      : storage.setItem(EYE_HEIGHT_STORAGE_KEY, JSON.stringify({ version: 1, ...clean }));
+    return followStorageWrite(pending, () => true, () => false);
   } catch {
     return false;
   }

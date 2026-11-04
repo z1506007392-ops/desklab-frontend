@@ -26,6 +26,8 @@ export function createTauriArchiveIo() {
   };
 }
 
+export const DESKTOP_LINK_FAILED = '这个链接没能交给系统浏览器。请复制地址，再在浏览器里打开。';
+
 // License and model links should open in the system browser, not a second
 // webview. Same-origin links (none of the in-app controls) stay as they are.
 export function bindDesktopExternalLinks() {
@@ -46,7 +48,8 @@ export function bindDesktopExternalLinks() {
     import('@tauri-apps/plugin-opener')
       .then(module => module.openUrl(url.href))
       .catch(error => {
-        console.error('Could not open the link in the system browser.', error);
+        console.error('DeskLab 没能打开系统浏览器', error);
+        document.dispatchEvent(new CustomEvent('desklab-notice', { detail: DESKTOP_LINK_FAILED }));
       });
   });
 }

@@ -1,3 +1,5 @@
+import { followStorageWrite } from './storage-write.js';
+
 // Saves live only in this browser, so clearing site data or switching
 // devices loses them. After a save, remind the user to export a backup file
 // when they have never exported one or the last one is a week old; "later"
@@ -30,11 +32,11 @@ export function readBackupReminderState(getStorage) {
 }
 
 export function recordBackupExport(getStorage, now) {
-  writeState(getStorage, { lastExportAt: now.toISOString(), snoozedUntil: null });
+  return writeState(getStorage, { lastExportAt: now.toISOString(), snoozedUntil: null });
 }
 
 export function snoozeBackupReminder(getStorage, now) {
-  writeState(getStorage, {
+  return writeState(getStorage, {
     ...readBackupReminderState(getStorage),
     snoozedUntil: new Date(now.getTime() + BACKUP_REMINDER_INTERVAL_MS).toISOString(),
   });
@@ -42,8 +44,13 @@ export function snoozeBackupReminder(getStorage, now) {
 
 function writeState(getStorage, state) {
   try {
-    getStorage().setItem(BACKUP_REMINDER_STORAGE_KEY, JSON.stringify(state));
+    return followStorageWrite(
+      getStorage().setItem(BACKUP_REMINDER_STORAGE_KEY, JSON.stringify(state)),
+      () => true,
+      () => false,
+    );
   } catch {
     // See readBackupReminderState.
+    return false;
   }
 }

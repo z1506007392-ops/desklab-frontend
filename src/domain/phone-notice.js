@@ -1,3 +1,5 @@
+import { followStorageWrite } from './storage-write.js';
+
 // On a phone DeskLab works, but dragging, wiring and the checks are much
 // easier on a computer's larger screen (owner's call, E59: no further
 // phone-specific polish). A phone visitor is told so once; dismissing it is
@@ -17,8 +19,7 @@ export function hasDismissedPhoneNotice(storage) {
 
 export function dismissPhoneNotice(storage) {
   try {
-    storage?.setItem(PHONE_NOTICE_STORAGE_KEY, '1');
-    return true;
+    return followStorageWrite(storage?.setItem(PHONE_NOTICE_STORAGE_KEY, '1'), () => true, () => false);
   } catch {
     return false;
   }

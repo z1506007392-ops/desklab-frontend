@@ -192,6 +192,7 @@ test('the desktop file archive keeps a gallery desk, and a failed write stays of
   });
   const refused = await saveCommunityProfile(failing, '小王');
   assert.equal(refused.ok, false);
-  assert.match(refused.message, /存储空间不够/);
+  assert.match(refused.message, /图库显示名没有写到这台电脑上/);
+  assert.equal(refused.message.includes('disk full'), false);
   assert.equal(failing.getItem(COMMUNITY_PROFILE_KEY), null);
 });

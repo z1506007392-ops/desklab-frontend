@@ -62,12 +62,20 @@ import { buildCableShoppingList } from './domain/cable-shopping-list.js';
 import { buildCableRunSheet } from './domain/cable-run-sheet.js';
 import {
   addLayoutScheme,
+  layoutSchemeStoreState,
   layoutSchemesDocument,
   layoutSchemesInBackup,
-  loadLayoutSchemes,
   removeLayoutScheme,
   storeLayoutSchemes,
+  LAYOUT_SCHEMES_STORAGE_KEY,
 } from './domain/layout-schemes.js';
+import { storageBootNotice } from './desktop/boot-storage.js';
+import {
+  draftClearFailureSentence,
+  keptSaveSentence,
+  savedButDraftRemainsSentence,
+  unreadOriginalSentence,
+} from './domain/save-wording.js';
 import { labelObjectsForPicker } from './domain/object-labels.js';
 import { hasSeenGuide, markGuideSeen } from './domain/onboarding.js';
 import { PHONE_MEDIA_QUERY, dismissPhoneNotice, hasDismissedPhoneNotice } from './domain/phone-notice.js';
@@ -269,7 +277,25 @@ export default function App() {
   const [showGallery, setShowGallery] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showLayoutSchemes, setShowLayoutSchemes] = useState(false);
-  const [layoutSchemes, setLayoutSchemes] = useState(() => loadLayoutSchemes(getBrowserStorage()));
+  const [schemeRecord, setSchemeRecord] = useState(() => {
+    const storage = getBrowserStorage();
+    try {
+      const raw = storage.getItem(LAYOUT_SCHEMES_STORAGE_KEY);
+      if (storage?.unreadableFiles?.includes('layout-schemes.json')) {
+        return { schemes: [], blocked: true };
+      }
+      return layoutSchemeStoreState(raw);
+    } catch {
+      return { schemes: [], blocked: true };
+    }
+  });
+  const layoutSchemes = schemeRecord.schemes;
+  const setLayoutSchemes = useCallback((next) => {
+    setSchemeRecord(current => ({
+      schemes: typeof next === 'function' ? next(current.schemes) : next,
+      blocked: false,
+    }));
+  }, []);
   const [webglAvailable] = useState(() => canUseWebGL());
   // First-visit guide: only for a project that has never been saved, until
   // the user picks a way to start or something appears in the room.
@@ -292,8 +318,18 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    storeLayoutSchemes(getBrowserStorage(), layoutSchemes);
-  }, [layoutSchemes]);
+    if (schemeRecord.blocked) return undefined;
+    let cancelled = false;
+    const pending = storeLayoutSchemes(getBrowserStorage(), schemeRecord.schemes, { replaceBlocked: true });
+    Promise.resolve(pending).then(saved => {
+      if (cancelled || saved !== false) return;
+      showStatus({
+        text: '摆法没有写到这台电脑上。当前页面上的这几套刷新后会丢。',
+        type: 'error',
+      }, 6000);
+    });
+    return () => { cancelled = true; };
+  }, [schemeRecord, showStatus]);
 
   const projectStateRef = useRef({ room, objects, connections, selectedObjectId });
   const historyRef = useRef(null);
@@ -318,6 +354,29 @@ export default function App() {
     statusNotifierRef.current = notifier;
     return () => notifier.dispose();
   }, []);
+
+  useEffect(() => {
+    const onNotice = (event) => {
+      const text = typeof event.detail === 'string' ? event.detail.trim() : '';
+      if (text) showStatus({ text, type: 'error' }, 6000);
+    };
+    document.addEventListener('desklab-notice', onNotice);
+    return () => document.removeEventListener('desklab-notice', onNotice);
+  }, [showStatus]);
+
+  const [archiveWarning] = useState(() => {
+    const parts = [];
+    const boot = storageBootNotice();
+    if (boot) parts.push(boot);
+    if (schemeRecord.blocked && !boot.includes('摆法')) {
+      parts.push('这台设备上的摆法读不出来，没有覆盖原来的记录。重新留下一套摆法会替换它。');
+    }
+    return parts.join(' ');
+  });
+
+  useEffect(() => {
+    if (archiveWarning) showStatus({ text: archiveWarning, type: 'error' }, 8000);
+  }, [archiveWarning, showStatus]);
 
   const currentLayoutSnapshot = useMemo(
     () => serializeLayout(room, objects, connections),
@@ -345,11 +404,11 @@ export default function App() {
     showStatus({
       text: result.operation === 'clear-blocked'
         ? '本地草稿读取失败，已阻止清理以保留恢复材料；请尽快保存项目或导出备份。'
-        : '本地草稿清理失败；请检查浏览器存储权限后重试。',
+        : draftClearFailureSentence(fileArchive),
       type: 'error',
     });
     return false;
-  }, [showStatus]);
+  }, [fileArchive, showStatus]);
 
   useEffect(() => {
     projectStateRef.current = { room, objects, connections, selectedObjectId };
@@ -632,7 +691,7 @@ export default function App() {
         const storedNotice = err.code === 'storage_unavailable'
           ? err.message
           : '本机保存的项目无法读取，已锁定保存以保护原数据。可以尝试恢复上一版本。';
-        const notice = [shareNotice, galleryNotice, storedNotice].filter(Boolean).join(' ');
+        const notice = [shareNotice, galleryNotice, storedNotice, storageBootNotice()].filter(Boolean).join(' ');
         showStatus({ text: notice, type: 'error' });
         const localDraft = readLocalDraft();
         if (localDraft) setRecoveryDraft(localDraft);
@@ -936,8 +995,16 @@ export default function App() {
   }, [selectedObjectId, objects, room, connectionMode, dialogOpen, handleDeleteDevice, handleDuplicateDevice, projectEditable, updateSelectedObject]);
 
   const handleDismissPhoneNotice = () => {
-    dismissPhoneNotice(getBrowserStorage());
-    setPhoneNoticeDismissed(true);
+    const pending = dismissPhoneNotice(getBrowserStorage());
+    const finish = (saved) => {
+      if (saved === false) {
+        showStatus({ text: '这次关闭没有记下来，提示还留着。', type: 'error' }, 5000);
+        return;
+      }
+      setPhoneNoticeDismissed(true);
+    };
+    if (pending != null && typeof pending.then === 'function') pending.then(finish, () => finish(false));
+    else finish(pending !== false);
   };
 
   const handleCopyPageLink = async () => {
@@ -1054,7 +1121,7 @@ export default function App() {
       }));
       showStatus(
         fullyCurrent && !draftCleared
-          ? { text: '项目已保存，但本地草稿清理失败；刷新前请检查浏览器存储权限。', type: 'error' }
+          ? { text: savedButDraftRemainsSentence(fileArchive), type: 'error' }
           : {
               text: fullyCurrent ? '已保存' : '已保存请求时的版本，当前仍有未保存修改',
               type: 'success',
@@ -1118,8 +1185,8 @@ export default function App() {
     }
   };
 
-  const handleDiscardDraft = () => {
-    if (!clearLocalDraft()) return;
+  const handleDiscardDraft = async () => {
+    if (!await clearLocalDraft()) return;
     setRecoveryDraft(null);
     showStatus({ text: '已放弃本地草稿', type: 'success' }, 3000);
   };
@@ -1133,14 +1200,31 @@ export default function App() {
       connections,
       layoutSchemes: layoutSchemesDocument(layoutSchemes),
     }, 'desklab-project');
-    recordBackupExport(getBrowserStorage, new Date());
+    const pending = recordBackupExport(getBrowserStorage, new Date());
     setShowBackupReminder(false);
-    showStatus({ text: '备份已导出', type: 'success' }, 3000);
+    const finish = (saved) => {
+      showStatus(
+        saved === false
+          ? { text: '备份文件已导出，但这台电脑没有记下导出时间，提醒可能还会出现。', type: 'error' }
+          : { text: '备份已导出', type: 'success' },
+        saved === false ? 5000 : 3000,
+      );
+    };
+    if (pending != null && typeof pending.then === 'function') pending.then(finish, () => finish(false));
+    else finish(pending !== false);
   };
 
   const handleSnoozeBackupReminder = () => {
-    snoozeBackupReminder(getBrowserStorage, new Date());
-    setShowBackupReminder(false);
+    const pending = snoozeBackupReminder(getBrowserStorage, new Date());
+    const finish = (saved) => {
+      if (saved === false) {
+        showStatus({ text: '这次“以后再说”没有记下来。', type: 'error' }, 4000);
+        return;
+      }
+      setShowBackupReminder(false);
+    };
+    if (pending != null && typeof pending.then === 'function') pending.then(finish, () => finish(false));
+    else finish(pending !== false);
   };
 
   const handleExportRecoveryDraft = () => {
@@ -1198,11 +1282,23 @@ export default function App() {
     }
   };
 
-  const finishEntry = useCallback(() => {
+  const rememberGuideSeen = useCallback(() => {
     guideDismissedRef.current = true;
-    markGuideSeen(getBrowserStorage());
+    const pending = markGuideSeen(getBrowserStorage());
+    Promise.resolve(pending).then(saved => {
+      if (saved === false) {
+        showStatus({
+          text: '进门记录没有写到这台电脑上，下次打开可能再问一次房间大小。',
+          type: 'error',
+        }, 6000);
+      }
+    });
+  }, [showStatus]);
+
+  const finishEntry = useCallback(() => {
+    rememberGuideSeen();
     setEntryStep('done');
-  }, []);
+  }, [rememberGuideSeen]);
 
   useEffect(() => {
     if (!projectLoaded || roomRepick) return;
@@ -1283,8 +1379,7 @@ export default function App() {
   };
 
   const closeGuide = () => {
-    guideDismissedRef.current = true;
-    markGuideSeen(getBrowserStorage());
+    rememberGuideSeen();
     setGuideOpen(false);
     setGuideStep(0);
   };
@@ -1393,7 +1488,7 @@ export default function App() {
 
   const adoptGalleryProject = (project, title) => {
     const confirmed = window.confirm(
-      `确定把“${title}”复制到你的项目吗？\n画面会换成这张桌子。还没保存的修改会丢掉。浏览器里已经保存的项目不会被改掉，除非你之后自己点“保存项目”。`
+      `确定把“${title}”复制到你的项目吗？\n画面会换成这张桌子。还没保存的修改会丢掉。${keptSaveSentence(fileArchive)}`
     );
     if (!confirmed) return;
     const nextObjects = hydrateProjectObjects(project.objects || []);
@@ -1417,7 +1512,7 @@ export default function App() {
       && visitorLayoutRef.current === serializeLayout(project.room, nextObjects, nextConnections);
     showStatus({
       text: storedLoadFailedRef.current
-        ? '你原来的存档读不出来，这张桌子只留在当前页面，没有写入浏览器。'
+        ? unreadOriginalSentence(fileArchive, '这张桌子')
         : sameAsSaved
           ? '这张桌子和你已保存的项目一样。'
           : '已复制到当前项目，尚未保存。你原来的存档还在，要点“保存项目”才会替换。',
@@ -1723,7 +1818,7 @@ export default function App() {
   const handleAdoptShare = () => {
     if (!shareView) return;
     const confirmed = window.confirm(
-      '确定把这份分享复制到你的项目吗？\n画面上的桌面会换成链接里的内容。浏览器里已经保存的项目不会被改掉，除非你之后自己点“保存项目”。'
+      `确定把这份分享复制到你的项目吗？\n画面上的桌面会换成链接里的内容。${keptSaveSentence(fileArchive)}`
     );
     if (!confirmed) return;
     const url = new URL(window.location.href);
@@ -1737,7 +1832,7 @@ export default function App() {
       && visitorLayoutRef.current === serializeLayout(room, objects, connections);
     showStatus({
       text: storedLoadFailedRef.current
-        ? '你原来的存档读不出来，这份分享只留在当前页面，没有写入浏览器。'
+        ? unreadOriginalSentence(fileArchive, '这份分享')
         : sameAsSaved
           ? '这份分享和你已保存的项目一样。'
           : '已复制到当前项目，尚未保存。你原来的存档还在，要点“保存项目”才会替换。',
@@ -2116,7 +2211,7 @@ export default function App() {
         )}
 
         {shareView && (
-          <ShareViewBanner onCopyIn={handleAdoptShare} />
+          <ShareViewBanner onCopyIn={handleAdoptShare} fileArchive={fileArchive} />
         )}
 
         {galleryView && (

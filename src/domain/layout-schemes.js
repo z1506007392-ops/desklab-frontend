@@ -1,4 +1,5 @@
 import { isProjectEnvelope } from './project-validation.js';
+import { followStorageWrite } from './storage-write.js';
 
 // Up to three named copies beside the desk that is on screen (E100).
 // They stay on this machine. Export can carry them; nothing here uploads
@@ -63,18 +64,45 @@ export function layoutSchemesDocument(schemes) {
   return JSON.parse(serializeLayoutSchemes(schemes));
 }
 
+// `blocked` means the text on disk is not a scheme list. An empty list must
+// not be written back over it.
+export function layoutSchemeStoreState(raw) {
+  if (typeof raw !== 'string' || raw.length === 0) return { schemes: [], blocked: false };
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || parsed.version !== LAYOUT_SCHEMES_VERSION || !Array.isArray(parsed.schemes)) {
+      return { schemes: [], blocked: true };
+    }
+    return {
+      schemes: parsed.schemes.map(cleanScheme).filter(Boolean).slice(0, LAYOUT_SCHEME_LIMIT),
+      blocked: false,
+    };
+  } catch {
+    return { schemes: [], blocked: true };
+  }
+}
+
 export function loadLayoutSchemes(storage) {
   try {
-    return readLayoutSchemes(storage?.getItem(LAYOUT_SCHEMES_STORAGE_KEY));
+    return layoutSchemeStoreState(storage?.getItem(LAYOUT_SCHEMES_STORAGE_KEY)).schemes;
   } catch {
     return [];
   }
 }
 
-export function storeLayoutSchemes(storage, schemes) {
+export function storeLayoutSchemes(storage, schemes, { replaceBlocked = false } = {}) {
+  const next = serializeLayoutSchemes(schemes);
   try {
-    storage.setItem(LAYOUT_SCHEMES_STORAGE_KEY, serializeLayoutSchemes(schemes));
-    return true;
+    const current = storage.getItem(LAYOUT_SCHEMES_STORAGE_KEY);
+    const state = layoutSchemeStoreState(current);
+    if (state.blocked && !replaceBlocked) return true;
+    if (current === next) return true;
+    if ((current == null || current === '') && next === serializeLayoutSchemes([])) return true;
+    return followStorageWrite(
+      storage.setItem(LAYOUT_SCHEMES_STORAGE_KEY, next),
+      () => true,
+      () => false,
+    );
   } catch {
     return false;
   }
