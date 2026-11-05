@@ -66,7 +66,7 @@ export default function EyeHeightAdvice({ project, storage = getAppStorage }) {
           <span className="panel-field-content">
             <input
               id="eye-height-metres"
-              className="ui-input"
+              className="ui-input eye-height-input"
               inputMode="decimal"
               min="0.5"
               max="2.2"
@@ -79,7 +79,7 @@ export default function EyeHeightAdvice({ project, storage = getAppStorage }) {
                 if (event.key === 'Enter') commitHeight(heightText);
               }}
             />
-            <span className="panel-text-readonly">米</span>
+            <span className="eye-height-unit">米</span>
           </span>
         </label>
         <div className="eye-height-posture" role="group" aria-label="坐着还是站着">

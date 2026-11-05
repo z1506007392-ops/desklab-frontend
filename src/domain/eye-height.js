@@ -137,7 +137,7 @@ function quote(name) {
 export function eyeHeightAdvice(project, profile) {
   const height = normalizeEyeHeight(profile?.eyeHeightMetres);
   if (height === undefined || height === null) {
-    return '填上眼睛离地多高之后，这里会说一句。数字只留在这台设备里，不会上传，也不会自动挪屏幕。';
+    return '填上眼睛离地多高，这里会说屏幕高低合不合适。';
   }
   const posture = profile?.posture === 'standing' ? 'standing' : 'sitting';
   const bifocals = profile?.bifocals === true;

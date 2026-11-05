@@ -42,8 +42,9 @@ const sitting = (eyeHeightMetres, extra = {}) => ({ eyeHeightMetres, posture: 's
 test('without an eye height the sentence only asks for one', () => {
   const sentence = eyeHeightAdvice({ objects: [desk(), screen({ y: 0.15 })] }, sitting(null));
   assert.match(sentence, /填上眼睛离地/);
-  assert.match(sentence, /不会自动挪/);
-  assert.doesNotMatch(sentence, /椅子|元|¥/);
+  // "Not uploaded, never moves the screen" is said once, above the fields.
+  assert.match(sentence, /屏幕高低/);
+  assert.doesNotMatch(sentence, /椅子|元|¥|上传/);
 });
 
 test('a screen whose top is above the eyes gets one sentence and no movement', () => {

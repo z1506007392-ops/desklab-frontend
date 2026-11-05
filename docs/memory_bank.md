@@ -1,6 +1,6 @@
 # DeskLab Memory Bank for Claude
 
-Last updated: 2026-11-04, Asia/Singapore
+Last updated: 2026-11-05, Asia/Singapore
 
 > Start here: `docs/AUTONOMOUS_ROADMAP.md` is the step-by-step plan, task
 > board, and LLM (DeepSeek) design that every agent follows. This memory bank
@@ -14,6 +14,24 @@ Last updated: 2026-11-04, Asia/Singapore
 ## 进度记录 / Progress Log
 
 最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。Claude 在 master 上的记录原先写在正文里，这里按提交作者收成同一份日志。
+
+### 2026-11-05 · Claude · master
+
+负责人 Leo："你核对一遍 我已无心负责此项目 你全权负责"。从今天起由 Claude 全权负责，路线图开头加了「负责人（2026-11-05 起）」一节：原来写「等负责人」的事由 Claude 决定并写明理由；要用 Leo 账号的事（Cloudflare 控制台关 Git 自动部署、生产发信密钥、安装包签名）仍卡着。
+
+核对 Grok 2026-11-03 到 11-04 的 155 个提交（E61–E156，305 个文件，约 2.1 万行），基于 `1e751a6`：
+- 本地：`npm ci` 后 `npm test` 705 通过，lint 0 问题，build 通过；Chrome 桌面和手机 UI 全量 264 通过 + 4 跳过（18.6 分钟；跳过的是已记录的手机进门取景等）。
+- CI：`1e751a6` 的 CI 和 Desktop 工作流全绿；中间几次红的（`32ecbee`、`d68d221`、`73de007`）都被后面的提交修好。
+- 线上：https://desklab-frontend.pages.dev 的脚本和 3 台显示器模型和本地 master 一致。桌面 1440×900 和触屏手机 390×844 按新用户走一遍：「这间房有多大」→「用电竞桌」→ 布局检查、布线检查、改进建议、所有连接、更多菜单，都正常；电竞桌布局、布线 0 问题，键盘鼠标接在主机 USB 上；没有控制台错误，没有 4xx/5xx 请求。截图看过。
+- E61：屏幕现在宽 0.533、高 0.287 米，约 1.86:1，和源模型一样，不再压扁；24、27 寸和带鱼屏的接口锚点离模型表面都在 1 厘米以内（主机、键盘、鼠标也是）。
+
+发现并修了一处（E157）：「改进建议」里「眼睛高度」（E99）的单位「米」用了 `panel-text-readonly`（整行宽、灰底），电脑上像一个半行宽的空输入框，手机上被挤出弹窗右边；空着时那句话把开头说明里的「不上传、不自动挪屏幕」又说了一遍。改成 `eye-height-unit`（不占宽度的普通字），输入框 8 字宽；空着时只说「填上眼睛离地多高，这里会说屏幕高低合不合适。」开头说明（含「不加椅子」）不变。`test/eye-height.test.js` 那条改为检查新句子、不再出现「上传」；`e2e/eye-height.spec.mjs` 加了「也不自动挪屏幕」和「米」在弹窗内、宽度小于 40 像素（改回旧样式时桌面 527 像素、手机 121 像素，测试失败）。截图看过（桌面和手机）。
+
+代负责人做的决定（写在任务板对应条目）：E69（主机按源模型比例）、E70（键盘按源模型比例）批准，按 E61 的做法做；贴图再压缩不做（brotli 后 16 个模型合计约 284KB，再压只省几十 KB，近看会变糊）；新开 E158：购线清单的「导出 Markdown」「导出 CSV」改成普通话。
+
+验证：`npm test` 705，lint（0 问题），build，Chrome 桌面和手机 UI 全量 264 通过 + 4 跳过。
+
+还剩：推送后看 CI、线上核对；接着做 E69、E70、E158。
 
 ### 2026-11-04 · Desklab (Grok Bot) · master
 

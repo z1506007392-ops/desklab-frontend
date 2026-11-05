@@ -1407,6 +1407,19 @@
   font-weight: 600;
 }
 
+/* A short number field with its unit beside it: the read-only text style
+   filled the row and pushed "米" out of a phone-width dialog. */
+.eye-height-input {
+  flex: none;
+  width: 8em;
+}
+
+.eye-height-unit {
+  flex: none;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}
+
 .eye-height-check {
   display: flex;
   align-items: center;
