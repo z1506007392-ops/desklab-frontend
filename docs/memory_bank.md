@@ -15,6 +15,18 @@ Last updated: 2026-11-05, Asia/Singapore
 
 最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。Claude 在 master 上的记录原先写在正文里，这里按提交作者收成同一份日志。
 
+### 2026-11-10 · Claude · claude/adoring-dijkstra-buef7s
+
+E69 完成：台式主机按源模型比例。代码 `34ef770`。目录尺寸从 0.25×0.50×0.50 改成 0.20×0.62×0.49（宽×深×高，米）：SimReady 的主机是 0.197×0.624×0.490，原来被横向拉宽 27%、深度压到八成。GLB 用 `tools/simready/build.mjs desktop-pc` 重新生成，缩略图重渲，`asset-revisions.js` 和 `public/_headers` 跟着更新。
+
+旧存档里正好是旧尺寸的主机，打开时换成新尺寸：底面不动，背面（接线、通常靠墙的那面）不动，多出来的深度朝房间里长。E61 的显示器是中心不动；主机没照搬，因为预设把主机背面对齐书桌后沿，中心不动会让它往后多伸 6 厘米，可能伸进墙里。故意改过尺寸的不迁。接口锚点是盒子的比例，不用改。
+
+这次会话只允许推到分支 `claude/adoring-dijkstra-buef7s`，没有推 master，所以线上站点没变；认领和完成记录也只在这个分支上，合进 master 之前 master 的任务板看不到。
+
+验证：`npm test` 706（加了主机迁移 1 条），lint 0 问题，build 通过，Chrome 桌面和手机 UI 全量 264 通过 + 4 跳过。电竞桌在桌面 1440×900 和手机 390×844 的截图看过，没有控制台错误。
+
+还剩：分支合进 master 后看 CI 和线上；接着做 E70。
+
 ### 2026-11-10 · Claude · master
 
 E158 完成：购线清单的两个导出按钮改成普通话。「导出 Markdown」→「导出安装清单」，「导出 CSV」→「导出表格」；文件格式放进 `title` 提示（「Markdown 文字文件：每根线从哪接到哪，以及先电源后信号的接线顺序」「CSV 表格文件，可以用 Excel 或 WPS 打开」）。确认过 CSV 开头已有 BOM（`cable-run-sheet.js`），Excel 打开中文不乱码。文件名 `desklab-wiring.md` / `desklab-wiring.csv`、内容和格式不变。`e2e/cable-shopping-list.spec.mjs` 改用新按钮名，并检查按钮上没有 Markdown、CSV 字样、「导出表格」的提示里提到 Excel。
@@ -4903,8 +4915,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 702 domain tests (E155 Resend login mail on top of E120's 696)
-npm run test:ui   # Chrome desktop + phone: 261 passed + 1 skipped (E120, after E151–E154). CI webkit key cases: 46 passed locally (E133).
+npm test          # 706 domain tests (E69 tower migration on top of E157's 705)
+npm run test:ui   # Chrome desktop + phone: 264 passed + 4 skipped (E69). CI webkit key cases: 46 passed locally (E133).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
