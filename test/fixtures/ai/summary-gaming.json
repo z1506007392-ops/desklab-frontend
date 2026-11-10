@@ -74,14 +74,14 @@
       "kind": "desktop-pc",
       "name": "台式主机",
       "center": [
-        0.98,
-        1.35,
+        0.95,
+        1.29,
         0.25
       ],
       "size": [
-        0.25,
-        0.5,
-        0.5
+        0.2,
+        0.62,
+        0.49
       ],
       "rotationZ": 180,
       "restingOn": "floor",
@@ -379,7 +379,7 @@
       "to": "desktop-pc:ac-in",
       "type": "power",
       "length": 1.5,
-      "needed": 1.39
+      "needed": 1.38
     },
     {
       "id": "c-power-strip-ac-out-2-ultrawide-monitor-1-ac-in",
@@ -411,7 +411,7 @@
       "to": "ultrawide-monitor-1:dp-in",
       "type": "displayport",
       "length": 1.8,
-      "needed": 1.66
+      "needed": 1.65
     },
     {
       "id": "c-router-lan-1-desktop-pc-eth-1",
@@ -419,7 +419,7 @@
       "to": "desktop-pc:eth-1",
       "type": "ethernet",
       "length": 3,
-      "needed": 2.23
+      "needed": 2.21
     },
     {
       "id": "c-desktop-pc-usb-2-keyboard-usb-1",
@@ -427,7 +427,7 @@
       "to": "keyboard:usb-1",
       "type": "usb",
       "length": 1.8,
-      "needed": 1.77
+      "needed": 1.76
     },
     {
       "id": "c-desktop-pc-usb-1-mouse-usb-1",
@@ -435,7 +435,7 @@
       "to": "mouse:usb-1",
       "type": "usb",
       "length": 2,
-      "needed": 1.97
+      "needed": 1.95
     }
   ],
   "findings": [],

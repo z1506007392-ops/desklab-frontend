@@ -58,7 +58,7 @@ export const DEVICE_CATALOG = [
   {
     category: 'computer', categoryName: '电脑',
     models: [
-      { type: 'desktop-pc', subcategory: 'desktop', subcategoryName: '台式主机', modelId: 'desktop-pc', displayName: '台式主机', shape: 'rect', assetUrl: catalogModelUrl('desktop-pc'), defaultScale: { x: 0.25, y: 0.5, z: 0.5 }, color: '#424242', wattage: 350, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }, { id: 'dp-out', name: 'DP 输出', type: 'displayport', direction: 'output' }, { id: 'usb-1', name: 'USB 1', type: 'usb', direction: 'bidirectional' }, { id: 'usb-2', name: 'USB 2', type: 'usb', direction: 'bidirectional' }, { id: 'audio-out', name: '耳机孔', type: 'audio', direction: 'output' }, { id: 'eth-1', name: '网口', type: 'ethernet', direction: 'bidirectional' }] },
+      { type: 'desktop-pc', subcategory: 'desktop', subcategoryName: '台式主机', modelId: 'desktop-pc', displayName: '台式主机', shape: 'rect', assetUrl: catalogModelUrl('desktop-pc'), defaultScale: { x: 0.2, y: 0.62, z: 0.49 }, color: '#424242', wattage: 350, ports: [{ id: 'ac-in', name: '电源输入', type: 'ac_input', direction: 'input' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }, { id: 'dp-out', name: 'DP 输出', type: 'displayport', direction: 'output' }, { id: 'usb-1', name: 'USB 1', type: 'usb', direction: 'bidirectional' }, { id: 'usb-2', name: 'USB 2', type: 'usb', direction: 'bidirectional' }, { id: 'audio-out', name: '耳机孔', type: 'audio', direction: 'output' }, { id: 'eth-1', name: '网口', type: 'ethernet', direction: 'bidirectional' }] },
       { type: 'laptop', subcategory: 'laptop', subcategoryName: '笔记本', modelId: 'laptop-15', displayName: '15 英寸笔记本', shape: 'rect', assetUrl: catalogModelUrl('laptop-15'), defaultScale: { x: 0.36, y: 0.28, z: 0.22 }, color: '#607d8b', wattage: 65, ports: [{ id: 'dc-in', name: 'DC 输入', type: 'dc_input', direction: 'input' }, { id: 'usb-c', name: 'USB-C', type: 'usb_c', direction: 'bidirectional' }, { id: 'usb-1', name: 'USB 1', type: 'usb', direction: 'bidirectional' }, { id: 'usb-2', name: 'USB 2', type: 'usb', direction: 'bidirectional' }, { id: 'audio-out', name: '耳机孔', type: 'audio', direction: 'output' }, { id: 'hdmi-out', name: 'HDMI 输出', type: 'hdmi', direction: 'output' }] },
     ],
   },
@@ -344,6 +344,40 @@ function migrateLegacyMonitorSize(object, template) {
   };
 }
 
+// Catalog sizes from when a mesh was stretched to a box that was not the
+// source model's shape (the tower was 27% too wide and a fifth too shallow).
+// Only an object still at exactly the old size moves to the catalog size; a
+// size someone chose stays. The bottom stays on its support and the back
+// (local -y, where the cables are and usually a wall) stays where it was, so
+// a tower that stood against a wall does not grow into it.
+const LEGACY_STRETCHED_SCALES = {
+  'desktop-pc': { x: 0.25, y: 0.5, z: 0.5 },
+};
+
+// Trig on a quarter turn leaves 1e-17 where a save should say 0.
+const roundMicro = value => Math.round(value * 1e6) / 1e6;
+
+function migrateLegacyStretchedSize(object, template) {
+  const legacy = LEGACY_STRETCHED_SCALES[template?.modelId];
+  if (!legacy || !object.scale || !object.position) return object;
+  const axes = ['x', 'y', 'z'];
+  if (!axes.every(axis => Math.abs(Number(object.scale[axis]) - legacy[axis]) <= 1e-6)) return object;
+  if (!axes.every(axis => Number.isFinite(Number(object.position[axis])))) return object;
+  const target = template.defaultScale;
+  const radians = (Number.isFinite(object.rotation?.z) ? object.rotation.z : 0) * Math.PI / 180;
+  const forward = (target.y - legacy.y) / 2;
+  return {
+    ...object,
+    scale: { ...object.scale, x: target.x, y: target.y, z: target.z },
+    position: {
+      ...object.position,
+      x: roundMicro(Number(object.position.x) - Math.sin(radians) * forward),
+      y: roundMicro(Number(object.position.y) + Math.cos(radians) * forward),
+      z: roundMicro(Number(object.position.z) - legacy.z / 2 + target.z / 2),
+    },
+  };
+}
+
 function migrateLegacyLaptopHeight(object, template) {
   if (template?.modelId !== 'laptop-15' || !object.scale || !object.position) return object;
   const targetZ = template.defaultScale.z;
@@ -375,7 +409,7 @@ export function hydrateProjectObjects(objects) {
       ? JSON.parse(JSON.stringify(template.ports))
       : (object.ports || []);
     return {
-      ...migrateLegacyMonitorSize(migrateLegacyLaptopHeight(object, template), template),
+      ...migrateLegacyStretchedSize(migrateLegacyMonitorSize(migrateLegacyLaptopHeight(object, template), template), template),
       assetUrl: template ? template.assetUrl : object.assetUrl,
       ports: withCurrentPortAnchors(ports, object.modelId || template?.modelId),
     };

@@ -321,6 +321,45 @@ test('default port anchors meet the connector on each GLB', () => {
   }
 });
 
+test('a tower at the old stretched size takes the source shape with its back and bottom where they were', () => {
+  const old = { x: 0.25, y: 0.5, z: 0.5 };
+  const tower = (id, rotationZ, extra = {}) => ({
+    id, type: 'desktop-pc', category: 'computer', modelId: 'desktop-pc',
+    position: { x: 1, y: 1.75, z: 0.25 }, scale: { ...old }, rotation: { x: 0, y: 0, z: rotationZ }, ...extra,
+  });
+  // The back is local -y. Turned 180° it faces +y (the template's back wall).
+  const backOf = object => {
+    const radians = object.rotation.z * Math.PI / 180;
+    return {
+      x: object.position.x + Math.sin(radians) * object.scale.y / 2,
+      y: object.position.y - Math.cos(radians) * object.scale.y / 2,
+    };
+  };
+  const inputs = [tower('wall', 180), tower('plain', 0), tower('side', 90)];
+  const migrated = hydrateProjectObjects(inputs);
+  migrated.forEach((object, index) => {
+    assert.deepEqual(object.scale, { x: 0.2, y: 0.62, z: 0.49 }, object.id);
+    assert.ok(Math.abs(object.position.z - object.scale.z / 2) < 1e-9, 'bottom stays on the floor');
+    const before = backOf(inputs[index]);
+    const after = backOf(object);
+    assert.ok(Math.abs(before.x - after.x) < 1e-6 && Math.abs(before.y - after.y) < 1e-6, `${object.id}: back stays put`);
+    assert.equal(object.rotation.z, inputs[index].rotation.z);
+  });
+  assert.deepEqual(migrated[0].position, { x: 1, y: 1.69, z: 0.245 }, 'against the +y wall: the front grows into the room');
+
+  const [again] = hydrateProjectObjects([migrated[0]]);
+  assert.deepEqual(again.position, migrated[0].position, 'migration is idempotent');
+  assert.deepEqual(again.scale, migrated[0].scale);
+
+  const [resized, onDesk] = hydrateProjectObjects([
+    tower('resized', 0, { scale: { x: 0.25, y: 0.5, z: 0.45 }, position: { x: 0, y: 0, z: 0.225 } }),
+    tower('on-desk', 0, { position: { x: 0, y: 0, z: 1 } }),
+  ]);
+  assert.deepEqual(resized.scale, { x: 0.25, y: 0.5, z: 0.45 }, 'a size someone chose is left alone');
+  assert.deepEqual(resized.position, { x: 0, y: 0, z: 0.225 });
+  assert.ok(Math.abs(onDesk.position.z - onDesk.scale.z / 2 - 0.75) < 1e-9, 'a tower on a desk stays on it');
+});
+
 test('legacy closed-lid laptop heights are restored and the laptop stays on the desk', () => {
   const deskTop = 0.75;
   const [thin, closed, custom] = hydrateProjectObjects([0.058, 0.105, 0.2].map((z, index) => ({
