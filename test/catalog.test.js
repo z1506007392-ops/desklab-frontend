@@ -360,6 +360,25 @@ test('a tower at the old stretched size takes the source shape with its back and
   assert.ok(Math.abs(onDesk.position.z - onDesk.scale.z / 2 - 0.75) < 1e-9, 'a tower on a desk stays on it');
 });
 
+test('a keyboard at the old tall size takes the source shape and stays on the desk', () => {
+  const deskTop = 0.75;
+  const keyboard = (id, scale) => ({
+    id, type: 'keyboard', category: 'peripheral', modelId: 'keyboard',
+    position: { x: 0.1, y: -0.2, z: deskTop + scale.z / 2 }, scale, rotation: { x: 0, y: 0, z: 0 },
+  });
+  const [old, resized] = hydrateProjectObjects([
+    keyboard('old', { x: 0.44, y: 0.15, z: 0.032 }),
+    keyboard('resized', { x: 0.36, y: 0.15, z: 0.032 }),
+  ]);
+  assert.deepEqual(old.scale, { x: 0.44, y: 0.14, z: 0.02 });
+  assert.ok(Math.abs(old.position.z - old.scale.z / 2 - deskTop) < 1e-9, 'bottom stays on the desk top');
+  assert.ok(Math.abs((old.position.y - old.scale.y / 2) - (-0.2 - 0.15 / 2)) < 1e-9, 'the cable end stays put');
+  assert.equal(old.position.x, 0.1);
+  assert.deepEqual(resized.scale, { x: 0.36, y: 0.15, z: 0.032 }, 'a size someone chose is left alone');
+  const [again] = hydrateProjectObjects([old]);
+  assert.deepEqual(again.position, old.position, 'migration is idempotent');
+});
+
 test('legacy closed-lid laptop heights are restored and the laptop stays on the desk', () => {
   const deskTop = 0.75;
   const [thin, closed, custom] = hydrateProjectObjects([0.058, 0.105, 0.2].map((z, index) => ({

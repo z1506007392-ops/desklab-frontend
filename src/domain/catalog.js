@@ -79,7 +79,7 @@ export const DEVICE_CATALOG = [
   {
     category: 'peripheral', categoryName: '外设',
     models: [
-      { type: 'keyboard', subcategory: 'keyboard', subcategoryName: '键盘', modelId: 'keyboard', displayName: '键盘', shape: 'rect', assetUrl: catalogModelUrl('keyboard'), defaultScale: { x: 0.44, y: 0.15, z: 0.032 }, color: '#2c333a', wattage: 2, ports: [{ id: 'usb-1', name: 'USB', type: 'usb', direction: 'bidirectional' }] },
+      { type: 'keyboard', subcategory: 'keyboard', subcategoryName: '键盘', modelId: 'keyboard', displayName: '键盘', shape: 'rect', assetUrl: catalogModelUrl('keyboard'), defaultScale: { x: 0.44, y: 0.14, z: 0.02 }, color: '#2c333a', wattage: 2, ports: [{ id: 'usb-1', name: 'USB', type: 'usb', direction: 'bidirectional' }] },
       { type: 'mouse', subcategory: 'mouse', subcategoryName: '鼠标', modelId: 'mouse', displayName: '鼠标', shape: 'rect', assetUrl: catalogModelUrl('mouse'), defaultScale: { x: 0.062, y: 0.115, z: 0.038 }, color: '#3a4149', wattage: 1, ports: [{ id: 'usb-1', name: 'USB', type: 'usb', direction: 'bidirectional' }] },
     ],
   },
@@ -345,13 +345,15 @@ function migrateLegacyMonitorSize(object, template) {
 }
 
 // Catalog sizes from when a mesh was stretched to a box that was not the
-// source model's shape (the tower was 27% too wide and a fifth too shallow).
+// source model's shape (the tower was 27% too wide and a fifth too shallow,
+// the keyboard 58% too tall).
 // Only an object still at exactly the old size moves to the catalog size; a
 // size someone chose stays. The bottom stays on its support and the back
 // (local -y, where the cables are and usually a wall) stays where it was, so
 // a tower that stood against a wall does not grow into it.
 const LEGACY_STRETCHED_SCALES = {
   'desktop-pc': { x: 0.25, y: 0.5, z: 0.5 },
+  keyboard: { x: 0.44, y: 0.15, z: 0.032 },
 };
 
 // Trig on a quarter turn leaves 1e-17 where a save should say 0.
