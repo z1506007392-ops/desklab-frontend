@@ -17,6 +17,13 @@ Last updated: 2026-11-05, Asia/Singapore
 
 ### 2026-11-10 · Claude · claude/adoring-dijkstra-buef7s
 
+E70 完成：键盘按源模型比例。代码 `9755ef5`。目录尺寸从 0.44×0.15×0.032 改成 0.44×0.14×0.02（宽×深×高，米）：SimReady 的键盘是 0.442×0.142×0.020，原来被加高 58%。GLB 用 `tools/simready/build.mjs keyboard` 重新生成，缩略图重渲，`asset-revisions.js` 和 `public/_headers` 跟着更新。旧存档里正好是旧尺寸的键盘走 E69 的同一个迁移：底面留在桌面上，接线的后沿不动；改过尺寸的不迁。
+
+验证：`npm test` 707（加了键盘迁移 1 条），lint 0 问题，build 通过，Chrome 桌面和手机 UI 全量 264 通过 + 4 跳过。电竞桌的截图看过（桌面和手机），没有控制台错误。
+
+还剩：任务板上没有可领的任务了。这个分支（E69、E70）要合进 master 才会上线，合进去之后看 CI 和线上。要用 Leo 账号的三件事（关 Git 自动部署、生产发信密钥、安装包签名）仍卡着。
+
+
 E69 完成：台式主机按源模型比例。代码 `34ef770`。目录尺寸从 0.25×0.50×0.50 改成 0.20×0.62×0.49（宽×深×高，米）：SimReady 的主机是 0.197×0.624×0.490，原来被横向拉宽 27%、深度压到八成。GLB 用 `tools/simready/build.mjs desktop-pc` 重新生成，缩略图重渲，`asset-revisions.js` 和 `public/_headers` 跟着更新。
 
 旧存档里正好是旧尺寸的主机，打开时换成新尺寸：底面不动，背面（接线、通常靠墙的那面）不动，多出来的深度朝房间里长。E61 的显示器是中心不动；主机没照搬，因为预设把主机背面对齐书桌后沿，中心不动会让它往后多伸 6 厘米，可能伸进墙里。故意改过尺寸的不迁。接口锚点是盒子的比例，不用改。
@@ -4915,8 +4922,8 @@ Contracts: `D:\desklab\backend\contracts\project.schema.json`, `openapi.yaml`
 Frontend:
 ```bash
 cd D:\desklab\frontend
-npm test          # 706 domain tests (E69 tower migration on top of E157's 705)
-npm run test:ui   # Chrome desktop + phone: 264 passed + 4 skipped (E69). CI webkit key cases: 46 passed locally (E133).
+npm test          # 707 domain tests (E69 tower and E70 keyboard migrations on top of E157's 705)
+npm run test:ui   # Chrome desktop + phone: 264 passed + 4 skipped (E70). CI webkit key cases: 46 passed locally (E133).
 npm run lint      # eslint .
 npm run build     # vite build (the >500 KB warning is the three.js chunk; OK)
 ```
