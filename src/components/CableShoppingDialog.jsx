@@ -46,8 +46,9 @@ export default function CableShoppingDialog({ items, sheet, onCopy, onClose }) {
                 {items.length > 0 && (
                   <button type="button" className="ui-button ui-button-primary" onClick={onCopy}>复制清单</button>
                 )}
-                <button type="button" className="ui-button" onClick={() => downloadText('desklab-wiring.md', sheet.markdown, 'text/markdown')}>导出 Markdown</button>
-                <button type="button" className="ui-button" onClick={() => downloadText('desklab-wiring.csv', sheet.csv, 'text/csv')}>导出 CSV</button>
+                {/* Plain words on the buttons (E158); the file type is in the tooltip. */}
+                <button type="button" className="ui-button" title="Markdown 文字文件：每根线从哪接到哪，以及先电源后信号的接线顺序" onClick={() => downloadText('desklab-wiring.md', sheet.markdown, 'text/markdown')}>导出安装清单</button>
+                <button type="button" className="ui-button" title="CSV 表格文件，可以用 Excel 或 WPS 打开" onClick={() => downloadText('desklab-wiring.csv', sheet.csv, 'text/csv')}>导出表格</button>
               </div>
             </div>
             {items.length === 0 ? (

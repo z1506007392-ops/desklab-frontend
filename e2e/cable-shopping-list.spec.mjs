@@ -91,7 +91,10 @@ test('the cable list exports a markdown run sheet and a csv', async ({ page }) =
   const dialog = page.getByRole('dialog', { name: '购线清单', exact: true });
 
   const markdownDownload = page.waitForEvent('download');
-  await dialog.getByRole('button', { name: '导出 Markdown', exact: true }).click();
+  // Plain words on the buttons; the file type is in the tooltip (E158).
+  await expect(dialog.getByRole('button', { name: /Markdown|CSV/ })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: '导出表格', exact: true })).toHaveAttribute('title', /Excel/);
+  await dialog.getByRole('button', { name: '导出安装清单', exact: true }).click();
   const markdown = await markdownDownload;
   expect(markdown.suggestedFilename()).toBe('desklab-wiring.md');
   const markdownText = await readFile(await markdown.path(), 'utf8');
@@ -100,7 +103,7 @@ test('the cable list exports a markdown run sheet and a csv', async ({ page }) =
   expect(markdownText).not.toContain('hdmi-1');
 
   const csvDownload = page.waitForEvent('download');
-  await dialog.getByRole('button', { name: '导出 CSV', exact: true }).click();
+  await dialog.getByRole('button', { name: '导出表格', exact: true }).click();
   const csv = await csvDownload;
   expect(csv.suggestedFilename()).toBe('desklab-wiring.csv');
   const csvText = await readFile(await csv.path(), 'utf8');

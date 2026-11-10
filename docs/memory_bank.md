@@ -15,6 +15,16 @@ Last updated: 2026-11-05, Asia/Singapore
 
 最新在上。贡献者只写 `Desklab`、`Claude`、`human`，或 `未记录`。2026-10-29 以前的提交没有写明是哪一位，git 作者名不能当成贡献者，所以标为未记录。没有 PR 的日子链到当天最后一次提交。Claude 在 master 上的记录原先写在正文里，这里按提交作者收成同一份日志。
 
+### 2026-11-10 · Claude · master
+
+E158 完成：购线清单的两个导出按钮改成普通话。「导出 Markdown」→「导出安装清单」，「导出 CSV」→「导出表格」；文件格式放进 `title` 提示（「Markdown 文字文件：每根线从哪接到哪，以及先电源后信号的接线顺序」「CSV 表格文件，可以用 Excel 或 WPS 打开」）。确认过 CSV 开头已有 BOM（`cable-run-sheet.js`），Excel 打开中文不乱码。文件名 `desklab-wiring.md` / `desklab-wiring.csv`、内容和格式不变。`e2e/cable-shopping-list.spec.mjs` 改用新按钮名，并检查按钮上没有 Markdown、CSV 字样、「导出表格」的提示里提到 Excel。
+
+11-05 改到一半时负责人说「停下来」，停在未提交；今天负责人说「提交」，基于未变的 `0446186` 重新验证后提交。
+
+验证：`npm test` 705，lint（0 问题），build，Chrome 桌面和手机 UI 全量 264 通过 + 4 跳过。
+
+还剩：推送后看 CI；E69、E70 已批准可领。
+
 ### 2026-11-05 · Claude · master
 
 负责人 Leo："你核对一遍 我已无心负责此项目 你全权负责"。从今天起由 Claude 全权负责，路线图开头加了「负责人（2026-11-05 起）」一节：原来写「等负责人」的事由 Claude 决定并写明理由；要用 Leo 账号的事（Cloudflare 控制台关 Git 自动部署、生产发信密钥、安装包签名）仍卡着。
